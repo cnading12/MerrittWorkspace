@@ -37,6 +37,23 @@
     height: auto;
   }
 }
+@supports (-webkit-touch-callout: none) {
+  .ios-fix .navbar {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .ios-fix .navbar a {
+    font-size: 1.1rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .ios-fix .logo-wrapper {
+    height: 5rem !important;
+  }
+}
+
 
 
 body {
