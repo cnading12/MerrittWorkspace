@@ -5,8 +5,8 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white flex flex-col font-helvetica text-black">
       {/* Hero Section */}
-      <section className="relative w-full h-[90vh] flex items-center justify-center bg-gray-100 overflow-hidden">
-        {/* Background Image */}
+      <section className="relative w-full min-h-screen flex items-center justify-center ...">
+      {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <Image
             src="/images/couch.jpg"

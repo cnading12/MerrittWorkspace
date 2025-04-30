@@ -13,6 +13,31 @@
     --foreground: #ededed;
   }
 }
+/* IOS Support */
+
+@supports (-webkit-touch-callout: none) {
+  html.ios-fix {
+    /* Custom fixes for iOS */
+  }
+
+  .ios-fix .hero-section {
+    min-height: 100vh !important;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .ios-fix .text-balance {
+    text-wrap: balance;
+    text-align: center;
+    padding: 0 1rem;
+  }
+
+  .ios-fix img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
 
 body {
   color: var(--foreground);
