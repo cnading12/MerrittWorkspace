@@ -13,48 +13,6 @@
     --foreground: #ededed;
   }
 }
-/* IOS Support */
-
-@supports (-webkit-touch-callout: none) {
-  html.ios-fix {
-    /* Custom fixes for iOS */
-  }
-
-  .ios-fix .hero-section {
-    min-height: 100vh !important;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
-
-  .ios-fix .text-balance {
-    text-wrap: balance;
-    text-align: center;
-    padding: 0 1rem;
-  }
-
-  .ios-fix img {
-    max-width: 100%;
-    height: auto;
-  }
-}
-@supports (-webkit-touch-callout: none) {
-  .ios-fix .navbar {
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-  }
-
-  .ios-fix .navbar a {
-    font-size: 1.1rem;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
-
-  .ios-fix .logo-wrapper {
-    height: 5rem !important;
-  }
-}
-
-
 
 body {
   color: var(--foreground);
