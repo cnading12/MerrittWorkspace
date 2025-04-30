@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 
 export default function SeniorMovingPage() {
   return (
@@ -11,7 +10,7 @@ export default function SeniorMovingPage() {
 
         <div className="mb-10">
           <Image
-            src="/images/us.jpg" // Add an image of you helping a senior
+            src="/images/us.jpg"
             alt="Helping a senior move"
             width={500}
             height={375}
@@ -20,15 +19,15 @@ export default function SeniorMovingPage() {
         </div>
 
         <p className="text-lg text-gray-700 mb-6">
-          At Vanish Moving Company, we understand that moving as a senior isn’t just about boxes — it’s about memories, emotion, and trust. That’s why we take the time to ensure every move is handled with patience, clarity, and care.
+          {`At Vanish Moving Company, we understand that moving as a senior isn't just about boxes — it's about memories, emotion, and trust. That's why we take the time to ensure every move is handled with patience, clarity, and care.`}
         </p>
 
         <p className="text-lg text-gray-700 mb-6">
-          We’re Cole and Spencer, two CSU seniors born and raised in Colorado. We founded Vanish to bring a respectful, affordable, and people-first approach to local moving. We’re not a big chain — we’re your neighbors. We’re the grandkids you’d want helping you pack.
+          {`We're Cole and Spencer, two CSU seniors born and raised in Colorado. We founded Vanish to bring a respectful, affordable, and people-first approach to local moving. We're not a big chain — we're your neighbors. We're the grandkids you'd want helping you pack.`}
         </p>
 
         <p className="text-lg text-gray-700 mb-6">
-          We’ve helped seniors transition into assisted living, downsize to simpler spaces, or just declutter after a lifetime of memories. We go the extra mile: careful packing, compassionate conversation, and clear communication with family or caretakers.
+          {`We've helped seniors transition into assisted living, downsize to simpler spaces, or just declutter after a lifetime of memories. We go the extra mile: careful packing, compassionate conversation, and clear communication with family or caretakers.`}
         </p>
 
         <div className="bg-gray-100 rounded-xl p-6 mb-10">
@@ -43,34 +42,34 @@ export default function SeniorMovingPage() {
         </div>
 
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Call Us Directly</h2>
+          <h2 className="text-2xl font-bold mb-4">{`Call Us Directly`}</h2>
           <p className="text-lg text-gray-700 mb-2">
-            Have questions or want to schedule a move? We’re easy to reach — and yes, we answer our phones.
+            {`Have questions or want to schedule a move? We're easy to reach — and yes, we answer our phones.`}
           </p>
           <div className="space-y-2 text-lg">
             <p>
-              <strong>Cole's phone:</strong>{" "}
-                <a href="tel:7203579499" className="text-blue-600 hover:underline">
-                  (720) 357-9499
-                </a>
-              </p>
-              <p>
-                <strong>Cole's Email:</strong>{" "}
-                <a href="mailto:colenading@icloud.com" className="text-blue-600 hover:underline">
-                  colenading@icloud.com
-                </a>
+              <strong>{`Cole's Phone:`}</strong>
+              <a href="tel:7203579499" className="text-blue-600 hover:underline">
+                {" "} (720) 357-9499
+              </a>
             </p>
             <p>
-            <strong>Spencer's Phone:</strong>{" "}
-                <a href="tel:7204986734" className="text-blue-600 hover:underline">
-                  (720) 498-6734
-                </a>
-              </p>
-              <p>
-                <strong>Spencer's Email:</strong>{" "}
-                <a href="mailto:spencer@vanishmoving.com" className="text-blue-600 hover:underline">
-                  spencer@vanishmoving.com
-                </a>
+              <strong>{`Cole's Email:`}</strong>
+              <a href="mailto:colenading@icloud.com" className="text-blue-600 hover:underline">
+                {" "} colenading@icloud.com
+              </a>
+            </p>
+            <p>
+              <strong>{`Spencer's Phone:`}</strong>
+              <a href="tel:7204986734" className="text-blue-600 hover:underline">
+                {" "} (720) 498-6734
+              </a>
+            </p>
+            <p>
+              <strong>{`Spencer's Email:`}</strong>
+              <a href="mailto:spencer@vanishmoving.com" className="text-blue-600 hover:underline">
+                {" "} spencer@vanishmoving.com
+              </a>
             </p>
           </div>
         </div>

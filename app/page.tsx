@@ -1,5 +1,3 @@
-// app/page.tsx
-
 import Image from "next/image";
 import Link from "next/link";
 
@@ -11,7 +9,7 @@ export default function Home() {
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/images/couch.jpg" // new image of you and Spencer sitting outside
+            src="/images/couch.jpg"
             alt="Cole and Spencer of Vanish Moving Company"
             fill
             className="object-cover brightness-75"
@@ -21,10 +19,10 @@ export default function Home() {
         {/* Overlay Content */}
         <div className="relative z-10 text-center text-white px-6">
           <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">
-            Fort Collins' Most Local & Trusted Movers
+            {`Fort Collins' Most Local & Trusted Movers`}
           </h1>
           <p className="text-lg md:text-2xl mb-6 drop-shadow-md">
-            Run by two CSU seniors, offering unmatched care, student discounts, and deep community roots.
+            {`Run by two CSU seniors, offering unmatched care, student discounts, and deep community roots.`}
           </p>
           <Link
             href="/contact"
@@ -32,7 +30,6 @@ export default function Home() {
           >
             Connect
           </Link>
-
         </div>
       </section>
 
@@ -40,7 +37,7 @@ export default function Home() {
       <section className="bg-white text-center py-12 px-6">
         <h2 className="text-3xl font-bold mb-4">Cheapest in Town. Most Local Around.</h2>
         <p className="text-lg max-w-2xl mx-auto text-gray-700">
-          Vanish Moving Company is run by Cole Nading and Spencer Burney. We're proud CSU Rams, born and raised in Colorado — and we care deeply about helping our community move safely, affordably, and smoothly. $150/hour with a 15% discount for fellow students.
+          {`Vanish Moving Company is run by Cole Nading and Spencer Burney. We're proud CSU Rams, born and raised in Colorado — and we care deeply about helping our community move safely, affordably, and smoothly. $150/hour with a 15% discount for fellow students.`}
         </p>
       </section>
     </main>
