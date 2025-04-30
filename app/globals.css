@@ -17,5 +17,21 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  @apply font-helvetica text-black bg-white;
+  /* app/globals.css */
+  margin: 0;
+  padding: 0;
 }
+
+main {
+  @apply px-4 py-8;
+}
+
+h1, h2, h3, h4 {
+  @apply mb-3;
+}
+
+p {
+  @apply mb-4 text-gray-700;
+}
+
