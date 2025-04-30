@@ -23,12 +23,12 @@ export default function AboutPage() {
         <p className="text-lg text-gray-700 mb-6">
           {`Our mission is simple: be the most local, trustworthy, and people-first moving company in town. We believe in patience, kindness, and clear communication — especially when helping seniors and families navigate the stress of moving.`}
         </p>
-        <p className="text-lg text-gray-500 italic mt-10">
+        {/* <p className="text-lg text-gray-500 italic mt-10">
           {`“They're the only movers I'd ever trust with my china cabinet.” — Cole's Grandma`}
         </p>
         <p className="text-lg text-gray-500 italic mt-4">
           {`“My grandson's gay but I love him.” — Spencer's Grandma`}
-        </p>
+        </p> */}
       </div>
     </main>
   );

@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 export default function SeniorMovingPage() {
   return (
     <main className="min-h-screen bg-white text-black font-helvetica">
@@ -7,17 +5,6 @@ export default function SeniorMovingPage() {
         <h1 className="text-4xl font-bold text-center mb-8">
           Senior Moving with Heart
         </h1>
-
-        <div className="mb-10">
-          <Image
-            src="/images/us.jpg"
-            alt="Helping a senior move"
-            width={500}
-            height={375}
-            className="rounded-2xl object-cover shadow-md mx-auto"
-          />
-        </div>
-
         <p className="text-lg text-gray-700 mb-6">
           {`At Vanish Moving Company, we understand that moving as a senior isn't just about boxes — it's about memories, emotion, and trust. That's why we take the time to ensure every move is handled with patience, clarity, and care.`}
         </p>
@@ -67,8 +54,8 @@ export default function SeniorMovingPage() {
             </p>
             <p>
               <strong>{`Spencer's Email:`}</strong>
-              <a href="mailto:spencer@vanishmoving.com" className="text-blue-600 hover:underline">
-                {" "} spencer@vanishmoving.com
+              <a href="mailto:spencer@crowhill.com" className="text-blue-600 hover:underline">
+                {" "} spencer@crowhill.com
               </a>
             </p>
           </div>

@@ -39,8 +39,8 @@ export default function ContactPage() {
               </p>
               <p>
                 <strong>Email:</strong>
-                <a href="mailto:spencer@vanishmoving.com" className="text-blue-600 hover:underline">
-                  {" "} spencer@vanishmoving.com
+                <a href="mailto:spencer@crowhill.com" className="text-blue-600 hover:underline">
+                  {" "} spencer@crowhill.com
                 </a>
               </p>
             </div>
