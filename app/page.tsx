@@ -12,8 +12,8 @@ export default function Home() {
             src="/images/couch.jpg"
             alt="Cole and Spencer of Vanish Moving Company"
             fill
-            className="object-cover brightness-75"
-          />
+            className="object-cover sm:object-center object-top brightness-75"
+            />
         </div>
 
         {/* Overlay Content */}
