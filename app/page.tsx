@@ -7,12 +7,23 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative w-full min-h-screen flex items-center justify-center ...">
         {/* Background Image */}
+        {/* Background Image */}
         <div className="absolute inset-0 z-0">
+          {/* Desktop Image */}
           <Image
             src="/images/couch.jpg"
             alt="Cole and Spencer of Vanish Moving Company"
             fill
-            className="object-cover sm:object-center object-top brightness-75"
+            className="object-cover brightness-75 hidden sm:block"
+            priority
+          />
+          {/* Mobile Image (same as About page) */}
+          <Image
+            src="/images/us.jpg"
+            alt="Cole and Spencer Vanish Mobile"
+            fill
+            className="object-cover brightness-75 block sm:hidden"
+            priority
           />
         </div>
 
