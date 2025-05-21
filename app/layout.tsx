@@ -7,9 +7,13 @@ import "./globals-ios.css";
 
 export const metadata = {
   title: "Vanish Moving Company",
-  description: "Affordable, local movers based in Fort Collins, CO.",
-  viewport: "width=device-width, initial-scale=1.0", // ← add this
 };
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

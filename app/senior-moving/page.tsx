@@ -10,7 +10,7 @@ export default function SeniorMovingPage() {
         </p>
 
         <p className="text-lg text-gray-700 mb-6">
-          {`We're Cole and Spencer, two CSU seniors born and raised in Colorado. We founded Vanish to bring a respectful, affordable, and people-first approach to local moving. We're not a big chain — we're your neighbors. We're the grandkids you'd want helping you pack.`}
+          {`We're Cole and Spencer, two CSU alumni born and raised in Colorado. We founded Vanish to bring a respectful, affordable, and people-first approach to local moving. We're not a big chain — we're your neighbors. We're the grandkids you'd want helping you pack.`}
         </p>
 
         <p className="text-lg text-gray-700 mb-6">
@@ -18,7 +18,7 @@ export default function SeniorMovingPage() {
         </p>
 
         <div className="bg-gray-100 rounded-xl p-6 mb-10">
-          <h2 className="text-2xl font-bold mb-4 text-center">Why Seniors Choose Us</h2>
+          <h2 className="text-2xl font-bold mb-4 text-center">Seniors Choose Us</h2>
           <ul className="list-disc list-inside space-y-2 text-gray-700 text-lg">
             <li>Patient, respectful movers who actually listen</li>
             <li>Experience working with elderly clients and families</li>
@@ -29,35 +29,47 @@ export default function SeniorMovingPage() {
         </div>
 
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">{`Call Us Directly`}</h2>
-          <p className="text-lg text-gray-700 mb-2">
-            {`Have questions or want to schedule a move? We're easy to reach — and yes, we answer our phones.`}
+          <h2 className="text-2xl font-bold mb-6">Call Us Directly</h2>
+          <p className="text-lg text-gray-700 mb-10">
+            Have questions or want to schedule a move? We're easy to reach — and yes, we answer our phones.
           </p>
-          <div className="space-y-2 text-lg">
-            <p>
-              <strong>{`Cole's Phone:`}</strong>
-              <a href="tel:7203579499" className="text-blue-600 hover:underline">
-                {" "} (720) 357-9499
-              </a>
-            </p>
-            <p>
-              <strong>{`Cole's Email:`}</strong>
-              <a href="mailto:colenading@icloud.com" className="text-blue-600 hover:underline">
-                {" "} colenading@icloud.com
-              </a>
-            </p>
-            <p>
-              <strong>{`Spencer's Phone:`}</strong>
-              <a href="tel:7204986734" className="text-blue-600 hover:underline">
-                {" "} (720) 498-6734
-              </a>
-            </p>
-            <p>
-              <strong>{`Spencer's Email:`}</strong>
-              <a href="mailto:spencer@crowhill.com" className="text-blue-600 hover:underline">
-                {" "} spencer@crowhill.com
-              </a>
-            </p>
+
+          <div className="grid md:grid-cols-2 gap-10 text-left">
+            {/* Cole's Contact Box */}
+            <div className="border border-gray-200 rounded-xl p-6 shadow-sm">
+              <h3 className="text-xl font-bold mb-2">Cole Nading</h3>
+              <p className="text-gray-700 mb-2">Co-Founder · CSU Computer Science</p>
+              <p>
+                <strong>Phone:</strong>{" "}
+                <a href="tel:7203579499" className="text-blue-600 hover:underline">
+                  (720) 357-9499
+                </a>
+              </p>
+              <p>
+                <strong>Email:</strong>{" "}
+                <a href="mailto:vanishmoving@gmail.com" className="text-blue-600 hover:underline">
+                  vanishmoving@gmail.com
+                </a>
+              </p>
+            </div>
+
+            {/* Spencer's Contact Box */}
+            <div className="border border-gray-200 rounded-xl p-6 shadow-sm">
+              <h3 className="text-xl font-bold mb-2">Spencer Burney</h3>
+              <p className="text-gray-700 mb-2">Co-Founder · CSU Graphic Design</p>
+              <p>
+                <strong>Phone:</strong>{" "}
+                <a href="tel:7204986734" className="text-blue-600 hover:underline">
+                  (720) 498-6734
+                </a>
+              </p>
+              <p>
+                <strong>Email:</strong>{" "}
+                <a href="mailto:vanishmoving@gmail.com" className="text-blue-600 hover:underline">
+                  vanishmoving@gmail.com
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </div>

@@ -21,8 +21,8 @@ export default function ContactPage() {
               </p>
               <p>
                 <strong>Email:</strong>
-                <a href="mailto:colenading@icloud.com" className="text-blue-600 hover:underline">
-                  {" "} colenading@icloud.com
+                <a href="mailto:vanishmoving@gmail.com" className="text-blue-600 hover:underline">
+                  {" "} vanishmoving@gmail.com
                 </a>
               </p>
             </div>
@@ -39,8 +39,8 @@ export default function ContactPage() {
               </p>
               <p>
                 <strong>Email:</strong>
-                <a href="mailto:spencer@crowhill.com" className="text-blue-600 hover:underline">
-                  {" "} spencer@crowhill.com
+                <a href="mailto:vanishmoving@gmail.com" className="text-blue-600 hover:underline">
+                  {" "} vanishmoving@gmail.com
                 </a>
               </p>
             </div>
