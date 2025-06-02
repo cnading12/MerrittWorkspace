@@ -5,22 +5,21 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white flex flex-col font-helvetica text-black">
       {/* Hero Section */}
-      <section className="relative w-full min-h-screen flex items-center justify-center ...">
-        {/* Background Image */}
+      <section className="relative w-full min-h-screen flex items-center justify-center">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          {/* Desktop Image */}
+          {/* Desktop */}
           <Image
             src="/images/couch.jpg"
-            alt="Cole and Spencer of Vanish Moving Company"
+            alt="Professional local movers lifting couch in Fort Collins"
             fill
             className="object-cover brightness-75 hidden sm:block"
             priority
           />
-          {/* Mobile Image (same as About page) */}
+          {/* Mobile */}
           <Image
             src="/images/us.jpg"
-            alt="Cole and Spencer Vanish Mobile"
+            alt="Vanish Moving Co. founders Cole and Spencer standing outside moving job"
             fill
             className="object-cover brightness-75 block sm:hidden"
             priority
@@ -39,7 +38,7 @@ export default function Home() {
             href="/contact"
             className="inline-block bg-black hover:bg-gray-900 text-white px-8 py-4 text-lg font-medium rounded-2xl shadow-lg transition duration-200"
           >
-            Connect
+            Get a Quote
           </Link>
         </div>
       </section>
@@ -49,8 +48,8 @@ export default function Home() {
         <h2 className="text-3xl font-bold mb-6">{`Cheapest in Town`}</h2>
         <ul className="list-disc list-inside space-y-2 text-gray-700 text-lg text-center max-w-2xl mx-auto">
           <li>{`Flat rate: $150/hour — no hidden fees`}</li>
-          <li>{`15% discount for CSU students`}</li>
-          <li>{`Includes truck and equipment`}</li>
+          <li>{`Includes truck, equipment, and all labor`}</li>
+          <li>{`Transparent, upfront quotes`}</li>
         </ul>
       </section>
 
@@ -58,7 +57,10 @@ export default function Home() {
       <section className="bg-white text-center py-12 px-6">
         <h2 className="text-3xl font-bold mb-6">{`Most Local Around`}</h2>
         <p className="text-lg max-w-2xl mx-auto text-gray-700">
-          {`Vanish Moving Company is proudly run by Cole Nading and Spencer Burney — two CSU alumni born and raised in Fort Collins. We’re more than just movers; we’re your neighbors. We started Vanish to give the local community an option that’s affordable, respectful, and rooted in Ram pride. Every move is personal to us, and we’re committed to making sure our customers feel cared for — not just carried.`}
+          {`We are Cole and Spencer — two Colorado-born friends who built Vanish to offer Fort Collins a better moving experience.
+          We are not a national chain or some faceless booking app. We're hands-on owners who show up, lift heavy things,
+          and treat your home like it is our own. Whether you're moving a studio apartment, a family home, or just a few big items,
+          we will get it done right — and we will answer the phone when you call.`}
         </p>
       </section>
     </main>
