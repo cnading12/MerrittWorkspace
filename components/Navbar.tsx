@@ -3,9 +3,9 @@ import Link from "next/link";
 
 export default function Navbar() {
   return (
-    <header className="navbar w-full px-4 py-2 flex flex-col sm:flex-row items-center sm:justify-between bg-white shadow-md">
+<header className="navbar w-full px-4 py-1 sm:py-2 flex flex-wrap sm:flex-nowrap justify-between items-center bg-white shadow-md">
       {/* Logo */}
-      <Link href="/" className="mb-2 sm:mb-0">
+      <Link href="/" className="mb-0">
         <div className="relative h-12 w-36 sm:h-20 sm:w-48">
           <Image
             src="/images/Logo.svg"

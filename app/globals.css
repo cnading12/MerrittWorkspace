@@ -23,15 +23,4 @@ body {
   padding: 0;
 }
 
-main {
-  @apply px-4 py-8;
-}
-
-h1, h2, h3, h4 {
-  @apply mb-3;
-}
-
-p {
-  @apply mb-4 text-gray-700;
-}
 

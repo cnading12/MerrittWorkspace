@@ -41,6 +41,8 @@ export default function ContactPage() {
               <strong>Email:</strong>
               <a href="mailto:vanishmoving@gmail.com" className="text-blue-600 hover:underline">
                 {" "} vanishmoving@gmail.com
+
+                {/* ADD FACEBOOK SECTION */}
               </a>
             </p>
           </div>
