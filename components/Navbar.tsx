@@ -3,9 +3,9 @@ import Link from "next/link";
 
 export default function Navbar() {
   return (
-<header className="navbar w-full px-4 py-1 sm:py-2 flex flex-wrap sm:flex-nowrap justify-between items-center bg-white shadow-md">
-      {/* Logo */}
-      <Link href="/" className="mb-0">
+    <header className="w-full px-4 py-2 flex items-center justify-between bg-white shadow-md">
+      {/* Logo - always left-aligned */}
+      <Link href="/" className="block">
         <div className="relative h-12 w-36 sm:h-20 sm:w-48">
           <Image
             src="/images/Logo.svg"
@@ -17,12 +17,17 @@ export default function Navbar() {
         </div>
       </Link>
 
-      {/* Nav Links */}
-      <nav className="flex flex-wrap justify-center sm:justify-end gap-4 text-black font-medium text-base sm:text-lg">
+      {/* Nav Links with responsive cleanup */}
+      <nav className="flex gap-2 sm:gap-4 text-black font-medium text-sm sm:text-lg">
         <Link href="/" className="hover:text-gray-900">Home</Link>
         <Link href="/about" className="hover:text-gray-900">About</Link>
         <Link href="/contact" className="hover:text-gray-900">Contact</Link>
-        <Link href="/senior-moving" className="hover:text-gray-900">Senior Moving</Link>
+        <Link
+          href="/senior-moving"
+          className="hover:text-gray-900 whitespace-nowrap"
+        >
+          Senior Moving
+        </Link>
       </nav>
     </header>
   );
