@@ -28,7 +28,7 @@ export default function Home() {
 
         {/* Overlay Content */}
         <div className="relative z-10 text-center text-white px-6">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">
+          <h1 className="text-4xl md:text-6xl font-condensed mb-4 drop-shadow-lg">
             {`Fort Collins' Most Local & Trusted Movers`}
           </h1>
           <p className="text-lg md:text-2xl mb-6 drop-shadow-md text-white">

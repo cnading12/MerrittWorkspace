@@ -17,6 +17,8 @@
 body {
   color: var(--foreground);
   background: var(--background);
+  font-family: Helvetica, sans-serif;
+  font-weight: normal; /* ✅ Reset default weight */
   @apply font-helvetica text-black bg-white;
   /* app/globals.css */
   margin: 0;

@@ -1,7 +1,5 @@
 // tailwind.config.js
 
-
-
 module.exports = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx}",
@@ -9,15 +7,15 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        helvetica: ['Helvetica', 'Arial', 'sans-serif'],
+      },
       spacing: {
         '6': '1.25rem',
         '8': '1.75rem',
         '10': '2.25rem',
         '12': '2.75rem',
         '16': '3.25rem',
-      },
-        fontFamily: {
-        helvetica: ['Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
       },
       colors: {
         black: '#000000',
