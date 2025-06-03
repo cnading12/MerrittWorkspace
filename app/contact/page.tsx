@@ -6,7 +6,7 @@ export default function ContactPage() {
       <div className="max-w-4xl mx-auto text-center px-4">
         <h1 className="text-4xl font-bold mb-6">{`Let's Connect`}</h1>
         <p className="text-lg text-gray-700 mb-10">
-          {`Call or text either of us directly — we&apos;re here to help, and we actually pick up.`}
+          {`Call or text either of us directly — we're here to help, and we actually pick up.`}
         </p>
 
         {/* Contact Grid */}
