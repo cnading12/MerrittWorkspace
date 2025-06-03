@@ -22,7 +22,7 @@ export default function SeniorMovingPage() {
       <section className="bg-gray-100 text-center py-12 px-6 mb-10">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold mb-6">Seniors Choose Us</h2>
-          <ul className="list-disc list-inside space-y-2 text-gray-700 text-lg text-left">
+          <ul className="list-disc pl-6 space-y-2 text-gray-700 text-lg text-left mx-auto max-w-md">
             <li>Patient, respectful movers who actually listen</li>
             <li>Experience working with elderly clients and families</li>
             <li>Locally owned — just two Fort Collins guys who care</li>
