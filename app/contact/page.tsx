@@ -1,4 +1,6 @@
 import { FaFacebook, FaInstagram } from 'react-icons/fa';
+import Footer from "@/components/Footer";
+
 
 export default function ContactPage() {
   return (
@@ -86,14 +88,14 @@ export default function ContactPage() {
           <div className="space-y-8 text-left">
             {/* Review 1 */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-md">
-              <p className="italic text-lg">“Very professional, moved everything with care and were super kind and considerate. Reasonable rates for such great service.”</p>
-              <p className="text-sm text-gray-600 mt-4">— Joseph Boeh</p>
+              <p className="italic text-lg">“Spencer and Cole were great. We had a very small job and they took care of everything we needed help with. They were prompt, careful, and did great work!”</p>
+              <p className="text-sm text-gray-600 mt-4">— Jen Krafchick</p>
             </div>
 
             {/* Review 2 */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-md">
-              <p className="italic text-lg">“Super professional through and through. Rates were excellent and all items were handled with care.”</p>
-              <p className="text-sm text-gray-600 mt-4">— Jakob Donald Vickery</p>
+              <p className="italic text-lg">“We had a great experience with Vanishing! With only a week to plan our move things were stressful and I didn’t think we would find good movers with such short notice. Man did we get lucky finding them! These guys are friendly, professional, and affordable! Highly recommend giving this locally owned business a try.”</p>
+              <p className="text-sm text-gray-600 mt-4">— Karoleigh Cosner</p>
             </div>
 
             {/* Review 3 */}
@@ -115,6 +117,7 @@ export default function ContactPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </main>
   );
 }

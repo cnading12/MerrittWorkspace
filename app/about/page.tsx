@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Footer from "@/components/Footer";
 
 export default function AboutPage() {
   return (
@@ -31,6 +32,7 @@ export default function AboutPage() {
           {`“My grandson's gay but I love him.” — Spencer's Grandma`}
         </p> */}
       </div>
+      <Footer />
     </main>
   );
 }
