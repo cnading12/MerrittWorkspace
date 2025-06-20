@@ -100,8 +100,8 @@ export default function ContactPage() {
 
             {/* Review 3 */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-md">
-              <p className="italic text-lg">“They moved everything wonderfully, even my heavy objects. Very professional”</p>
-              <p className="text-sm text-gray-600 mt-4">— Joseph Bogucki</p>
+              <p className="italic text-lg">“Very professional, moved everything with care and were super kind and considerate. Reasonable rates for such great service.”</p>
+              <p className="text-sm text-gray-600 mt-4">— Joseph Boeh</p>
             </div>
           </div>
 
