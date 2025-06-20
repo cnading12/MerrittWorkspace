@@ -62,7 +62,7 @@ export default function Home() {
             {`We are Cole and Spencer — two Colorado-born friends who built Vanish to offer Fort Collins a better moving experience.
             We are not a national chain or some faceless booking app. We're hands-on owners who show up, lift heavy things,
             and treat your home like it is our own. Whether you're moving a studio apartment, a family home, or just a few big items,
-            we will get it done right — and we will answer the phone when you call.`}
+            we will get it done right — and we will answer the phone when you call!`}
           </p>
         </section>
       </main>
