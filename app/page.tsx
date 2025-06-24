@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 export default function Home() {
   return (
     <>
-      <main className="min-h-screen bg-white flex flex-col font-helvetica text-black">
+      <main className="min-h-screen bg-white-200 text-black font-helvetica pt-[96px]">
         {/* Hero Section */}
         <section className="relative w-full min-h-screen flex items-center justify-center">
           {/* Background Image */}

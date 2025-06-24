@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 export default function DiscountsPage() {
   return (
     <>
-      <main className="min-h-screen bg-white text-black font-helvetica">
+      <main className="min-h-screen bg-white-200 text-black font-helvetica pt-[120px]">
         {/* Page Wrapper */}
         <div className="text-center px-6 max-w-4xl mx-auto">
           <h1 className="text-4xl font-bold mb-8">Moving Discounts</h1>

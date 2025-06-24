@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-white text-black font-helvetica">
+      <main className="min-h-screen bg-white-200 text-black font-helvetica pt-[96px]">
       <div className="max-w-4xl mx-auto text-center">
         <div className="mb-8">
           <Image
@@ -14,7 +14,7 @@ export default function AboutPage() {
             className="mx-auto rounded-2xl shadow-md object-cover"
           />
         </div>
-                <h1 className="text-4xl font-bold mb-6">About Vanish Moving Company</h1>
+        <h1 className="text-4xl font-bold mb-6">About Vanish Moving Company</h1>
 
         <p className="text-lg text-gray-700 mb-6">
           {`We're Cole Nading and Spencer Burney — roommates, best friends, and proud seniors at Colorado State University. Born and raised in Colorado, we know Fort Collins like the back of our hand and are passionate about helping our local community.`}
