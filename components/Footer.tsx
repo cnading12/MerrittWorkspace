@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
-            <Link href="/" className="text-2xl font-bold mb-4 block hover:text-orange-400 transition">
+            <Link href="/" className="text-2xl font-bold mb-4 block hover:text-burnt-orange-400 transition">
               Merritt Workspace
             </Link>
             <p className="text-gray-400 mb-4">
@@ -19,11 +19,11 @@ export default function Footer() {
           </div>
           
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-orange-400">Contact Info</h4>
+            <h4 className="text-lg font-semibold mb-4 text-burnt-orange-400">Contact Info</h4>
             <div className="space-y-2 text-gray-400">
               <p>2246 Irving Street</p>
               <p>Denver, CO</p>
-              <p className="text-orange-300">3 minutes to I-25</p>
+              <p className="text-burnt-orange-300">3 minutes to I-25</p>
               <p className="mt-4">
                 <a href="tel:+1234567890" className="hover:text-white transition">
                   (123) 456-7890
@@ -38,16 +38,16 @@ export default function Footer() {
           </div>
           
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-orange-400">Quick Links</h4>
+            <h4 className="text-lg font-semibold mb-4 text-burnt-orange-400">Quick Links</h4>
             <div className="space-y-2">
-              <Link href="/conference-room" className="block text-gray-400 hover:text-white transition">
-                Conference Room
+              <Link href="/meeting-rooms" className="block text-gray-400 hover:text-white transition">
+                Meeting Rooms
               </Link>
               <Link href="/snackshop" className="block text-gray-400 hover:text-white transition">
                 Snackshop
               </Link>
-              <Link href="/new-member" className="block text-gray-400 hover:text-white transition">
-                New Member
+              <Link href="/membership" className="block text-gray-400 hover:text-white transition">
+                Membership
               </Link>
               <Link href="/contact" className="block text-gray-400 hover:text-white transition">
                 Contact

@@ -1,11 +1,9 @@
-// app/layout.tsx
 import "./globals.css";
 import Navbar from "@/components/Navbar";
-import "./globals-ios.css";
-
 
 export const metadata = {
-  title: "Vanish Moving Company",
+  title: "Merritt Workspace - Premium Coworking in Denver",
+  description: "Premium workspace in the heart of Sloan's Lake, Denver. Offices, dedicated desks, and conference rooms in a beautifully restored space.",
 };
 
 export const viewport = {
@@ -13,12 +11,14 @@ export const viewport = {
   initialScale: 1,
 };
 
-
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ 
+  children 
+}: { 
+  children: React.ReactNode 
+}) {
   return (
-    <html lang="en">
-      <body className="ios-fix font-helvetica text-black bg-white">
+    <html lang="en" className="ios-fix">
+      <body className="font-helvetica text-black bg-white">
         <Navbar />
         {children}
       </body>
