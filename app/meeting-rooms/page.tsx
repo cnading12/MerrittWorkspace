@@ -56,14 +56,16 @@ export default function MeetingRoomsPage() {
 
   const loadRooms = async () => {
     try {
+      console.log('Attempting to load rooms from Supabase...');
       const roomsData = await meetingRoomAPI.getRooms();
+      console.log('Rooms loaded:', roomsData);
       setRooms(roomsData);
       if (roomsData.length > 0) {
         setSelectedRoom(roomsData[0]); // Select first room by default
       }
     } catch (error) {
       console.error('Error loading rooms:', error);
-      alert('Failed to load meeting rooms. Please try again.');
+      alert(`Failed to load meeting rooms: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -74,11 +76,13 @@ export default function MeetingRoomsPage() {
     
     setLoadingSlots(true);
     try {
+      console.log('Loading slots for:', { roomId: selectedRoom.id, date: selectedDate });
       const slots = await meetingRoomAPI.getAvailableSlots(selectedRoom.id, selectedDate);
+      console.log('Slots loaded:', slots);
       setAvailableSlots(slots);
     } catch (error) {
       console.error('Error loading time slots:', error);
-      alert('Failed to load available time slots. Please try again.');
+      alert(`Failed to load available time slots: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoadingSlots(false);
     }
