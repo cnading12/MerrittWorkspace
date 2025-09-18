@@ -3,6 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables. Please check your .env.local file.');
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Database Types
@@ -61,6 +65,24 @@ export interface TimeSlot {
 
 // API Functions
 export const meetingRoomAPI = {
+  // Expose supabase client for direct access when needed
+  supabase,
+
+  // Test database connection
+  async testConnection(): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('meeting_rooms')
+        .select('count')
+        .limit(1);
+      
+      return !error;
+    } catch (error) {
+      console.error('Database connection test failed:', error);
+      return false;
+    }
+  },
+
   // Get all active meeting rooms
   async getRooms(): Promise<MeetingRoom[]> {
     const { data, error } = await supabase
@@ -69,7 +91,11 @@ export const meetingRoomAPI = {
       .eq('is_active', true)
       .order('name');
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching rooms:', error);
+      throw new Error(`Failed to fetch meeting rooms: ${error.message}`);
+    }
+    
     return data || [];
   },
 
@@ -82,20 +108,39 @@ export const meetingRoomAPI = {
       .eq('is_active', true)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching room:', error);
+      throw new Error(`Failed to fetch room: ${error.message}`);
+    }
+    
     return data;
   },
 
   // Get available time slots for a specific date
   async getAvailableSlots(roomId: string, date: string): Promise<TimeSlot[]> {
-    const { data, error } = await supabase
-      .rpc('get_available_slots', {
-        p_room_id: roomId,
-        p_date: date
-      });
-    
-    if (error) throw error;
-    return data || [];
+    try {
+      const { data, error } = await supabase
+        .rpc('get_available_slots', {
+          p_room_id: roomId,
+          p_date: date
+        });
+      
+      if (error) {
+        console.error('Error calling get_available_slots function:', error);
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error: any) {
+      console.error('Error getting available slots:', error);
+      
+      // If the function doesn't exist, provide a helpful error message
+      if (error.message && error.message.includes('function') && error.message.includes('does not exist')) {
+        throw new Error('Database functions are not set up. Please run the database setup script first.');
+      }
+      
+      throw new Error(`Failed to get available slots: ${error.message}`);
+    }
   },
 
   // Check if a specific time slot is available
@@ -105,16 +150,31 @@ export const meetingRoomAPI = {
     startTime: string, 
     endTime: string
   ): Promise<boolean> {
-    const { data, error } = await supabase
-      .rpc('check_room_availability', {
-        p_room_id: roomId,
-        p_date: date,
-        p_start_time: startTime,
-        p_end_time: endTime
-      });
-    
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase
+        .rpc('check_room_availability', {
+          p_room_id: roomId,
+          p_date: date,
+          p_start_time: startTime,
+          p_end_time: endTime
+        });
+      
+      if (error) {
+        console.error('Error calling check_room_availability function:', error);
+        throw error;
+      }
+      
+      return data === true;
+    } catch (error: any) {
+      console.error('Error checking availability:', error);
+      
+      // If the function doesn't exist, provide a helpful error message
+      if (error.message && error.message.includes('function') && error.message.includes('does not exist')) {
+        throw new Error('Database functions are not set up. Please run the database setup script first.');
+      }
+      
+      throw new Error(`Failed to check availability: ${error.message}`);
+    }
   },
 
   // Create a new booking
@@ -125,7 +185,11 @@ export const meetingRoomAPI = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating booking:', error);
+      throw new Error(`Failed to create booking: ${error.message}`);
+    }
+    
     return data;
   },
 
@@ -137,7 +201,11 @@ export const meetingRoomAPI = {
       .eq('id', id)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching booking:', error);
+      throw new Error(`Failed to fetch booking: ${error.message}`);
+    }
+    
     return data;
   },
 
@@ -157,7 +225,11 @@ export const meetingRoomAPI = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating booking status:', error);
+      throw new Error(`Failed to update booking status: ${error.message}`);
+    }
+    
     return data;
   },
 
@@ -178,7 +250,11 @@ export const meetingRoomAPI = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating booking payment:', error);
+      throw new Error(`Failed to update booking payment: ${error.message}`);
+    }
+    
     return data;
   },
 
@@ -190,7 +266,11 @@ export const meetingRoomAPI = {
       .eq('customer_email', email)
       .order('booking_date', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching bookings by email:', error);
+      throw new Error(`Failed to fetch bookings: ${error.message}`);
+    }
+    
     return data || [];
   },
 
@@ -203,26 +283,40 @@ export const meetingRoomAPI = {
       .neq('status', 'cancelled')
       .order('start_time');
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching bookings for date:', error);
+      throw new Error(`Failed to fetch bookings for date: ${error.message}`);
+    }
+    
     return data || [];
   }
 };
 
 // Utility functions
 export const formatTime = (time: string): string => {
-  const [hours, minutes] = time.split(':');
-  const hour = parseInt(hours);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const displayHour = hour % 12 || 12;
-  return `${displayHour}:${minutes} ${ampm}`;
+  try {
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return time; // Return original if formatting fails
+  }
 };
 
 export const addHours = (time: string, hours: number): string => {
-  const [h, m] = time.split(':').map(Number);
-  const date = new Date();
-  date.setHours(h, m, 0, 0);
-  date.setHours(date.getHours() + hours);
-  return date.toTimeString().slice(0, 5);
+  try {
+    const [h, m] = time.split(':').map(Number);
+    const date = new Date();
+    date.setHours(h, m, 0, 0);
+    date.setHours(date.getHours() + hours);
+    return date.toTimeString().slice(0, 5);
+  } catch (error) {
+    console.error('Error adding hours to time:', error);
+    return time; // Return original if calculation fails
+  }
 };
 
 export const calculateEndTime = (startTime: string, durationHours: number): string => {

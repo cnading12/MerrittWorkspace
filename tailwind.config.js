@@ -7,22 +7,23 @@ module.exports = {
   ],
   theme: {
     extend: {
-      fontFamily: {
-        'helvetica': ['Helvetica', 'Arial', 'sans-serif'],
-      },
       colors: {
         'burnt-orange': {
-          50: '#fff7ed',
-          100: '#ffedd5',
-          200: '#fed7aa',
-          300: '#fdba74',
-          400: '#fb923c',
-          500: '#f97316',
-          600: '#ea580c',
-          700: '#c2410c',
-          800: '#9a3412',
-          900: '#7c2d12',
+          50: '#fef7ed',
+          100: '#fdecd4',
+          200: '#fad5a8',
+          300: '#f6b871',
+          400: '#f19238',
+          500: '#ed7611',
+          600: '#de5f07',
+          700: '#b84908',
+          800: '#933b0e',
+          900: '#77320f',
+          950: '#411804',
         },
+      },
+      fontFamily: {
+        helvetica: ['Helvetica', 'Arial', 'sans-serif'],
       },
     },
   },

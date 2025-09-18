@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, Monitor, Wifi, Coffee, MapPin, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Calendar, Clock, Users, Monitor, Wifi, Coffee, MapPin, CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { meetingRoomAPI, formatTime, calculateEndTime, type MeetingRoom, type TimeSlot } from '@/lib/supabase';
@@ -28,6 +28,7 @@ export default function MeetingRoomsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [bookingForm, setBookingForm] = useState<BookingForm>({
     name: '',
     email: '',
@@ -56,16 +57,33 @@ export default function MeetingRoomsPage() {
 
   const loadRooms = async () => {
     try {
-      console.log('Attempting to load rooms from Supabase...');
-      const roomsData = await meetingRoomAPI.getRooms();
-      console.log('Rooms loaded:', roomsData);
-      setRooms(roomsData);
-      if (roomsData.length > 0) {
-        setSelectedRoom(roomsData[0]); // Select first room by default
+      setError(null);
+      console.log('Loading rooms from Supabase...');
+      
+      // Test Supabase connection first
+      const { data: testData, error: testError } = await meetingRoomAPI.supabase
+        .from('meeting_rooms')
+        .select('count')
+        .limit(1);
+      
+      if (testError) {
+        throw new Error(`Supabase connection failed: ${testError.message}`);
       }
+      
+      const roomsData = await meetingRoomAPI.getRooms();
+      console.log('Rooms loaded successfully:', roomsData);
+      
+      if (roomsData.length === 0) {
+        setError('No meeting rooms found. Please ensure your database has meeting room data.');
+        return;
+      }
+      
+      setRooms(roomsData);
+      setSelectedRoom(roomsData[0]); // Select first room by default
     } catch (error) {
       console.error('Error loading rooms:', error);
-      alert(`Failed to load meeting rooms: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(`Failed to load meeting rooms: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -75,14 +93,45 @@ export default function MeetingRoomsPage() {
     if (!selectedRoom || !selectedDate) return;
     
     setLoadingSlots(true);
+    setError(null);
+    
     try {
       console.log('Loading slots for:', { roomId: selectedRoom.id, date: selectedDate });
-      const slots = await meetingRoomAPI.getAvailableSlots(selectedRoom.id, selectedDate);
+      
+      // First check if the function exists
+      const { data: functionExists, error: functionError } = await meetingRoomAPI.supabase
+        .rpc('get_available_slots', {
+          p_room_id: selectedRoom.id,
+          p_date: selectedDate
+        });
+      
+      if (functionError) {
+        if (functionError.message.includes('function') && functionError.message.includes('does not exist')) {
+          setError('Database functions are not set up correctly. Please run the database setup script.');
+          return;
+        }
+        throw functionError;
+      }
+      
+      const slots = functionExists || [];
       console.log('Slots loaded:', slots);
       setAvailableSlots(slots);
+      
     } catch (error) {
       console.error('Error loading time slots:', error);
-      alert(`Failed to load available time slots: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(`Failed to load available time slots: ${errorMessage}`);
+      
+      // Fallback: generate basic time slots
+      const fallbackSlots: TimeSlot[] = [];
+      for (let hour = 8; hour <= 17; hour++) {
+        const timeString = `${hour.toString().padStart(2, '0')}:00`;
+        fallbackSlots.push({
+          time_slot: timeString,
+          is_available: true
+        });
+      }
+      setAvailableSlots(fallbackSlots);
     } finally {
       setLoadingSlots(false);
     }
@@ -95,6 +144,7 @@ export default function MeetingRoomsPage() {
     
     // Check availability for the selected duration
     try {
+      setError(null);
       const isAvailable = await meetingRoomAPI.checkAvailability(
         selectedRoom.id,
         selectedDate,
@@ -103,7 +153,7 @@ export default function MeetingRoomsPage() {
       );
       
       if (!isAvailable) {
-        alert('This time slot is not available for the selected duration. Please choose a different time or duration.');
+        setError('This time slot is not available for the selected duration. Please choose a different time or duration.');
         return;
       }
       
@@ -112,7 +162,7 @@ export default function MeetingRoomsPage() {
       setShowBookingForm(true);
     } catch (error) {
       console.error('Error checking availability:', error);
-      alert('Failed to check availability. Please try again.');
+      setError('Failed to check availability. Please try again.');
     }
   };
 
@@ -129,10 +179,12 @@ export default function MeetingRoomsPage() {
         endTime
       ).then(isAvailable => {
         if (!isAvailable) {
-          alert('The selected duration is not available for this time slot. Please choose a different duration or time.');
+          setError('The selected duration is not available for this time slot. Please choose a different duration or time.');
           setShowBookingForm(false);
           setSelectedTime('');
         }
+      }).catch(error => {
+        console.error('Error checking availability:', error);
       });
     }
   };
@@ -147,6 +199,7 @@ export default function MeetingRoomsPage() {
     if (!selectedRoom) return;
     
     setSubmitting(true);
+    setError(null);
     
     try {
       const endTime = calculateEndTime(selectedTime, bookingForm.duration);
@@ -182,8 +235,7 @@ export default function MeetingRoomsPage() {
 
       console.log('Booking created:', data.booking);
       
-      // In production, this would redirect to Stripe checkout
-      // For now, simulate successful creation
+      // Show success message
       alert(`Booking created successfully! 
       
 Booking ID: ${data.booking.id}
@@ -210,7 +262,8 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
       
     } catch (error) {
       console.error('Error creating booking:', error);
-      alert(error instanceof Error ? error.message : 'Failed to create booking. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create booking. Please try again.';
+      setError(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -220,8 +273,26 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
     return (
       <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-burnt-orange-600 mx-auto mb-4" />
+          <Loader2 className="w-8 h-8 animate-spin text-orange-600 mx-auto mb-4" />
           <p className="text-gray-600">Loading meeting rooms...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && rooms.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
+        <div className="text-center max-w-md px-4">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Connection Error</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={loadRooms}
+            className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -230,7 +301,7 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-16">
+      <section className="bg-gradient-to-br from-orange-50 to-orange-100 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -244,6 +315,16 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
         </div>
       </section>
 
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mx-4 mt-4">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+            <p className="text-red-700">{error}</p>
+          </div>
+        </div>
+      )}
+
       {/* How It Works */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -251,32 +332,32 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
           
           <div className="grid md:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-burnt-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-8 h-8 text-burnt-orange-600" />
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-orange-600" />
               </div>
               <h3 className="text-lg font-semibold mb-2">1. Select Date & Time</h3>
               <p className="text-gray-600">Choose your preferred date and available time slot from our live calendar</p>
             </div>
             
             <div className="text-center">
-              <div className="w-16 h-16 bg-burnt-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-burnt-orange-600" />
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-orange-600" />
               </div>
               <h3 className="text-lg font-semibold mb-2">2. Enter Details</h3>
               <p className="text-gray-600">Provide your contact info, meeting purpose, and number of attendees</p>
             </div>
             
             <div className="text-center">
-              <div className="w-16 h-16 bg-burnt-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-burnt-orange-600" />
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-orange-600" />
               </div>
               <h3 className="text-lg font-semibold mb-2">3. Secure Payment</h3>
               <p className="text-gray-600">Complete your booking with secure Stripe payment processing</p>
             </div>
             
             <div className="text-center">
-              <div className="w-16 h-16 bg-burnt-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MapPin className="w-8 h-8 text-burnt-orange-600" />
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MapPin className="w-8 h-8 text-orange-600" />
               </div>
               <h3 className="text-lg font-semibold mb-2">4. You're All Set!</h3>
               <p className="text-gray-600">Receive confirmation email and calendar invite. Just show up!</p>
@@ -292,25 +373,25 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
-              <Monitor className="w-12 h-12 text-burnt-orange-600 mx-auto mb-4" />
+              <Monitor className="w-12 h-12 text-orange-600 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">75" Smart TV</h3>
               <p className="text-gray-600">Present wirelessly or via HDMI with crystal clear 4K display</p>
             </div>
             
             <div className="text-center">
-              <Wifi className="w-12 h-12 text-burnt-orange-600 mx-auto mb-4" />
+              <Wifi className="w-12 h-12 text-orange-600 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">High-Speed WiFi</h3>
               <p className="text-gray-600">Reliable internet for video calls and online presentations</p>
             </div>
             
             <div className="text-center">
-              <Users className="w-12 h-12 text-burnt-orange-600 mx-auto mb-4" />
+              <Users className="w-12 h-12 text-orange-600 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Seats up to 8</h3>
               <p className="text-gray-600">Comfortable seating for small to medium team meetings</p>
             </div>
             
             <div className="text-center">
-              <Coffee className="w-12 h-12 text-burnt-orange-600 mx-auto mb-4" />
+              <Coffee className="w-12 h-12 text-orange-600 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Refreshments</h3>
               <p className="text-gray-600">Access to our snackshop for coffee and light refreshments</p>
             </div>
@@ -324,13 +405,13 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Book Your Meeting Room</h2>
           
           {/* Pricing */}
-          <div className="bg-burnt-orange-50 p-6 rounded-xl mb-8 text-center">
-            <h3 className="text-2xl font-bold text-burnt-orange-900 mb-2">
+          <div className="bg-orange-50 p-6 rounded-xl mb-8 text-center">
+            <h3 className="text-2xl font-bold text-orange-900 mb-2">
               ${selectedRoom?.hourly_rate || 25} per hour
             </h3>
-            <p className="text-burnt-orange-700">Minimum 1 hour booking • Maximum 4 hours per session</p>
+            <p className="text-orange-700">Minimum 1 hour booking • Maximum 4 hours per session</p>
             {selectedRoom && (
-              <p className="text-sm text-burnt-orange-600 mt-2">
+              <p className="text-sm text-orange-600 mt-2">
                 Capacity: {selectedRoom.capacity} people
               </p>
             )}
@@ -347,9 +428,10 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                 setBookingForm(prev => ({ ...prev, date: e.target.value }));
                 setSelectedTime('');
                 setShowBookingForm(false);
+                setError(null);
               }}
               min={new Date().toISOString().split('T')[0]}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
 
@@ -360,10 +442,10 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
               
               {loadingSlots ? (
                 <div className="text-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-burnt-orange-600 mx-auto mb-2" />
+                  <Loader2 className="w-6 h-6 animate-spin text-orange-600 mx-auto mb-2" />
                   <p className="text-gray-600">Loading available times...</p>
                 </div>
-              ) : (
+              ) : availableSlots.length > 0 ? (
                 <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
                   {availableSlots.map(({ time_slot, is_available }) => {
                     const displayTime = formatTime(time_slot);
@@ -378,8 +460,8 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                           !is_available
                             ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
                             : isSelected
-                            ? 'bg-burnt-orange-600 border-burnt-orange-600 text-white'
-                            : 'bg-white border-gray-300 text-gray-700 hover:border-burnt-orange-500 hover:text-burnt-orange-600'
+                            ? 'bg-orange-600 border-orange-600 text-white'
+                            : 'bg-white border-gray-300 text-gray-700 hover:border-orange-500 hover:text-orange-600'
                         }`}
                       >
                         {displayTime}
@@ -387,6 +469,10 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                       </button>
                     );
                   })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-600">No time slots available. Please check your database setup.</p>
                 </div>
               )}
             </div>
@@ -406,7 +492,7 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                       required
                       value={bookingForm.name}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                   
@@ -417,7 +503,7 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                       required
                       value={bookingForm.email}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                   
@@ -427,7 +513,7 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                       type="text"
                       value={bookingForm.company}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, company: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                   
@@ -437,7 +523,7 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                       type="tel"
                       value={bookingForm.phone}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, phone: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                   
@@ -447,7 +533,7 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                       required
                       value={bookingForm.duration}
                       onChange={(e) => handleDurationChange(parseInt(e.target.value))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                     >
                       <option value={1}>1 hour - ${calculatePrice(1)}</option>
                       <option value={2}>2 hours - ${calculatePrice(2)}</option>
@@ -461,7 +547,7 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                     <select
                       value={bookingForm.attendees}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, attendees: parseInt(e.target.value) }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                     >
                       {Array.from({ length: selectedRoom?.capacity || 8 }, (_, i) => i + 1).map(num => (
                         <option key={num} value={num}>{num} {num === 1 ? 'person' : 'people'}</option>
@@ -477,7 +563,7 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                     value={bookingForm.purpose}
                     onChange={(e) => setBookingForm(prev => ({ ...prev, purpose: e.target.value }))}
                     placeholder="Brief description of your meeting (optional)"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
@@ -489,7 +575,7 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                     <p><strong>Date:</strong> {new Date(selectedDate).toLocaleDateString()}</p>
                     <p><strong>Time:</strong> {formatTime(selectedTime)} - {formatTime(calculateEndTime(selectedTime, bookingForm.duration))}</p>
                     <p><strong>Duration:</strong> {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
-                    <p className="text-lg font-semibold text-burnt-orange-600 pt-2">
+                    <p className="text-lg font-semibold text-orange-600 pt-2">
                       Total: ${calculatePrice(bookingForm.duration)}
                     </p>
                   </div>
@@ -498,7 +584,7 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-burnt-orange-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-burnt-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-orange-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
                     <>
@@ -516,13 +602,13 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
       </section>
 
       {/* Contact Section */}
-      <section className="py-16 bg-burnt-orange-50">
+      <section className="py-16 bg-orange-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Need Help or Have Questions?</h2>
           <p className="text-gray-600 mb-6">
             Our team is here to help you have a successful meeting experience.
           </p>
-          <Link href="/contact" className="bg-burnt-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-burnt-orange-700 transition inline-block">
+          <Link href="/contact" className="bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 transition inline-block">
             Contact Us
           </Link>
         </div>
