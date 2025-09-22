@@ -61,9 +61,6 @@ export default function SnackshopPage() {
     const loadProducts = async () => {
         try {
             setError(null);
-            // In a real implementation, this would fetch from your Supabase products table
-            // For now, using mock data that represents typical coworking snackshop items
-            // Products with actual image references from your snackshop folder
             // Products with actual image references from your snackshop folder
             const mockProducts: Product[] = [
                 // Beverages
@@ -359,8 +356,8 @@ export default function SnackshopPage() {
         { value: 'supplies', label: 'Supplies', icon: Zap }
     ];
 
-    const handleSubmitOrder = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmitOrder = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
 
         if (cart.length === 0) {
             setError('Your cart is empty');
@@ -538,10 +535,20 @@ export default function SnackshopPage() {
                             {filteredProducts.map(product => (
                                 <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition">
                                     {/* Product Image */}
-                                    <div className="h-48 bg-gray-100 relative">
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            {getCategoryIcon(product.category)}
-                                            <span className="ml-2 text-gray-600 font-medium capitalize">{product.category}</span>
+                                    {/* Product Image - CORRECTED FOR FULL IMAGE DISPLAY */}
+                                    <div className="h-52 bg-gray-100 relative overflow-hidden">
+                                        <Image
+                                            src={product.image_url}
+                                            alt={product.name}
+                                            fill
+                                            className="object-contain p-3 hover:scale-105 transition-transform duration-300"
+                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                                        />
+                                        <div className="absolute top-2 left-2">
+                                            <span className="bg-white/90 text-gray-700 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                                                {getCategoryIcon(product.category)}
+                                                <span className="capitalize">{product.category}</span>
+                                            </span>
                                         </div>
                                         <div className="absolute top-2 right-2">
                                             <span className="bg-burnt-orange-100 text-burnt-orange-800 px-2 py-1 rounded-full text-xs font-medium">
@@ -661,7 +668,7 @@ export default function SnackshopPage() {
                             </div>
 
                             {/* Order Form */}
-                            <form onSubmit={handleSubmitOrder} className="space-y-4">
+                            <div className="space-y-4">
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
@@ -722,7 +729,8 @@ export default function SnackshopPage() {
                                 </div>
 
                                 <button
-                                    type="submit"
+                                    type="button"
+                                    onClick={() => handleSubmitOrder()}
                                     disabled={submitting || cart.length === 0}
                                     className="w-full bg-burnt-orange-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-burnt-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
@@ -735,7 +743,7 @@ export default function SnackshopPage() {
                                         `Place Order - $${getCartTotal().toFixed(2)}`
                                     )}
                                 </button>
-                            </form>
+                            </div>
                         </div>
                     </div>
                 </div>
