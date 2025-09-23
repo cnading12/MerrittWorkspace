@@ -19,12 +19,6 @@ interface BookingForm {
   bookingType: 'member' | 'paid' | null;
 }
 
-interface MemberHours {
-  total_hours: number;
-  used_hours: number;
-  remaining_hours: number;
-}
-
 export default function MeetingRoomsPage() {
   const [rooms, setRooms] = useState<MeetingRoom[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<MeetingRoom | null>(null);
@@ -33,10 +27,8 @@ export default function MeetingRoomsPage() {
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [showBookingOptions, setShowBookingOptions] = useState(false);
   const [showBookingForm, setShowBookingForm] = useState(false);
-  const [memberHours, setMemberHours] = useState<MemberHours | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
-  const [loadingMemberHours, setLoadingMemberHours] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingForm, setBookingForm] = useState<BookingForm>({
@@ -148,33 +140,6 @@ export default function MeetingRoomsPage() {
     }
   };
 
-  const checkMemberHours = async (email: string) => {
-    setLoadingMemberHours(true);
-    try {
-      const response = await fetch('/api/member-hours', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to check member hours');
-      }
-
-      setMemberHours(data.memberHours);
-      return data.memberHours;
-    } catch (error) {
-      console.error('Error checking member hours:', error);
-      return null;
-    } finally {
-      setLoadingMemberHours(false);
-    }
-  };
-
   const handleTimeSelect = async (time: string) => {
     if (!selectedRoom) return;
     
@@ -231,50 +196,17 @@ export default function MeetingRoomsPage() {
 
   const handleBookingTypeSelection = async (type: 'member' | 'paid') => {
     setBookingForm(prev => ({ ...prev, bookingType: type }));
-    
-    if (type === 'member') {
-      // For member bookings, check hours when email is provided
-      setShowBookingForm(true);
-    } else {
-      // For paid bookings, proceed directly
-      setShowBookingForm(true);
-    }
-  };
-
-  const handleEmailChange = async (email: string) => {
-    setBookingForm(prev => ({ ...prev, email }));
-    
-    // If this is a member booking and email is valid, check their hours
-    if (bookingForm.bookingType === 'member' && email.includes('@')) {
-      await checkMemberHours(email);
-    }
+    setShowBookingForm(true);
   };
 
   const calculatePrice = (duration: number) => {
     return selectedRoom ? selectedRoom.hourly_rate * duration : 0;
   };
 
-  const canUseMemberHours = () => {
-    return memberHours && memberHours.remaining_hours >= bookingForm.duration;
-  };
-
   const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedRoom) return;
-    
-    // Validate member hours if this is a member booking
-    if (bookingForm.bookingType === 'member') {
-      if (!memberHours) {
-        setError('Please enter a valid member email to check available hours.');
-        return;
-      }
-      
-      if (!canUseMemberHours()) {
-        setError(`Insufficient member hours. You have ${memberHours.remaining_hours} hours remaining, but need ${bookingForm.duration} hours.`);
-        return;
-      }
-    }
     
     setSubmitting(true);
     setError(null);
@@ -290,19 +222,20 @@ export default function MeetingRoomsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          room_id: selectedRoom.id,
+          // For member bookings, don't send room_id or total_amount
+          ...(bookingForm.bookingType !== 'member' && { 
+            room_id: selectedRoom.id,
+            total_amount: totalAmount 
+          }),
           customer_name: bookingForm.name,
           customer_email: bookingForm.email,
           customer_phone: bookingForm.phone,
           company: bookingForm.company,
           booking_date: selectedDate,
           start_time: selectedTime,
-          end_time: endTime,
           duration_hours: bookingForm.duration,
-          total_amount: totalAmount,
           attendees: bookingForm.attendees,
           purpose: bookingForm.purpose,
-          booking_type: bookingForm.bookingType,
           is_member_booking: bookingForm.bookingType === 'member'
         }),
       });
@@ -320,8 +253,7 @@ export default function MeetingRoomsPage() {
         alert(`Member booking confirmed! 
         
 Booking ID: ${data.booking.id}
-Member Hours Used: ${bookingForm.duration} hour${bookingForm.duration > 1 ? 's' : ''}
-Remaining Hours: ${memberHours ? memberHours.remaining_hours - bookingForm.duration : 'N/A'}
+Duration: ${bookingForm.duration} hour${bookingForm.duration > 1 ? 's' : ''}
 
 A calendar invitation will be sent to ${bookingForm.email} shortly.`);
       } else {
@@ -343,7 +275,6 @@ You will now be redirected to payment.`);
       setShowBookingForm(false);
       setShowBookingOptions(false);
       setSelectedTime('');
-      setMemberHours(null);
       setBookingForm(prev => ({
         ...prev,
         name: '',
@@ -406,7 +337,7 @@ You will now be redirected to payment.`);
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
               Book our state-of-the-art conference rooms with A/V equipment, high-speed wifi, 
-              and a professional atmosphere. Members get monthly hours included!
+              and a professional atmosphere. Members get simple booking with no payment required!
             </p>
           </div>
         </div>
@@ -431,15 +362,15 @@ You will now be redirected to payment.`);
               <div className="space-y-4">
                 <div className="flex items-center">
                   <Gift className="w-6 h-6 text-orange-600 mr-3" />
-                  <span className="text-lg">Monthly meeting room hours included</span>
+                  <span className="text-lg">Simple member booking process</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-green-600 mr-3" />
-                  <span className="text-lg">Simple booking - no payment required</span>
+                  <span className="text-lg">No payment required for members</span>
                 </div>
                 <div className="flex items-center">
                   <CreditCard className="w-6 h-6 text-blue-600 mr-3" />
-                  <span className="text-lg">Easy online payment for additional hours</span>
+                  <span className="text-lg">Easy online payment for non-members</span>
                 </div>
               </div>
             </div>
@@ -447,7 +378,7 @@ You will now be redirected to payment.`);
               <h3 className="text-xl font-semibold text-orange-900 mb-4">Pricing</h3>
               <div className="space-y-2">
                 <p className="text-orange-800">
-                  <strong>Members:</strong> Included hours, then ${selectedRoom?.hourly_rate || 25}/hour
+                  <strong>Members:</strong> FREE booking
                 </p>
                 <p className="text-orange-800">
                   <strong>Non-members:</strong> ${selectedRoom?.hourly_rate || 25}/hour
@@ -478,7 +409,6 @@ You will now be redirected to payment.`);
                 setSelectedTime('');
                 setShowBookingOptions(false);
                 setShowBookingForm(false);
-                setMemberHours(null);
                 setError(null);
               }}
               min={new Date().toISOString().split('T')[0]}
@@ -549,7 +479,7 @@ You will now be redirected to payment.`);
                     <h4 className="text-lg font-semibold text-gray-900">Member Booking</h4>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    Use your included member hours for this booking. No payment required!
+                    Simple booking for members. No payment required!
                   </p>
                   <div className="bg-green-100 p-3 rounded-lg">
                     <p className="text-green-800 font-medium">✓ Free with membership</p>
@@ -571,7 +501,7 @@ You will now be redirected to payment.`);
                     <h4 className="text-lg font-semibold text-gray-900">Pay Online</h4>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    Pay securely online. Used all your member hours or not a member yet?
+                    Pay securely online. Not a member yet?
                   </p>
                   <div className="bg-orange-100 p-3 rounded-lg">
                     <p className="text-orange-800 font-medium">${calculatePrice(bookingForm.duration)} total</p>
@@ -623,7 +553,7 @@ You will now be redirected to payment.`);
                       type="email"
                       required
                       value={bookingForm.email}
-                      onChange={(e) => handleEmailChange(e.target.value)}
+                      onChange={(e) => setBookingForm(prev => ({ ...prev, email: e.target.value }))}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
@@ -677,48 +607,6 @@ You will now be redirected to payment.`);
                   />
                 </div>
 
-                {/* Member Hours Status */}
-                {bookingForm.bookingType === 'member' && (
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    {loadingMemberHours ? (
-                      <div className="flex items-center">
-                        <Loader2 className="w-4 h-4 animate-spin text-blue-600 mr-2" />
-                        <span className="text-blue-700">Checking member hours...</span>
-                      </div>
-                    ) : memberHours ? (
-                      <div>
-                        <h4 className="font-semibold text-blue-900 mb-2">Member Hours Status</h4>
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <p className="text-blue-600">Total Hours</p>
-                            <p className="font-bold text-blue-900">{memberHours.total_hours}</p>
-                          </div>
-                          <div>
-                            <p className="text-blue-600">Used This Month</p>
-                            <p className="font-bold text-blue-900">{memberHours.used_hours}</p>
-                          </div>
-                          <div>
-                            <p className="text-blue-600">Remaining</p>
-                            <p className="font-bold text-blue-900">{memberHours.remaining_hours}</p>
-                          </div>
-                        </div>
-                        {!canUseMemberHours() && (
-                          <div className="mt-3 p-3 bg-yellow-100 border border-yellow-300 rounded">
-                            <p className="text-yellow-800 text-sm">
-                              ⚠️ Insufficient member hours for this {bookingForm.duration}-hour booking. 
-                              Please select "Pay Online" option instead.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : bookingForm.email.includes('@') ? (
-                      <p className="text-blue-700">No member hours found for this email address.</p>
-                    ) : (
-                      <p className="text-blue-700">Enter your email to check available member hours.</p>
-                    )}
-                  </div>
-                )}
-
                 {/* Booking Summary */}
                 <div className="bg-gray-50 p-4 rounded-lg border">
                   <h4 className="font-semibold text-gray-900 mb-2">Booking Summary</h4>
@@ -729,14 +617,14 @@ You will now be redirected to payment.`);
                     <p><strong>Duration:</strong> {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
                     <p><strong>Type:</strong> {bookingForm.bookingType === 'member' ? 'Member Booking' : 'Paid Booking'}</p>
                     <p className="text-lg font-semibold text-orange-600 pt-2">
-                      Total: {bookingForm.bookingType === 'member' ? 'FREE (Member Hours)' : `$${calculatePrice(bookingForm.duration)}`}
+                      Total: {bookingForm.bookingType === 'member' ? 'FREE' : `$${calculatePrice(bookingForm.duration)}`}
                     </p>
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={submitting || (bookingForm.bookingType === 'member' && !canUseMemberHours())}
+                  disabled={submitting}
                   className="w-full bg-orange-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? (

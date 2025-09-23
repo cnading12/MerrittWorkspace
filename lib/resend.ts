@@ -109,7 +109,7 @@ export const emailTemplates = {
             <div class="footer">
               <p><strong>Merritt Workspace Snackshop</strong></p>
               <p>2246 Irving Street, Denver, CO 80211</p>
-              <p>Email: snackshop@merrittworkspace.com | Phone: (123) 456-7890</p>
+              <p>Email: snackshop@merrittworkspace.net | Phone: (123) 456-7890</p>
             </div>
           </div>
         </body>
@@ -136,7 +136,7 @@ Your items will be delivered to ${data.order.office_number} within 15 minutes.
 
 ${data.order.delivery_notes ? `Delivery Notes: ${data.order.delivery_notes}` : ''}
 
-Questions? Contact us at snackshop@merrittworkspace.com or (123) 456-7890
+Questions? Contact us at snackshop@merrittworkspace.net or (123) 456-7890
 
 Thank you for your order!
 
@@ -219,7 +219,7 @@ Merritt Workspace Team
             <div class="footer">
               <p><strong>Merritt Workspace</strong></p>
               <p>2246 Irving Street, Denver, CO 80211</p>
-              <p>Email: meetings@merrittworkspace.com | Phone: (123) 456-7890</p>
+              <p>Email: meetings@merrittworkspace.net | Phone: (123) 456-7890</p>
             </div>
           </div>
         </body>
@@ -253,7 +253,7 @@ Room includes:
 
 If you need to make changes or cancel, please contact us immediately.
 
-Contact: meetings@merrittworkspace.com | (123) 456-7890
+Contact: meetings@merrittworkspace.net | (123) 456-7890
 
 Thank you for choosing Merritt Workspace!
     `
@@ -336,14 +336,14 @@ Thank you for choosing Merritt Workspace!
 
               <p>We'll be in touch soon to move forward with your membership. Thank you for choosing Merritt Workspace!</p>
               
-              <a href="mailto:membership@merrittworkspace.com" class="button">Questions? Contact Us</a>
+              <a href="mailto:membership@merrittworkspace.net" class="button">Questions? Contact Us</a>
             </div>
             
             <div class="footer">
               <p><strong>Merritt Workspace</strong></p>
               <p>Where Work Meets Community</p>
               <p>2246 Irving Street, Denver, CO 80211</p>
-              <p>Email: membership@merrittworkspace.com | Phone: (123) 456-7890</p>
+              <p>Email: membership@merrittworkspace.net | Phone: (123) 456-7890</p>
             </div>
           </div>
         </body>
@@ -379,7 +379,7 @@ Our Amenities:
 
 We'll be in touch soon to move forward with your membership.
 
-Questions? Contact us at membership@merrittworkspace.com or (123) 456-7890
+Questions? Contact us at membership@merrittworkspace.net or (123) 456-7890
 
 Welcome to the community!
 
@@ -406,7 +406,7 @@ export async function sendOrderConfirmationEmail(data: {
 
         // Send to customer
         const customerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.com>',
+            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
             to: data.to,
             subject: template.subject,
             html: template.html,
@@ -415,8 +415,8 @@ export async function sendOrderConfirmationEmail(data: {
 
         // Send copy to manager
         const managerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.com>',
-            to: 'manager@merrittworkspace.com',
+            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
+            to: 'manager@merrittworkspace.net',
             subject: `[COPY] ${template.subject}`,
             html: `
         <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
@@ -448,7 +448,7 @@ export async function sendBookingConfirmationEmail(data: {
 
         // Send to customer
         const customerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.com>',
+            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
             to: data.to,
             subject: template.subject,
             html: template.html,
@@ -457,8 +457,8 @@ export async function sendBookingConfirmationEmail(data: {
 
         // Send copy to manager
         const managerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.com>',
-            to: 'manager@merrittworkspace.com',
+            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
+            to: 'manager@merrittworkspace.net',
             subject: `[COPY] ${template.subject}`,
             html: `
         <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
@@ -493,7 +493,7 @@ export async function sendMembershipApplicationEmail(data: {
 
         // Send to applicant
         const applicantEmail = await resend.emails.send({
-            from: 'Merritt Workspace Membership <membership@merrittworkspace.com>',
+            from: 'Merritt Workspace Membership <membership@merrittworkspace.net>',
             to: data.to,
             subject: template.subject,
             html: template.html,
@@ -502,8 +502,8 @@ export async function sendMembershipApplicationEmail(data: {
 
         // Send notification to manager
         const managerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Membership <membership@merrittworkspace.com>',
-            to: 'manager@merrittworkspace.com',
+            from: 'Merritt Workspace Membership <membership@merrittworkspace.net>',
+            to: 'manager@merrittworkspace.net',
             subject: `🆕 New Membership Application - ${data.applicantName} (${data.membershipType})`,
             html: `
         <div style="background: #f0f0f0; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
@@ -567,7 +567,7 @@ export async function sendOrderStatusUpdate(data: {
 
         // Send to customer
         const customerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.com>',
+            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
             to: data.to,
             subject: `Order Update - ${data.orderNumber} | Merritt Workspace`,
             html: `
@@ -582,8 +582,8 @@ export async function sendOrderStatusUpdate(data: {
 
         // Send copy to manager
         const managerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.com>',
-            to: 'manager@merrittworkspace.com',
+            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
+            to: 'manager@merrittworkspace.net',
             subject: `[COPY] Order Update - ${data.orderNumber}`,
             html: `
         <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
@@ -614,8 +614,8 @@ export async function sendOrderStatusUpdate(data: {
 export async function sendNewOrderNotification(order: Order, items: OrderItem[]) {
     try {
         const result = await resend.emails.send({
-            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.com>',
-            to: 'manager@merrittworkspace.com',
+            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
+            to: 'manager@merrittworkspace.net',
             subject: `🛒 New Snackshop Order - ${order.order_number}`,
             html: `
         <div style="background: #fff8e1; padding: 15px; margin-bottom: 20px; border-radius: 5px; border-left: 4px solid #ed7611;">
@@ -671,8 +671,8 @@ export async function sendNewOrderNotification(order: Order, items: OrderItem[])
 export async function sendLowStockAlert(products: Array<{ name: string; stock_quantity: number; }>) {
     try {
         const result = await resend.emails.send({
-            from: 'Merritt Workspace System <system@merrittworkspace.com>',
-            to: 'manager@merrittworkspace.com',
+            from: 'Merritt Workspace System <system@merrittworkspace.net>',
+            to: 'manager@merrittworkspace.net',
             subject: `⚠️ Low Stock Alert - Snackshop | Merritt Workspace`,
             html: `
         <div style="background: #fff3cd; padding: 15px; margin-bottom: 20px; border-radius: 5px; border-left: 4px solid #ffc107;">
@@ -721,10 +721,7 @@ export async function sendLowStockAlert(products: Array<{ name: string; stock_qu
         console.error('Failed to send low stock alert:', error);
         throw error;
     }
-
-
 }
-// Add these new email templates to your existing lib/resend.ts file
 
 // Updated Meeting Room Booking Confirmation (supports both member and paid bookings)
 export const memberBookingConfirmation = (data: {
@@ -825,7 +822,7 @@ export const memberBookingConfirmation = (data: {
             <p><strong>Merritt Workspace</strong></p>
             <p>Where Work Meets Community</p>
             <p>2246 Irving Street, Denver, CO 80211</p>
-            <p>Email: meetings@merrittworkspace.com | Phone: (123) 456-7890</p>
+            <p>Email: meetings@merrittworkspace.net | Phone: (123) 456-7890</p>
           </div>
         </div>
       </body>
@@ -872,7 +869,7 @@ ${data.isMemberBooking ?
 
 If you need to make changes or cancel, please contact us immediately.
 
-Contact: meetings@merrittworkspace.com | (123) 456-7890
+Contact: meetings@merrittworkspace.net | (123) 456-7890
 
 Thank you for choosing Merritt Workspace!
   `
@@ -1008,7 +1005,7 @@ export async function sendMemberBookingConfirmationEmail(data: {
 
         // Send to customer
         const customerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.com>',
+            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
             to: data.to,
             subject: customerTemplate.subject,
             html: customerTemplate.html,
@@ -1017,8 +1014,8 @@ export async function sendMemberBookingConfirmationEmail(data: {
 
         // Send notification to manager
         const managerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.com>',
-            to: 'manager@merrittworkspace.com',
+            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
+            to: 'manager@merrittworkspace.net',
             subject: managerTemplate.subject,
             html: managerTemplate.html,
             text: managerTemplate.text,
