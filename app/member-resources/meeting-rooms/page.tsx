@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, Monitor, Wifi, Coffee, MapPin, CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, Users, Monitor, Wifi, Coffee, MapPin, CheckCircle, XCircle, Loader2, AlertCircle, CreditCard, Gift } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { meetingRoomAPI, formatTime, calculateEndTime, type MeetingRoom, type TimeSlot } from '@/lib/supabase';
@@ -16,6 +16,13 @@ interface BookingForm {
   duration: number;
   attendees: number;
   purpose: string;
+  bookingType: 'member' | 'paid' | null;
+}
+
+interface MemberHours {
+  total_hours: number;
+  used_hours: number;
+  remaining_hours: number;
 }
 
 export default function MeetingRoomsPage() {
@@ -24,9 +31,12 @@ export default function MeetingRoomsPage() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+  const [showBookingOptions, setShowBookingOptions] = useState(false);
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [memberHours, setMemberHours] = useState<MemberHours | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingMemberHours, setLoadingMemberHours] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingForm, setBookingForm] = useState<BookingForm>({
@@ -38,7 +48,8 @@ export default function MeetingRoomsPage() {
     time: '',
     duration: 1,
     attendees: 2,
-    purpose: ''
+    purpose: '',
+    bookingType: null
   });
 
   useEffect(() => {
@@ -137,6 +148,33 @@ export default function MeetingRoomsPage() {
     }
   };
 
+  const checkMemberHours = async (email: string) => {
+    setLoadingMemberHours(true);
+    try {
+      const response = await fetch('/api/member-hours', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to check member hours');
+      }
+
+      setMemberHours(data.memberHours);
+      return data.memberHours;
+    } catch (error) {
+      console.error('Error checking member hours:', error);
+      return null;
+    } finally {
+      setLoadingMemberHours(false);
+    }
+  };
+
   const handleTimeSelect = async (time: string) => {
     if (!selectedRoom) return;
     
@@ -159,7 +197,8 @@ export default function MeetingRoomsPage() {
       
       setSelectedTime(time);
       setBookingForm(prev => ({ ...prev, time }));
-      setShowBookingForm(true);
+      setShowBookingOptions(true);
+      setShowBookingForm(false);
     } catch (error) {
       console.error('Error checking availability:', error);
       setError('Failed to check availability. Please try again.');
@@ -180,6 +219,7 @@ export default function MeetingRoomsPage() {
       ).then(isAvailable => {
         if (!isAvailable) {
           setError('The selected duration is not available for this time slot. Please choose a different duration or time.');
+          setShowBookingOptions(false);
           setShowBookingForm(false);
           setSelectedTime('');
         }
@@ -189,8 +229,33 @@ export default function MeetingRoomsPage() {
     }
   };
 
+  const handleBookingTypeSelection = async (type: 'member' | 'paid') => {
+    setBookingForm(prev => ({ ...prev, bookingType: type }));
+    
+    if (type === 'member') {
+      // For member bookings, check hours when email is provided
+      setShowBookingForm(true);
+    } else {
+      // For paid bookings, proceed directly
+      setShowBookingForm(true);
+    }
+  };
+
+  const handleEmailChange = async (email: string) => {
+    setBookingForm(prev => ({ ...prev, email }));
+    
+    // If this is a member booking and email is valid, check their hours
+    if (bookingForm.bookingType === 'member' && email.includes('@')) {
+      await checkMemberHours(email);
+    }
+  };
+
   const calculatePrice = (duration: number) => {
     return selectedRoom ? selectedRoom.hourly_rate * duration : 0;
+  };
+
+  const canUseMemberHours = () => {
+    return memberHours && memberHours.remaining_hours >= bookingForm.duration;
   };
 
   const handleSubmitBooking = async (e: React.FormEvent) => {
@@ -198,12 +263,25 @@ export default function MeetingRoomsPage() {
     
     if (!selectedRoom) return;
     
+    // Validate member hours if this is a member booking
+    if (bookingForm.bookingType === 'member') {
+      if (!memberHours) {
+        setError('Please enter a valid member email to check available hours.');
+        return;
+      }
+      
+      if (!canUseMemberHours()) {
+        setError(`Insufficient member hours. You have ${memberHours.remaining_hours} hours remaining, but need ${bookingForm.duration} hours.`);
+        return;
+      }
+    }
+    
     setSubmitting(true);
     setError(null);
     
     try {
       const endTime = calculateEndTime(selectedTime, bookingForm.duration);
-      const totalAmount = calculatePrice(bookingForm.duration);
+      const totalAmount = bookingForm.bookingType === 'member' ? 0 : calculatePrice(bookingForm.duration);
       
       // Create booking via API route
       const response = await fetch('/api/bookings', {
@@ -224,6 +302,8 @@ export default function MeetingRoomsPage() {
           total_amount: totalAmount,
           attendees: bookingForm.attendees,
           purpose: bookingForm.purpose,
+          booking_type: bookingForm.bookingType,
+          is_member_booking: bookingForm.bookingType === 'member'
         }),
       });
 
@@ -235,26 +315,43 @@ export default function MeetingRoomsPage() {
 
       console.log('Booking created:', data.booking);
       
-      // Show success message
-      alert(`Booking created successfully! 
-      
+      if (bookingForm.bookingType === 'member') {
+        // Show success message for member booking
+        alert(`Member booking confirmed! 
+        
+Booking ID: ${data.booking.id}
+Member Hours Used: ${bookingForm.duration} hour${bookingForm.duration > 1 ? 's' : ''}
+Remaining Hours: ${memberHours ? memberHours.remaining_hours - bookingForm.duration : 'N/A'}
+
+A calendar invitation will be sent to ${bookingForm.email} shortly.`);
+      } else {
+        // For paid bookings, redirect to Stripe checkout
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+          return;
+        } else {
+          alert(`Booking created successfully! 
+          
 Booking ID: ${data.booking.id}
 Total: $${totalAmount}
 
-In production, you would now be redirected to Stripe checkout for secure payment.
-
-A calendar invitation will be sent to ${bookingForm.email} once payment is complete.`);
+You will now be redirected to payment.`);
+        }
+      }
       
       // Reset form
       setShowBookingForm(false);
+      setShowBookingOptions(false);
       setSelectedTime('');
+      setMemberHours(null);
       setBookingForm(prev => ({
         ...prev,
         name: '',
         email: '',
         company: '',
         phone: '',
-        purpose: ''
+        purpose: '',
+        bookingType: null
       }));
       
       // Reload available slots
@@ -309,7 +406,7 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
               Book our state-of-the-art conference rooms with A/V equipment, high-speed wifi, 
-              and a professional atmosphere perfect for client meetings and team collaborations.
+              and a professional atmosphere. Members get monthly hours included!
             </p>
           </div>
         </div>
@@ -325,98 +422,50 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
         </div>
       )}
 
-      {/* How It Works */}
+      {/* Member Benefits */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">How Booking Works</h2>
-          
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-8 h-8 text-orange-600" />
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">Member Benefits</h2>
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <Gift className="w-6 h-6 text-orange-600 mr-3" />
+                  <span className="text-lg">Monthly meeting room hours included</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle className="w-6 h-6 text-green-600 mr-3" />
+                  <span className="text-lg">Simple booking - no payment required</span>
+                </div>
+                <div className="flex items-center">
+                  <CreditCard className="w-6 h-6 text-blue-600 mr-3" />
+                  <span className="text-lg">Easy online payment for additional hours</span>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold mb-2">1. Select Date & Time</h3>
-              <p className="text-gray-600">Choose your preferred date and available time slot from our live calendar</p>
             </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-orange-600" />
+            <div className="bg-orange-50 p-6 rounded-xl">
+              <h3 className="text-xl font-semibold text-orange-900 mb-4">Pricing</h3>
+              <div className="space-y-2">
+                <p className="text-orange-800">
+                  <strong>Members:</strong> Included hours, then ${selectedRoom?.hourly_rate || 25}/hour
+                </p>
+                <p className="text-orange-800">
+                  <strong>Non-members:</strong> ${selectedRoom?.hourly_rate || 25}/hour
+                </p>
+                <p className="text-sm text-orange-600 mt-2">
+                  Minimum 1 hour • Maximum 4 hours per session
+                </p>
               </div>
-              <h3 className="text-lg font-semibold mb-2">2. Enter Details</h3>
-              <p className="text-gray-600">Provide your contact info, meeting purpose, and number of attendees</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-orange-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">3. Secure Payment</h3>
-              <p className="text-gray-600">Complete your booking with secure Stripe payment processing</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MapPin className="w-8 h-8 text-orange-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">4. You're All Set!</h3>
-              <p className="text-gray-600">Receive confirmation email and calendar invite. Just show up!</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Room Features */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">What's Included</h2>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <Monitor className="w-12 h-12 text-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">75" Smart TV</h3>
-              <p className="text-gray-600">Present wirelessly or via HDMI with crystal clear 4K display</p>
-            </div>
-            
-            <div className="text-center">
-              <Wifi className="w-12 h-12 text-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">High-Speed WiFi</h3>
-              <p className="text-gray-600">Reliable internet for video calls and online presentations</p>
-            </div>
-            
-            <div className="text-center">
-              <Users className="w-12 h-12 text-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Seats up to 8</h3>
-              <p className="text-gray-600">Comfortable seating for small to medium team meetings</p>
-            </div>
-            
-            <div className="text-center">
-              <Coffee className="w-12 h-12 text-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Refreshments</h3>
-              <p className="text-gray-600">Access to our snackshop for coffee and light refreshments</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Booking Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Book Your Meeting Room</h2>
           
-          {/* Pricing */}
-          <div className="bg-orange-50 p-6 rounded-xl mb-8 text-center">
-            <h3 className="text-2xl font-bold text-orange-900 mb-2">
-              ${selectedRoom?.hourly_rate || 25} per hour
-            </h3>
-            <p className="text-orange-700">Minimum 1 hour booking • Maximum 4 hours per session</p>
-            {selectedRoom && (
-              <p className="text-sm text-orange-600 mt-2">
-                Capacity: {selectedRoom.capacity} people
-              </p>
-            )}
-          </div>
-
           {/* Date Selection */}
           <div className="mb-8">
             <label className="block text-lg font-semibold text-gray-900 mb-4">Select Date</label>
@@ -427,7 +476,9 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                 setSelectedDate(e.target.value);
                 setBookingForm(prev => ({ ...prev, date: e.target.value }));
                 setSelectedTime('');
+                setShowBookingOptions(false);
                 setShowBookingForm(false);
+                setMemberHours(null);
                 setError(null);
               }}
               min={new Date().toISOString().split('T')[0]}
@@ -478,10 +529,80 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
             </div>
           )}
 
+          {/* Booking Type Selection */}
+          {showBookingOptions && (
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6">Choose Booking Type</h3>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Member Booking */}
+                <div 
+                  className={`p-6 border-2 rounded-xl cursor-pointer transition ${
+                    bookingForm.bookingType === 'member' 
+                      ? 'border-green-500 bg-green-50' 
+                      : 'border-gray-200 hover:border-green-300'
+                  }`}
+                  onClick={() => handleBookingTypeSelection('member')}
+                >
+                  <div className="flex items-center mb-4">
+                    <Gift className="w-8 h-8 text-green-600 mr-3" />
+                    <h4 className="text-lg font-semibold text-gray-900">Member Booking</h4>
+                  </div>
+                  <p className="text-gray-600 mb-4">
+                    Use your included member hours for this booking. No payment required!
+                  </p>
+                  <div className="bg-green-100 p-3 rounded-lg">
+                    <p className="text-green-800 font-medium">✓ Free with membership</p>
+                    <p className="text-sm text-green-700">Duration: {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+
+                {/* Paid Booking */}
+                <div 
+                  className={`p-6 border-2 rounded-xl cursor-pointer transition ${
+                    bookingForm.bookingType === 'paid' 
+                      ? 'border-orange-500 bg-orange-50' 
+                      : 'border-gray-200 hover:border-orange-300'
+                  }`}
+                  onClick={() => handleBookingTypeSelection('paid')}
+                >
+                  <div className="flex items-center mb-4">
+                    <CreditCard className="w-8 h-8 text-orange-600 mr-3" />
+                    <h4 className="text-lg font-semibold text-gray-900">Pay Online</h4>
+                  </div>
+                  <p className="text-gray-600 mb-4">
+                    Pay securely online. Used all your member hours or not a member yet?
+                  </p>
+                  <div className="bg-orange-100 p-3 rounded-lg">
+                    <p className="text-orange-800 font-medium">${calculatePrice(bookingForm.duration)} total</p>
+                    <p className="text-sm text-orange-700">Duration: {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Duration Selection */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Duration (hours)</label>
+                <select
+                  value={bookingForm.duration}
+                  onChange={(e) => handleDurationChange(parseInt(e.target.value))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value={1}>1 hour</option>
+                  <option value={2}>2 hours</option>
+                  <option value={3}>3 hours</option>
+                  <option value={4}>4 hours</option>
+                </select>
+              </div>
+            </div>
+          )}
+
           {/* Booking Form */}
           {showBookingForm && (
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Complete Your Booking</h3>
+            <div className="bg-white p-6 rounded-xl border">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6">
+                {bookingForm.bookingType === 'member' ? 'Complete Member Booking' : 'Complete Payment Booking'}
+              </h3>
               
               <form onSubmit={handleSubmitBooking} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
@@ -502,45 +623,34 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                       type="email"
                       required
                       value={bookingForm.email}
-                      onChange={(e) => setBookingForm(prev => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) => handleEmailChange(e.target.value)}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
-                    <input
-                      type="text"
-                      value={bookingForm.company}
-                      onChange={(e) => setBookingForm(prev => ({ ...prev, company: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                    <input
-                      type="tel"
-                      value={bookingForm.phone}
-                      onChange={(e) => setBookingForm(prev => ({ ...prev, phone: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Duration (hours) *</label>
-                    <select
-                      required
-                      value={bookingForm.duration}
-                      onChange={(e) => handleDurationChange(parseInt(e.target.value))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                    >
-                      <option value={1}>1 hour - ${calculatePrice(1)}</option>
-                      <option value={2}>2 hours - ${calculatePrice(2)}</option>
-                      <option value={3}>3 hours - ${calculatePrice(3)}</option>
-                      <option value={4}>4 hours - ${calculatePrice(4)}</option>
-                    </select>
-                  </div>
+                  {bookingForm.bookingType === 'paid' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                        <input
+                          type="text"
+                          value={bookingForm.company}
+                          onChange={(e) => setBookingForm(prev => ({ ...prev, company: e.target.value }))}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                        <input
+                          type="tel"
+                          value={bookingForm.phone}
+                          onChange={(e) => setBookingForm(prev => ({ ...prev, phone: e.target.value }))}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                        />
+                      </div>
+                    </>
+                  )}
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Number of Attendees</label>
@@ -567,23 +677,66 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                   />
                 </div>
 
+                {/* Member Hours Status */}
+                {bookingForm.bookingType === 'member' && (
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    {loadingMemberHours ? (
+                      <div className="flex items-center">
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-600 mr-2" />
+                        <span className="text-blue-700">Checking member hours...</span>
+                      </div>
+                    ) : memberHours ? (
+                      <div>
+                        <h4 className="font-semibold text-blue-900 mb-2">Member Hours Status</h4>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-blue-600">Total Hours</p>
+                            <p className="font-bold text-blue-900">{memberHours.total_hours}</p>
+                          </div>
+                          <div>
+                            <p className="text-blue-600">Used This Month</p>
+                            <p className="font-bold text-blue-900">{memberHours.used_hours}</p>
+                          </div>
+                          <div>
+                            <p className="text-blue-600">Remaining</p>
+                            <p className="font-bold text-blue-900">{memberHours.remaining_hours}</p>
+                          </div>
+                        </div>
+                        {!canUseMemberHours() && (
+                          <div className="mt-3 p-3 bg-yellow-100 border border-yellow-300 rounded">
+                            <p className="text-yellow-800 text-sm">
+                              ⚠️ Insufficient member hours for this {bookingForm.duration}-hour booking. 
+                              Please select "Pay Online" option instead.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : bookingForm.email.includes('@') ? (
+                      <p className="text-blue-700">No member hours found for this email address.</p>
+                    ) : (
+                      <p className="text-blue-700">Enter your email to check available member hours.</p>
+                    )}
+                  </div>
+                )}
+
                 {/* Booking Summary */}
-                <div className="bg-white p-4 rounded-lg border">
+                <div className="bg-gray-50 p-4 rounded-lg border">
                   <h4 className="font-semibold text-gray-900 mb-2">Booking Summary</h4>
                   <div className="space-y-1 text-sm text-gray-600">
                     <p><strong>Room:</strong> {selectedRoom?.name}</p>
                     <p><strong>Date:</strong> {new Date(selectedDate).toLocaleDateString()}</p>
                     <p><strong>Time:</strong> {formatTime(selectedTime)} - {formatTime(calculateEndTime(selectedTime, bookingForm.duration))}</p>
                     <p><strong>Duration:</strong> {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
+                    <p><strong>Type:</strong> {bookingForm.bookingType === 'member' ? 'Member Booking' : 'Paid Booking'}</p>
                     <p className="text-lg font-semibold text-orange-600 pt-2">
-                      Total: ${calculatePrice(bookingForm.duration)}
+                      Total: {bookingForm.bookingType === 'member' ? 'FREE (Member Hours)' : `$${calculatePrice(bookingForm.duration)}`}
                     </p>
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || (bookingForm.bookingType === 'member' && !canUseMemberHours())}
                   className="w-full bg-orange-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
@@ -591,6 +744,8 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
                       <Loader2 className="w-5 h-5 animate-spin inline mr-2" />
                       Creating Booking...
                     </>
+                  ) : bookingForm.bookingType === 'member' ? (
+                    'Confirm Member Booking'
                   ) : (
                     'Proceed to Payment'
                   )}
@@ -598,6 +753,39 @@ A calendar invitation will be sent to ${bookingForm.email} once payment is compl
               </form>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Room Features */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">What's Included</h2>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center">
+              <Monitor className="w-12 h-12 text-orange-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">75" Smart TV</h3>
+              <p className="text-gray-600">Present wirelessly or via HDMI with crystal clear 4K display</p>
+            </div>
+            
+            <div className="text-center">
+              <Wifi className="w-12 h-12 text-orange-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">High-Speed WiFi</h3>
+              <p className="text-gray-600">Reliable internet for video calls and online presentations</p>
+            </div>
+            
+            <div className="text-center">
+              <Users className="w-12 h-12 text-orange-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Seats up to 8</h3>
+              <p className="text-gray-600">Comfortable seating for small to medium team meetings</p>
+            </div>
+            
+            <div className="text-center">
+              <Coffee className="w-12 h-12 text-orange-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Refreshments</h3>
+              <p className="text-gray-600">Access to our snackshop for coffee and light refreshments</p>
+            </div>
+          </div>
         </div>
       </section>
 
