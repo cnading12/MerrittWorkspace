@@ -300,85 +300,165 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Workspace Options */}
+{/* Workspace Options */}
       <section id="workspace" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Choose Your Workspace</h2>
-            <p className="text-xl text-gray-600">13 individual offices and dedicated desks to meet your needs</p>
+            <p className="text-xl text-gray-600">From shared desks to private offices - find your perfect workspace</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Dedicated Desks */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
-              <div className="relative h-48">
-                <Image
-                  src="/images/hero/dedicated-desk.jpg"
-                  alt="Dedicated desk workspace"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Dedicated Desks</h3>
-                <p className="text-gray-600 mb-4">Your own workspace in our open collaborative environment</p>
-                <div className="text-3xl font-bold text-burnt-orange-600 mb-4">$300<span className="text-lg text-gray-500">/month</span></div>
-                <ul className="space-y-2 text-gray-600">
-                  <li>• 24/7 access</li>
-                  <li>• High-speed wifi</li>
-                  <li>• Storage options</li>
-                  <li>• Community access</li>
-                  <li>• Event space access</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Private Offices */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
-              <div className="relative h-48">
-                <Image
-                  src="/images/hero/conference-room.jpg"
-                  alt="Private office space"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Private Offices</h3>
-                <p className="text-gray-600 mb-4">Fully private offices for individuals or small teams</p>
-                <div className="text-3xl font-bold text-burnt-orange-600 mb-4">$600<span className="text-lg text-gray-500">/month</span></div>
-                <ul className="space-y-2 text-gray-600">
-                  <li>• Complete privacy</li>
-                  <li>• Lockable space</li>
-                  <li>• Phone booth access</li>
-                  <li>• Professional address</li>
-                  <li>• Event space priority</li>
-                </ul>
+          {/* Dedicated Desk - Featured */}
+          <div className="mb-12">
+            <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">Shared Workspace</h3>
+            <div className="flex justify-center">
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition max-w-md">
+                <div className="relative h-48">
+                  <Image
+                    src="/images/hero/dedicated-desk.jpg"
+                    alt="Dedicated desk workspace"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute top-4 left-4">
+                    <span className="bg-burnt-orange-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                      Most Popular
+                    </span>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <h4 className="text-2xl font-bold text-gray-900 mb-2">Dedicated Desk</h4>
+                  <p className="text-gray-600 mb-4">Your own workspace in our collaborative environment</p>
+                  <div className="text-3xl font-bold text-burnt-orange-600 mb-4">$300<span className="text-lg text-gray-500">/month</span></div>
+                  <ul className="space-y-2 text-gray-600 mb-6">
+                    <li>• 24/7 building access</li>
+                    <li>• High-speed WiFi</li>
+                    <li>• Personal storage</li>
+                    <li>• 2 hours meeting room credits</li>
+                    <li>• Event space access until 4:30 PM</li>
+                    <li>• Kitchen and snackshop access</li>
+                  </ul>
+                  <Link href="/membership/dedicated-desk" className="w-full bg-burnt-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition text-center block">
+                    Learn More
+                  </Link>
+                </div>
               </div>
             </div>
+          </div>
 
-            {/* Large Offices */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition md:col-span-2 lg:col-span-1">
-              <div className="relative h-48">
-                <Image
-                  src="/images/outside.jpg"
-                  alt="Large office space"
-                  fill
-                  className="object-cover"
-                />
+          {/* Private Offices */}
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">Private Offices</h3>
+            <div className="grid md:grid-cols-3 gap-8">
+              
+              {/* Single Desk Office */}
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
+                <div className="relative h-48">
+                  <Image
+                    src="/images/hero/conference-room.jpg"
+                    alt="Private single desk office"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute top-4 left-4">
+                    <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                      1 Person
+                    </span>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <h4 className="text-xl font-bold text-gray-900 mb-2">Single Desk Office</h4>
+                  <p className="text-gray-600 mb-4">Private lockable office for individual professionals</p>
+                  <div className="text-3xl font-bold text-burnt-orange-600 mb-4">$500<span className="text-lg text-gray-500">/month</span></div>
+                  <ul className="space-y-2 text-gray-600 text-sm mb-6">
+                    <li>• Complete privacy & lockable door</li>
+                    <li>• Professional business address</li>
+                    <li>• 4 hours meeting room credits</li>
+                    <li>• Mail handling service</li>
+                    <li>• Pet-friendly (dogs welcome)</li>
+                  </ul>
+                  <Link href="/membership/private-office" className="w-full bg-burnt-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition text-center block">
+                    Learn More
+                  </Link>
+                </div>
               </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Large Offices</h3>
-                <p className="text-gray-600 mb-4">Spacious offices perfect for growing teams</p>
-                <div className="text-3xl font-bold text-burnt-orange-600 mb-4">$1200<span className="text-lg text-gray-500">/month</span></div>
-                <ul className="space-y-2 text-gray-600">
-                  <li>• Extra space</li>
-                  <li>• Team collaboration</li>
-                  <li>• Meeting capabilities</li>
-                  <li>• Premium location</li>
-                  <li>• Event space booking</li>
-                </ul>
+
+              {/* Double Desk Office */}
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
+                <div className="relative h-48">
+                  <Image
+                    src="/images/hero/conference-room.jpg"
+                    alt="Private double desk office"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute top-4 left-4">
+                    <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                      2 People
+                    </span>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <h4 className="text-xl font-bold text-gray-900 mb-2">Double Desk Office</h4>
+                  <p className="text-gray-600 mb-4">Private office space perfect for small teams</p>
+                  <div className="text-3xl font-bold text-burnt-orange-600 mb-4">$700<span className="text-lg text-gray-500">/month</span></div>
+                  <ul className="space-y-2 text-gray-600 text-sm mb-6">
+                    <li>• Private office with 2 desks</li>
+                    <li>• Professional business address</li>
+                    <li>• 6 hours meeting room credits</li>
+                    <li>• Team collaboration space</li>
+                    <li>• Priority event space access</li>
+                  </ul>
+                  <Link href="/membership/private-office" className="w-full bg-burnt-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition text-center block">
+                    Learn More
+                  </Link>
+                </div>
               </div>
+
+              {/* Large Team Office */}
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
+                <div className="relative h-48">
+                  <Image
+                    src="/images/outside.jpg"
+                    alt="Large team office space"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute top-4 left-4">
+                    <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                      4-8 People
+                    </span>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <h4 className="text-xl font-bold text-gray-900 mb-2">Large Team Office</h4>
+                  <p className="text-gray-600 mb-4">Spacious office for established teams</p>
+                  <div className="text-3xl font-bold text-burnt-orange-600 mb-4">$1200<span className="text-lg text-gray-500">/month</span></div>
+                  <ul className="space-y-2 text-gray-600 text-sm mb-6">
+                    <li>• Large office (4-8 desks)</li>
+                    <li>• Unlimited meeting room access</li>
+                    <li>• Multiple phone lines</li>
+                    <li>• Priority event space booking</li>
+                    <li>• Monthly snackshop credits</li>
+                  </ul>
+                  <Link href="/membership/private-office" className="w-full bg-burnt-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition text-center block">
+                    Learn More
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Call to Action */}
+          <div className="text-center mt-12">
+            <p className="text-gray-600 mb-6">All memberships include a <strong>free trial day</strong> to experience our space</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/membership" className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition">
+                View All Options
+              </Link>
+              <Link href="/contact" className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition">
+                Schedule a Tour
+              </Link>
             </div>
           </div>
         </div>

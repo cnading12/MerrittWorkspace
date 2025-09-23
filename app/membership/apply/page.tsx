@@ -1,33 +1,9 @@
 "use client";
 
 import { useState } from 'react';
-import { CheckCircle, AlertCircle, Loader2, User, Briefcase, Calendar, Phone, Mail, Shield, Plus, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, User, Briefcase, Calendar, Phone, Mail, Shield } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
-
-interface CreditReference {
-  id: string;
-  institution_name: string;
-  account_type: string;
-  contact_name: string;
-  contact_phone: string;
-  contact_email: string;
-  account_number_partial: string;
-  relationship_length: string;
-}
-
-interface PastLease {
-  id: string;
-  property_name: string;
-  property_address: string;
-  landlord_name: string;
-  landlord_phone: string;
-  landlord_email: string;
-  lease_start_date: string;
-  lease_end_date: string;
-  monthly_rent: number;
-  reason_for_leaving: string;
-}
 
 interface MembershipApplication {
   first_name: string;
@@ -39,15 +15,13 @@ interface MembershipApplication {
   industry: string;
   linkedin_url?: string;
   website_url?: string;
-  membership_type: 'dedicated_desk' | 'private_office_small' | 'private_office_large';
+  membership_type: 'dedicated_desk' | 'private_office_single' | 'private_office_double' | 'private_office_large';
   start_date: string;
   referral_source: string;
   work_style: string[];
   meeting_frequency: 'rarely' | 'monthly' | 'weekly' | 'daily';
   team_size: number;
   special_requirements?: string;
-  credit_references: CreditReference[];
-  past_leases: PastLease[];
   emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
@@ -61,19 +35,29 @@ const membershipPlans = [
     id: 'dedicated_desk',
     name: 'Dedicated Desk',
     price: 300,
-    description: 'Your own workspace in our collaborative environment'
+    description: 'Your own workspace in our collaborative environment',
+    category: 'Shared Workspace'
   },
   {
-    id: 'private_office_small',
-    name: 'Private Office',
-    price: 600,
-    description: 'Complete privacy for individuals or small teams'
+    id: 'private_office_single',
+    name: 'Private Office - Single',
+    price: 500,
+    description: 'Private lockable office for individual professionals',
+    category: 'Private Office'
+  },
+  {
+    id: 'private_office_double',
+    name: 'Private Office - Double',
+    price: 700,
+    description: 'Private office space perfect for small teams',
+    category: 'Private Office'
   },
   {
     id: 'private_office_large',
-    name: 'Large Office',
+    name: 'Private Office - Large',
     price: 1200,
-    description: 'Spacious offices perfect for growing teams (4-8 people)'
+    description: 'Spacious office for established teams',
+    category: 'Private Office'
   }
 ];
 
@@ -134,17 +118,6 @@ export default function MembershipApplicationPage() {
     meeting_frequency: 'monthly',
     team_size: 1,
     special_requirements: '',
-    credit_references: [{
-      id: '1',
-      institution_name: '',
-      account_type: '',
-      contact_name: '',
-      contact_phone: '',
-      contact_email: '',
-      account_number_partial: '',
-      relationship_length: ''
-    }],
-    past_leases: [],
     emergency_contact_name: '',
     emergency_contact_phone: '',
     emergency_contact_relationship: '',
@@ -159,74 +132,6 @@ export default function MembershipApplicationPage() {
       work_style: checked 
         ? [...prev.work_style, style]
         : prev.work_style.filter(s => s !== style)
-    }));
-  };
-
-  const addCreditReference = () => {
-    const newRef: CreditReference = {
-      id: Date.now().toString(),
-      institution_name: '',
-      account_type: '',
-      contact_name: '',
-      contact_phone: '',
-      contact_email: '',
-      account_number_partial: '',
-      relationship_length: ''
-    };
-    setApplication(prev => ({
-      ...prev,
-      credit_references: [...prev.credit_references, newRef]
-    }));
-  };
-
-  const removeCreditReference = (id: string) => {
-    setApplication(prev => ({
-      ...prev,
-      credit_references: prev.credit_references.filter(ref => ref.id !== id)
-    }));
-  };
-
-  const updateCreditReference = (id: string, field: keyof CreditReference, value: string) => {
-    setApplication(prev => ({
-      ...prev,
-      credit_references: prev.credit_references.map(ref =>
-        ref.id === id ? { ...ref, [field]: value } : ref
-      )
-    }));
-  };
-
-  const addPastLease = () => {
-    const newLease: PastLease = {
-      id: Date.now().toString(),
-      property_name: '',
-      property_address: '',
-      landlord_name: '',
-      landlord_phone: '',
-      landlord_email: '',
-      lease_start_date: '',
-      lease_end_date: '',
-      monthly_rent: 0,
-      reason_for_leaving: ''
-    };
-    setApplication(prev => ({
-      ...prev,
-      past_leases: [...prev.past_leases, newLease]
-    }));
-  };
-
-  const removePastLease = (id: string) => {
-    setApplication(prev => ({
-      ...prev,
-      past_leases: prev.past_leases.filter(lease => lease.id !== id)
-    }));
-  };
-
-  const updatePastLease = (id: string, field: keyof PastLease, value: string | number) => {
-    setApplication(prev => ({
-      ...prev,
-      past_leases: prev.past_leases.map(lease =>
-        lease.id === id ? { ...lease, [field]: value } : lease
-      )
     }));
   };
 
@@ -279,17 +184,6 @@ export default function MembershipApplicationPage() {
         meeting_frequency: 'monthly',
         team_size: 1,
         special_requirements: '',
-        credit_references: [{
-          id: '1',
-          institution_name: '',
-          account_type: '',
-          contact_name: '',
-          contact_phone: '',
-          contact_email: '',
-          account_number_partial: '',
-          relationship_length: ''
-        }],
-        past_leases: [],
         emergency_contact_name: '',
         emergency_contact_phone: '',
         emergency_contact_relationship: '',
@@ -383,6 +277,7 @@ export default function MembershipApplicationPage() {
                   <div>
                     <span className="font-medium">{selectedPlanDetails.name}</span>
                     <p className="text-sm text-burnt-orange-700">{selectedPlanDetails.description}</p>
+                    <p className="text-xs text-burnt-orange-600 mt-1">{selectedPlanDetails.category}</p>
                   </div>
                   <div className="text-right">
                     <div className="text-xl font-bold text-burnt-orange-600">
@@ -523,22 +418,55 @@ export default function MembershipApplicationPage() {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">Membership Type *</label>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    {membershipPlans.map((plan) => (
-                      <div
-                        key={plan.id}
-                        className={`border-2 rounded-lg p-4 cursor-pointer transition ${
-                          application.membership_type === plan.id
-                            ? 'border-burnt-orange-500 bg-burnt-orange-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                        onClick={() => setApplication(prev => ({ ...prev, membership_type: plan.id as any }))}
-                      >
-                        <h4 className="font-semibold text-gray-900 mb-1">{plan.name}</h4>
-                        <p className="text-2xl font-bold text-burnt-orange-600 mb-2">${plan.price}/mo</p>
-                        <p className="text-sm text-gray-600">{plan.description}</p>
+                  <div className="space-y-3">
+                    {/* Dedicated Desk */}
+                    <div
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition ${
+                        application.membership_type === 'dedicated_desk'
+                          ? 'border-burnt-orange-500 bg-burnt-orange-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setApplication(prev => ({ ...prev, membership_type: 'dedicated_desk' }))}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">Dedicated Desk</h4>
+                          <p className="text-sm text-gray-600">Your own workspace in our collaborative environment</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-burnt-orange-600">$300/mo</p>
+                          <p className="text-xs text-gray-500">Shared Workspace</p>
+                        </div>
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Private Office Options */}
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3">Private Offices</h4>
+                      <div className="space-y-2">
+                        {membershipPlans.filter(plan => plan.category === 'Private Office').map((plan) => (
+                          <div
+                            key={plan.id}
+                            className={`border rounded-lg p-3 cursor-pointer transition ${
+                              application.membership_type === plan.id
+                                ? 'border-burnt-orange-500 bg-burnt-orange-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                            onClick={() => setApplication(prev => ({ ...prev, membership_type: plan.id as any }))}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h5 className="font-medium text-gray-900">{plan.name}</h5>
+                                <p className="text-sm text-gray-600">{plan.description}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-lg font-bold text-burnt-orange-600">${plan.price}/mo</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -612,6 +540,17 @@ export default function MembershipApplicationPage() {
                       <option key={source} value={source}>{source}</option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Special Requirements or Requests</label>
+                  <textarea
+                    value={application.special_requirements}
+                    onChange={(e) => setApplication(prev => ({ ...prev, special_requirements: e.target.value }))}
+                    rows={3}
+                    placeholder="Any specific needs, accessibility requirements, or special requests..."
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500"
+                  />
                 </div>
               </div>
             </div>

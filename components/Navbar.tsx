@@ -148,13 +148,6 @@ export default function Navbar() {
                   >
                     Private Office
                   </Link>
-                  <Link 
-                    href="/membership/large-office" 
-                    className="block px-4 py-2 text-gray-700 hover:bg-burnt-orange-50 hover:text-burnt-orange-600 transition"
-                    onClick={closeAllMenus}
-                  >
-                    Large Office
-                  </Link>
                 </div>
               )}
             </div>
@@ -261,13 +254,6 @@ export default function Navbar() {
                       onClick={closeAllMenus}
                     >
                       Private Office
-                    </Link>
-                    <Link 
-                      href="/membership/large-office" 
-                      className="block text-gray-600 hover:text-burnt-orange-600 transition py-1"
-                      onClick={closeAllMenus}
-                    >
-                      Large Office
                     </Link>
                   </div>
                 )}

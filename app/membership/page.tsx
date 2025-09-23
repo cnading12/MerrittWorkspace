@@ -5,64 +5,36 @@ import { MapPin, Wifi, Shield, Phone, Monitor, Coffee, Users, Calendar, CheckCir
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 
-interface CreditReference {
-  id: string;
-  institution_name: string;
-  account_type: string;
-  contact_name: string;
-  contact_phone: string;
-  contact_email: string;
-  account_number_partial: string; // Last 4 digits only
-  relationship_length: string;
-}
-
-interface PastLease {
-  id: string;
-  property_name: string;
-  property_address: string;
-  landlord_name: string;
-  landlord_phone: string;
-  landlord_email: string;
-  lease_start_date: string;
-  lease_end_date: string;
-  monthly_rent: number;
-  reason_for_leaving: string;
-}
-
 interface MembershipApplication {
   // Personal Information
   first_name: string;
   last_name: string;
   email: string;
   phone: string;
-  
+
   // Professional Information
   company_name: string;
   job_title: string;
   industry: string;
   linkedin_url?: string;
   website_url?: string;
-  
+
   // Membership Details
-  membership_type: 'dedicated_desk' | 'private_office_small' | 'private_office_large';
+  membership_type: 'dedicated_desk' | 'private_office_single' | 'private_office_double' | 'private_office_large';
   start_date: string;
   referral_source: string;
-  
+
   // Preferences and Requirements
   work_style: string[];
   meeting_frequency: 'rarely' | 'monthly' | 'weekly' | 'daily';
   team_size: number;
   special_requirements?: string;
-  
-  // Financial Information
-  credit_references: CreditReference[];
-  past_leases: PastLease[];
-  
+
   // Emergency Contact
   emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
-  
+
   // Agreement
   agrees_to_terms: boolean;
   agrees_to_background_check: boolean;
@@ -83,48 +55,74 @@ const membershipPlans = [
       'Phone booth usage',
       'Community events',
       'Snackshop access',
-      'Event space access until 4:30 PM'
+      'Event space access until 4:30 PM',
+      '2 hours meeting room credits/month'
     ],
-    ideal_for: 'Freelancers, consultants, and remote workers'
+    ideal_for: 'Freelancers, consultants, and remote workers',
+    category: 'shared'
   },
   {
-    id: 'private_office_small',
-    name: 'Private Office',
-    price: 600,
-    description: 'Complete privacy for individuals or small teams',
+    id: 'private_office_single',
+    name: 'Private Office - Single',
+    price: 500,
+    description: 'Private lockable office for individual professionals',
     features: [
-      'Private lockable office',
+      'Private lockable office (1 desk)',
       'Professional business address',
       '24/7 building access',
       'High-speed WiFi',
-      '4 hours meeting room credits',
+      '4 hours meeting room credits/month',
       'Mail handling service',
       'Phone booth priority',
       'Community events',
       'Pet-friendly (dogs welcome)',
-      'Event space priority access'
+      'Personal storage solutions'
     ],
-    ideal_for: 'Small businesses and established professionals'
+    ideal_for: 'Solo professionals needing privacy',
+    category: 'private'
+  },
+  {
+    id: 'private_office_double',
+    name: 'Private Office - Double',
+    price: 700,
+    description: 'Private office space perfect for small teams',
+    features: [
+      'Private lockable office (2 desks)',
+      'Professional business address',
+      '24/7 building access',
+      'High-speed WiFi',
+      '6 hours meeting room credits/month',
+      'Mail and package handling',
+      'Dedicated phone line option',
+      'Team collaboration space',
+      'Priority event space access',
+      'Pet-friendly team space',
+      'Multiple storage solutions'
+    ],
+    ideal_for: 'Small teams and business partnerships',
+    category: 'private'
   },
   {
     id: 'private_office_large',
-    name: 'Large Office',
+    name: 'Private Office - Large',
     price: 1200,
-    description: 'Spacious offices perfect for growing teams',
+    description: 'Spacious office for established teams',
     features: [
-      'Large private office space (300-500 sq ft)',
+      'Large private office (4-8 desks)',
       'Professional business address',
       '24/7 building access',
       'High-speed WiFi',
       'Unlimited meeting room access',
       'Mail and package handling',
-      'Dedicated phone line options',
-      'Team collaboration space',
+      'Multiple dedicated phone lines',
+      'Team collaboration areas',
       'Priority event space booking',
       'Monthly snackshop credits',
-      'Pet-friendly team space'
+      'Pet-friendly team space',
+      'Extensive storage solutions'
     ],
-    ideal_for: 'Growing teams and established companies (4-8 people)'
+    ideal_for: 'Growing teams and established companies (4-8 people)',
+    category: 'private'
   }
 ];
 
@@ -187,17 +185,6 @@ export default function MembershipPage() {
     meeting_frequency: 'monthly',
     team_size: 1,
     special_requirements: '',
-    credit_references: [{
-      id: '1',
-      institution_name: '',
-      account_type: '',
-      contact_name: '',
-      contact_phone: '',
-      contact_email: '',
-      account_number_partial: '',
-      relationship_length: ''
-    }],
-    past_leases: [],
     emergency_contact_name: '',
     emergency_contact_phone: '',
     emergency_contact_relationship: '',
@@ -208,8 +195,8 @@ export default function MembershipPage() {
 
   const handlePlanSelect = (planId: string) => {
     setSelectedPlan(planId);
-    setApplication(prev => ({ 
-      ...prev, 
+    setApplication(prev => ({
+      ...prev,
       membership_type: planId as MembershipApplication['membership_type']
     }));
   };
@@ -217,85 +204,15 @@ export default function MembershipPage() {
   const handleWorkStyleChange = (style: string, checked: boolean) => {
     setApplication(prev => ({
       ...prev,
-      work_style: checked 
+      work_style: checked
         ? [...prev.work_style, style]
         : prev.work_style.filter(s => s !== style)
     }));
   };
 
-  // Credit Reference Management
-  const addCreditReference = () => {
-    const newRef: CreditReference = {
-      id: Date.now().toString(),
-      institution_name: '',
-      account_type: '',
-      contact_name: '',
-      contact_phone: '',
-      contact_email: '',
-      account_number_partial: '',
-      relationship_length: ''
-    };
-    setApplication(prev => ({
-      ...prev,
-      credit_references: [...prev.credit_references, newRef]
-    }));
-  };
-
-  const removeCreditReference = (id: string) => {
-    setApplication(prev => ({
-      ...prev,
-      credit_references: prev.credit_references.filter(ref => ref.id !== id)
-    }));
-  };
-
-  const updateCreditReference = (id: string, field: keyof CreditReference, value: string) => {
-    setApplication(prev => ({
-      ...prev,
-      credit_references: prev.credit_references.map(ref =>
-        ref.id === id ? { ...ref, [field]: value } : ref
-      )
-    }));
-  };
-
-  // Past Lease Management
-  const addPastLease = () => {
-    const newLease: PastLease = {
-      id: Date.now().toString(),
-      property_name: '',
-      property_address: '',
-      landlord_name: '',
-      landlord_phone: '',
-      landlord_email: '',
-      lease_start_date: '',
-      lease_end_date: '',
-      monthly_rent: 0,
-      reason_for_leaving: ''
-    };
-    setApplication(prev => ({
-      ...prev,
-      past_leases: [...prev.past_leases, newLease]
-    }));
-  };
-
-  const removePastLease = (id: string) => {
-    setApplication(prev => ({
-      ...prev,
-      past_leases: prev.past_leases.filter(lease => lease.id !== id)
-    }));
-  };
-
-  const updatePastLease = (id: string, field: keyof PastLease, value: string | number) => {
-    setApplication(prev => ({
-      ...prev,
-      past_leases: prev.past_leases.map(lease =>
-        lease.id === id ? { ...lease, [field]: value } : lease
-      )
-    }));
-  };
-
   const handleSubmitApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!application.agrees_to_terms) {
       setError('Please agree to the terms and conditions');
       return;
@@ -319,15 +236,15 @@ export default function MembershipPage() {
       };
 
       console.log('Submitting membership application:', applicationData);
-      
+
       // Mock API delay
       await new Promise(resolve => setTimeout(resolve, 2500));
 
       // Show success message
       setSuccess(`Thank you ${application.first_name}! Your membership application has been submitted successfully. You'll receive a confirmation email shortly, and our team will contact you within 1-2 business days to schedule your complimentary workspace tour.`);
-      
+
       setShowApplication(false);
-      
+
       // Reset form
       setApplication({
         first_name: '',
@@ -346,17 +263,6 @@ export default function MembershipPage() {
         meeting_frequency: 'monthly',
         team_size: 1,
         special_requirements: '',
-        credit_references: [{
-          id: '1',
-          institution_name: '',
-          account_type: '',
-          contact_name: '',
-          contact_phone: '',
-          contact_email: '',
-          account_number_partial: '',
-          relationship_length: ''
-        }],
-        past_leases: [],
         emergency_contact_name: '',
         emergency_contact_phone: '',
         emergency_contact_relationship: '',
@@ -385,7 +291,7 @@ export default function MembershipPage() {
               Join Our Community
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Experience premium workspace in the heart of Sloan's Lake. Choose from dedicated desks to private offices, 
+              Experience premium workspace in the heart of Sloan's Lake. Choose from dedicated desks to private offices,
               all with our distinctive burnt orange floors and collaborative atmosphere.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -430,28 +336,28 @@ export default function MembershipPage() {
             <p className="text-xl text-gray-600">Find the perfect workspace solution for your needs</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {membershipPlans.map((plan) => (
-              <div 
-                key={plan.id}
-                className={`bg-white rounded-xl shadow-lg border-2 overflow-hidden cursor-pointer transition hover:shadow-xl ${
-                  selectedPlan === plan.id ? 'border-burnt-orange-500 ring-2 ring-burnt-orange-200' : 'border-gray-200'
-                }`}
-                onClick={() => handlePlanSelect(plan.id)}
+          {/* Dedicated Desk Section */}
+          <div className="mb-12">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Shared Workspace</h3>
+            <div className="flex justify-center">
+              <div
+                className={`bg-white rounded-xl shadow-lg border-2 overflow-hidden cursor-pointer transition hover:shadow-xl max-w-md ${selectedPlan === 'dedicated_desk' ? 'border-burnt-orange-500 ring-2 ring-burnt-orange-200' : 'border-gray-200'
+                  }`}
+                onClick={() => handlePlanSelect('dedicated_desk')}
               >
-                <div className={`p-6 text-center ${selectedPlan === plan.id ? 'bg-burnt-orange-50' : 'bg-gray-50'}`}>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                <div className={`p-6 text-center ${selectedPlan === 'dedicated_desk' ? 'bg-burnt-orange-50' : 'bg-gray-50'}`}>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Dedicated Desk</h3>
                   <div className="text-4xl font-bold text-burnt-orange-600 mb-2">
-                    ${plan.price}<span className="text-lg text-gray-500">/month</span>
+                    $300<span className="text-lg text-gray-500">/month</span>
                   </div>
-                  <p className="text-gray-600 text-sm">{plan.ideal_for}</p>
+                  <p className="text-gray-600 text-sm">Freelancers, consultants, and remote workers</p>
                 </div>
 
                 <div className="p-6">
-                  <p className="text-gray-700 mb-4">{plan.description}</p>
-                  
+                  <p className="text-gray-700 mb-4">Your own workspace in our collaborative environment</p>
+
                   <ul className="space-y-2 mb-6">
-                    {plan.features.map((feature, index) => (
+                    {membershipPlans[0].features.map((feature, index) => (
                       <li key={index} className="flex items-center text-sm text-gray-600">
                         <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                         {feature}
@@ -460,14 +366,14 @@ export default function MembershipPage() {
                   </ul>
 
                   <div className="space-y-3">
-                    <Link 
-                      href={`/membership/${plan.id.replace('_', '-')}`}
+                    <Link
+                      href="/membership/dedicated-desk"
                       className="w-full bg-burnt-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition text-center block"
                     >
                       Learn More
                     </Link>
-                    
-                    {selectedPlan === plan.id && (
+
+                    {selectedPlan === 'dedicated_desk' && (
                       <div className="bg-burnt-orange-100 border border-burnt-orange-200 rounded-lg p-3">
                         <p className="text-burnt-orange-800 text-sm font-medium text-center">
                           ✓ Selected Plan
@@ -477,7 +383,60 @@ export default function MembershipPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            </div>
+          </div>
+
+          {/* Private Office Section */}
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Private Offices</h3>
+            <div className="grid md:grid-cols-3 gap-8">
+              {membershipPlans.filter(plan => plan.category === 'private').map((plan) => (
+                <div
+                  key={plan.id}
+                  className={`bg-white rounded-xl shadow-lg border-2 overflow-hidden cursor-pointer transition hover:shadow-xl ${selectedPlan === plan.id ? 'border-burnt-orange-500 ring-2 ring-burnt-orange-200' : 'border-gray-200'
+                    }`}
+                  onClick={() => handlePlanSelect(plan.id)}
+                >
+                  <div className={`p-6 text-center ${selectedPlan === plan.id ? 'bg-burnt-orange-50' : 'bg-gray-50'}`}>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                    <div className="text-4xl font-bold text-burnt-orange-600 mb-2">
+                      ${plan.price}<span className="text-lg text-gray-500">/month</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">{plan.ideal_for}</p>
+                  </div>
+
+                  <div className="p-6">
+                    <p className="text-gray-700 mb-4">{plan.description}</p>
+
+                    <ul className="space-y-2 mb-6">
+                      {plan.features.map((feature, index) => (
+                        <li key={index} className="flex items-center text-sm text-gray-600">
+                          <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="space-y-3">
+                      <Link
+                        href="/membership/private-office"
+                        className="w-full bg-burnt-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition text-center block"
+                      >
+                        Learn More
+                      </Link>
+
+                      {selectedPlan === plan.id && (
+                        <div className="bg-burnt-orange-100 border border-burnt-orange-200 rounded-lg p-3">
+                          <p className="text-burnt-orange-800 text-sm font-medium text-center">
+                            ✓ Selected Plan
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="text-center mt-12">
@@ -497,42 +456,107 @@ export default function MembershipPage() {
         </div>
       </section>
 
+      {/* Value Proposition Comparison */}
       {/* Why Choose Merritt */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Compare Your Options</h2>
+
+          <div className="overflow-x-auto">
+            <table className="w-full bg-white rounded-xl shadow-lg">
+              <thead>
+                <tr className="bg-burnt-orange-50">
+                  <th className="text-left p-4 font-semibold text-gray-900">Feature</th>
+                  <th className="text-center p-4 font-semibold text-gray-900">Dedicated<br />Desk</th>
+                  <th className="text-center p-4 font-semibold text-gray-900">Private<br />Single</th>
+                  <th className="text-center p-4 font-semibold text-gray-900">Private<br />Double</th>
+                  <th className="text-center p-4 font-semibold text-gray-900">Private<br />Large</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-gray-200">
+                  <td className="p-4 font-medium text-gray-900">Monthly Price</td>
+                  <td className="p-4 text-center text-burnt-orange-600 font-bold">$300</td>
+                  <td className="p-4 text-center text-burnt-orange-600 font-bold">$500</td>
+                  <td className="p-4 text-center text-burnt-orange-600 font-bold">$700</td>
+                  <td className="p-4 text-center text-burnt-orange-600 font-bold">$1200</td>
+                </tr>
+                <tr className="border-t border-gray-200 bg-gray-50">
+                  <td className="p-4 font-medium text-gray-900">Team Capacity</td>
+                  <td className="p-4 text-center">1 person</td>
+                  <td className="p-4 text-center">1 person</td>
+                  <td className="p-4 text-center">2 people</td>
+                  <td className="p-4 text-center">4-8 people</td>
+                </tr>
+                <tr className="border-t border-gray-200">
+                  <td className="p-4 font-medium text-gray-900">Privacy Level</td>
+                  <td className="p-4 text-center">Shared space</td>
+                  <td className="p-4 text-center">Private office</td>
+                  <td className="p-4 text-center">Private office</td>
+                  <td className="p-4 text-center">Private office</td>
+                </tr>
+                <tr className="border-t border-gray-200 bg-gray-50">
+                  <td className="p-4 font-medium text-gray-900">Meeting Room Credits</td>
+                  <td className="p-4 text-center">2 hours/month</td>
+                  <td className="p-4 text-center">4 hours/month</td>
+                  <td className="p-4 text-center">6 hours/month</td>
+                  <td className="p-4 text-center">Unlimited</td>
+                </tr>
+                <tr className="border-t border-gray-200">
+                  <td className="p-4 font-medium text-gray-900">Business Address</td>
+                  <td className="p-4 text-center">—</td>
+                  <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
+                  <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
+                  <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
+                </tr>
+                <tr className="border-t border-gray-200 bg-gray-50">
+                  <td className="p-4 font-medium text-gray-900">Pet Policy</td>
+                  <td className="p-4 text-center">Common areas only</td>
+                  <td className="p-4 text-center">Dogs welcome</td>
+                  <td className="p-4 text-center">Dogs welcome</td>
+                  <td className="p-4 text-center">Dogs welcome</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Why Choose Merritt Workspace?</h2>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="text-center">
               <MapPin className="w-12 h-12 text-burnt-orange-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Prime Location</h3>
               <p className="text-gray-600">Heart of Sloan's Lake, 3 minutes to I-25. Walk, bike, or drive to work easily.</p>
             </div>
-            
+
             <div className="text-center">
               <Building2 className="w-12 h-12 text-burnt-orange-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Historic Character</h3>
               <p className="text-gray-600">Beautifully restored space with distinctive burnt orange floors and unique charm.</p>
             </div>
-            
+
             <div className="text-center">
               <Users className="w-12 h-12 text-burnt-orange-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Vibrant Community</h3>
               <p className="text-gray-600">Network with entrepreneurs, freelancers, and small businesses in a supportive environment.</p>
             </div>
-            
+
             <div className="text-center">
               <Shield className="w-12 h-12 text-burnt-orange-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Secure & Professional</h3>
               <p className="text-gray-600">24/7 monitored building with professional atmosphere and business address services.</p>
             </div>
-            
+
             <div className="text-center">
               <Calendar className="w-12 h-12 text-burnt-orange-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Flexible Terms</h3>
               <p className="text-gray-600">No long-term lease required. Month-to-month flexibility for your changing needs.</p>
             </div>
-            
+
             <div className="text-center">
               <Coffee className="w-12 h-12 text-burnt-orange-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Full-Service Amenities</h3>
@@ -543,10 +567,10 @@ export default function MembershipPage() {
       </section>
 
       {/* Application Process */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Simple Application Process</h2>
-          
+
           <div className="grid md:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-burnt-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -555,7 +579,7 @@ export default function MembershipPage() {
               <h3 className="text-lg font-semibold mb-2">Apply Online</h3>
               <p className="text-gray-600">Complete our simple application form with your details and preferences</p>
             </div>
-            
+
             <div className="text-center">
               <div className="w-16 h-16 bg-burnt-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-burnt-orange-600">2</span>
@@ -563,7 +587,7 @@ export default function MembershipPage() {
               <h3 className="text-lg font-semibold mb-2">Schedule Tour</h3>
               <p className="text-gray-600">We'll contact you within 1-2 days to schedule your complimentary tour</p>
             </div>
-            
+
             <div className="text-center">
               <div className="w-16 h-16 bg-burnt-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-burnt-orange-600">3</span>
@@ -571,7 +595,7 @@ export default function MembershipPage() {
               <h3 className="text-lg font-semibold mb-2">Free Trial Day</h3>
               <p className="text-gray-600">Experience our workspace with a full complimentary trial day</p>
             </div>
-            
+
             <div className="text-center">
               <div className="w-16 h-16 bg-burnt-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-burnt-orange-600">4</span>
