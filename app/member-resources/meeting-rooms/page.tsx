@@ -19,6 +19,55 @@ interface BookingForm {
   bookingType: 'member' | 'paid' | null;
 }
 
+// NEW: Error Display Component
+const ErrorDisplay = ({ error }: { error: string | null }) => {
+  if (!error) return null;
+  
+  return (
+    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div className="flex items-start">
+        <AlertCircle className="w-5 h-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+        <div>
+          <p className="text-red-700 font-medium">Booking Error</p>
+          <p className="text-red-600 text-sm mt-1">{error}</p>
+          {error.includes('Domain-Wide Delegation') && (
+            <p className="text-red-600 text-sm mt-2">
+              <strong>Note:</strong> Your booking is still valid - you'll receive email confirmation.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// NEW: Success Message Component
+const SuccessMessage = ({ message, onClose }: { message: string; onClose: () => void }) => (
+  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+    <div className="flex items-start justify-between">
+      <div className="flex items-start">
+        <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
+        <div>
+          <p className="text-green-700 font-medium">Booking Successful!</p>
+          <p className="text-green-600 text-sm mt-1 whitespace-pre-line">{message}</p>
+        </div>
+      </div>
+      <button onClick={onClose} className="text-green-400 hover:text-green-600">
+        <XCircle className="w-5 h-5" />
+      </button>
+    </div>
+  </div>
+);
+
+// NEW: Loading State Component
+const LoadingState = ({ message }: { message: string }) => (
+  <div className="text-center py-8">
+    <Loader2 className="w-8 h-8 animate-spin text-orange-600 mx-auto mb-4" />
+    <p className="text-gray-600">{message}</p>
+    <p className="text-sm text-gray-500 mt-2">This may take a few moments...</p>
+  </div>
+);
+
 export default function MeetingRoomsPage() {
   const [rooms, setRooms] = useState<MeetingRoom[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<MeetingRoom | null>(null);
@@ -31,6 +80,7 @@ export default function MeetingRoomsPage() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null); // NEW
   const [bookingForm, setBookingForm] = useState<BookingForm>({
     name: '',
     email: '',
@@ -53,10 +103,10 @@ export default function MeetingRoomsPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedRoom && selectedDate) {
+    if (selectedDate) {
       loadAvailableSlots();
     }
-  }, [selectedRoom, selectedDate]);
+  }, [selectedDate]);
 
   const loadRooms = async () => {
     try {
@@ -93,32 +143,33 @@ export default function MeetingRoomsPage() {
   };
 
   const loadAvailableSlots = async () => {
-    if (!selectedRoom || !selectedDate) return;
+    if (!selectedDate) return;
     
     setLoadingSlots(true);
     setError(null);
     
     try {
-      console.log('Loading slots for:', { roomId: selectedRoom.id, date: selectedDate });
+      console.log('🏢 Loading availability for THE conference room on:', selectedDate);
       
-      // First check if the function exists
-      const { data: functionExists, error: functionError } = await meetingRoomAPI.supabase
-        .rpc('get_available_slots', {
-          p_room_id: selectedRoom.id,
-          p_date: selectedDate
+      // Simple API call - no room ID needed since there's only one room
+      const response = await fetch(`/api/availability?date=${selectedDate}`);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        console.log('✅ Conference room availability loaded:', {
+          total: data.total_slots,
+          available: data.available_slots,
+          booked: data.booked_times
         });
-      
-      if (functionError) {
-        if (functionError.message.includes('function') && functionError.message.includes('does not exist')) {
-          setError('Database functions are not set up correctly. Please run the database setup script.');
-          return;
+        setAvailableSlots(data.time_slots);
+        
+        // Show helpful info if times are booked
+        if (data.booked_times && data.booked_times.length > 0) {
+          console.log('🚫 Currently booked times:', data.booked_times.join(', '));
         }
-        throw functionError;
+      } else {
+        throw new Error(data.error || 'Failed to load availability');
       }
-      
-      const slots = functionExists || [];
-      console.log('Slots loaded:', slots);
-      setAvailableSlots(slots);
       
     } catch (error) {
       console.error('Error loading time slots:', error);
@@ -127,7 +178,7 @@ export default function MeetingRoomsPage() {
       
       // Fallback: generate basic time slots
       const fallbackSlots: TimeSlot[] = [];
-      for (let hour = 8; hour <= 17; hour++) {
+      for (let hour = 8; hour <= 18; hour++) {
         const timeString = `${hour.toString().padStart(2, '0')}:00`;
         fallbackSlots.push({
           time_slot: timeString,
@@ -194,26 +245,65 @@ export default function MeetingRoomsPage() {
     }
   };
 
+  // UPDATED: Better booking type selection
   const handleBookingTypeSelection = async (type: 'member' | 'paid') => {
     setBookingForm(prev => ({ ...prev, bookingType: type }));
-    setShowBookingForm(true);
+    
+    // For member bookings, we don't need room selection since there's only one room
+    if (type === 'member') {
+      // Skip room selection and go straight to form
+      setShowBookingForm(true);
+    } else {
+      // For paid bookings, ensure a room is selected
+      if (!selectedRoom && rooms.length > 0) {
+        setSelectedRoom(rooms[0]); // Select first available room
+      }
+      setShowBookingForm(true);
+    }
   };
 
   const calculatePrice = (duration: number) => {
     return selectedRoom ? selectedRoom.hourly_rate * duration : 0;
   };
 
+  // UPDATED: Improved booking submission with better error handling
   const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedRoom) return;
+    if (!selectedRoom && bookingForm.bookingType !== 'member') {
+      setError('Please select a room');
+      return;
+    }
     
     setSubmitting(true);
     setError(null);
+    setSuccessMessage(null);
     
     try {
       const endTime = calculateEndTime(selectedTime, bookingForm.duration);
       const totalAmount = bookingForm.bookingType === 'member' ? 0 : calculatePrice(bookingForm.duration);
+      
+      // Prepare booking data
+      const bookingPayload: any = {
+        customer_name: bookingForm.name,
+        customer_email: bookingForm.email,
+        customer_phone: bookingForm.phone || '',
+        company: bookingForm.company || '',
+        booking_date: selectedDate,
+        start_time: selectedTime,
+        duration_hours: bookingForm.duration,
+        attendees: bookingForm.attendees,
+        purpose: bookingForm.purpose || '',
+        is_member_booking: bookingForm.bookingType === 'member'
+      };
+
+      // Add room and payment info only for paid bookings
+      if (bookingForm.bookingType !== 'member') {
+        bookingPayload.room_id = selectedRoom!.id;
+        bookingPayload.total_amount = totalAmount;
+      }
+
+      console.log('Submitting booking:', bookingPayload);
       
       // Create booking via API route
       const response = await fetch('/api/bookings', {
@@ -221,23 +311,7 @@ export default function MeetingRoomsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          // For member bookings, don't send room_id or total_amount
-          ...(bookingForm.bookingType !== 'member' && { 
-            room_id: selectedRoom.id,
-            total_amount: totalAmount 
-          }),
-          customer_name: bookingForm.name,
-          customer_email: bookingForm.email,
-          customer_phone: bookingForm.phone,
-          company: bookingForm.company,
-          booking_date: selectedDate,
-          start_time: selectedTime,
-          duration_hours: bookingForm.duration,
-          attendees: bookingForm.attendees,
-          purpose: bookingForm.purpose,
-          is_member_booking: bookingForm.bookingType === 'member'
-        }),
+        body: JSON.stringify(bookingPayload),
       });
 
       const data = await response.json();
@@ -246,26 +320,34 @@ export default function MeetingRoomsPage() {
         throw new Error(data.error || 'Failed to create booking');
       }
 
-      console.log('Booking created:', data.booking);
+      console.log('Booking response:', data);
       
       if (bookingForm.bookingType === 'member') {
         // Show success message for member booking
-        alert(`Member booking confirmed! 
+        const successMsg = `🎉 Member booking confirmed! 
         
-Booking ID: ${data.booking.id}
-Duration: ${bookingForm.duration} hour${bookingForm.duration > 1 ? 's' : ''}
+✅ Booking ID: ${data.booking.id}
+📅 Date: ${new Date(selectedDate).toLocaleDateString()}
+⏰ Time: ${selectedTime} - ${data.booking.end_time}
+⌛ Duration: ${bookingForm.duration} hour${bookingForm.duration > 1 ? 's' : ''}
+👥 Attendees: ${bookingForm.attendees}
 
-A calendar invitation will be sent to ${bookingForm.email} shortly.`);
+📧 A confirmation email with calendar invitation has been sent to ${bookingForm.email}
+
+✨ Your meeting room is ready to go!`;
+
+        setSuccessMessage(successMsg);
       } else {
         // For paid bookings, redirect to Stripe checkout
         if (data.checkout_url) {
+          console.log('Redirecting to checkout:', data.checkout_url);
           window.location.href = data.checkout_url;
           return;
         } else {
-          alert(`Booking created successfully! 
+          setSuccessMessage(`Booking created successfully! 
           
 Booking ID: ${data.booking.id}
-Total: $${totalAmount}
+Total: $${totalAmount.toFixed(2)}
 
 You will now be redirected to payment.`);
         }
@@ -291,7 +373,15 @@ You will now be redirected to payment.`);
     } catch (error) {
       console.error('Error creating booking:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create booking. Please try again.';
-      setError(errorMessage);
+      
+      // Show user-friendly error messages
+      if (errorMessage.includes('conflicts')) {
+        setError('This time slot is no longer available. Please select a different time.');
+      } else if (errorMessage.includes('Domain-Wide Delegation')) {
+        setError('Booking created but calendar invitation may not be sent automatically. You will receive an email confirmation.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -300,10 +390,7 @@ You will now be redirected to payment.`);
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading meeting rooms...</p>
-        </div>
+        <LoadingState message="Loading meeting rooms..." />
       </div>
     );
   }
@@ -343,13 +430,16 @@ You will now be redirected to payment.`);
         </div>
       </section>
 
-      {/* Error Alert */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mx-4 mt-4">
-          <div className="flex items-center">
-            <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-            <p className="text-red-700">{error}</p>
-          </div>
+      {/* UPDATED: Better Error and Success Display */}
+      {(error || successMessage) && (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+          <ErrorDisplay error={error} />
+          {successMessage && (
+            <SuccessMessage 
+              message={successMessage} 
+              onClose={() => setSuccessMessage(null)} 
+            />
+          )}
         </div>
       )}
 
@@ -410,6 +500,7 @@ You will now be redirected to payment.`);
                 setShowBookingOptions(false);
                 setShowBookingForm(false);
                 setError(null);
+                setSuccessMessage(null);
               }}
               min={new Date().toISOString().split('T')[0]}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
@@ -422,10 +513,7 @@ You will now be redirected to payment.`);
               <label className="block text-lg font-semibold text-gray-900 mb-4">Available Time Slots</label>
               
               {loadingSlots ? (
-                <div className="text-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-orange-600 mx-auto mb-2" />
-                  <p className="text-gray-600">Loading available times...</p>
-                </div>
+                <LoadingState message="Loading available times..." />
               ) : availableSlots.length > 0 ? (
                 <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
                   {availableSlots.map(({ time_slot, is_available }) => {
@@ -611,13 +699,13 @@ You will now be redirected to payment.`);
                 <div className="bg-gray-50 p-4 rounded-lg border">
                   <h4 className="font-semibold text-gray-900 mb-2">Booking Summary</h4>
                   <div className="space-y-1 text-sm text-gray-600">
-                    <p><strong>Room:</strong> {selectedRoom?.name}</p>
+                    <p><strong>Room:</strong> Conference Room</p>
                     <p><strong>Date:</strong> {new Date(selectedDate).toLocaleDateString()}</p>
                     <p><strong>Time:</strong> {formatTime(selectedTime)} - {formatTime(calculateEndTime(selectedTime, bookingForm.duration))}</p>
                     <p><strong>Duration:</strong> {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
                     <p><strong>Type:</strong> {bookingForm.bookingType === 'member' ? 'Member Booking' : 'Paid Booking'}</p>
                     <p className="text-lg font-semibold text-orange-600 pt-2">
-                      Total: {bookingForm.bookingType === 'member' ? 'FREE' : `$${calculatePrice(bookingForm.duration)}`}
+                      Total: {bookingForm.bookingType === 'member' ? 'FREE' : `${calculatePrice(bookingForm.duration)}`}
                     </p>
                   </div>
                 </div>

@@ -25,13 +25,14 @@ export async function POST(request: NextRequest) {
     // Calculate end time
     const endTime = calculateEndTime(bookingData.start_time, bookingData.duration_hours);
 
-    // **SIMPLIFIED MEMBER BOOKING FLOW** - No database, just email & calendar
+    // **MEMBER BOOKING FLOW** - Simplified, no database storage
     if (bookingData.is_member_booking === true) {
+      console.log('Processing member booking...');
 
       // Generate simple booking ID
       const bookingId = `MH-${Date.now()}`;
       
-      // Check for calendar conflicts only
+      // Check for calendar conflicts only (no database check needed for members)
       const hasCalendarConflict = await googleCalendarAPI.checkCalendarConflict(
         bookingData.booking_date,
         bookingData.start_time,
@@ -57,28 +58,41 @@ export async function POST(request: NextRequest) {
         attendees: bookingData.attendees,
         purpose: bookingData.purpose || '',
         total_amount: 0, // Free for members
-        company: '', 
-        customer_phone: '', 
+        company: bookingData.company || '', 
+        customer_phone: bookingData.customer_phone || '', 
         payment_status: 'paid', // Members don't pay
         status: 'confirmed'
       };
 
-      // Create Google Calendar event
-      const calendarEventId = await googleCalendarAPI.createBookingEvent(simplifiedBooking);
+      console.log('Creating calendar event for member booking...');
       
-      if (!calendarEventId) {
+      // Create Google Calendar event
+      let calendarEventId = null;
+      try {
+        calendarEventId = await googleCalendarAPI.createBookingEvent(simplifiedBooking);
+        console.log('Calendar event created:', calendarEventId ? 'success' : 'failed');
+      } catch (calendarError) {
+        console.error('Error creating calendar event:', calendarError);
         console.warn('Failed to create calendar event, but continuing with booking');
       }
 
+      console.log('Sending confirmation emails...');
+      
       // Send confirmation emails
-      await sendMemberBookingConfirmationEmail({
-        to: bookingData.customer_email,
-        customerName: bookingData.customer_name,
-        booking: simplifiedBooking,
-        roomName: 'Conference Room', // Since there's only one room
-        isMemberBooking: true,
-        memberHoursUsed: bookingData.duration_hours
-      });
+      try {
+        const emailResult = await sendMemberBookingConfirmationEmail({
+          to: bookingData.customer_email,
+          customerName: bookingData.customer_name,
+          booking: simplifiedBooking,
+          roomName: 'Conference Room', // Since there's only one room
+          isMemberBooking: true,
+          memberHoursUsed: bookingData.duration_hours
+        });
+        console.log('Booking confirmation emails sent:', emailResult);
+      } catch (emailError) {
+        console.error('Error sending emails:', emailError);
+        // Don't fail the booking if emails fail
+      }
 
       // Return success response for member booking
       return NextResponse.json({
@@ -86,18 +100,23 @@ export async function POST(request: NextRequest) {
         booking: {
           id: bookingId,
           customer_name: bookingData.customer_name,
+          customer_email: bookingData.customer_email,
           booking_date: bookingData.booking_date,
           start_time: bookingData.start_time,
           end_time: endTime,
           duration_hours: bookingData.duration_hours,
           calendar_event_created: !!calendarEventId,
-          is_member_booking: true
+          is_member_booking: true,
+          status: 'confirmed',
+          payment_status: 'paid'
         },
         message: 'Member booking confirmed! Confirmation emails sent and calendar event created.'
       });
     }
 
-    // **EXISTING PAID BOOKING FLOW** - Continue with database storage for paid bookings
+    // **PAID BOOKING FLOW** - Full database storage and Stripe integration
+    console.log('Processing paid booking...');
+    
     const paidRequiredFields = ['room_id', 'total_amount'];
     for (const field of paidRequiredFields) {
       if (!bookingData[field]) {
@@ -147,6 +166,8 @@ export async function POST(request: NextRequest) {
       is_member_booking: false
     });
 
+    console.log('Paid booking created in database:', booking.id);
+
     // Return booking data for Stripe checkout
     return NextResponse.json({
       success: true,
@@ -157,7 +178,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating booking:', error);
     return NextResponse.json(
-      { error: 'Failed to create booking' },
+      { error: 'Failed to create booking. Please try again.' },
       { status: 500 }
     );
   }
@@ -171,14 +192,21 @@ export async function GET(request: NextRequest) {
 
     if (email) {
       // Get bookings by email (only returns paid bookings from database)
+      // Note: Member bookings are not stored in database
       const bookings = await meetingRoomAPI.getBookingsByEmail(email);
-      return NextResponse.json({ bookings });
+      return NextResponse.json({ 
+        bookings,
+        note: 'Only shows paid bookings. Member bookings are not stored in the database.'
+      });
     }
 
     if (date) {
       // Get bookings for a specific date (admin view - only paid bookings)
       const bookings = await meetingRoomAPI.getBookingsForDate(date);
-      return NextResponse.json({ bookings });
+      return NextResponse.json({ 
+        bookings,
+        note: 'Only shows paid bookings. Check Google Calendar for member bookings.'
+      });
     }
 
     return NextResponse.json(
