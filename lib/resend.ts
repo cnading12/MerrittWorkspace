@@ -5,6 +5,9 @@ import { type Booking } from './supabase';
 // Initialize Resend client
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Centralized manager email configuration
+const MANAGER_EMAIL = 'manager@merrittworkspace.net';
+
 // Email templates and functions
 export const emailTemplates = {
     // Snackshop Order Confirmation
@@ -413,10 +416,10 @@ export async function sendOrderConfirmationEmail(data: {
             text: template.text,
         });
 
-        // Send copy to manager
+        // Send copy to manager - UPDATED TO USE CENTRALIZED MANAGER EMAIL
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
-            to: 'manager@merrittworkspace.net',
+            to: MANAGER_EMAIL,
             subject: `[COPY] ${template.subject}`,
             html: `
         <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
@@ -455,10 +458,10 @@ export async function sendBookingConfirmationEmail(data: {
             text: template.text,
         });
 
-        // Send copy to manager
+        // Send copy to manager - UPDATED TO USE CENTRALIZED MANAGER EMAIL
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
-            to: 'manager@merrittworkspace.net',
+            to: MANAGER_EMAIL,
             subject: `[COPY] ${template.subject}`,
             html: `
         <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
@@ -500,10 +503,10 @@ export async function sendMembershipApplicationEmail(data: {
             text: template.text,
         });
 
-        // Send notification to manager
+        // Send notification to manager - UPDATED TO USE CENTRALIZED MANAGER EMAIL
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Membership <membership@merrittworkspace.net>',
-            to: 'manager@merrittworkspace.net',
+            to: MANAGER_EMAIL,
             subject: `🆕 New Membership Application - ${data.applicantName} (${data.membershipType})`,
             html: `
         <div style="background: #f0f0f0; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
@@ -580,10 +583,10 @@ export async function sendOrderStatusUpdate(data: {
             text: `Hi ${data.customerName},\n\nYour order ${data.orderNumber} status has been updated to: ${data.newStatus.replace('_', ' ').toUpperCase()}\n\n${data.message || statusMessages[data.newStatus as keyof typeof statusMessages] || 'Your order status has been updated.'}\n\nThank you for using Merritt Workspace Snackshop!`
         });
 
-        // Send copy to manager
+        // Send copy to manager - UPDATED TO USE CENTRALIZED MANAGER EMAIL
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
-            to: 'manager@merrittworkspace.net',
+            to: MANAGER_EMAIL,
             subject: `[COPY] Order Update - ${data.orderNumber}`,
             html: `
         <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
@@ -615,7 +618,7 @@ export async function sendNewOrderNotification(order: Order, items: OrderItem[])
     try {
         const result = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
-            to: 'manager@merrittworkspace.net',
+            to: MANAGER_EMAIL, // UPDATED TO USE CENTRALIZED MANAGER EMAIL
             subject: `🛒 New Snackshop Order - ${order.order_number}`,
             html: `
         <div style="background: #fff8e1; padding: 15px; margin-bottom: 20px; border-radius: 5px; border-left: 4px solid #ed7611;">
@@ -672,7 +675,7 @@ export async function sendLowStockAlert(products: Array<{ name: string; stock_qu
     try {
         const result = await resend.emails.send({
             from: 'Merritt Workspace System <system@merrittworkspace.net>',
-            to: 'manager@merrittworkspace.net',
+            to: MANAGER_EMAIL, // UPDATED TO USE CENTRALIZED MANAGER EMAIL
             subject: `⚠️ Low Stock Alert - Snackshop | Merritt Workspace`,
             html: `
         <div style="background: #fff3cd; padding: 15px; margin-bottom: 20px; border-radius: 5px; border-left: 4px solid #ffc107;">
@@ -1012,10 +1015,10 @@ export async function sendMemberBookingConfirmationEmail(data: {
             text: customerTemplate.text,
         });
 
-        // Send notification to manager
+        // Send notification to manager - UPDATED TO USE CENTRALIZED MANAGER EMAIL
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
-            to: 'manager@merrittworkspace.net',
+            to: MANAGER_EMAIL,
             subject: managerTemplate.subject,
             html: managerTemplate.html,
             text: managerTemplate.text,

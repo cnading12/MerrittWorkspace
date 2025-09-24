@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { snackshopAPI } from '@/lib/snackshop';
-import { sendOrderConfirmationEmail } from '@/lib/resend';
+import { sendOrderConfirmationEmail, sendNewOrderNotification } from '@/lib/resend';
 
 export async function GET(request: NextRequest) {
   try {
@@ -85,9 +85,22 @@ export async function POST(request: NextRequest) {
     const order = await snackshopAPI.createOrder({
       ...orderData,
       status: orderData.payment_method === 'account_credit' ? 'paid' : 'pending_payment',
+      payment_status: orderData.payment_method === 'account_credit' ? 'paid' : 'pending',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     });
+
+    // Create order items in the database
+    const orderItems = await snackshopAPI.createOrderItems(
+      orderData.items.map((item: any) => ({
+        order_id: order.id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.total_price
+      }))
+    );
 
     // Update stock quantities
     for (const item of orderData.items) {
@@ -97,7 +110,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send confirmation email
+    // Send confirmation email to customer
     try {
       await sendOrderConfirmationEmail({
         to: orderData.customer_email,
@@ -105,9 +118,19 @@ export async function POST(request: NextRequest) {
         order: order,
         items: orderData.items
       });
+      console.log('✅ Customer confirmation email sent successfully');
     } catch (emailError) {
-      console.error('Failed to send confirmation email:', emailError);
-      // Don't fail the whole order if email fails
+      console.error('❌ Failed to send customer confirmation email:', emailError);
+      // Don't fail the whole order if customer email fails
+    }
+
+    // Send notification email to manager
+    try {
+      await sendNewOrderNotification(order, orderItems);
+      console.log('✅ Manager notification email sent successfully');
+    } catch (managerEmailError) {
+      console.error('❌ Failed to send manager notification email:', managerEmailError);
+      // Don't fail the whole order if manager email fails
     }
 
     // If payment method is card, return checkout URL (in production, integrate with Stripe)
@@ -125,7 +148,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       order,
-      message: 'Order placed successfully! Your items will be delivered within 15 minutes.'
+      message: 'Order placed successfully! Confirmation emails have been sent. Your items will be delivered within 15 minutes.'
     });
 
   } catch (error) {
