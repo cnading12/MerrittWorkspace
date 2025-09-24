@@ -1,49 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { snackshopAPI } from '@/lib/snackshop';
-import { sendOrderConfirmationEmail, sendNewOrderNotification } from '@/lib/resend';
+import { Resend } from 'resend';
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-    const inStock = searchParams.get('in_stock');
-
-    let products;
-
-    if (category && category !== 'all') {
-      products = await snackshopAPI.getProductsByCategory(category);
-    } else {
-      products = await snackshopAPI.getAllProducts();
-    }
-
-    // Filter by stock status if requested
-    if (inStock === 'true') {
-      products = products.filter(product => product.in_stock && product.stock_quantity > 0);
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      products 
-    });
-
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch products' },
-      { status: 500 }
-    );
-  }
-}
+// Initialize Resend client
+const resend = new Resend(process.env.RESEND_API_KEY);
+const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 
 export async function POST(request: NextRequest) {
   try {
     const orderData = await request.json();
     
     // Validate required fields
-    const requiredFields = [
-      'items', 'customer_name', 'customer_email', 'office_number', 
-      'total_amount', 'payment_method'
-    ];
+    const requiredFields = ['customer_name', 'customer_email', 'office_number', 'selected_items'];
     
     for (const field of requiredFields) {
       if (!orderData[field]) {
@@ -54,107 +21,208 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate items array
-    if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
+    if (orderData.selected_items.trim() === '') {
       return NextResponse.json(
-        { error: 'Order must contain at least one item' },
+        { error: 'Please select at least one item' },
         { status: 400 }
       );
     }
 
-    // Check stock availability for all items
-    for (const item of orderData.items) {
-      const product = await snackshopAPI.getProduct(item.product_id);
-      
-      if (!product) {
-        return NextResponse.json(
-          { error: `Product ${item.product_id} not found` },
-          { status: 404 }
-        );
-      }
-
-      if (!product.in_stock || product.stock_quantity < item.quantity) {
-        return NextResponse.json(
-          { error: `Insufficient stock for ${product.name}. Available: ${product.stock_quantity}` },
-          { status: 409 }
-        );
-      }
-    }
-
-    // Create the order
-    const order = await snackshopAPI.createOrder({
-      ...orderData,
-      status: orderData.payment_method === 'account_credit' ? 'paid' : 'pending_payment',
-      payment_status: orderData.payment_method === 'account_credit' ? 'paid' : 'pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+    // Generate a simple order ID
+    const orderId = `MW${Date.now().toString().slice(-8)}`;
+    const orderTime = new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
-
-    // Create order items in the database
-    const orderItems = await snackshopAPI.createOrderItems(
-      orderData.items.map((item: any) => ({
-        order_id: order.id,
-        product_id: item.product_id,
-        product_name: item.product_name,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.total_price
-      }))
-    );
-
-    // Update stock quantities
-    for (const item of orderData.items) {
-      await snackshopAPI.updateProductStock(
-        item.product_id, 
-        -item.quantity // Decrease stock
-      );
-    }
 
     // Send confirmation email to customer
     try {
-      await sendOrderConfirmationEmail({
+      await resend.emails.send({
+        from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
         to: orderData.customer_email,
-        customerName: orderData.customer_name,
-        order: order,
-        items: orderData.items
+        subject: `Snackshop Request Received - ${orderId} | Merritt Workspace`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Snackshop Request Confirmation</title>
+              <style>
+                body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+                .header h1 { margin: 0; font-size: 24px; }
+                .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
+                .request-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+                .delivery-info { background: #fff8e1; padding: 20px; border-radius: 8px; border-left: 4px solid #ed7611; margin: 20px 0; }
+                .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; border-radius: 0 0 8px 8px; }
+                .status-badge { background: #28a745; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>Request Received!</h1>
+                  <p>Thank you for your snackshop request</p>
+                </div>
+                
+                <div class="content">
+                  <p>Hi ${orderData.customer_name},</p>
+                  
+                  <p>We've received your snackshop request and will prepare your items for delivery!</p>
+                  
+                  <div class="request-info">
+                    <h3 style="margin-top: 0;">Request Details</h3>
+                    <p><strong>Request ID:</strong> ${orderId}</p>
+                    <p><strong>Office/Desk:</strong> ${orderData.office_number}</p>
+                    <p><strong>Submitted:</strong> ${orderTime}</p>
+                    <p><strong>Status:</strong> <span class="status-badge">RECEIVED</span></p>
+                    ${orderData.notes ? `<p><strong>Notes:</strong> ${orderData.notes}</p>` : ''}
+                  </div>
+
+                  <h3>Requested Items</h3>
+                  <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <p style="margin: 0; font-weight: 500;">${orderData.selected_items}</p>
+                  </div>
+
+                  <div class="delivery-info">
+                    <h3 style="margin-top: 0;">📍 Next Steps</h3>
+                    <p><strong>We'll prepare your items and deliver them to ${orderData.office_number} within 15-30 minutes.</strong></p>
+                    <p>Someone from our team will contact you if we have any questions about your request.</p>
+                  </div>
+
+                  <p>Thank you for using Merritt Workspace Snackshop!</p>
+                </div>
+                
+                <div class="footer">
+                  <p><strong>Merritt Workspace Snackshop</strong></p>
+                  <p>2246 Irving Street, Denver, CO 80211</p>
+                  <p>Email: snackshop@merrittworkspace.net | Phone: (123) 456-7890</p>
+                </div>
+              </div>
+            </body>
+          </html>
+        `,
+        text: `
+Snackshop Request Received - ${orderId}
+
+Hi ${orderData.customer_name},
+
+We've received your snackshop request and will prepare your items for delivery!
+
+Request Details:
+- Request ID: ${orderId}
+- Office/Desk: ${orderData.office_number}
+- Submitted: ${orderTime}
+- Status: RECEIVED
+${orderData.notes ? `- Notes: ${orderData.notes}` : ''}
+
+Requested Items:
+${orderData.selected_items}
+
+Next Steps:
+We'll prepare your items and deliver them to ${orderData.office_number} within 15-30 minutes.
+Someone from our team will contact you if we have any questions about your request.
+
+Thank you for using Merritt Workspace Snackshop!
+
+Merritt Workspace Team
+2246 Irving Street, Denver, CO 80211
+        `
       });
+      
       console.log('✅ Customer confirmation email sent successfully');
     } catch (emailError) {
       console.error('❌ Failed to send customer confirmation email:', emailError);
-      // Don't fail the whole order if customer email fails
     }
 
     // Send notification email to manager
     try {
-      await sendNewOrderNotification(order, orderItems);
+      await resend.emails.send({
+        from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
+        to: MANAGER_EMAIL,
+        subject: `🛒 New Snackshop Request - ${orderId}`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #fff8e1; padding: 15px; margin-bottom: 20px; border-radius: 5px; border-left: 4px solid #ed7611; }
+                .request-details { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                .action-required { background: #e8f5e8; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h2 style="margin-top: 0;">🛒 New Snackshop Request Received</h2>
+                  <p>Request ID: <strong>${orderId}</strong></p>
+                </div>
+                
+                <div class="request-details">
+                  <h3>Customer Details:</h3>
+                  <p><strong>Name:</strong> ${orderData.customer_name}</p>
+                  <p><strong>Email:</strong> ${orderData.customer_email}</p>
+                  <p><strong>Office/Desk:</strong> ${orderData.office_number}</p>
+                  <p><strong>Submitted:</strong> ${orderTime}</p>
+                  ${orderData.notes ? `<p><strong>Notes:</strong> ${orderData.notes}</p>` : ''}
+                </div>
+                
+                <h3>Requested Items:</h3>
+                <div style="background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                  <p style="margin: 0; font-weight: 500;">${orderData.selected_items}</p>
+                </div>
+                
+                <div class="action-required">
+                  <p style="margin: 0;"><strong>⏰ Action Required:</strong> Please prepare and deliver these items to <strong>${orderData.office_number}</strong> within 15-30 minutes.</p>
+                </div>
+                
+                <p style="margin-top: 20px; color: #666; font-size: 14px;"><em>A confirmation email was automatically sent to the customer.</em></p>
+              </div>
+            </body>
+          </html>
+        `,
+        text: `
+NEW SNACKSHOP REQUEST: ${orderId}
+
+Customer: ${orderData.customer_name}
+Email: ${orderData.customer_email}
+Office/Desk: ${orderData.office_number}
+Submitted: ${orderTime}
+${orderData.notes ? `Notes: ${orderData.notes}` : ''}
+
+Requested Items:
+${orderData.selected_items}
+
+ACTION REQUIRED: Please prepare and deliver these items to ${orderData.office_number} within 15-30 minutes.
+
+A confirmation email was automatically sent to the customer.
+        `
+      });
+      
       console.log('✅ Manager notification email sent successfully');
     } catch (managerEmailError) {
       console.error('❌ Failed to send manager notification email:', managerEmailError);
-      // Don't fail the whole order if manager email fails
     }
 
-    // If payment method is card, return checkout URL (in production, integrate with Stripe)
-    if (orderData.payment_method === 'card') {
-      // TODO: Create Stripe checkout session
-      return NextResponse.json({
-        success: true,
-        order,
-        checkout_url: `/api/snackshop/checkout/${order.id}`,
-        message: 'Order created. Redirecting to payment...'
-      });
-    }
-
-    // For account credit, order is automatically paid
     return NextResponse.json({
       success: true,
-      order,
-      message: 'Order placed successfully! Confirmation emails have been sent. Your items will be delivered within 15 minutes.'
+      message: 'Snackshop request submitted successfully! Confirmation emails have been sent.',
+      request_id: orderId
     });
 
   } catch (error) {
-    console.error('Error creating order:', error);
+    console.error('Error processing snackshop request:', error);
     return NextResponse.json(
-      { error: 'Failed to create order' },
+      { error: 'Failed to process request' },
       { status: 500 }
     );
   }
