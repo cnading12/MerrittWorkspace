@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { ShoppingCart, Coffee, Cookie, Zap, CheckCircle, AlertCircle, Loader2, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, Coffee, Cookie, Zap, CheckCircle, AlertCircle, Loader2, Plus, Minus, CreditCard } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
 
@@ -154,48 +154,33 @@ export default function SimpleSnackshopPage() {
         return cart.reduce((total, item) => total + item.quantity, 0);
     };
 
-    const handleSubmitOrder = async (e: React.FormEvent) => {
-        e.preventDefault();
-
+    const handlePayWithCard = async () => {
         if (cart.length === 0) {
             setError('Please select at least one item');
             return;
         }
 
-        if (!orderForm.customer_name.trim()) {
-            setError('Please enter your name');
+        if (!orderForm.customer_name.trim() || !orderForm.customer_email.trim() || !orderForm.office_number.trim()) {
+            setError('Please fill in all required fields before proceeding to payment');
             return;
         }
 
-        if (!orderForm.customer_email.trim()) {
-            setError('Please enter your email');
-            return;
-        }
-
-        if (!orderForm.office_number.trim()) {
-            setError('Please enter your office/desk number');
-            return;
-        }
-
-        const total = calculateTotal();
         setSubmitting(true);
         setError(null);
 
         try {
+            console.log('💳 Initiating card payment...');
+
             const orderData = {
+                cart_items: cart,
                 customer_name: orderForm.customer_name.trim(),
                 customer_email: orderForm.customer_email.trim().toLowerCase(),
                 office_number: orderForm.office_number.trim(),
                 notes: orderForm.notes.trim(),
-                selected_items: getCartItemsString(),
-                total_amount: total,
-                cart_items: cart,
-                timestamp: new Date().toISOString()
+                total_amount: calculateTotal()
             };
 
-            console.log('Submitting purchase:', orderData);
-
-            const response = await fetch('/api/snackshop', {
+            const response = await fetch('/api/create-checkout-session', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -206,69 +191,21 @@ export default function SimpleSnackshopPage() {
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.error || 'Failed to process purchase');
+                throw new Error(result.error || 'Failed to create payment session');
             }
 
-            if (result.success) {
-                console.log('✅ Order successful, preparing redirect...', result);
-                
-                // Prepare data for confirmation page
-                const confirmationParams = new URLSearchParams({
-                    order_id: result.request_id,
-                    total: result.formatted_total,
-                    email_sent: (result.email_status?.customer_email_sent || result.email_status?.customer_sent || false).toString(),
-                    timestamp: new Date().toISOString(),
-                    customer_name: orderData.customer_name,
-                    items: orderData.selected_items
-                });
-
-                const confirmationUrl = `/order-confirmation?${confirmationParams.toString()}`;
-                console.log('🔗 Redirecting to:', confirmationUrl);
-
-                // Try multiple redirect methods
-                try {
-                    // Method 1: Direct redirect
-                    window.location.href = confirmationUrl;
-                    
-                    // Method 2: If that fails, try replace
-                    setTimeout(() => {
-                        if (window.location.pathname.includes('snackshop')) {
-                            console.log('🔄 Redirect failed, trying replace...');
-                            window.location.replace(confirmationUrl);
-                        }
-                    }, 1000);
-                    
-                } catch (redirectError) {
-                    console.error('❌ Redirect failed:', redirectError);
-                    // Fallback: show success message
-                    setSuccess(`Purchase confirmed! 
+            console.log('✅ Stripe session created, redirecting...');
             
-Order ID: ${result.request_id}
-Total: ${result.formatted_total}
-
-🍿 Your items are ready in the kitchen! Please take them and complete payment using the honor system.
-
-${result.email_status?.customer_email_sent || result.email_status?.customer_sent
-                        ? 'You should receive a confirmation email shortly.'
-                        : 'Note: There was an issue sending your confirmation email, but your purchase was processed.'
-                    }`);
-                    
-                    // Reset form
-                    setCart([]);
-                    setOrderForm({
-                        customer_name: '',
-                        customer_email: '',
-                        office_number: '',
-                        notes: ''
-                    });
-                }
+            // Redirect to Stripe Checkout
+            if (result.url) {
+                window.location.href = result.url;
             } else {
-                throw new Error(result.error || 'Purchase failed');
+                throw new Error('No checkout URL received');
             }
 
         } catch (error: any) {
-            console.error('Error processing purchase:', error);
-            setError(error.message || 'Failed to process purchase. Please try again.');
+            console.error('❌ Payment initiation error:', error);
+            setError(error.message || 'Failed to initialize payment. Please try again.');
         } finally {
             setSubmitting(false);
         }
@@ -293,7 +230,7 @@ ${result.email_status?.customer_email_sent || result.email_status?.customer_sent
                             Merritt Snackshop
                         </h1>
                         <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-                            Select your items and quantities from our kitchen. Honor system payment - take what you need and pay on the spot!
+                            Select your items and quantities from our kitchen. Secure payment processing with immediate pickup!
                         </p>
                     </div>
                 </div>
@@ -437,7 +374,7 @@ ${result.email_status?.customer_email_sent || result.email_status?.customer_sent
                                 </div>
                             )}
 
-                            <form onSubmit={handleSubmitOrder} className="space-y-4">
+                            <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
                                     <input
@@ -485,36 +422,22 @@ ${result.email_status?.customer_email_sent || result.email_status?.customer_sent
                                     />
                                 </div>
 
-                                {/* Honor System Notice */}
-                                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                                    <h4 className="font-semibold text-green-800 mb-2">🏆 Honor System Kitchen</h4>
-                                    <p className="text-sm text-green-700">
-                                        Take your items from the kitchen and pay using:
-                                    </p>
-                                    <ul className="text-sm text-green-700 mt-1 ml-4 list-disc">
-                                        <li>Cash payment box in kitchen</li>
-                                        <li>Venmo: @MerrittWorkspace</li>
-                                        <li>Online payment (coming soon)</li>
-                                    </ul>
+                                {/* Payment Options */}
+                                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-4">
+                                    <h4 className="font-semibold text-blue-800 mb-3">💳 Pay Now</h4>
+                                    <div className="space-y-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handlePayWithCard()}
+                                            disabled={submitting || cart.length === 0}
+                                            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                        >
+                                            <CreditCard className="w-4 h-4 mr-2" />
+                                            Pay Securely - {cart.length > 0 ? `${calculateTotal().toFixed(2)}` : '$0.00'}
+                                        </button>
+                                    </div>
                                 </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={submitting || cart.length === 0}
-                                    className="w-full bg-burnt-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-burnt-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {submitting ? (
-                                        <>
-                                            <Loader2 className="w-5 h-5 animate-spin inline mr-2" />
-                                            Processing Purchase...
-                                        </>
-                                    ) : cart.length === 0 ? (
-                                        'Add items to continue'
-                                    ) : (
-                                        `Complete Purchase - $${calculateTotal().toFixed(2)} (${getTotalItemCount()} items)`
-                                    )}
-                                </button>
-                            </form>
+                            </div>
                         </div>
                     </div>
                 </div>
