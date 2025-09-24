@@ -1,3 +1,4 @@
+// lib/supabase.ts - UPDATED VERSION with fixed updateBookingPayment
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -43,6 +44,7 @@ export interface Booking {
   stripe_session_id?: string;
   confirmation_sent: boolean;
   calendar_event_id?: string;
+  is_member_booking?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -75,7 +77,7 @@ export const meetingRoomAPI = {
         .from('meeting_rooms')
         .select('count')
         .limit(1);
-      
+
       return !error;
     } catch (error) {
       console.error('Database connection test failed:', error);
@@ -90,12 +92,12 @@ export const meetingRoomAPI = {
       .select('*')
       .eq('is_active', true)
       .order('name');
-    
+
     if (error) {
       console.error('Error fetching rooms:', error);
       throw new Error(`Failed to fetch meeting rooms: ${error.message}`);
     }
-    
+
     return data || [];
   },
 
@@ -107,12 +109,12 @@ export const meetingRoomAPI = {
       .eq('id', id)
       .eq('is_active', true)
       .single();
-    
+
     if (error) {
       console.error('Error fetching room:', error);
       throw new Error(`Failed to fetch room: ${error.message}`);
     }
-    
+
     return data;
   },
 
@@ -124,30 +126,30 @@ export const meetingRoomAPI = {
           p_room_id: roomId,
           p_date: date
         });
-      
+
       if (error) {
         console.error('Error calling get_available_slots function:', error);
         throw error;
       }
-      
+
       return data || [];
     } catch (error: any) {
       console.error('Error getting available slots:', error);
-      
+
       // If the function doesn't exist, provide a helpful error message
       if (error.message && error.message.includes('function') && error.message.includes('does not exist')) {
         throw new Error('Database functions are not set up. Please run the database setup script first.');
       }
-      
+
       throw new Error(`Failed to get available slots: ${error.message}`);
     }
   },
 
   // Check if a specific time slot is available
   async checkAvailability(
-    roomId: string, 
-    date: string, 
-    startTime: string, 
+    roomId: string,
+    date: string,
+    startTime: string,
     endTime: string
   ): Promise<boolean> {
     try {
@@ -158,64 +160,76 @@ export const meetingRoomAPI = {
           p_start_time: startTime,
           p_end_time: endTime
         });
-      
+
       if (error) {
         console.error('Error calling check_room_availability function:', error);
         throw error;
       }
-      
+
       return data === true;
     } catch (error: any) {
       console.error('Error checking availability:', error);
-      
+
       // If the function doesn't exist, provide a helpful error message
       if (error.message && error.message.includes('function') && error.message.includes('does not exist')) {
         throw new Error('Database functions are not set up. Please run the database setup script first.');
       }
-      
+
       throw new Error(`Failed to check availability: ${error.message}`);
     }
   },
 
   // Create a new booking
   async createBooking(booking: Partial<Booking>): Promise<Booking> {
+    console.log('Creating booking with data:', booking);
+
     const { data, error } = await supabase
       .from('bookings')
       .insert([booking])
       .select()
       .single();
-    
+
     if (error) {
       console.error('Error creating booking:', error);
       throw new Error(`Failed to create booking: ${error.message}`);
     }
-    
+
+    console.log('Booking created successfully:', data);
     return data;
   },
 
   // Get booking by ID
   async getBooking(id: string): Promise<Booking | null> {
+    console.log('Fetching booking with ID:', id);
+
     const { data, error } = await supabase
       .from('bookings')
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) {
       console.error('Error fetching booking:', error);
+      if (error.code === 'PGRST116') {
+        console.error('Booking not found with ID:', id);
+        return null;
+      }
       throw new Error(`Failed to fetch booking: ${error.message}`);
     }
-    
+
+    console.log('Booking fetched successfully:', data);
     return data;
   },
 
   // Update booking status
   async updateBookingStatus(
-    id: string, 
-    status: Booking['status'], 
+    id: string,
+    status: Booking['status'],
     paymentStatus?: Booking['payment_status']
   ): Promise<Booking> {
-    const updateData: any = { status };
+    console.log('Updating booking status:', { id, status, paymentStatus });
+
+    const updateData: any = { status, updated_at: new Date().toISOString() };
     if (paymentStatus) updateData.payment_status = paymentStatus;
 
     const { data, error } = await supabase
@@ -224,38 +238,81 @@ export const meetingRoomAPI = {
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) {
       console.error('Error updating booking status:', error);
+      if (error.code === 'PGRST116') {
+        throw new Error(`Booking not found with ID: ${id}`);
+      }
       throw new Error(`Failed to update booking status: ${error.message}`);
     }
-    
+
+    console.log('Booking status updated successfully:', data);
     return data;
   },
 
-  // Update booking with Stripe information
+  // FIXED: Update booking with Stripe information
+  // REPLACE the updateBookingPayment function in lib/supabase.ts with this FIXED version
+
+  // FIXED: Update booking with Stripe information
   async updateBookingPayment(
     id: string,
     stripeSessionId?: string,
     stripePaymentIntentId?: string
   ): Promise<Booking> {
-    const updateData: any = {};
+    console.log('🔧 FIXED: Updating booking payment info:', { id, stripeSessionId, stripePaymentIntentId });
+
+    // Build update data
+    const updateData: any = { updated_at: new Date().toISOString() };
     if (stripeSessionId) updateData.stripe_session_id = stripeSessionId;
     if (stripePaymentIntentId) updateData.stripe_payment_intent_id = stripePaymentIntentId;
 
+    console.log('🔧 FIXED: Update data prepared:', updateData);
+
+    // Use direct update without checking if booking exists first (to avoid race conditions)
     const { data, error } = await supabase
       .from('bookings')
       .update(updateData)
       .eq('id', id)
-      .select()
-      .single();
-    
+      .select();
+
     if (error) {
-      console.error('Error updating booking payment:', error);
+      console.error('❌ FIXED: Error updating booking payment:', error);
       throw new Error(`Failed to update booking payment: ${error.message}`);
     }
-    
-    return data;
+
+    // Check if any rows were updated
+    if (!data || data.length === 0) {
+      console.error('❌ FIXED: No rows updated for booking ID:', id);
+
+      // Let's verify the booking exists
+      const { data: checkData, error: checkError } = await supabase
+        .from('bookings')
+        .select('id, stripe_session_id, stripe_payment_intent_id')
+        .eq('id', id);
+
+      console.log('🔍 FIXED: Booking check result:', { checkData, checkError });
+
+      if (checkError) {
+        throw new Error(`Booking verification failed: ${checkError.message}`);
+      }
+
+      if (!checkData || checkData.length === 0) {
+        throw new Error(`Booking not found with ID: ${id}`);
+      }
+
+      // If booking exists but update failed, it might be a permission issue
+      throw new Error(`Booking exists but update failed. Booking ID: ${id}. This might be a database permission issue.`);
+    }
+
+    // Return the first (and should be only) updated row
+    const updatedBooking = data[0];
+    console.log('✅ FIXED: Booking payment info updated successfully:', {
+      id: updatedBooking.id,
+      stripe_session_id: updatedBooking.stripe_session_id,
+      stripe_payment_intent_id: updatedBooking.stripe_payment_intent_id
+    });
+    return updatedBooking;
   },
 
   // Get bookings by email (for customer lookup)
@@ -265,12 +322,12 @@ export const meetingRoomAPI = {
       .select('*')
       .eq('customer_email', email)
       .order('booking_date', { ascending: false });
-    
+
     if (error) {
       console.error('Error fetching bookings by email:', error);
       throw new Error(`Failed to fetch bookings: ${error.message}`);
     }
-    
+
     return data || [];
   },
 
@@ -282,12 +339,27 @@ export const meetingRoomAPI = {
       .eq('booking_date', date)
       .neq('status', 'cancelled')
       .order('start_time');
-    
+
     if (error) {
       console.error('Error fetching bookings for date:', error);
       throw new Error(`Failed to fetch bookings for date: ${error.message}`);
     }
-    
+
+    return data || [];
+  },
+
+  // Debug function to list all bookings
+  async getAllBookings(): Promise<Booking[]> {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all bookings:', error);
+      throw new Error(`Failed to fetch bookings: ${error.message}`);
+    }
+
     return data || [];
   }
 };

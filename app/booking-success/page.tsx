@@ -1,4 +1,4 @@
-// app/booking-success/page.tsx
+// app/booking-success/page.tsx - FIXED VERSION
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -26,20 +26,43 @@ interface BookingDetails {
 
 export default function BookingSuccessPage() {
   const searchParams = useSearchParams();
-  const sessionId = searchParams.get('session_id');
-  
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // FIXED: Move all state and search params logic to the top, before any conditional logic
+  const sessionId = searchParams.get('session_id');
+  const canceled = searchParams.get('canceled');
+  const bookingId = searchParams.get('booking_id');
+
   useEffect(() => {
-    if (sessionId) {
-      fetchBookingDetails(sessionId);
-    } else {
-      setError('No session ID provided');
-      setLoading(false);
-    }
-  }, [sessionId]);
+    const handleBookingFlow = async () => {
+      try {
+        // Handle canceled payment
+        if (canceled === 'true') {
+          setError('Payment was canceled. Your booking has been canceled.');
+          setLoading(false);
+          return;
+        }
+        
+        // Handle missing session ID
+        if (!sessionId) {
+          setError('No session ID provided');
+          setLoading(false);
+          return;
+        }
+
+        // Fetch booking details
+        await fetchBookingDetails(sessionId);
+      } catch (err) {
+        console.error('Error in booking flow:', err);
+        setError('Failed to load booking information');
+        setLoading(false);
+      }
+    };
+
+    handleBookingFlow();
+  }, [sessionId, canceled]); // Dependencies are now stable
 
   const fetchBookingDetails = async (sessionId: string) => {
     try {
@@ -59,6 +82,7 @@ export default function BookingSuccessPage() {
     }
   };
 
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
@@ -70,21 +94,40 @@ export default function BookingSuccessPage() {
     );
   }
 
+  // Error state
   if (error || !booking) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
         <div className="text-center max-w-md px-4">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to Load Booking</h2>
-          <p className="text-gray-600 mb-6">{error || 'Could not find booking details'}</p>
-          <Link href="/member-resources/meeting-rooms" className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition">
-            Back to Meeting Rooms
-          </Link>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {error?.includes('canceled') ? 'Payment Canceled' : 'Unable to Load Booking'}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {error?.includes('canceled') 
+              ? 'Your payment was canceled and the booking was not confirmed. You can try booking again.'
+              : error || 'Could not find booking details'
+            }
+          </p>
+          <div className="space-y-3">
+            <Link 
+              href="/member-resources/meeting-rooms" 
+              className="block bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition"
+            >
+              {error?.includes('canceled') ? 'Try Booking Again' : 'Back to Meeting Rooms'}
+            </Link>
+            {error?.includes('canceled') && (
+              <p className="text-sm text-gray-500">
+                Need help? <Link href="/contact" className="text-orange-600 hover:underline">Contact Support</Link>
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
+  // Success state - booking found
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       {/* Success Header */}
@@ -189,10 +232,15 @@ export default function BookingSuccessPage() {
                       ) : (
                         <div className="text-center">
                           <div className="inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-2">
-                            💳 Paid Booking
+                            💳 Payment Completed
                           </div>
                           <p className="text-2xl font-bold text-gray-900">${booking.total_amount.toFixed(2)}</p>
-                          <p className="text-sm text-gray-600">Payment successful</p>
+                          <p className="text-sm text-gray-600">
+                            Payment Status: <span className="text-green-600 font-medium">Paid</span>
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Charged to your payment method
+                          </p>
                         </div>
                       )}
                     </div>

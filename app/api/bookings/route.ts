@@ -1,3 +1,4 @@
+// app/api/bookings/route.ts - UPDATED VERSION
 import { NextRequest, NextResponse } from 'next/server';
 import { meetingRoomAPI } from '@/lib/supabase';
 import { googleCalendarAPI } from '@/lib/google-calendar';
@@ -25,9 +26,9 @@ export async function POST(request: NextRequest) {
     // Calculate end time
     const endTime = calculateEndTime(bookingData.start_time, bookingData.duration_hours);
 
-    // **MEMBER BOOKING FLOW** - Simplified, no database storage
+    // **MEMBER BOOKING FLOW** - Simplified, no database storage BUT WITH CALENDAR
     if (bookingData.is_member_booking === true) {
-      console.log('Processing member booking...');
+      console.log('🎯 Processing MEMBER booking...');
 
       // Generate simple booking ID
       const bookingId = `MH-${Date.now()}`;
@@ -64,19 +65,32 @@ export async function POST(request: NextRequest) {
         status: 'confirmed'
       };
 
-      console.log('Creating calendar event for member booking...');
+      console.log('📅 CRITICAL: Creating Google Calendar event for MEMBER booking...');
       
-      // Create Google Calendar event
+      // 🔥 CRITICAL: Create Google Calendar event for manager visibility
       let calendarEventId = null;
       try {
         calendarEventId = await googleCalendarAPI.createBookingEvent(simplifiedBooking);
-        console.log('Calendar event created:', calendarEventId ? 'success' : 'failed');
+        if (calendarEventId) {
+          console.log('✅ MEMBER BOOKING: Google Calendar event created successfully:', calendarEventId);
+        } else {
+          console.error('⚠️ MEMBER BOOKING: Failed to create calendar event - returned null');
+        }
       } catch (calendarError) {
-        console.error('Error creating calendar event:', calendarError);
-        console.warn('Failed to create calendar event, but continuing with booking');
+        console.error('❌ MEMBER BOOKING: Failed to create calendar event:', calendarError);
+        console.warn('⚠️ MEMBER BOOKING: Continuing with booking despite calendar failure - MANAGERS WILL NOT SEE THIS BOOKING');
+        
+        // Log detailed error for debugging
+        if (calendarError instanceof Error) {
+          console.error('Calendar error details:', {
+            message: calendarError.message,
+            stack: calendarError.stack,
+            booking: simplifiedBooking
+          });
+        }
       }
 
-      console.log('Sending confirmation emails...');
+      console.log('📧 Sending confirmation emails...');
       
       // Send confirmation emails
       try {
@@ -88,11 +102,21 @@ export async function POST(request: NextRequest) {
           isMemberBooking: true,
           memberHoursUsed: bookingData.duration_hours
         });
-        console.log('Booking confirmation emails sent:', emailResult);
+        console.log('✅ MEMBER BOOKING: Confirmation emails sent:', emailResult);
       } catch (emailError) {
-        console.error('Error sending emails:', emailError);
+        console.error('❌ MEMBER BOOKING: Error sending emails:', emailError);
         // Don't fail the booking if emails fail
       }
+
+      // 🔥 CRITICAL: Log calendar status for debugging
+      console.log('🎯 MEMBER BOOKING SUMMARY:', {
+        bookingId,
+        customer: bookingData.customer_name,
+        date: bookingData.booking_date,
+        time: `${bookingData.start_time} - ${endTime}`,
+        calendarEventCreated: !!calendarEventId,
+        calendarEventId: calendarEventId || 'NONE - MANAGERS WILL NOT SEE THIS!'
+      });
 
       // Return success response for member booking
       return NextResponse.json({
@@ -106,11 +130,19 @@ export async function POST(request: NextRequest) {
           end_time: endTime,
           duration_hours: bookingData.duration_hours,
           calendar_event_created: !!calendarEventId,
+          calendar_event_id: calendarEventId,
           is_member_booking: true,
           status: 'confirmed',
           payment_status: 'paid'
         },
-        message: 'Member booking confirmed! Confirmation emails sent and calendar event created.'
+        calendar_status: {
+          event_created: !!calendarEventId,
+          event_id: calendarEventId || null,
+          warning: !calendarEventId ? 'Calendar event creation failed - managers will not see this booking' : null
+        },
+        message: calendarEventId 
+          ? 'Member booking confirmed! Confirmation emails sent and calendar event created.'
+          : 'Member booking confirmed! Emails sent but calendar event failed - contact support.'
       });
     }
 
@@ -168,12 +200,52 @@ export async function POST(request: NextRequest) {
 
     console.log('Paid booking created in database:', booking.id);
 
-    // Return booking data for Stripe checkout
-    return NextResponse.json({
-      success: true,
-      booking,
-      message: 'Paid booking created successfully'
-    });
+    // **NEW: Create Stripe checkout session immediately**
+    try {
+      const checkoutResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/create-meeting-checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          booking_id: booking.id,
+          customer_name: booking.customer_name,
+          customer_email: booking.customer_email,
+          room_name: 'Conference Room', // Update if you have multiple rooms
+          booking_date: booking.booking_date,
+          start_time: booking.start_time,
+          end_time: booking.end_time,
+          duration_hours: booking.duration_hours,
+          attendees: booking.attendees,
+          total_amount: booking.total_amount,
+          purpose: booking.purpose
+        })
+      });
+
+      if (!checkoutResponse.ok) {
+        const errorData = await checkoutResponse.json();
+        throw new Error(errorData.error || 'Failed to create payment session');
+      }
+
+      const checkoutData = await checkoutResponse.json();
+      
+      return NextResponse.json({
+        success: true,
+        booking,
+        checkout_url: checkoutData.url,
+        session_id: checkoutData.sessionId,
+        message: 'Paid booking created successfully. Redirecting to payment...'
+      });
+
+    } catch (stripeError) {
+      console.error('Error creating Stripe session:', stripeError);
+      
+      // If Stripe fails, still return the booking but indicate payment system error
+      return NextResponse.json({
+        success: false,
+        error: 'Payment system unavailable. Please try again or contact support.',
+        booking,
+        fallback: true
+      }, { status: 500 });
+    }
 
   } catch (error) {
     console.error('Error creating booking:', error);
