@@ -18,8 +18,8 @@ export default function FAQPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const toggleItem = (id: string) => {
-    setOpenItems(prev => 
-      prev.includes(id) 
+    setOpenItems(prev =>
+      prev.includes(id)
         ? prev.filter(item => item !== id)
         : [...prev, id]
     );
@@ -53,13 +53,45 @@ export default function FAQPage() {
       icon: Key,
       question: 'How do I lock and unlock the front door after hours?',
       answer: (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <p>Our front door uses a keypad system for secure after-hours access.</p>
-          <div className="bg-burnt-orange-50 p-4 rounded-lg border border-burnt-orange-200">
-            <p className="text-burnt-orange-800 mb-2"><strong>📹 Video Tutorial Available</strong></p>
-            <p className="text-burnt-orange-700 text-sm">We provide a helpful tutorial video showing exactly how to use the keypad system. You'll receive this link along with your access code setup.</p>
+
+          {/* YouTube Video Embed */}
+          <div className="bg-gray-50 p-4 rounded-lg border">
+            <h4 className="font-semibold text-gray-900 mb-3">📹 Video Tutorial</h4>
+            <div className="relative w-full" style={{ paddingBottom: '56.25%', height: 0 }}>
+              <iframe
+                src="https://www.youtube.com/embed/yNvPrGs8uDY?si=KgRztNprvRC6uTlN"
+                title="How to Use the Front Door Keypad System"
+                className="absolute top-0 left-0 w-full h-full rounded-lg"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+            <p className="text-sm text-gray-600 mt-2">
+              Watch this quick tutorial to learn how to operate the keypad system.
+            </p>
           </div>
-          <p className="text-sm text-gray-600">Your unique access code will be provided when you start your membership.</p>
+
+          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+            <p className="text-orange-800 mb-2"><strong>🔑 Access Code Setup</strong></p>
+            <p className="text-orange-700 text-sm">
+              Your unique access code will be provided when you start your membership.
+              The code works 24/7 and is personal to your membership.
+            </p>
+          </div>
+
+          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <p className="text-blue-800 text-sm">
+              <strong>💡 Pro Tip:</strong> The keypad has a backlight that activates when you approach,
+              making it easy to use even in low light conditions.
+            </p>
+          </div>
+
+          <p className="text-sm text-gray-600">
+            If you have any issues with the keypad system, please contact our support team immediately.
+          </p>
         </div>
       )
     },
@@ -343,8 +375,8 @@ export default function FAQPage() {
     { id: 'general', name: 'General', icon: Mail }
   ];
 
-  const filteredFAQs = selectedCategory === 'all' 
-    ? faqData 
+  const filteredFAQs = selectedCategory === 'all'
+    ? faqData
     : faqData.filter(faq => faq.category === selectedCategory);
 
   return (
@@ -357,7 +389,7 @@ export default function FAQPage() {
               Frequently Asked Questions
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Find quick answers to common questions about Merritt Workspace. 
+              Find quick answers to common questions about Merritt Workspace.
               Can't find what you're looking for? We're here to help!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -385,11 +417,10 @@ export default function FAQPage() {
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(category.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
-                      selectedCategory === category.id
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${selectedCategory === category.id
                         ? 'bg-burnt-orange-600 text-white'
                         : 'bg-white text-gray-700 hover:bg-burnt-orange-50 hover:text-burnt-orange-600 border border-gray-200'
-                    }`}
+                      }`}
                   >
                     <IconComponent className="w-4 h-4" />
                     {category.name}
@@ -404,7 +435,7 @@ export default function FAQPage() {
             {filteredFAQs.map((faq) => {
               const IconComponent = faq.icon;
               const isOpen = openItems.includes(faq.id);
-              
+
               return (
                 <div
                   key={faq.id}
@@ -424,7 +455,7 @@ export default function FAQPage() {
                       <ChevronDown className="w-5 h-5 text-gray-500 flex-shrink-0" />
                     )}
                   </button>
-                  
+
                   {isOpen && (
                     <div className="px-6 pb-6">
                       <div className="pl-9 text-gray-700 leading-relaxed">
@@ -457,7 +488,7 @@ export default function FAQPage() {
               <Mail className="w-8 h-8 text-burnt-orange-600 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Email Support</h3>
               <p className="text-gray-600 mb-4">Get detailed answers to your questions</p>
-              <a 
+              <a
                 href="mailto:manager@merrittworkspace.com"
                 className="bg-burnt-orange-600 text-white px-6 py-2 rounded-lg hover:bg-burnt-orange-700 transition inline-block"
               >
@@ -468,7 +499,7 @@ export default function FAQPage() {
               <Phone className="w-8 h-8 text-burnt-orange-600 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Phone Support</h3>
               <p className="text-gray-600 mb-4">Speak directly with our team</p>
-              <a 
+              <a
                 href="tel:303-359-8337"
                 className="bg-burnt-orange-600 text-white px-6 py-2 rounded-lg hover:bg-burnt-orange-700 transition inline-block"
               >
