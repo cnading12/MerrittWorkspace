@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { ShoppingCart, Coffee, Cookie, Zap, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { ShoppingCart, Coffee, Cookie, Zap, CheckCircle, AlertCircle, Loader2, Plus, Minus } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
 
@@ -10,6 +10,13 @@ interface OrderForm {
     customer_email: string;
     office_number: string;
     notes: string;
+}
+
+interface CartItem {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
 }
 
 // Static product data - no database needed
@@ -22,13 +29,11 @@ const PRODUCTS = [
     { id: '5', name: 'Premium Soda', price: 2.00, category: 'beverages', image: '/images/snackshop/drinks/soda.avif' },
     { id: '6', name: 'Herbal Tea', price: 1.50, category: 'beverages', image: '/images/snackshop/drinks/tea.avif' },
     { id: '7', name: 'Spring Water', price: 1.25, category: 'beverages', image: '/images/snackshop/drinks/water.avif' },
-    
     // Snacks
     { id: '8', name: 'CLIF Energy Bar', price: 2.75, category: 'snacks', image: '/images/snackshop/snacks/cliff.avif' },
     { id: '9', name: 'KIND Nut Bar', price: 2.50, category: 'snacks', image: '/images/snackshop/snacks/kind.avif' },
     { id: '10', name: 'Nature Valley Granola Bar', price: 1.75, category: 'snacks', image: '/images/snackshop/snacks/nature-valley.avif' },
     { id: '11', name: 'Trail Mix', price: 3.25, category: 'snacks', image: '/images/snackshop/snacks/trail-mix.avif' },
-    
     // Meals
     { id: '12', name: 'Cereal Bowl', price: 3.50, category: 'meals', image: '/images/snackshop/soup/cereal.avif' },
     { id: '13', name: 'Instant Oatmeal', price: 2.75, category: 'meals', image: '/images/snackshop/soup/oatmeal.avif' },
@@ -45,7 +50,7 @@ const CATEGORIES = [
 ];
 
 export default function SimpleSnackshopPage() {
-    const [selectedItems, setSelectedItems] = useState<string[]>([]);
+    const [cart, setCart] = useState<CartItem[]>([]);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -58,29 +63,101 @@ export default function SimpleSnackshopPage() {
         notes: ''
     });
 
-    const filteredProducts = PRODUCTS.filter(product => 
+    const filteredProducts = PRODUCTS.filter(product =>
         selectedCategory === 'all' || product.category === selectedCategory
     );
 
-    const toggleItem = (itemId: string) => {
-        setSelectedItems(prev => 
-            prev.includes(itemId) 
-                ? prev.filter(id => id !== itemId)
-                : [...prev, itemId]
-        );
+    const addToCart = (productId: string) => {
+        const product = PRODUCTS.find(p => p.id === productId);
+        if (!product) return;
+
+        setCart(prev => {
+            const existingItem = prev.find(item => item.id === productId);
+            if (existingItem) {
+                return prev.map(item =>
+                    item.id === productId
+                        ? { ...item, quantity: item.quantity + 1 }
+                        : item
+                );
+            } else {
+                return [...prev, {
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    quantity: 1
+                }];
+            }
+        });
     };
 
-    const getSelectedProductNames = () => {
-        return PRODUCTS
-            .filter(product => selectedItems.includes(product.id))
-            .map(product => product.name)
-            .join(', ');
+    const removeFromCart = (productId: string) => {
+        setCart(prev => {
+            const existingItem = prev.find(item => item.id === productId);
+            if (existingItem && existingItem.quantity > 1) {
+                return prev.map(item =>
+                    item.id === productId
+                        ? { ...item, quantity: item.quantity - 1 }
+                        : item
+                );
+            } else {
+                return prev.filter(item => item.id !== productId);
+            }
+        });
+    };
+
+    const updateQuantity = (productId: string, quantity: number) => {
+        if (quantity <= 0) {
+            setCart(prev => prev.filter(item => item.id !== productId));
+        } else {
+            setCart(prev => {
+                const existingItem = prev.find(item => item.id === productId);
+                if (existingItem) {
+                    return prev.map(item =>
+                        item.id === productId
+                            ? { ...item, quantity }
+                            : item
+                    );
+                } else {
+                    const product = PRODUCTS.find(p => p.id === productId);
+                    if (product) {
+                        return [...prev, {
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            quantity
+                        }];
+                    }
+                    return prev;
+                }
+            });
+        }
+    };
+
+    const getItemQuantity = (productId: string): number => {
+        const item = cart.find(item => item.id === productId);
+        return item ? item.quantity : 0;
+    };
+
+    const calculateTotal = (): number => {
+        return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    };
+
+    const getCartItemsString = (): string => {
+        return cart.map(item => 
+            item.quantity > 1 
+                ? `${item.name} (x${item.quantity})`
+                : item.name
+        ).join(', ');
+    };
+
+    const getTotalItemCount = (): number => {
+        return cart.reduce((total, item) => total + item.quantity, 0);
     };
 
     const handleSubmitOrder = async (e: React.FormEvent) => {
         e.preventDefault();
-        
-        if (selectedItems.length === 0) {
+
+        if (cart.length === 0) {
             setError('Please select at least one item');
             return;
         }
@@ -100,20 +177,25 @@ export default function SimpleSnackshopPage() {
             return;
         }
 
+        const total = calculateTotal();
         setSubmitting(true);
         setError(null);
 
         try {
             const orderData = {
-                customer_name: orderForm.customer_name,
-                customer_email: orderForm.customer_email,
-                office_number: orderForm.office_number,
-                notes: orderForm.notes,
-                selected_items: getSelectedProductNames(),
+                customer_name: orderForm.customer_name.trim(),
+                customer_email: orderForm.customer_email.trim().toLowerCase(),
+                office_number: orderForm.office_number.trim(),
+                notes: orderForm.notes.trim(),
+                selected_items: getCartItemsString(),
+                total_amount: total,
+                cart_items: cart,
                 timestamp: new Date().toISOString()
             };
 
-            const response = await fetch('/api/simple-snackshop', {
+            console.log('Submitting purchase:', orderData);
+
+            const response = await fetch('/api/snackshop', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -124,26 +206,69 @@ export default function SimpleSnackshopPage() {
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.error || 'Failed to place order');
+                throw new Error(result.error || 'Failed to process purchase');
             }
 
             if (result.success) {
-                setSuccess('Order request submitted successfully! You and the manager will receive confirmation emails shortly.');
-                setSelectedItems([]);
-                setOrderForm({
-                    customer_name: '',
-                    customer_email: '',
-                    office_number: '',
-                    notes: ''
+                console.log('✅ Order successful, preparing redirect...', result);
+                
+                // Prepare data for confirmation page
+                const confirmationParams = new URLSearchParams({
+                    order_id: result.request_id,
+                    total: result.formatted_total,
+                    email_sent: (result.email_status?.customer_email_sent || result.email_status?.customer_sent || false).toString(),
+                    timestamp: new Date().toISOString(),
+                    customer_name: orderData.customer_name,
+                    items: orderData.selected_items
                 });
-                setTimeout(() => setSuccess(null), 8000);
+
+                const confirmationUrl = `/order-confirmation?${confirmationParams.toString()}`;
+                console.log('🔗 Redirecting to:', confirmationUrl);
+
+                // Try multiple redirect methods
+                try {
+                    // Method 1: Direct redirect
+                    window.location.href = confirmationUrl;
+                    
+                    // Method 2: If that fails, try replace
+                    setTimeout(() => {
+                        if (window.location.pathname.includes('snackshop')) {
+                            console.log('🔄 Redirect failed, trying replace...');
+                            window.location.replace(confirmationUrl);
+                        }
+                    }, 1000);
+                    
+                } catch (redirectError) {
+                    console.error('❌ Redirect failed:', redirectError);
+                    // Fallback: show success message
+                    setSuccess(`Purchase confirmed! 
+            
+Order ID: ${result.request_id}
+Total: ${result.formatted_total}
+
+🍿 Your items are ready in the kitchen! Please take them and complete payment using the honor system.
+
+${result.email_status?.customer_email_sent || result.email_status?.customer_sent
+                        ? 'You should receive a confirmation email shortly.'
+                        : 'Note: There was an issue sending your confirmation email, but your purchase was processed.'
+                    }`);
+                    
+                    // Reset form
+                    setCart([]);
+                    setOrderForm({
+                        customer_name: '',
+                        customer_email: '',
+                        office_number: '',
+                        notes: ''
+                    });
+                }
             } else {
-                throw new Error(result.error || 'Order failed');
+                throw new Error(result.error || 'Purchase failed');
             }
 
         } catch (error: any) {
-            console.error('Error submitting order:', error);
-            setError(error.message || 'Failed to place order. Please try again.');
+            console.error('Error processing purchase:', error);
+            setError(error.message || 'Failed to process purchase. Please try again.');
         } finally {
             setSubmitting(false);
         }
@@ -168,8 +293,7 @@ export default function SimpleSnackshopPage() {
                             Merritt Snackshop
                         </h1>
                         <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-                            Select items you'd like delivered to your office or desk.
-                            Submit your request and we'll handle the rest!
+                            Select your items and quantities from our kitchen. Honor system payment - take what you need and pay on the spot!
                         </p>
                     </div>
                 </div>
@@ -189,7 +313,7 @@ export default function SimpleSnackshopPage() {
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mx-4 mt-4">
                     <div className="flex items-center">
                         <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                        <p className="text-green-700">{success}</p>
+                        <div className="text-green-700 whitespace-pre-line">{success}</div>
                     </div>
                 </div>
             )}
@@ -206,11 +330,10 @@ export default function SimpleSnackshopPage() {
                                     <button
                                         key={category.value}
                                         onClick={() => setSelectedCategory(category.value)}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
-                                            selectedCategory === category.value
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${selectedCategory === category.value
                                                 ? 'bg-burnt-orange-600 text-white'
                                                 : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                                        }`}
+                                            }`}
                                     >
                                         <IconComponent className="w-4 h-4" />
                                         {category.label}
@@ -221,57 +344,96 @@ export default function SimpleSnackshopPage() {
 
                         {/* Products Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {filteredProducts.map(product => (
-                                <div 
-                                    key={product.id} 
-                                    className={`bg-white rounded-lg shadow-sm border overflow-hidden cursor-pointer transition ${
-                                        selectedItems.includes(product.id)
-                                            ? 'border-burnt-orange-500 ring-2 ring-burnt-orange-200'
-                                            : 'border-gray-200 hover:shadow-md'
-                                    }`}
-                                    onClick={() => toggleItem(product.id)}
-                                >
-                                    <div className="h-32 bg-gray-100 relative overflow-hidden">
-                                        {product.image && (
-                                            <Image
-                                                src={product.image}
-                                                alt={product.name}
-                                                fill
-                                                className="object-contain p-2"
-                                                sizes="(max-width: 768px) 50vw, 25vw"
-                                            />
-                                        )}
-                                        <div className="absolute top-2 left-2">
-                                            <span className="bg-white/90 text-gray-700 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                                                {getCategoryIcon(product.category)}
-                                            </span>
-                                        </div>
-                                        {selectedItems.includes(product.id) && (
-                                            <div className="absolute top-2 right-2">
-                                                <CheckCircle className="w-6 h-6 text-burnt-orange-600 bg-white rounded-full" />
+                            {filteredProducts.map(product => {
+                                const quantity = getItemQuantity(product.id);
+                                return (
+                                    <div
+                                        key={product.id}
+                                        className={`bg-white rounded-lg shadow-sm border overflow-hidden transition ${quantity > 0
+                                                ? 'border-burnt-orange-500 ring-2 ring-burnt-orange-200'
+                                                : 'border-gray-200 hover:shadow-md'
+                                            }`}
+                                    >
+                                        <div className="h-32 bg-gray-100 relative overflow-hidden">
+                                            {product.image && (
+                                                <Image
+                                                    src={product.image}
+                                                    alt={product.name}
+                                                    fill
+                                                    className="object-contain p-2"
+                                                    sizes="(max-width: 768px) 50vw, 25vw"
+                                                />
+                                            )}
+                                            <div className="absolute top-2 left-2">
+                                                <span className="bg-white/90 text-gray-700 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                                                    {getCategoryIcon(product.category)}
+                                                </span>
                                             </div>
-                                        )}
-                                    </div>
+                                            {quantity > 0 && (
+                                                <div className="absolute top-2 right-2">
+                                                    <span className="bg-burnt-orange-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">
+                                                        {quantity}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
 
-                                    <div className="p-4">
-                                        <h3 className="font-semibold text-gray-900 mb-1">{product.name}</h3>
-                                        <p className="text-lg font-bold text-burnt-orange-600">${product.price.toFixed(2)}</p>
+                                        <div className="p-4">
+                                            <h3 className="font-semibold text-gray-900 mb-1">{product.name}</h3>
+                                            <p className="text-lg font-bold text-burnt-orange-600 mb-3">${product.price.toFixed(2)}</p>
+                                            
+                                            {/* Quantity Controls */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => removeFromCart(product.id)}
+                                                        disabled={quantity === 0}
+                                                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        <Minus className="w-4 h-4" />
+                                                    </button>
+                                                    <span className="w-8 text-center font-semibold">{quantity}</span>
+                                                    <button
+                                                        onClick={() => addToCart(product.id)}
+                                                        className="w-8 h-8 rounded-full bg-burnt-orange-600 text-white flex items-center justify-center hover:bg-burnt-orange-700"
+                                                    >
+                                                        <Plus className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                                {quantity > 0 && (
+                                                    <span className="text-sm font-medium text-burnt-orange-600">
+                                                        ${(product.price * quantity).toFixed(2)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 
                     {/* Order Form Section */}
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-24">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">Place Your Order</h2>
-                            
-                            {/* Selected Items */}
-                            {selectedItems.length > 0 && (
-                                <div className="mb-4 p-3 bg-burnt-orange-50 rounded-lg">
-                                    <h3 className="font-medium text-burnt-orange-900 mb-2">Selected Items:</h3>
-                                    <p className="text-sm text-burnt-orange-700">{getSelectedProductNames()}</p>
+                            <h2 className="text-xl font-bold text-gray-900 mb-4">Complete Your Purchase</h2>
+
+                            {/* Cart Items with Quantities */}
+                            {cart.length > 0 && (
+                                <div className="mb-6 p-4 bg-burnt-orange-50 rounded-lg">
+                                    <h3 className="font-medium text-burnt-orange-900 mb-3">Your Cart:</h3>
+                                    {cart.map(item => (
+                                        <div key={item.id} className="flex justify-between items-center py-1 text-sm text-burnt-orange-800">
+                                            <span>{item.name} {item.quantity > 1 && `(x${item.quantity})`}</span>
+                                            <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                                        </div>
+                                    ))}
+                                    <div className="border-t border-burnt-orange-200 mt-2 pt-2">
+                                        <div className="flex justify-between items-center font-bold text-burnt-orange-900">
+                                            <span>Total:</span>
+                                            <span className="text-lg">${calculateTotal().toFixed(2)}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
@@ -313,28 +475,43 @@ export default function SimpleSnackshopPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Special Requests</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
                                     <textarea
                                         rows={3}
                                         value={orderForm.notes}
                                         onChange={(e) => setOrderForm(prev => ({ ...prev, notes: e.target.value }))}
-                                        placeholder="Any special instructions or notes..."
+                                        placeholder="Any notes or requests..."
                                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
                                     />
                                 </div>
 
+                                {/* Honor System Notice */}
+                                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                                    <h4 className="font-semibold text-green-800 mb-2">🏆 Honor System Kitchen</h4>
+                                    <p className="text-sm text-green-700">
+                                        Take your items from the kitchen and pay using:
+                                    </p>
+                                    <ul className="text-sm text-green-700 mt-1 ml-4 list-disc">
+                                        <li>Cash payment box in kitchen</li>
+                                        <li>Venmo: @MerrittWorkspace</li>
+                                        <li>Online payment (coming soon)</li>
+                                    </ul>
+                                </div>
+
                                 <button
                                     type="submit"
-                                    disabled={submitting || selectedItems.length === 0}
+                                    disabled={submitting || cart.length === 0}
                                     className="w-full bg-burnt-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-burnt-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {submitting ? (
                                         <>
                                             <Loader2 className="w-5 h-5 animate-spin inline mr-2" />
-                                            Submitting Request...
+                                            Processing Purchase...
                                         </>
+                                    ) : cart.length === 0 ? (
+                                        'Add items to continue'
                                     ) : (
-                                        `Submit Order Request (${selectedItems.length} items)`
+                                        `Complete Purchase - $${calculateTotal().toFixed(2)} (${getTotalItemCount()} items)`
                                     )}
                                 </button>
                             </form>

@@ -1,19 +1,25 @@
+// Create this file at: app/api/snackshop/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
 // Initialize Resend client
 const resend = new Resend(process.env.RESEND_API_KEY);
-const MANAGER_EMAIL = 'manager@merrittworkspace.net';
+const MANAGER_EMAIL = 'manager@merrittworkspace.net'; // Update this to your actual manager email
 
 export async function POST(request: NextRequest) {
+  console.log('🛒 Snackshop API route hit!');
+  
   try {
     const orderData = await request.json();
+    console.log('📦 Order data received:', orderData);
     
     // Validate required fields
     const requiredFields = ['customer_name', 'customer_email', 'office_number', 'selected_items'];
     
     for (const field of requiredFields) {
       if (!orderData[field]) {
+        console.error(`❌ Missing field: ${field}`);
         return NextResponse.json(
           { error: `Missing required field: ${field}` },
           { status: 400 }
@@ -22,13 +28,51 @@ export async function POST(request: NextRequest) {
     }
 
     if (orderData.selected_items.trim() === '') {
+      console.error('❌ No items selected');
       return NextResponse.json(
         { error: 'Please select at least one item' },
         { status: 400 }
       );
     }
 
-    // Generate a simple order ID
+    // Calculate total cost based on selected items
+    const calculateTotal = (selectedItems: string): number => {
+      // Product prices - update these as needed
+      const PRODUCT_PRICES: { [key: string]: number } = {
+        'Celsius Energy Drink': 2.50,
+        'Chocolate Milk': 1.75,
+        'IZZE Sparkling Juice': 2.25,
+        'Naked Smoothie': 3.50,
+        'Premium Soda': 2.00,
+        'Herbal Tea': 1.50,
+        'Spring Water': 1.25,
+        'CLIF Energy Bar': 2.75,
+        'KIND Nut Bar': 2.50,
+        'Nature Valley Granola Bar': 1.75,
+        'Trail Mix': 3.25,
+        'Cereal Bowl': 3.50,
+        'Instant Oatmeal': 2.75,
+        'Quaker Instant Meal': 3.00,
+        'Instant Ramen': 2.25,
+        'Sweet Corn Cup': 2.50
+      };
+
+      const items = selectedItems.split(', ');
+      let total = 0;
+      
+      items.forEach(item => {
+        const price = PRODUCT_PRICES[item.trim()];
+        if (price) {
+          total += price;
+        }
+      });
+      
+      return total;
+    };
+
+    const totalAmount = calculateTotal(orderData.selected_items);
+
+    // Generate order ID and timestamp
     const orderId = `MW${Date.now().toString().slice(-8)}`;
     const orderTime = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
@@ -39,191 +83,242 @@ export async function POST(request: NextRequest) {
       minute: '2-digit'
     });
 
-    // Send confirmation email to customer
+    console.log('📋 Processing order:', { 
+      orderId, 
+      customer: orderData.customer_name,
+      total: `$${totalAmount.toFixed(2)}`
+    });
+
+    // Check if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
+      console.error('❌ RESEND_API_KEY not configured');
+      return NextResponse.json({
+        success: true, // Still return success to avoid breaking the user flow
+        message: 'Order received but email configuration is missing. Please contact support.',
+        request_id: orderId,
+        total_amount: totalAmount,
+        formatted_total: `$${totalAmount.toFixed(2)}`,
+        email_status: { error: 'No RESEND_API_KEY configured' }
+      });
+    }
+
+    let emailResults = {
+      customer_sent: false,
+      manager_sent: false,
+      customer_error: null as string | null,
+      manager_error: null as string | null
+    };
+
+    // Send customer confirmation email
     try {
-      await resend.emails.send({
+      console.log('📧 Sending customer email to:', orderData.customer_email);
+      
+      const customerResult = await resend.emails.send({
         from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
         to: orderData.customer_email,
-        subject: `Snackshop Request Received - ${orderId} | Merritt Workspace`,
+        subject: `Snackshop Purchase - ${orderId}`,
         html: `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Snackshop Request Confirmation</title>
-              <style>
-                body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-                .header h1 { margin: 0; font-size: 24px; }
-                .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
-                .request-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-                .delivery-info { background: #fff8e1; padding: 20px; border-radius: 8px; border-left: 4px solid #ed7611; margin: 20px 0; }
-                .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; border-radius: 0 0 8px 8px; }
-                .status-badge { background: #28a745; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-              </style>
-            </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <h1>Request Received!</h1>
-                  <p>Thank you for your snackshop request</p>
-                </div>
-                
-                <div class="content">
-                  <p>Hi ${orderData.customer_name},</p>
-                  
-                  <p>We've received your snackshop request and will prepare your items for delivery!</p>
-                  
-                  <div class="request-info">
-                    <h3 style="margin-top: 0;">Request Details</h3>
-                    <p><strong>Request ID:</strong> ${orderId}</p>
-                    <p><strong>Office/Desk:</strong> ${orderData.office_number}</p>
-                    <p><strong>Submitted:</strong> ${orderTime}</p>
-                    <p><strong>Status:</strong> <span class="status-badge">RECEIVED</span></p>
-                    ${orderData.notes ? `<p><strong>Notes:</strong> ${orderData.notes}</p>` : ''}
-                  </div>
-
-                  <h3>Requested Items</h3>
-                  <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                    <p style="margin: 0; font-weight: 500;">${orderData.selected_items}</p>
-                  </div>
-
-                  <div class="delivery-info">
-                    <h3 style="margin-top: 0;">📍 Next Steps</h3>
-                    <p><strong>We'll prepare your items and deliver them to ${orderData.office_number} within 15-30 minutes.</strong></p>
-                    <p>Someone from our team will contact you if we have any questions about your request.</p>
-                  </div>
-
-                  <p>Thank you for using Merritt Workspace Snackshop!</p>
-                </div>
-                
-                <div class="footer">
-                  <p><strong>Merritt Workspace Snackshop</strong></p>
-                  <p>2246 Irving Street, Denver, CO 80211</p>
-                  <p>Email: snackshop@merrittworkspace.net | Phone: (123) 456-7890</p>
-                </div>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 20px; text-align: center;">
+              <h1>🛒 Snackshop Purchase</h1>
+              <p>Your items are ready in the kitchen!</p>
+            </div>
+            
+            <div style="padding: 20px; background: white;">
+              <p>Hi <strong>${orderData.customer_name}</strong>,</p>
+              
+              <p><strong>Your items are now available in the kitchen!</strong> Please take your items and complete payment using the honor system.</p>
+              
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h3>🧾 Purchase Details</h3>
+                <p><strong>Order ID:</strong> ${orderId}</p>
+                <p><strong>Customer:</strong> ${orderData.customer_name}</p>
+                <p><strong>Office/Desk:</strong> ${orderData.office_number}</p>
+                <p><strong>Order Time:</strong> ${orderTime}</p>
+                <p><strong style="color: #ed7611; font-size: 18px;">Total Amount: $${totalAmount.toFixed(2)}</strong></p>
+                ${orderData.notes ? `<p><strong>Notes:</strong> ${orderData.notes}</p>` : ''}
               </div>
-            </body>
-          </html>
+
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h3>🍿 Your Items</h3>
+                <p style="font-weight: 500;">${orderData.selected_items}</p>
+              </div>
+
+              <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #27ae60;">
+                <h3>💳 Payment Instructions</h3>
+                <p><strong>Please complete your payment now using one of these methods:</strong></p>
+                <ul>
+                  <li>Cash payment box in the kitchen</li>
+                  <li>Venmo: @MerrittWorkspace</li>
+                  <li>Online payment (coming soon)</li>
+                </ul>
+                <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                  <em>Thank you for being part of our honor system community!</em>
+                </p>
+              </div>
+
+              <p>Enjoy your snacks and thank you for using Merritt Workspace Kitchen! 🧡</p>
+            </div>
+            
+            <div style="background: #2c3e50; color: white; padding: 20px; text-align: center;">
+              <p><strong>Merritt Workspace</strong></p>
+              <p>2246 Irving Street, Denver, CO 80211</p>
+            </div>
+          </div>
         `,
         text: `
-Snackshop Request Received - ${orderId}
+Snackshop Purchase - ${orderId}
 
 Hi ${orderData.customer_name},
 
-We've received your snackshop request and will prepare your items for delivery!
+Your items are now available in the kitchen! Please take your items and complete payment using the honor system.
 
-Request Details:
-- Request ID: ${orderId}
+Purchase Details:
+- Order ID: ${orderId}
+- Customer: ${orderData.customer_name}
 - Office/Desk: ${orderData.office_number}
-- Submitted: ${orderTime}
-- Status: RECEIVED
+- Order Time: ${orderTime}
+- TOTAL AMOUNT: $${totalAmount.toFixed(2)}
 ${orderData.notes ? `- Notes: ${orderData.notes}` : ''}
 
-Requested Items:
+Your Items:
 ${orderData.selected_items}
 
-Next Steps:
-We'll prepare your items and deliver them to ${orderData.office_number} within 15-30 minutes.
-Someone from our team will contact you if we have any questions about your request.
+Payment Instructions:
+Please complete your payment now using one of these methods:
+- Cash payment box in the kitchen
+- Venmo: @MerrittWorkspace
+- Online payment (coming soon)
 
-Thank you for using Merritt Workspace Snackshop!
+Thank you for being part of our honor system community!
 
+Enjoy your snacks!
 Merritt Workspace Team
-2246 Irving Street, Denver, CO 80211
         `
       });
       
-      console.log('✅ Customer confirmation email sent successfully');
-    } catch (emailError) {
-      console.error('❌ Failed to send customer confirmation email:', emailError);
+      emailResults.customer_sent = true;
+      console.log('✅ Customer email sent:', customerResult.data?.id);
+    } catch (error: any) {
+      console.error('❌ Customer email failed:', error);
+      emailResults.customer_error = error.message;
     }
 
-    // Send notification email to manager
+    // Send manager notification
     try {
-      await resend.emails.send({
+      console.log('📧 Sending manager notification to:', MANAGER_EMAIL);
+      
+      const managerResult = await resend.emails.send({
         from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
         to: MANAGER_EMAIL,
-        subject: `🛒 New Snackshop Request - ${orderId}`,
+        subject: `💰 Member Kitchen Purchase - $${totalAmount.toFixed(2)} - ${orderId}`,
         html: `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: #fff8e1; padding: 15px; margin-bottom: 20px; border-radius: 5px; border-left: 4px solid #ed7611; }
-                .request-details { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-                .action-required { background: #e8f5e8; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745; }
-              </style>
-            </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <h2 style="margin-top: 0;">🛒 New Snackshop Request Received</h2>
-                  <p>Request ID: <strong>${orderId}</strong></p>
-                </div>
-                
-                <div class="request-details">
-                  <h3>Customer Details:</h3>
-                  <p><strong>Name:</strong> ${orderData.customer_name}</p>
-                  <p><strong>Email:</strong> ${orderData.customer_email}</p>
-                  <p><strong>Office/Desk:</strong> ${orderData.office_number}</p>
-                  <p><strong>Submitted:</strong> ${orderTime}</p>
-                  ${orderData.notes ? `<p><strong>Notes:</strong> ${orderData.notes}</p>` : ''}
-                </div>
-                
-                <h3>Requested Items:</h3>
-                <div style="background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                  <p style="margin: 0; font-weight: 500;">${orderData.selected_items}</p>
-                </div>
-                
-                <div class="action-required">
-                  <p style="margin: 0;"><strong>⏰ Action Required:</strong> Please prepare and deliver these items to <strong>${orderData.office_number}</strong> within 15-30 minutes.</p>
-                </div>
-                
-                <p style="margin-top: 20px; color: #666; font-size: 14px;"><em>A confirmation email was automatically sent to the customer.</em></p>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #27ae60; color: white; padding: 20px; text-align: center;">
+              <h2>💰 MEMBER KITCHEN PURCHASE</h2>
+              <p style="font-size: 18px; margin: 5px 0;"><strong>$${totalAmount.toFixed(2)}</strong></p>
+            </div>
+            
+            <div style="padding: 20px;">
+              <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p><strong>🧾 Order ID:</strong> ${orderId}</p>
+                <p><strong>⏰ Time:</strong> ${orderTime}</p>
+                <p><strong>💵 Amount:</strong> <span style="font-size: 18px; color: #e67e22;"><strong>$${totalAmount.toFixed(2)}</strong></span></p>
               </div>
-            </body>
-          </html>
+            
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3>👤 Member Information</h3>
+                <p><strong>Name:</strong> ${orderData.customer_name}</p>
+                <p><strong>Email:</strong> ${orderData.customer_email}</p>
+                <p><strong>Office/Desk:</strong> ${orderData.office_number}</p>
+                ${orderData.notes ? `<p><strong>Notes:</strong> ${orderData.notes}</p>` : ''}
+              </div>
+            
+              <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border: 2px solid #27ae60; margin-bottom: 20px;">
+                <h3>🛒 Items Purchased:</h3>
+                <p style="font-size: 16px; font-weight: bold;">${orderData.selected_items}</p>
+              </div>
+
+              <div style="background: #fff8e1; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
+                <h3>💳 Payment Status</h3>
+                <p><strong>Honor System Purchase</strong> - Member has access to kitchen and will pay using:</p>
+                <ul>
+                  <li>Cash payment box in kitchen</li>
+                  <li>Venmo: @MerrittWorkspace</li>
+                  <li>Online payment (when available)</li>
+                </ul>
+                <p style="color: #666; font-size: 14px;"><em>Member confirmation email sent automatically.</em></p>
+              </div>
+            </div>
+          </div>
         `,
         text: `
-NEW SNACKSHOP REQUEST: ${orderId}
+MEMBER KITCHEN PURCHASE: $${totalAmount.toFixed(2)}
 
-Customer: ${orderData.customer_name}
-Email: ${orderData.customer_email}
-Office/Desk: ${orderData.office_number}
-Submitted: ${orderTime}
-${orderData.notes ? `Notes: ${orderData.notes}` : ''}
+Order ID: ${orderId}
+Time: ${orderTime}
+Amount: $${totalAmount.toFixed(2)}
 
-Requested Items:
+Member Information:
+- Name: ${orderData.customer_name}
+- Email: ${orderData.customer_email}
+- Office/Desk: ${orderData.office_number}
+${orderData.notes ? `- Notes: ${orderData.notes}` : ''}
+
+Items Purchased:
 ${orderData.selected_items}
 
-ACTION REQUIRED: Please prepare and deliver these items to ${orderData.office_number} within 15-30 minutes.
+PAYMENT STATUS: Honor System Purchase
+Member has kitchen access and will pay using:
+- Cash payment box in kitchen  
+- Venmo: @MerrittWorkspace
+- Online payment (when available)
 
-A confirmation email was automatically sent to the customer.
+Member confirmation email sent automatically.
         `
       });
       
-      console.log('✅ Manager notification email sent successfully');
-    } catch (managerEmailError) {
-      console.error('❌ Failed to send manager notification email:', managerEmailError);
+      emailResults.manager_sent = true;
+      console.log('✅ Manager email sent:', managerResult.data?.id);
+    } catch (error: any) {
+      console.error('❌ Manager email failed:', error);
+      emailResults.manager_error = error.message;
     }
+
+    console.log('📊 Email results:', emailResults);
 
     return NextResponse.json({
       success: true,
-      message: 'Snackshop request submitted successfully! Confirmation emails have been sent.',
-      request_id: orderId
+      message: emailResults.customer_sent 
+        ? `Purchase confirmed! Total: ${totalAmount.toFixed(2)}. Please take your items from the kitchen and complete payment using the honor system.` 
+        : `Purchase confirmed! Total: ${totalAmount.toFixed(2)}. Please take your items from the kitchen. (Note: Email confirmation may be delayed)`,
+      request_id: orderId,
+      total_amount: totalAmount,
+      formatted_total: `${totalAmount.toFixed(2)}`,
+      email_status: {
+        customer_email_sent: emailResults.customer_sent,
+        manager_email_sent: emailResults.manager_sent,
+        customer_sent: emailResults.customer_sent // Add this for backward compatibility
+      }
     });
 
   } catch (error) {
-    console.error('Error processing snackshop request:', error);
+    console.error('💥 API Error:', error);
     return NextResponse.json(
-      { error: 'Failed to process request' },
+      { 
+        error: 'Failed to process request. Please try again.',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
+}
+
+// Add a GET method for testing
+export async function GET() {
+  return NextResponse.json({ 
+    message: 'Snackshop API is working!', 
+    timestamp: new Date().toISOString(),
+    resend_configured: !!process.env.RESEND_API_KEY
+  });
 }
