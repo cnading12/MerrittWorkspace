@@ -1,23 +1,26 @@
 "use client";
 
 import { useState } from 'react';
-import { Check, Clock, Wifi, Shield, Coffee, Users, Calendar, MapPin, Star, ArrowRight, Phone, Mail, Lock, Building2, Heart, Briefcase, Eye, UserCheck, DollarSign } from 'lucide-react';
+import { Check, Clock, Wifi, Shield, Coffee, Users, Calendar, Phone, Mail, Lock, Building2, Heart, Star, ArrowRight, Briefcase, Eye, UserCheck } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function PrivateOfficePage() {
-  const [selectedPlan, setSelectedPlan] = useState('single');
-  const [showComparison, setShowComparison] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'single' | 'double' | 'large'>('single');
 
   const privateOfficePlans = [
     {
-      id: 'single',
+      id: 'single' as const,
       name: 'Single Desk Office',
       price: 500,
       capacity: '1 person',
       size: '120-150 sq ft',
       desks: 1,
+      color: 'blue',
       description: 'Perfect for solo professionals who need complete privacy',
+      image1: '/images/private-offices/single.png',
+      image2: '/images/private-offices/single2.png',
       features: [
         'Private lockable office',
         'Professional business address',
@@ -29,13 +32,16 @@ export default function PrivateOfficePage() {
       ]
     },
     {
-      id: 'double',
-      name: 'Double Desk Office',
+      id: 'double' as const,
+      name: '2-Desk Office',
       price: 700,
       capacity: '2 people',
       size: '180-220 sq ft',
       desks: 2,
+      color: 'green',
       description: 'Ideal for partnerships and small collaborative teams',
+      image1: '/images/private-offices/2-desk.png',
+      image2: '/images/private-offices/2-desk2.png',
       features: [
         'Private lockable office with 2 desks',
         'Professional business address',
@@ -48,13 +54,16 @@ export default function PrivateOfficePage() {
       ]
     },
     {
-      id: 'large',
-      name: 'Large Team Office',
+      id: 'large' as const,
+      name: 'Large Team Office (4-8 Desks)',
       price: 1200,
       capacity: '4-8 people',
       size: '300-500 sq ft',
       desks: '4-8',
+      color: 'purple',
       description: 'Spacious office for established teams and growing companies',
+      image1: '/images/private-offices/4-desk.png',
+      image2: '/images/private-offices/4-desk2.png',
       features: [
         'Large private office (4-8 desks)',
         'Professional business address',
@@ -73,62 +82,52 @@ export default function PrivateOfficePage() {
     {
       icon: Lock,
       title: 'Complete Privacy',
-      description: 'Your own lockable office space with full privacy and security',
-      included: true
+      description: 'Your own lockable office space with full privacy and security'
     },
     {
       icon: Clock,
       title: '24/7 Access',
-      description: 'Round-the-clock building and office access with your own key',
-      included: true
+      description: 'Round-the-clock building and office access with your own key'
     },
     {
       icon: Wifi,
       title: 'High-Speed WiFi',
-      description: 'Enterprise-grade internet with dedicated connection options',
-      included: true
+      description: 'Enterprise-grade internet with dedicated connection options'
     },
     {
       icon: Building2,
       title: 'Professional Address',
-      description: 'Use our prestigious Sloan\'s Lake address for your business',
-      included: true
+      description: 'Use our prestigious Sloan\'s Lake address for your business'
     },
     {
       icon: Mail,
       title: 'Mail & Package Handling',
-      description: 'Full mail receiving and package management services',
-      included: true
+      description: 'Full mail receiving and package management services'
     },
     {
       icon: Calendar,
       title: 'Meeting Room Credits',
-      description: 'Monthly meeting room hours included (varies by plan)',
-      included: true
+      description: 'Monthly meeting room hours included (varies by plan)'
     },
     {
       icon: Phone,
       title: 'Phone Line Options',
-      description: 'Dedicated business phone lines available for your office',
-      included: true
+      description: 'Dedicated business phone lines available for your office'
     },
     {
       icon: Coffee,
       title: 'Full Kitchen Access',
-      description: 'Complete access to kitchen facilities and snackshop services',
-      included: true
+      description: 'Complete access to kitchen facilities and snackshop services'
     },
     {
       icon: Heart,
       title: 'Pet-Friendly',
-      description: 'Bring your dog to work - they can stay in your private office',
-      included: true
+      description: 'Bring your dog to work - they can stay in your private office'
     },
     {
       icon: Shield,
       title: 'Premium Storage',
-      description: 'Multiple storage options including filing cabinets and shelving',
-      included: true
+      description: 'Multiple storage options including filing cabinets and shelving'
     }
   ];
 
@@ -143,7 +142,7 @@ export default function PrivateOfficePage() {
     {
       name: 'Lisa Martinez & Associates',
       role: 'Legal Partnership',
-      plan: 'Double Desk Office',
+      plan: '2-Desk Office',
       content: 'The double desk setup is perfect for our partnership. We can work together when needed but also have space for private client calls.',
       rating: 5
     },
@@ -156,59 +155,30 @@ export default function PrivateOfficePage() {
     }
   ];
 
-  const membershipComparison = [
+  const idealFor = [
     {
-      feature: 'Office Size',
-      dedicated: 'Open desk space',
-      single: '120-150 sq ft',
-      double: '180-220 sq ft',
-      large: '300-500 sq ft'
+      icon: Briefcase,
+      title: 'Professional Services',
+      description: 'Lawyers, accountants, consultants who need confidential client meetings'
     },
     {
-      feature: 'Team Capacity',
-      dedicated: '1 person',
-      single: '1 person',
-      double: '2 people',
-      large: '4-8 people'
+      icon: UserCheck,
+      title: 'Small Business Owners',
+      description: 'Established businesses needing professional address and private workspace'
     },
     {
-      feature: 'Privacy Level',
-      dedicated: 'Shared space',
-      single: 'Complete privacy',
-      double: 'Complete privacy',
-      large: 'Team privacy'
-    },
-    {
-      feature: 'Meeting Room Credits',
-      dedicated: '2 hours/month',
-      single: '4 hours/month',
-      double: '6 hours/month',
-      large: 'Unlimited'
-    },
-    {
-      feature: 'Business Address',
-      dedicated: false,
-      single: true,
-      double: true,
-      large: true
-    },
-    {
-      feature: 'Pet Policy',
-      dedicated: 'Common areas only',
-      single: 'Dogs welcome',
-      double: 'Dogs welcome',
-      large: 'Dogs welcome'
-    },
-    {
-      feature: 'Monthly Price',
-      dedicated: '$300',
-      single: '$500',
-      double: '$700',
-      large: '$1,200'
+      icon: Eye,
+      title: 'Privacy-Focused Workers',
+      description: 'Anyone who needs guaranteed quiet space for focused work and sensitive conversations'
     }
   ];
 
-  const selectedPlanDetails = privateOfficePlans.find(plan => plan.id === selectedPlan);
+  const selectedPlanDetails = privateOfficePlans.find(plan => plan.id === selectedPlan)!;
+  const colorClasses = {
+    blue: 'bg-blue-600 hover:bg-blue-700 text-blue-600 bg-blue-50 border-blue-600',
+    green: 'bg-green-600 hover:bg-green-700 text-green-600 bg-green-50 border-green-600',
+    purple: 'bg-purple-600 hover:bg-purple-700 text-purple-600 bg-purple-50 border-purple-600'
+  };
 
   return (
     <main className="min-h-screen bg-gray-50 pt-16">
@@ -229,144 +199,128 @@ export default function PrivateOfficePage() {
             </p>
           </div>
 
-          {/* Plan Selection Tabs */}
-          <div className="flex justify-center mb-8">
-            <div className="bg-white rounded-lg p-2 shadow-lg">
-              {privateOfficePlans.map((plan) => (
-                <button
-                  key={plan.id}
-                  onClick={() => setSelectedPlan(plan.id)}
-                  className={`px-6 py-3 rounded-lg font-semibold transition ${
-                    selectedPlan === plan.id
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  {plan.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Selected Plan Details */}
-          {selectedPlanDetails && (
-            <div className="max-w-4xl mx-auto">
-              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-                <div className="bg-blue-600 text-white p-8 text-center">
-                  <h2 className="text-3xl font-bold mb-2">{selectedPlanDetails.name}</h2>
-                  <div className="text-5xl font-bold mb-2">${selectedPlanDetails.price}<span className="text-xl">/month</span></div>
-                  <p className="text-blue-100 mb-4">{selectedPlanDetails.description}</p>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <div className="font-semibold">Capacity</div>
-                      <div className="text-blue-100">{selectedPlanDetails.capacity}</div>
-                    </div>
-                    <div>
-                      <div className="font-semibold">Size</div>
-                      <div className="text-blue-100">{selectedPlanDetails.size}</div>
-                    </div>
-                    <div>
-                      <div className="font-semibold">Desks</div>
-                      <div className="text-blue-100">{selectedPlanDetails.desks}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-8">
-                  <h3 className="text-xl font-semibold mb-6">What's Included</h3>
-                  <div className="grid md:grid-cols-2 gap-4 mb-8">
-                    {selectedPlanDetails.features.map((feature, index) => (
-                      <div key={index} className="flex items-center">
-                        <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                        <span className="text-gray-700">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <Link 
-                      href="/membership/apply" 
-                      className="flex-1 bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-blue-700 transition text-center"
-                    >
-                      Apply for {selectedPlanDetails.name}
-                    </Link>
-                    <Link 
-                      href="/contact" 
-                      className="flex-1 border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-600 hover:text-white transition text-center"
-                    >
-                      Schedule Tour
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Value Proposition for Different Sizes */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Perfect for Every Business Stage</h2>
-            <p className="text-xl text-gray-600">Choose the right size and scale as you grow</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {privateOfficePlans.map((plan, index) => (
-              <div key={plan.id} className="bg-blue-50 p-6 rounded-xl">
-                <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <DollarSign className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{plan.name}</h3>
-                  <div className="text-3xl font-bold text-blue-600 mb-2">${plan.price}/mo</div>
-                  <p className="text-gray-600 text-sm">{plan.capacity} • {plan.size}</p>
-                </div>
-                
-                <ul className="space-y-2">
-                  {plan.features.slice(0, 4).map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center text-sm text-gray-700">
-                      <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                  {plan.features.length > 4 && (
-                    <li className="text-sm text-gray-500 italic">
-                      +{plan.features.length - 4} more features
-                    </li>
-                  )}
-                </ul>
-
-                <button
-                  onClick={() => setSelectedPlan(plan.id)}
-                  className={`w-full mt-6 px-4 py-3 rounded-lg font-semibold transition ${
-                    selectedPlan === plan.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-blue-600 border border-blue-600 hover:bg-blue-600 hover:text-white'
-                  }`}
-                >
-                  {selectedPlan === plan.id ? 'Selected' : 'Select Plan'}
-                </button>
-              </div>
+          {/* Plan Selector */}
+          <div className="flex flex-wrap justify-center gap-4 mb-12">
+            {privateOfficePlans.map((plan) => (
+              <button
+                key={plan.id}
+                onClick={() => setSelectedPlan(plan.id)}
+                className={`px-6 py-3 rounded-lg font-semibold transition ${
+                  selectedPlan === plan.id
+                    ? `bg-${plan.color}-600 text-white`
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+                style={{
+                  backgroundColor: selectedPlan === plan.id 
+                    ? plan.color === 'blue' ? '#2563eb' 
+                    : plan.color === 'green' ? '#16a34a' 
+                    : '#9333ea'
+                    : undefined
+                }}
+              >
+                {plan.name}
+              </button>
             ))}
+          </div>
+
+          {/* Selected Plan Display */}
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="grid lg:grid-cols-2 gap-8 p-8 md:p-12">
+              {/* Left Column - Details */}
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                    {selectedPlanDetails.name}
+                  </h2>
+                  <p className="text-xl text-gray-600 mb-6">
+                    {selectedPlanDetails.description}
+                  </p>
+                  
+                  <div className="flex items-baseline gap-2 mb-6">
+                    <span className="text-5xl font-bold" style={{
+                      color: selectedPlanDetails.color === 'blue' ? '#2563eb' 
+                        : selectedPlanDetails.color === 'green' ? '#16a34a' 
+                        : '#9333ea'
+                    }}>
+                      ${selectedPlanDetails.price}
+                    </span>
+                    <span className="text-2xl text-gray-500">/month</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm text-gray-600 mb-1">Office Size</div>
+                      <div className="font-semibold text-gray-900">{selectedPlanDetails.size}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600 mb-1">Capacity</div>
+                      <div className="font-semibold text-gray-900">{selectedPlanDetails.capacity}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">What's Included</h3>
+                  <ul className="space-y-3">
+                    {selectedPlanDetails.features.map((feature, index) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <Link 
+                  href="/membership/apply"
+                  className="w-full py-4 px-6 rounded-lg font-semibold transition text-center block text-white"
+                  style={{
+                    backgroundColor: selectedPlanDetails.color === 'blue' ? '#2563eb' 
+                      : selectedPlanDetails.color === 'green' ? '#16a34a' 
+                      : '#9333ea'
+                  }}
+                >
+                  Apply for This Office
+                </Link>
+              </div>
+
+              {/* Right Column - Images */}
+              <div className="space-y-4">
+                <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src={selectedPlanDetails.image1}
+                    alt={`${selectedPlanDetails.name} - view 1`}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src={selectedPlanDetails.image2}
+                    alt={`${selectedPlanDetails.name} - view 2`}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* All Features Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Premium Features Included</h2>
-            <p className="text-xl text-gray-600">Everything you need to run a professional practice</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">All Private Offices Include</h2>
+            <p className="text-xl text-gray-600">Premium amenities and services for every office</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {allFeatures.map((feature, index) => {
               const IconComponent = feature.icon;
               return (
-                <div key={index} className="bg-white p-6 rounded-xl hover:shadow-lg transition">
+                <div key={index} className="bg-gray-50 rounded-xl p-6 hover:shadow-lg transition">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0">
                       <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -386,8 +340,8 @@ export default function PrivateOfficePage() {
         </div>
       </section>
 
-      {/* Perfect For */}
-      <section className="py-16 bg-white">
+      {/* Perfect For Section */}
+      <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Perfect For</h2>
@@ -395,54 +349,43 @@ export default function PrivateOfficePage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center p-6 bg-blue-50 rounded-xl">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Briefcase className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Professional Services</h3>
-              <p className="text-gray-600">Lawyers, accountants, consultants who need confidential client meetings</p>
-            </div>
-
-            <div className="text-center p-6 bg-blue-50 rounded-xl">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Small Business Owners</h3>
-              <p className="text-gray-600">Established businesses needing professional address and private workspace</p>
-            </div>
-
-            <div className="text-center p-6 bg-blue-50 rounded-xl">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Eye className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Privacy-Focused Workers</h3>
-              <p className="text-gray-600">Anyone who needs guaranteed quiet space for focused work and sensitive conversations</p>
-            </div>
+            {idealFor.map((item, index) => {
+              const IconComponent = item.icon;
+              return (
+                <div key={index} className="bg-white p-8 rounded-xl text-center hover:shadow-lg transition">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <IconComponent className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{item.title}</h3>
+                  <p className="text-gray-600">{item.description}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Member Testimonials */}
-      <section className="py-16 bg-gray-50">
+      {/* Testimonials Section */}
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Private Office Members Say</h2>
-            <p className="text-xl text-gray-600">Real feedback from professionals who chose private offices</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Members Say</h2>
+            <p className="text-xl text-gray-600">Real feedback from private office members</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow-sm">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+              <div key={index} className="bg-gray-50 rounded-xl p-6">
+                <div className="flex mb-4">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star key={star} className="w-5 h-5 text-yellow-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-gray-700 mb-4 italic">"{testimonial.content}"</p>
+                <p className="text-gray-700 mb-4">"{testimonial.content}"</p>
                 <div>
-                  <p className="font-semibold text-gray-900">{testimonial.name}</p>
-                  <p className="text-sm text-gray-600">{testimonial.role}</p>
-                  <p className="text-xs text-blue-600 mt-1">{testimonial.plan}</p>
+                  <div className="font-semibold text-gray-900">{testimonial.name}</div>
+                  <div className="text-sm text-gray-600">{testimonial.role}</div>
+                  <div className="text-xs text-blue-600 mt-1">{testimonial.plan}</div>
                 </div>
               </div>
             ))}
@@ -450,165 +393,27 @@ export default function PrivateOfficePage() {
         </div>
       </section>
 
-      {/* Membership Comparison */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Compare All Membership Options</h2>
-            <p className="text-xl text-gray-600">See how private offices compare to dedicated desk and each other</p>
-            <button 
-              onClick={() => setShowComparison(!showComparison)}
-              className="mt-4 text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-2 mx-auto"
-            >
-              {showComparison ? 'Hide' : 'Show'} Comparison
-              <ArrowRight className={`w-4 h-4 transition-transform ${showComparison ? 'rotate-90' : ''}`} />
-            </button>
-          </div>
-
-          {showComparison && (
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="text-left p-4 font-semibold text-gray-900">Feature</th>
-                      <th className="text-center p-4 font-semibold text-gray-900">Dedicated<br/>Desk</th>
-                      <th className="text-center p-4 font-semibold text-blue-600">Private<br/>Single</th>
-                      <th className="text-center p-4 font-semibold text-blue-600">Private<br/>Double</th>
-                      <th className="text-center p-4 font-semibold text-blue-600">Private<br/>Large</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {membershipComparison.map((row, index) => (
-                      <tr key={index} className="border-t border-gray-200">
-                        <td className="p-4 font-medium text-gray-900">{row.feature}</td>
-                        <td className="p-4 text-center text-gray-700">
-                          {typeof row.dedicated === 'boolean' ? (
-                            row.dedicated ? <Check className="w-5 h-5 text-green-500 mx-auto" /> : '—'
-                          ) : (
-                            row.dedicated
-                          )}
-                        </td>
-                        <td className="p-4 text-center">
-                          {typeof row.single === 'boolean' ? (
-                            row.single ? <Check className="w-5 h-5 text-green-500 mx-auto" /> : '—'
-                          ) : (
-                            <span className="font-semibold text-blue-600">{row.single}</span>
-                          )}
-                        </td>
-                        <td className="p-4 text-center">
-                          {typeof row.double === 'boolean' ? (
-                            row.double ? <Check className="w-5 h-5 text-green-500 mx-auto" /> : '—'
-                          ) : (
-                            <span className="font-semibold text-blue-600">{row.double}</span>
-                          )}
-                        </td>
-                        <td className="p-4 text-center">
-                          {typeof row.large === 'boolean' ? (
-                            row.large ? <Check className="w-5 h-5 text-green-500 mx-auto" /> : '—'
-                          ) : (
-                            <span className="font-semibold text-blue-600">{row.large}</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="p-4 bg-gray-50 text-center">
-                <Link href="/membership" className="text-blue-600 hover:text-blue-700 font-semibold">
-                  View All Membership Options →
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Location Benefits */}
-      <section className="py-16 bg-blue-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">Prestigious Business Address</h2>
-              <p className="text-xl text-gray-600 mb-6">
-                Establish your business presence in Denver's most desirable Sloan's Lake neighborhood.
-              </p>
-              
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-blue-600" />
-                  <span className="text-gray-700">2246 Irving Street - Premium Sloan's Lake address</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Building2 className="w-5 h-5 text-blue-600" />
-                  <span className="text-gray-700">Historic landmark location adds credibility</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-blue-600" />
-                  <span className="text-gray-700">Professional environment for client meetings</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-blue-600" />
-                  <span className="text-gray-700">Secure mail and package handling</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative h-64 lg:h-96 rounded-xl overflow-hidden shadow-lg">
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3048.3751849999447!2d-105.02659242404156!3d39.75089969486985!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x876c79e0c86f6b7b%3A0x8c8b8b8b8b8b8b8b!2s2246%20Irving%20St%2C%20Denver%2C%20CO%2080211!5e0!3m2!1sen!2sus!4v1693846800000!5m2!1sen!2sus"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Merritt Workspace Location - 2246 Irving Street, Denver, CO"
-                className="rounded-xl"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Ready to Join */}
-      <section className="py-16 bg-gradient-to-r from-blue-500 to-blue-600">
+      {/* CTA Section */}
+      <section className="py-16 bg-blue-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready for Your Private Office?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Ready to Claim Your Private Office?
+          </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join our community of professionals and establish your Denver business presence
+            Join Denver's premier coworking community at Sloan's Lake
           </p>
-          
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-8">
-            <h3 className="text-xl font-semibold text-white mb-4">What's Next?</h3>
-            <div className="grid md:grid-cols-3 gap-4 text-blue-100">
-              <div className="text-center">
-                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-white font-bold">1</span>
-                </div>
-                <p className="text-sm">Submit Application</p>
-              </div>
-              <div className="text-center">
-                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-white font-bold">2</span>
-                </div>
-                <p className="text-sm">Tour Available Offices</p>
-              </div>
-              <div className="text-center">
-                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span className="text-white font-bold">3</span>
-                </div>
-                <p className="text-sm">Move Into Your Office!</p>
-              </div>
-            </div>
-          </div>
-
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/membership/apply" className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition">
-              Apply for Private Office
+            <Link
+              href="/membership/apply"
+              className="bg-white text-blue-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
+            >
+              Apply for Membership
+              <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link href="/contact" className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition">
+            <Link
+              href="/contact"
+              className="bg-blue-700 text-white py-4 px-8 rounded-lg font-semibold hover:bg-blue-800 transition inline-flex items-center justify-center border-2 border-white"
+            >
               Schedule a Tour
             </Link>
           </div>
