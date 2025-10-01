@@ -8,13 +8,13 @@ import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
 export async function POST(request: NextRequest) {
   try {
     const bookingData = await request.json();
-    
+
     // Validate required fields
     const requiredFields = [
-      'customer_name', 'customer_email', 'booking_date', 
+      'customer_name', 'customer_email', 'booking_date',
       'start_time', 'duration_hours', 'attendees'
     ];
-    
+
     for (const field of requiredFields) {
       if (!bookingData[field]) {
         return NextResponse.json(
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
       // Generate booking ID that we can use for the success page
       const bookingId = `MH-${Date.now()}`;
-      
+
       // Check for calendar conflicts only (no database check needed for members)
       const hasCalendarConflict = await googleCalendarAPI.checkCalendarConflict(
         bookingData.booking_date,
@@ -49,25 +49,30 @@ export async function POST(request: NextRequest) {
       }
 
       // Create simplified booking object for emails/calendar
+      // Around line 60-74 in app/api/bookings/route.ts
       const simplifiedBooking = {
-        id: bookingId,
-        customer_name: bookingData.customer_name,
-        customer_email: bookingData.customer_email,
-        booking_date: bookingData.booking_date,
-        start_time: bookingData.start_time,
+        id: newBooking.id,
+        room_id: null, // Member bookings don't need a specific room_id
+        customer_name: newBooking.customer_name,
+        customer_email: newBooking.customer_email,
+        booking_date: newBooking.booking_date,
+        start_time: newBooking.start_time,
         end_time: endTime,
-        duration_hours: bookingData.duration_hours,
-        attendees: bookingData.attendees,
-        purpose: bookingData.purpose || '',
-        total_amount: 0, // Free for members
-        company: bookingData.company || '', 
-        customer_phone: bookingData.customer_phone || '', 
-        payment_status: 'paid', // Members don't pay
-        status: 'confirmed'
+        duration_hours: newBooking.duration_hours,
+        attendees: newBooking.attendees,
+        purpose: newBooking.purpose,
+        total_amount: 0,
+        company: newBooking.company,
+        customer_phone: newBooking.customer_phone,
+        payment_status: 'completed',
+        status: 'confirmed',
+        confirmation_sent: false, // Add this
+        created_at: new Date().toISOString(), // Add this
+        updated_at: new Date().toISOString(), // Add this
       };
 
       console.log('📅 Creating Google Calendar event for MEMBER booking...');
-      
+
       // Create Google Calendar event for manager visibility
       let calendarEventId = null;
       try {
@@ -81,7 +86,7 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('📧 Sending confirmation emails...');
-      
+
       // Send confirmation emails
       try {
         await sendMemberBookingConfirmationEmail({
@@ -130,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     // **PAID BOOKING FLOW** - Existing logic remains the same
     console.log('Processing paid booking...');
-    
+
     const paidRequiredFields = ['room_id', 'total_amount'];
     for (const field of paidRequiredFields) {
       if (!bookingData[field]) {
@@ -208,7 +213,7 @@ export async function POST(request: NextRequest) {
       }
 
       const checkoutData = await checkoutResponse.json();
-      
+
       return NextResponse.json({
         success: true,
         booking,
@@ -219,7 +224,7 @@ export async function POST(request: NextRequest) {
 
     } catch (stripeError) {
       console.error('Error creating Stripe session:', stripeError);
-      
+
       return NextResponse.json({
         success: false,
         error: 'Payment system unavailable. Please try again or contact support.',
@@ -247,7 +252,7 @@ export async function GET(request: NextRequest) {
 
     if (email) {
       const bookings = await meetingRoomAPI.getBookingsByEmail(email);
-      return NextResponse.json({ 
+      return NextResponse.json({
         bookings,
         note: 'Only shows paid bookings. Member bookings are not stored in the database.'
       });
@@ -255,7 +260,7 @@ export async function GET(request: NextRequest) {
 
     if (date) {
       const bookings = await meetingRoomAPI.getBookingsForDate(date);
-      return NextResponse.json({ 
+      return NextResponse.json({
         bookings,
         note: 'Only shows paid bookings. Check Google Calendar for member bookings.'
       });

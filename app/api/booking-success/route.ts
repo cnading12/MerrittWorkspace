@@ -4,7 +4,7 @@ import { meetingRoomAPI } from '@/lib/supabase';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2025-08-27.basil', // Updated to latest version
 });
 
 export async function GET(request: NextRequest) {
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Booking success API error:', error);
-    
+
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(
         { error: 'Invalid session ID or session expired' },
