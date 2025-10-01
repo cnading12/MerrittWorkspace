@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, X, ChevronDown } from 'lucide-react';
 
 export default function Navbar() {
@@ -68,10 +69,17 @@ export default function Navbar() {
       isVisible ? 'translate-y-0' : '-translate-y-full'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <Link href="/" className="text-2xl font-bold text-burnt-orange-600 hover:text-burnt-orange-700 transition">
-            Merritt Workspace
+          <Link href="/" className="hover:opacity-80 transition">
+            <Image 
+              src="/images/hero/logo.png" 
+              alt="Merritt Workspace Logo" 
+              width={180} 
+              height={48}
+              className="h-12 w-auto"
+              priority
+            />
           </Link>
 
           {/* Desktop Navigation */}

@@ -1,146 +1,337 @@
 "use client";
 
-import { Check, Clock, Wifi, Shield, Coffee, Users, Calendar, MapPin, Phone } from 'lucide-react';
+import { Check, Clock, Wifi, Shield, Coffee, Users, Calendar, MapPin, Phone, Mail, Heart, Star, ArrowRight, Briefcase, TrendingUp, Zap } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function DedicatedDeskPage() {
+  const includedFeatures = [
+    {
+      icon: Clock,
+      title: '24/7 Access',
+      description: 'Work on your schedule with round-the-clock building access'
+    },
+    {
+      icon: Wifi,
+      title: 'High-Speed WiFi',
+      description: 'Enterprise-grade internet throughout the building'
+    },
+    {
+      icon: Shield,
+      title: 'Secure Storage',
+      description: 'Lockable desk drawers and personal storage options'
+    },
+    {
+      icon: Coffee,
+      title: 'Full Kitchen',
+      description: 'Coffee, microwave, refrigerator, and prep space'
+    },
+    {
+      icon: Phone,
+      title: '4 Phone Booths',
+      description: 'Private soundproof booths for calls and video meetings (first-come, first-served)'
+    },
+    {
+      icon: Calendar,
+      title: 'Meeting Credits',
+      description: '2 free hours of conference room time per month'
+    },
+    {
+      icon: Mail,
+      title: 'Mail Handling',
+      description: 'Professional mail receiving and package management'
+    },
+    {
+      icon: Heart,
+      title: 'Pet-Friendly',
+      description: 'Bring your well-behaved dog to work with you'
+    },
+    {
+      icon: MapPin,
+      title: 'Event Space Access',
+      description: 'Use our multi-purpose event space next door until 4:30 PM daily'
+    }
+  ];
+
+  const eventSpaceFeatures = [
+    {
+      icon: Coffee,
+      title: 'Coffee Shop Area',
+      description: 'Casual seating for informal meetings and collaboration'
+    },
+    {
+      icon: Zap,
+      title: 'Projector Setup',
+      description: 'Professional presentation equipment for client meetings'
+    },
+    {
+      icon: Users,
+      title: 'Sound System',
+      description: 'High-quality audio for presentations and events'
+    },
+    {
+      icon: TrendingUp,
+      title: 'Recreation Area',
+      description: 'Ping pong table and break areas for networking'
+    }
+  ];
+
+  const idealFor = [
+    {
+      icon: Briefcase,
+      title: 'Freelancers & Consultants',
+      description: 'Professional environment separate from home with built-in networking opportunities'
+    },
+    {
+      icon: Users,
+      title: 'Remote Workers',
+      description: 'Escape home distractions while maintaining flexibility and community connection'
+    },
+    {
+      icon: TrendingUp,
+      title: 'New Entrepreneurs',
+      description: 'Building their business with access to professional network and meeting spaces'
+    }
+  ];
+
+  const testimonials = [
+    {
+      name: 'Sarah Johnson',
+      role: 'Marketing Consultant',
+      content: 'The dedicated desk gives me the perfect balance of consistency and community. I love having my own space while being surrounded by other motivated professionals.',
+      rating: 5
+    },
+    {
+      name: 'Mike Chen',
+      role: 'Software Developer',
+      content: 'Working from home was killing my productivity. Having a dedicated desk at Merritt House has been game-changing. The phone booths are perfect for client calls.',
+      rating: 5
+    },
+    {
+      name: 'Emma Rodriguez',
+      role: 'Graphic Designer',
+      content: 'Best decision for my business! The 24/7 access means I can work when inspiration strikes, and the community has led to several client referrals.',
+      rating: 5
+    }
+  ];
+
   return (
     <main className="min-h-screen bg-gray-50 pt-16">
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
+          <div className="text-center mb-12">
             <div className="bg-burnt-orange-600 text-white px-4 py-2 rounded-full text-sm font-semibold inline-block mb-4">
               Most Popular Choice
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Dedicated Desk Membership
+              Dedicated Desk
+              <span className="text-burnt-orange-600 block">Membership</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
               Your own workspace in our vibrant coworking community. Perfect for freelancers, consultants, 
-              and remote workers who want consistency and connection.
+              and remote workers who want consistency, community, and professional amenities.
             </p>
-            
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-8 inline-block">
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-4xl font-bold text-burnt-orange-600">$300</span>
-                <span className="text-xl text-gray-500">/month</span>
-              </div>
-              <p className="text-gray-600 text-sm">No long-term contracts required</p>
-            </div>
+          </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/membership/apply" className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition">
-                Apply for Dedicated Desk
-              </Link>
-              <Link href="/contact" className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition">
-                Schedule Tour
-              </Link>
+          {/* Main Content Card */}
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="grid lg:grid-cols-2 gap-8 p-8 md:p-12">
+              {/* Left Column - Details */}
+              <div>
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-2 mb-6">
+                    <span className="text-5xl font-bold text-burnt-orange-600">$300</span>
+                    <span className="text-2xl text-gray-500">/month</span>
+                  </div>
+                  <p className="text-gray-600 text-lg mb-2">No long-term contracts required</p>
+                  <p className="text-gray-600">Month-to-month flexibility with professional consistency</p>
+                </div>
+
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">What's Included</h3>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">Your own dedicated desk with storage</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">24/7 building access with key card</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">High-speed WiFi and power outlets</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">Access to 4 private phone booths (first-come, first-served)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">Full kitchen with coffee, microwave, and refrigerator</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">2 hours monthly conference room credits</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">Mail and package handling</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">Event space access until 4:30 PM daily</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">Pet-friendly workspace</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <Link 
+                  href="/membership/apply"
+                  className="w-full bg-burnt-orange-600 hover:bg-burnt-orange-700 text-white py-4 px-6 rounded-lg font-semibold transition text-center block"
+                >
+                  Apply for Dedicated Desk
+                </Link>
+              </div>
+
+              {/* Right Column - Images */}
+              <div className="space-y-4">
+                <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/images/hero/dedicated-desk.jpg"
+                    alt="Dedicated desk workspace at Merritt House"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/images/hero/dedicated-desk2.jpg"
+                    alt="Private phone booths available to all members"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* What's Included */}
+      {/* All Features Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">What's Included</h2>
-            <p className="text-xl text-gray-600">Everything you need for productive work</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Everything You Need to Thrive</h2>
+            <p className="text-xl text-gray-600">Premium amenities included with your dedicated desk</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <div className="flex items-center gap-3 mb-3">
-                <Clock className="w-6 h-6 text-burnt-orange-600" />
-                <h3 className="text-lg font-semibold">24/7 Access</h3>
-              </div>
-              <p className="text-gray-600">Work on your schedule with round-the-clock building access</p>
-            </div>
+            {includedFeatures.map((feature, index) => {
+              const IconComponent = feature.icon;
+              return (
+                <div key={index} className="bg-gray-50 rounded-xl p-6 hover:shadow-lg transition">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-burnt-orange-100 rounded-lg flex items-center justify-center">
+                        <IconComponent className="w-6 h-6 text-burnt-orange-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                      <p className="text-gray-600 text-sm">{feature.description}</p>
+                    </div>
+                    <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <div className="flex items-center gap-3 mb-3">
-                <Wifi className="w-6 h-6 text-burnt-orange-600" />
-                <h3 className="text-lg font-semibold">High-Speed WiFi</h3>
+      {/* Phone Booth Highlight Section */}
+      <section className="py-16 bg-burnt-orange-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div className="grid lg:grid-cols-2 gap-8">
+              <div className="relative h-64 lg:h-full min-h-[300px]">
+                <Image
+                  src="/images/private-offices/phone-booth.png"
+                  alt="Private phone booths at Merritt House"
+                  fill
+                  className="object-cover"
+                />
               </div>
-              <p className="text-gray-600">Enterprise-grade internet throughout the building</p>
-            </div>
-
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <div className="flex items-center gap-3 mb-3">
-                <Shield className="w-6 h-6 text-burnt-orange-600" />
-                <h3 className="text-lg font-semibold">Secure Storage</h3>
+              <div className="p-8 lg:p-12 flex flex-col justify-center">
+                <div className="w-16 h-16 bg-burnt-orange-100 rounded-full flex items-center justify-center mb-6">
+                  <Phone className="w-8 h-8 text-burnt-orange-600" />
+                </div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                  4 Private Phone Booths
+                </h2>
+                <p className="text-xl text-gray-600 mb-6">
+                  Need to take a confidential call or join a video meeting? We have four soundproof phone booths 
+                  available to all members on a first-come, first-served basis.
+                </p>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700">Soundproof for complete privacy</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700">Perfect for video calls and client meetings</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700">Available anytime during your membership</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700">No reservations needed - just walk in</span>
+                  </li>
+                </ul>
               </div>
-              <p className="text-gray-600">Lockable desk drawers and personal storage options</p>
-            </div>
-
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <div className="flex items-center gap-3 mb-3">
-                <Coffee className="w-6 h-6 text-burnt-orange-600" />
-                <h3 className="text-lg font-semibold">Full Kitchen</h3>
-              </div>
-              <p className="text-gray-600">Coffee, microwave, refrigerator, and prep space</p>
-            </div>
-
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <div className="flex items-center gap-3 mb-3">
-                <Phone className="w-6 h-6 text-burnt-orange-600" />
-                <h3 className="text-lg font-semibold">Phone Booths</h3>
-              </div>
-              <p className="text-gray-600">Private areas for calls and video meetings</p>
-            </div>
-
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <div className="flex items-center gap-3 mb-3">
-                <Calendar className="w-6 h-6 text-burnt-orange-600" />
-                <h3 className="text-lg font-semibold">Meeting Credits</h3>
-              </div>
-              <p className="text-gray-600">2 free hours of conference room time per month</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Event Space Access */}
-      <section className="py-16 bg-blue-50">
+      {/* Event Space Section */}
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Bonus: Event Space Access</h2>
-            <p className="text-xl text-gray-600">Use our multi-purpose event space next door until 4:30 PM daily</p>
+            <p className="text-xl text-gray-600">
+              Use our multi-purpose event space next door until 4:30 PM daily
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-xl text-center">
-              <Coffee className="w-8 h-8 text-blue-600 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Coffee Shop Area</h3>
-              <p className="text-gray-600 text-sm">Casual seating for informal meetings</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl text-center">
-              <MapPin className="w-8 h-8 text-blue-600 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Projector Setup</h3>
-              <p className="text-gray-600 text-sm">Professional presentation equipment</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl text-center">
-              <Users className="w-8 h-8 text-blue-600 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Sound System</h3>
-              <p className="text-gray-600 text-sm">High-quality audio for meetings</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl text-center">
-              <Calendar className="w-8 h-8 text-blue-600 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Recreation</h3>
-              <p className="text-gray-600 text-sm">Ping pong and break areas</p>
-            </div>
+            {eventSpaceFeatures.map((feature, index) => {
+              const IconComponent = feature.icon;
+              return (
+                <div key={index} className="bg-gray-50 rounded-xl p-6 text-center hover:shadow-lg transition">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <IconComponent className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                  <p className="text-gray-600 text-sm">{feature.description}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Perfect For */}
-      <section className="py-16 bg-white">
+      {/* Perfect For Section */}
+      <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Perfect For</h2>
@@ -148,37 +339,71 @@ export default function DedicatedDeskPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center p-6 bg-burnt-orange-50 rounded-xl">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Freelancers & Consultants</h3>
-              <p className="text-gray-600">Professional environment separate from home with networking opportunities</p>
-            </div>
-
-            <div className="text-center p-6 bg-burnt-orange-50 rounded-xl">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Remote Workers</h3>
-              <p className="text-gray-600">Escape home distractions while maintaining flexibility and community</p>
-            </div>
-
-            <div className="text-center p-6 bg-burnt-orange-50 rounded-xl">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">New Entrepreneurs</h3>
-              <p className="text-gray-600">Building their business with access to professional network and meeting spaces</p>
-            </div>
+            {idealFor.map((item, index) => {
+              const IconComponent = item.icon;
+              return (
+                <div key={index} className="bg-white p-8 rounded-xl text-center hover:shadow-lg transition">
+                  <div className="w-16 h-16 bg-burnt-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <IconComponent className="w-8 h-8 text-burnt-orange-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{item.title}</h3>
+                  <p className="text-gray-600">{item.description}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Call to Action */}
+      {/* Testimonials Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Members Say</h2>
+            <p className="text-xl text-gray-600">Real feedback from dedicated desk members</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="bg-gray-50 rounded-xl p-6">
+                <div className="flex mb-4">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star key={star} className="w-5 h-5 text-yellow-400 fill-current" />
+                  ))}
+                </div>
+                <p className="text-gray-700 mb-4">"{testimonial.content}"</p>
+                <div>
+                  <div className="font-semibold text-gray-900">{testimonial.name}</div>
+                  <div className="text-sm text-gray-600">{testimonial.role}</div>
+                  <div className="text-xs text-burnt-orange-600 mt-1">Dedicated Desk Member</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-burnt-orange-500 to-burnt-orange-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Get Started?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Ready to Claim Your Dedicated Desk?
+          </h2>
           <p className="text-xl text-burnt-orange-100 mb-8">
-            Join our community and start working in your dedicated space
+            Join Denver's premier coworking community at Sloan's Lake
           </p>
-          
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/membership/apply" className="bg-white text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition">
+            <Link
+              href="/membership/apply"
+              className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
+            >
               Apply for Membership
+              <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link href="/contact" className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-burnt-orange-600 transition">
+            <Link
+              href="/contact"
+              className="bg-burnt-orange-700 text-white py-4 px-8 rounded-lg font-semibold hover:bg-burnt-orange-800 transition inline-flex items-center justify-center border-2 border-white"
+            >
               Schedule a Tour
             </Link>
           </div>
