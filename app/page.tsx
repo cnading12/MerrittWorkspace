@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { MapPin, Wifi, Shield, Phone, Monitor, Coffee, Users, Calendar, Clock, ArrowRight, CheckCircle, Projector, Volume2, Circle } from 'lucide-react';
 import Footer from '@/components/Footer';
 
+
 export default function ImprovedHomePage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -40,21 +41,21 @@ export default function ImprovedHomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-orange-50 via-white to-orange-50 pt-32 pb-20">
+      <section className="relative bg-gradient-to-br from-orange-50 via-white to-orange-50 pt-32 pb-5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-2 items-center">
             {/* Content */}
             <div>
               <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
                 <MapPin className="w-4 h-4" />
                 Sloan's Lake, Denver
               </div>
-              
+
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
                 Where Work
                 <span className="block text-orange-600">Meets Community</span>
               </h1>
-              
+
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
                 Premium offices and dedicated desks in a beautifully restored space with distinctive burnt orange floors and vibrant event space.
               </p>
@@ -78,7 +79,7 @@ export default function ImprovedHomePage() {
                   <span className="text-gray-700">No Long Leases</span>
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-4">
                 <a href="/membership" className="inline-flex items-center justify-center bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg hover:shadow-xl">
                   Schedule Free Tour
@@ -92,19 +93,17 @@ export default function ImprovedHomePage() {
 
             {/* Image Carousel */}
             <div className="relative">
-              <div className="relative h-[500px] rounded-2xl overflow-hidden shadow-2xl">
+              <div className="relative h-[450px] md:h-[550px] lg:h-[640px] rounded-2xl overflow-hidden shadow-2xl">
                 {heroImages.map((image, index) => (
                   <div
                     key={index}
-                    className={`absolute inset-0 transition-opacity duration-1000 ${
-                      index === currentImageIndex ? 'opacity-100' : 'opacity-0'
-                    }`}
+                    className={`absolute inset-0 transition-opacity duration-1000 ${index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+                      }`}
                   >
                     <img
                       src={image.src}
                       alt={image.title}
-                      className="w-full h-full object-cover"
-                    />
+                      className={`w-full h-full ${index === 0 ? 'object-contain bg-gray-900' : 'object-cover'}`} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     <div className="absolute bottom-8 left-8 right-8">
                       <div className="bg-white/95 backdrop-blur-sm rounded-xl p-6 shadow-lg">
@@ -122,11 +121,10 @@ export default function ImprovedHomePage() {
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`h-2 rounded-full transition-all ${
-                      index === currentImageIndex 
-                        ? 'bg-orange-600 w-8' 
-                        : 'bg-gray-300 w-2 hover:bg-gray-400'
-                    }`}
+                    className={`h-2 rounded-full transition-all ${index === currentImageIndex
+                      ? 'bg-orange-600 w-8'
+                      : 'bg-gray-300 w-2 hover:bg-gray-400'
+                      }`}
                   />
                 ))}
               </div>
@@ -248,12 +246,12 @@ export default function ImprovedHomePage() {
                     Most Popular
                   </span>
                 </div>
-                
+
                 <div className="grid md:grid-cols-2 gap-8 p-8">
                   <div>
                     <h3 className="text-3xl font-bold text-gray-900 mb-4">Dedicated Desk</h3>
                     <p className="text-gray-600 mb-6">Your own workspace in our collaborative environment</p>
-                    
+
                     <div className="flex items-baseline gap-2 mb-6">
                       <span className="text-5xl font-bold text-orange-600">$300</span>
                       <span className="text-xl text-gray-500">/month</span>
@@ -361,7 +359,7 @@ export default function ImprovedHomePage() {
               <p className="text-xl text-gray-600 mb-8">
                 Located next to the historic Landmark Merritt Church Building at the iconic intersection of 23rd and Irving Street.
               </p>
-              
+
               <div className="space-y-4">
                 {[
                   { icon: MapPin, title: '2246 Irving Street', desc: '23rd and Irving, Denver CO' },
@@ -414,7 +412,6 @@ export default function ImprovedHomePage() {
           </div>
         </div>
       </section>
-
       <Footer />
     </div>
   );
