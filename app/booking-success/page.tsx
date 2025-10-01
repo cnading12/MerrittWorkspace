@@ -1,11 +1,12 @@
 // app/booking-success/page.tsx - FIXED VERSION
 "use client";
 
-import { useState, useEffect } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle, Calendar, MapPin, Clock, Users, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
+import { useState, useEffect } from 'react';
 
 interface BookingDetails {
   id: string;
@@ -24,35 +25,31 @@ interface BookingDetails {
   payment_status: string;
 }
 
-export default function BookingSuccessPage() {
+// Separate component for the actual content that uses useSearchParams
+function BookingSuccessContent() {
   const searchParams = useSearchParams();
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // FIXED: Move all state and search params logic to the top, before any conditional logic
   const sessionId = searchParams.get('session_id');
   const canceled = searchParams.get('canceled');
-  const bookingId = searchParams.get('booking_id');
 
   useEffect(() => {
     const handleBookingFlow = async () => {
       try {
-        // Handle canceled payment
         if (canceled === 'true') {
           setError('Payment was canceled. Your booking has been canceled.');
           setLoading(false);
           return;
         }
         
-        // Handle missing session ID
         if (!sessionId) {
           setError('No session ID provided');
           setLoading(false);
           return;
         }
 
-        // Fetch booking details
         await fetchBookingDetails(sessionId);
       } catch (err) {
         console.error('Error in booking flow:', err);
@@ -62,7 +59,7 @@ export default function BookingSuccessPage() {
     };
 
     handleBookingFlow();
-  }, [sessionId, canceled]); // Dependencies are now stable
+  }, [sessionId, canceled]);
 
   const fetchBookingDetails = async (sessionId: string) => {
     try {
@@ -82,7 +79,6 @@ export default function BookingSuccessPage() {
     }
   };
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
@@ -94,7 +90,6 @@ export default function BookingSuccessPage() {
     );
   }
 
-  // Error state
   if (error || !booking) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
@@ -116,21 +111,14 @@ export default function BookingSuccessPage() {
             >
               {error?.includes('canceled') ? 'Try Booking Again' : 'Back to Meeting Rooms'}
             </Link>
-            {error?.includes('canceled') && (
-              <p className="text-sm text-gray-500">
-                Need help? <Link href="/contact" className="text-orange-600 hover:underline">Contact Support</Link>
-              </p>
-            )}
           </div>
         </div>
       </div>
     );
   }
 
-  // Success state - booking found
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      {/* Success Header */}
       <section className="bg-gradient-to-br from-green-50 to-green-100 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-6" />
@@ -150,7 +138,6 @@ export default function BookingSuccessPage() {
         </div>
       </section>
 
-      {/* Booking Details */}
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -160,7 +147,6 @@ export default function BookingSuccessPage() {
             
             <div className="p-6">
               <div className="grid md:grid-cols-2 gap-8">
-                {/* Left Column */}
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Booking Information</h3>
@@ -193,9 +179,7 @@ export default function BookingSuccessPage() {
                       
                       <div className="flex items-center">
                         <MapPin className="w-5 h-5 text-orange-600 mr-3" />
-                        <span className="text-gray-700">
-                          {booking.room_name}
-                        </span>
+                        <span className="text-gray-700">{booking.room_name}</span>
                       </div>
                     </div>
                   </div>
@@ -216,7 +200,6 @@ export default function BookingSuccessPage() {
                   )}
                 </div>
 
-                {/* Right Column */}
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Summary</h3>
@@ -238,9 +221,6 @@ export default function BookingSuccessPage() {
                           <p className="text-sm text-gray-600">
                             Payment Status: <span className="text-green-600 font-medium">Paid</span>
                           </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Charged to your payment method
-                          </p>
                         </div>
                       )}
                     </div>
@@ -254,17 +234,6 @@ export default function BookingSuccessPage() {
                       <p className="text-gray-700">Denver, CO 80211</p>
                     </div>
                   </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">What's Included</h3>
-                    <ul className="space-y-2 text-sm text-gray-600">
-                      <li>• 75" Smart TV with wireless presentation</li>
-                      <li>• High-speed WiFi</li>
-                      <li>• Conference calling capabilities</li>
-                      <li>• Comfortable seating</li>
-                      <li>• Access to snackshop</li>
-                    </ul>
-                  </div>
                 </div>
               </div>
             </div>
@@ -272,7 +241,6 @@ export default function BookingSuccessPage() {
         </div>
       </section>
 
-      {/* Next Steps */}
       <section className="py-16 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">What Happens Next?</h2>
@@ -305,7 +273,6 @@ export default function BookingSuccessPage() {
         </div>
       </section>
 
-      {/* Action Buttons */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-8">Need Anything Else?</h2>
@@ -318,15 +285,27 @@ export default function BookingSuccessPage() {
             <Link href="/contact" className="block sm:inline-block bg-white text-orange-600 border-2 border-orange-600 px-8 py-3 rounded-lg font-semibold hover:bg-orange-50 transition">
               Contact Support
             </Link>
-            
-            <Link href="/member-resources" className="block sm:inline-block bg-gray-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-gray-700 transition">
-              Member Resources
-            </Link>
           </div>
         </div>
       </section>
 
       <Footer />
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function BookingSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-orange-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading booking confirmation...</p>
+        </div>
+      </div>
+    }>
+      <BookingSuccessContent />
+    </Suspense>
   );
 }

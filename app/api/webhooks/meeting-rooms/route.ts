@@ -7,7 +7,7 @@ import { googleCalendarAPI } from '@/lib/google-calendar';
 import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2025-08-27.basil',
 });
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -34,19 +34,19 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed':
         await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
         break;
-      
+
       case 'payment_intent.succeeded':
         await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
         break;
-      
+
       case 'payment_intent.payment_failed':
         await handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent);
         break;
-      
+
       case 'checkout.session.expired':
         await handleCheckoutSessionExpired(event.data.object as Stripe.Checkout.Session);
         break;
-      
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -89,10 +89,10 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     }
 
     console.log('✅ Booking found, updating status...');
-    
+
     // Update booking status
     const updatedBooking = await meetingRoomAPI.updateBookingStatus(bookingId, 'confirmed', 'paid');
-    
+
     // Update with Stripe payment intent ID
     if (session.payment_intent) {
       await meetingRoomAPI.updateBookingPayment(
@@ -114,7 +114,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           .from('bookings')
           .update({ calendar_event_id: calendarEventId })
           .eq('id', bookingId);
-        
+
         console.log('✅ PAID BOOKING: Google Calendar event created successfully:', calendarEventId);
       } else {
         console.error('⚠️ PAID BOOKING: Failed to create calendar event - returned null');
@@ -156,7 +156,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
   console.log('Processing successful meeting room payment intent:', paymentIntent.id);
-  
+
   try {
     // Find booking by payment intent ID
     const { data: booking, error } = await meetingRoomAPI.supabase
@@ -172,7 +172,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
 
     // Ensure booking is marked as paid (should already be done in checkout.session.completed)
     await meetingRoomAPI.updateBookingStatus(booking.id, 'confirmed', 'paid');
-    
+
     console.log('Payment intent processed successfully for booking:', booking.id);
   } catch (error) {
     console.error('Error processing payment intent:', error);
@@ -182,7 +182,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
 
 async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
   console.log('Processing failed meeting room payment intent:', paymentIntent.id);
-  
+
   try {
     // Find booking by payment intent ID
     const { data: booking, error } = await meetingRoomAPI.supabase
@@ -198,7 +198,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
 
     // Mark booking as payment failed
     await meetingRoomAPI.updateBookingStatus(booking.id, 'cancelled', 'failed');
-    
+
     // 🔥 CRITICAL: Remove calendar event if payment failed
     if (booking.calendar_event_id) {
       try {
@@ -208,7 +208,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
         console.error('❌ Failed to cancel calendar event:', calendarError);
       }
     }
-    
+
     console.log('Failed payment processed for booking:', booking.id);
 
   } catch (error) {
@@ -219,7 +219,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
 
 async function handleCheckoutSessionExpired(session: Stripe.Checkout.Session) {
   console.log('Processing expired meeting room checkout session:', session.id);
-  
+
   try {
     const bookingId = session.metadata?.booking_id;
     const bookingType = session.metadata?.booking_type;
@@ -238,7 +238,7 @@ async function handleCheckoutSessionExpired(session: Stripe.Checkout.Session) {
 
     // If booking is still pending, cancel it
     if (booking.status === 'pending') {
-      await meetingRoomAPI.updateBookingStatus(bookingId, 'cancelled', 'expired');
+      await meetingRoomAPI.updateBookingStatus(bookingId, 'cancelled', 'failed');
       console.log('Cancelled expired booking:', bookingId);
     }
 

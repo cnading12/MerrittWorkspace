@@ -1,4 +1,4 @@
-// lib/supabase.ts - UPDATED VERSION with fixed updateBookingPayment
+// lib/supabase.ts - UPDATED VERSION with flexible Booking type
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -24,9 +24,10 @@ export interface MeetingRoom {
   updated_at: string;
 }
 
+// UPDATED: Make room_id optional to support member bookings
 export interface Booking {
   id: string;
-  room_id: string;
+  room_id: string | null; // ✅ FIXED: Allow null for member bookings
   customer_name: string;
   customer_email: string;
   customer_phone?: string;
@@ -39,7 +40,7 @@ export interface Booking {
   attendees: number;
   purpose?: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+  payment_status: 'pending' | 'paid' | 'failed' | 'refunded' | 'completed';
   stripe_payment_intent_id?: string;
   stripe_session_id?: string;
   confirmation_sent: boolean;
@@ -136,7 +137,6 @@ export const meetingRoomAPI = {
     } catch (error: any) {
       console.error('Error getting available slots:', error);
 
-      // If the function doesn't exist, provide a helpful error message
       if (error.message && error.message.includes('function') && error.message.includes('does not exist')) {
         throw new Error('Database functions are not set up. Please run the database setup script first.');
       }
@@ -170,7 +170,6 @@ export const meetingRoomAPI = {
     } catch (error: any) {
       console.error('Error checking availability:', error);
 
-      // If the function doesn't exist, provide a helpful error message
       if (error.message && error.message.includes('function') && error.message.includes('does not exist')) {
         throw new Error('Database functions are not set up. Please run the database setup script first.');
       }
@@ -251,25 +250,18 @@ export const meetingRoomAPI = {
     return data;
   },
 
-  // FIXED: Update booking with Stripe information
-  // REPLACE the updateBookingPayment function in lib/supabase.ts with this FIXED version
-
-  // FIXED: Update booking with Stripe information
+  // Update booking with Stripe information
   async updateBookingPayment(
     id: string,
     stripeSessionId?: string,
     stripePaymentIntentId?: string
   ): Promise<Booking> {
-    console.log('🔧 FIXED: Updating booking payment info:', { id, stripeSessionId, stripePaymentIntentId });
+    console.log('🔧 Updating booking payment info:', { id, stripeSessionId, stripePaymentIntentId });
 
-    // Build update data
     const updateData: any = { updated_at: new Date().toISOString() };
     if (stripeSessionId) updateData.stripe_session_id = stripeSessionId;
     if (stripePaymentIntentId) updateData.stripe_payment_intent_id = stripePaymentIntentId;
 
-    console.log('🔧 FIXED: Update data prepared:', updateData);
-
-    // Use direct update without checking if booking exists first (to avoid race conditions)
     const { data, error } = await supabase
       .from('bookings')
       .update(updateData)
@@ -277,37 +269,17 @@ export const meetingRoomAPI = {
       .select();
 
     if (error) {
-      console.error('❌ FIXED: Error updating booking payment:', error);
+      console.error('❌ Error updating booking payment:', error);
       throw new Error(`Failed to update booking payment: ${error.message}`);
     }
 
-    // Check if any rows were updated
     if (!data || data.length === 0) {
-      console.error('❌ FIXED: No rows updated for booking ID:', id);
-
-      // Let's verify the booking exists
-      const { data: checkData, error: checkError } = await supabase
-        .from('bookings')
-        .select('id, stripe_session_id, stripe_payment_intent_id')
-        .eq('id', id);
-
-      console.log('🔍 FIXED: Booking check result:', { checkData, checkError });
-
-      if (checkError) {
-        throw new Error(`Booking verification failed: ${checkError.message}`);
-      }
-
-      if (!checkData || checkData.length === 0) {
-        throw new Error(`Booking not found with ID: ${id}`);
-      }
-
-      // If booking exists but update failed, it might be a permission issue
-      throw new Error(`Booking exists but update failed. Booking ID: ${id}. This might be a database permission issue.`);
+      console.error('❌ No rows updated for booking ID:', id);
+      throw new Error(`Booking not found with ID: ${id}`);
     }
 
-    // Return the first (and should be only) updated row
     const updatedBooking = data[0];
-    console.log('✅ FIXED: Booking payment info updated successfully:', {
+    console.log('✅ Booking payment info updated successfully:', {
       id: updatedBooking.id,
       stripe_session_id: updatedBooking.stripe_session_id,
       stripe_payment_intent_id: updatedBooking.stripe_payment_intent_id
@@ -374,7 +346,7 @@ export const formatTime = (time: string): string => {
     return `${displayHour}:${minutes} ${ampm}`;
   } catch (error) {
     console.error('Error formatting time:', error);
-    return time; // Return original if formatting fails
+    return time;
   }
 };
 
@@ -387,7 +359,7 @@ export const addHours = (time: string, hours: number): string => {
     return date.toTimeString().slice(0, 5);
   } catch (error) {
     console.error('Error adding hours to time:', error);
-    return time; // Return original if calculation fails
+    return time;
   }
 };
 

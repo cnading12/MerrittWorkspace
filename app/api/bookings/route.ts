@@ -1,7 +1,7 @@
-// app/api/bookings/route.ts - UPDATED to redirect member bookings to success page
+// app/api/bookings/route.ts - FIXED VERSION
 
 import { NextRequest, NextResponse } from 'next/server';
-import { meetingRoomAPI } from '@/lib/supabase';
+import { meetingRoomAPI, type Booking } from '@/lib/supabase';
 import { googleCalendarAPI } from '@/lib/google-calendar';
 import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (bookingData.is_member_booking === true) {
       console.log('🎯 Processing MEMBER booking...');
 
-      // Generate booking ID that we can use for the success page
+      // Generate booking ID
       const bookingId = `MH-${Date.now()}`;
 
       // Check for calendar conflicts only (no database check needed for members)
@@ -49,27 +49,26 @@ export async function POST(request: NextRequest) {
       }
 
       // Create simplified booking object for emails/calendar
-      // Around line 60-74 in app/api/bookings/route.ts
       const simplifiedBooking = {
-        id: newBooking.id,
-        room_id: null, // Member bookings don't need a specific room_id
-        customer_name: newBooking.customer_name,
-        customer_email: newBooking.customer_email,
-        booking_date: newBooking.booking_date,
-        start_time: newBooking.start_time,
+        id: bookingId,
+        room_id: null as string | null,
+        customer_name: bookingData.customer_name,
+        customer_email: bookingData.customer_email,
+        booking_date: bookingData.booking_date,
+        start_time: bookingData.start_time,
         end_time: endTime,
-        duration_hours: newBooking.duration_hours,
-        attendees: newBooking.attendees,
-        purpose: newBooking.purpose,
+        duration_hours: bookingData.duration_hours,
+        attendees: bookingData.attendees,
+        purpose: bookingData.purpose || '',
         total_amount: 0,
-        company: newBooking.company,
-        customer_phone: newBooking.customer_phone,
-        payment_status: 'completed',
-        status: 'confirmed',
-        confirmation_sent: false, // Add this
-        created_at: new Date().toISOString(), // Add this
-        updated_at: new Date().toISOString(), // Add this
-      };
+        company: bookingData.company || '',
+        customer_phone: bookingData.customer_phone || '',
+        payment_status: 'completed' as const,
+        status: 'confirmed' as const,
+        confirmation_sent: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as Booking;
 
       console.log('📅 Creating Google Calendar event for MEMBER booking...');
 
@@ -241,8 +240,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// ... rest of the existing code (GET method, helper functions)
 
 export async function GET(request: NextRequest) {
   try {
