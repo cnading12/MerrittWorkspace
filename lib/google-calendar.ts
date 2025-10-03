@@ -3,7 +3,17 @@ import { type Booking } from './supabase';
 
 // Initialize Google Calendar API
 const getGoogleAuth = () => {
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  // Check if we're in a build environment
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    throw new Error('Google Calendar API should not be called during build');
+  }
+
+  // Check if credentials are available
+  if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+    throw new Error('Missing Google Calendar credentials');
+  }
+
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n');
   
   const auth = new google.auth.GoogleAuth({
     credentials: {
@@ -92,82 +102,15 @@ Customer notifications are handled via email separately.
     }
   },
 
-  // Update an existing calendar event
-  async updateBookingEvent(eventId: string, booking: Booking): Promise<boolean> {
-    try {
-      const auth = getGoogleAuth();
-      
-      const startDateTime = new Date(`${booking.booking_date}T${booking.start_time}`);
-      const endDateTime = new Date(`${booking.booking_date}T${booking.end_time}`);
-      
-      const event: CalendarEvent = {
-        summary: `Meeting Room Booking - ${booking.customer_name} (${booking.status.toUpperCase()})`,
-        description: `
-Meeting Room Booking Details:
-- Customer: ${booking.customer_name}
-- Email: ${booking.customer_email}
-- Company: ${booking.company || 'N/A'}
-- Phone: ${booking.customer_phone || 'N/A'}
-- Attendees: ${booking.attendees}
-- Purpose: ${booking.purpose || 'N/A'}
-- Booking ID: ${booking.id}
-- Total Amount: $${booking.total_amount}
-- Status: ${booking.status.toUpperCase()}
-- Payment Status: ${booking.payment_status.toUpperCase()}
-
-This is an automated booking from Merritt Workspace.
-Customer notifications are handled via email separately.
-        `.trim(),
-        start: {
-          dateTime: startDateTime.toISOString(),
-          timeZone: 'America/Denver',
-        },
-        end: {
-          dateTime: endDateTime.toISOString(),
-          timeZone: 'America/Denver',
-        },
-        location: '2246 Irving Street, Denver, CO 80211',
-      };
-
-      await calendar.events.update({
-        auth,
-        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-        eventId,
-        requestBody: event,
-        sendUpdates: 'none', // No automatic notifications
-      });
-
-      console.log('✅ Calendar event updated:', eventId);
-      return true;
-    } catch (error) {
-      console.error('❌ Error updating calendar event:', error);
-      return false;
-    }
-  },
-
-  // Cancel/delete a calendar event
-  async cancelBookingEvent(eventId: string): Promise<boolean> {
-    try {
-      const auth = getGoogleAuth();
-      
-      await calendar.events.delete({
-        auth,
-        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-        eventId,
-        sendUpdates: 'none', // No automatic cancellation notifications
-      });
-
-      console.log('✅ Calendar event cancelled:', eventId);
-      return true;
-    } catch (error) {
-      console.error('❌ Error cancelling calendar event:', error);
-      return false;
-    }
-  },
-
   // Get events for a specific date (to check actual calendar conflicts)
   async getEventsForDate(date: string): Promise<any[]> {
     try {
+      // Don't call during build
+      if (process.env.NEXT_PHASE === 'phase-production-build') {
+        console.log('⚠️ Skipping calendar check during build');
+        return [];
+      }
+
       const auth = getGoogleAuth();
       
       const startOfDay = new Date(`${date}T00:00:00`);
@@ -218,10 +161,82 @@ Customer notifications are handled via email separately.
       console.error('❌ Error checking calendar conflicts:', error);
       return false; // Assume no conflict on error
     }
-  }
+  },
+
+  // Update, cancel, and other methods remain the same...
+  async updateBookingEvent(eventId: string, booking: Booking): Promise<boolean> {
+    try {
+      const auth = getGoogleAuth();
+      
+      const startDateTime = new Date(`${booking.booking_date}T${booking.start_time}`);
+      const endDateTime = new Date(`${booking.booking_date}T${booking.end_time}`);
+      
+      const event: CalendarEvent = {
+        summary: `Meeting Room Booking - ${booking.customer_name} (${booking.status.toUpperCase()})`,
+        description: `
+Meeting Room Booking Details:
+- Customer: ${booking.customer_name}
+- Email: ${booking.customer_email}
+- Company: ${booking.company || 'N/A'}
+- Phone: ${booking.customer_phone || 'N/A'}
+- Attendees: ${booking.attendees}
+- Purpose: ${booking.purpose || 'N/A'}
+- Booking ID: ${booking.id}
+- Total Amount: $${booking.total_amount}
+- Status: ${booking.status.toUpperCase()}
+- Payment Status: ${booking.payment_status.toUpperCase()}
+
+This is an automated booking from Merritt Workspace.
+Customer notifications are handled via email separately.
+        `.trim(),
+        start: {
+          dateTime: startDateTime.toISOString(),
+          timeZone: 'America/Denver',
+        },
+        end: {
+          dateTime: endDateTime.toISOString(),
+          timeZone: 'America/Denver',
+        },
+        location: '2246 Irving Street, Denver, CO 80211',
+      };
+
+      await calendar.events.update({
+        auth,
+        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
+        eventId,
+        requestBody: event,
+        sendUpdates: 'none',
+      });
+
+      console.log('✅ Calendar event updated:', eventId);
+      return true;
+    } catch (error) {
+      console.error('❌ Error updating calendar event:', error);
+      return false;
+    }
+  },
+
+  async cancelBookingEvent(eventId: string): Promise<boolean> {
+    try {
+      const auth = getGoogleAuth();
+      
+      await calendar.events.delete({
+        auth,
+        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
+        eventId,
+        sendUpdates: 'none',
+      });
+
+      console.log('✅ Calendar event cancelled:', eventId);
+      return true;
+    } catch (error) {
+      console.error('❌ Error cancelling calendar event:', error);
+      return false;
+    }
+  },
 };
 
-// Utility functions for calendar integration
+// Utility functions remain the same...
 export const calendarUtils = {
   formatDateTime: (date: string, time: string): string => {
     return new Date(`${date}T${time}`).toISOString();
@@ -241,211 +256,4 @@ export const calendarUtils = {
   },
 
   getDenverTimeZone: () => 'America/Denver',
-};
-
-// Add this test function to your lib/google-calendar.ts temporarily
-
-export const testDomainWideDelegation = async () => {
-  try {
-    console.log('🔍 Testing Domain-Wide Delegation...');
-    
-    const auth = getGoogleAuth();
-    
-    // Test 1: Can we access the calendar?
-    console.log('📅 Testing calendar access...');
-    const calendarResponse = await calendar.calendars.get({
-      auth,
-      calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-    });
-    console.log('✅ Calendar access successful:', calendarResponse.data.summary);
-    
-    // Test 2: Can we create a basic event?
-    console.log('📝 Testing event creation (no attendees)...');
-    const basicEvent = await calendar.events.insert({
-      auth,
-      calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-      requestBody: {
-        summary: 'Domain-Wide Delegation Test',
-        start: {
-          dateTime: new Date(Date.now() + 60000).toISOString(), // 1 minute from now
-          timeZone: 'America/Denver',
-        },
-        end: {
-          dateTime: new Date(Date.now() + 120000).toISOString(), // 2 minutes from now
-          timeZone: 'America/Denver',
-        },
-      },
-      sendUpdates: 'none',
-    });
-    console.log('✅ Basic event created:', basicEvent.data.id);
-    
-    // Test 3: Can we add attendees (this requires Domain-Wide Delegation)?
-    console.log('👥 Testing attendee addition...');
-    const eventWithAttendees = await calendar.events.patch({
-      auth,
-      calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-      eventId: basicEvent.data.id!,
-      requestBody: {
-        attendees: [
-          {
-            email: 'test@merrittworkspace.net',
-            displayName: 'Test User',
-          }
-        ]
-      },
-      sendUpdates: 'all',
-    });
-    console.log('✅ Domain-Wide Delegation working! Attendees added successfully');
-    
-    // Clean up test event
-    await calendar.events.delete({
-      auth,
-      calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-      eventId: basicEvent.data.id!,
-    });
-    console.log('🧹 Test event cleaned up');
-    
-    return {
-      success: true,
-      message: 'Domain-Wide Delegation is working correctly!'
-    };
-    
-  } catch (error: any) {
-    console.error('❌ Domain-Wide Delegation test failed:', error);
-    
-    if (error.message?.includes('forbidden')) {
-      return {
-        success: false,
-        message: 'Domain-Wide Delegation not properly configured. Check Google Workspace Admin Console.',
-        details: error.message
-      };
-    }
-    
-    if (error.message?.includes('Service accounts cannot invite attendees')) {
-      return {
-        success: false,
-        message: 'Domain-Wide Delegation missing. Service account needs delegation authority.',
-        details: error.message
-      };
-    }
-    
-    return {
-      success: false,
-      message: 'Unknown error occurred',
-      details: error.message
-    };
-  }
-};
-
-// Also update your main createBookingEvent function to be more robust:
-export const createBookingEventRobust = async (booking: Booking): Promise<string | null> => {
-  try {
-    const auth = getGoogleAuth();
-    
-    // Combine date and time for proper datetime format
-    const startDateTime = new Date(`${booking.booking_date}T${booking.start_time}`);
-    const endDateTime = new Date(`${booking.booking_date}T${booking.end_time}`);
-    
-    const baseEvent = {
-      summary: `Meeting Room Booking - ${booking.customer_name}`,
-      description: `
-Meeting Room Booking Details:
-- Customer: ${booking.customer_name}
-- Email: ${booking.customer_email}
-- Company: ${booking.company || 'N/A'}
-- Phone: ${booking.customer_phone || 'N/A'}
-- Attendees: ${booking.attendees}
-- Purpose: ${booking.purpose || 'N/A'}
-- Booking ID: ${booking.id}
-- Total Amount: $${booking.total_amount}
-
-This is an automated booking from Merritt Workspace.
-      `.trim(),
-      start: {
-        dateTime: startDateTime.toISOString(),
-        timeZone: 'America/Denver',
-      },
-      end: {
-        dateTime: endDateTime.toISOString(),
-        timeZone: 'America/Denver',
-      },
-      location: '2246 Irving Street, Denver, CO 80211',
-    };
-
-    console.log('🔄 Attempting to create calendar event...');
-    console.log('📧 Using calendar ID:', process.env.GOOGLE_CALENDAR_ID || 'primary');
-
-    // Strategy 1: Try with attendees first (if Domain-Wide Delegation is working)
-    try {
-      console.log('👥 Attempting with attendees (Domain-Wide Delegation)...');
-      const eventWithAttendees = await calendar.events.insert({
-        auth,
-        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-        requestBody: {
-          ...baseEvent,
-          attendees: [
-            {
-              email: booking.customer_email,
-              displayName: booking.customer_name,
-            },
-            {
-              email: process.env.WORKSPACE_EMAIL || 'manager@merrittworkspace.net',
-              displayName: 'Merritt Workspace',
-            }
-          ]
-        },
-        sendUpdates: 'all',
-      });
-      
-      console.log('✅ Event created with attendees successfully!');
-      return eventWithAttendees.data.id || null;
-      
-    } catch (attendeeError: any) {
-      console.log('⚠️ Failed to create with attendees, trying without...');
-      
-      // Strategy 2: Create without attendees
-      const basicEvent = await calendar.events.insert({
-        auth,
-        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-        requestBody: baseEvent,
-        sendUpdates: 'none',
-      });
-
-      console.log('✅ Event created without attendees');
-      
-      // Strategy 3: Try to add attendees after creation
-      if (basicEvent.data.id) {
-        try {
-          console.log('🔄 Attempting to add attendees post-creation...');
-          await calendar.events.patch({
-            auth,
-            calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-            eventId: basicEvent.data.id,
-            requestBody: {
-              attendees: [
-                {
-                  email: booking.customer_email,
-                  displayName: booking.customer_name,
-                },
-                {
-                  email: process.env.WORKSPACE_EMAIL || 'manager@merrittworkspace.net',
-                  displayName: 'Merritt Workspace',
-                }
-              ]
-            },
-            sendUpdates: 'all',
-          });
-          console.log('✅ Attendees added successfully after creation!');
-        } catch (patchError) {
-          console.log('⚠️ Could not add attendees after creation, but event exists');
-        }
-      }
-
-      return basicEvent.data.id || null;
-    }
-
-  } catch (error) {
-    console.error('❌ Failed to create calendar event:', error);
-    return null;
-  }
 };
