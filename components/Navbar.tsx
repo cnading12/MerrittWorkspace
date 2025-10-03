@@ -205,21 +205,21 @@ export default function Navbar() {
                 {isDropdownOpen === 'member-resources' && (
                   <div className="ml-4 mt-2 space-y-2">
                     <Link 
-                      href="/snackshop" 
+                      href="/member-resources/snackshop" 
                       className="block text-gray-600 hover:text-burnt-orange-600 transition py-1"
                       onClick={closeAllMenus}
                     >
                       Snackshop
                     </Link>
                     <Link 
-                      href="/meeting-rooms" 
+                      href="/member-resources/meeting-rooms" 
                       className="block text-gray-600 hover:text-burnt-orange-600 transition py-1"
                       onClick={closeAllMenus}
                     >
                       Meeting Rooms
                     </Link>
                     <Link 
-                      href="/faq" 
+                      href="/member-resources/faq" 
                       className="block text-gray-600 hover:text-burnt-orange-600 transition py-1"
                       onClick={closeAllMenus}
                     >
