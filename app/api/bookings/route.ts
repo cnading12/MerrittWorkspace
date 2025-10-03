@@ -5,6 +5,8 @@ import { meetingRoomAPI, type Booking } from '@/lib/supabase';
 import { googleCalendarAPI } from '@/lib/google-calendar';
 import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const bookingData = await request.json();
