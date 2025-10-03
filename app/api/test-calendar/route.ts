@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { googleCalendarAPI } from '@/lib/google-calendar';
 import { meetingRoomAPI } from '@/lib/supabase';
 
+// Force dynamic rendering - don't pre-render at build time
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     console.log('🧪 Testing Google Calendar and Database Sync...');
