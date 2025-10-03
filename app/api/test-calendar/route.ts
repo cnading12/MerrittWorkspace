@@ -1,50 +1,75 @@
 import { NextResponse } from 'next/server';
 import { googleCalendarAPI } from '@/lib/google-calendar';
+import { meetingRoomAPI } from '@/lib/supabase';
 
 export async function GET() {
   try {
-    console.log('🧪 Testing Google Calendar API...');
-    console.log('📧 Client Email:', process.env.GOOGLE_CLIENT_EMAIL);
-    console.log('📅 Calendar ID:', process.env.GOOGLE_CALENDAR_ID);
-    console.log('🔑 Has Private Key:', !!process.env.GOOGLE_PRIVATE_KEY);
+    console.log('🧪 Testing Google Calendar and Database Sync...');
     
-    // Test getting events for today
+    // Test 1: Check Google Calendar
     const today = new Date().toISOString().split('T')[0];
-    console.log('📅 Fetching events for:', today);
+    console.log('📅 Checking calendar for date:', today);
     
     const events = await googleCalendarAPI.getEventsForDate(today);
+    console.log('📅 Calendar events found:', events.length);
     
-    console.log('✅ Calendar API Success! Found', events.length, 'events');
+    // Test 2: Check Database Bookings
+    console.log('💾 Checking database bookings for date:', today);
+    const bookings = await meetingRoomAPI.getBookingsForDate(today);
+    console.log('💾 Database bookings found:', bookings.length);
+    
+    // Test 3: Check last 5 bookings regardless of date
+    console.log('📋 Fetching recent bookings...');
+    const allBookings = await meetingRoomAPI.getAllBookings();
+    const recentBookings = allBookings.slice(0, 5);
+    console.log('📋 Recent bookings:', recentBookings.length);
     
     return NextResponse.json({
       success: true,
-      message: 'Google Calendar API is working!',
-      date: today,
-      eventsFound: events.length,
-      events: events.map(e => ({
-        summary: e.summary,
-        start: e.start?.dateTime,
-        end: e.end?.dateTime
-      })),
+      today: today,
+      calendar: {
+        eventsFound: events.length,
+        events: events.map(e => ({
+          summary: e.summary,
+          start: e.start?.dateTime,
+          end: e.end?.dateTime,
+          id: e.id
+        }))
+      },
+      database: {
+        bookingsToday: bookings.length,
+        todayBookings: bookings.map(b => ({
+          id: b.id,
+          customer: b.customer_name,
+          date: b.booking_date,
+          time: `${b.start_time} - ${b.end_time}`,
+          status: b.status,
+          calendarEventId: b.calendar_event_id || 'NO CALENDAR EVENT',
+          isMember: b.is_member_booking
+        })),
+        recentBookings: recentBookings.map(b => ({
+          id: b.id,
+          customer: b.customer_name,
+          date: b.booking_date,
+          time: `${b.start_time} - ${b.end_time}`,
+          status: b.status,
+          calendarEventId: b.calendar_event_id || 'NO CALENDAR EVENT',
+          isMember: b.is_member_booking,
+          createdAt: b.created_at
+        }))
+      },
       config: {
-        calendarId: process.env.GOOGLE_CALENDAR_ID || 'not set',
-        clientEmail: process.env.GOOGLE_CLIENT_EMAIL || 'not set',
-        hasPrivateKey: !!process.env.GOOGLE_PRIVATE_KEY,
-        privateKeyLength: process.env.GOOGLE_PRIVATE_KEY?.length || 0
+        calendarId: process.env.GOOGLE_CALENDAR_ID,
+        clientEmail: process.env.GOOGLE_CLIENT_EMAIL,
+        hasPrivateKey: !!process.env.GOOGLE_PRIVATE_KEY
       }
     });
   } catch (error) {
-    console.error('❌ Calendar test failed:', error);
+    console.error('❌ Test failed:', error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
-      errorDetails: error instanceof Error ? error.stack : undefined,
-      config: {
-        calendarId: process.env.GOOGLE_CALENDAR_ID || 'not set',
-        clientEmail: process.env.GOOGLE_CLIENT_EMAIL || 'not set',
-        hasPrivateKey: !!process.env.GOOGLE_PRIVATE_KEY,
-        privateKeyLength: process.env.GOOGLE_PRIVATE_KEY?.length || 0
-      }
+      stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   }
 }
