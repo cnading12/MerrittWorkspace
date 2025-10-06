@@ -179,7 +179,7 @@ export default function MembershipApplicationPage() {
   const handleWorkStyleChange = (style: string, checked: boolean) => {
     setApplication(prev => ({
       ...prev,
-      work_style: checked 
+      work_style: checked
         ? [...prev.work_style, style]
         : prev.work_style.filter(s => s !== style)
     }));
@@ -255,7 +255,7 @@ export default function MembershipApplicationPage() {
 
   const handleSubmitApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!application.agrees_to_terms) {
       setError('Please agree to the terms and conditions');
       return;
@@ -267,10 +267,10 @@ export default function MembershipApplicationPage() {
     }
 
     // Validate credit references
-    const incompleteReferences = application.credit_references.filter(ref => 
+    const incompleteReferences = application.credit_references.filter(ref =>
       !ref.institution_name || !ref.account_type || !ref.contact_name || !ref.contact_phone
     );
-    
+
     if (incompleteReferences.length > 0) {
       setError('Please complete all required fields for credit references');
       return;
@@ -280,24 +280,31 @@ export default function MembershipApplicationPage() {
     setError(null);
 
     try {
-      const applicationData = {
-        ...application,
-        id: `APP-${Date.now()}`,
-        status: 'pending_review',
-        submitted_at: new Date().toISOString()
-      };
+      console.log('📝 Submitting membership application to API...');
 
-      console.log('Submitting membership application:', applicationData);
-      
-      // Mock API delay
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      // Call the API endpoint
+      const response = await fetch('/api/membership-application', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(application),
+      });
 
-      setSuccess(`Thank you ${application.first_name}! Your membership application has been submitted successfully. You'll receive a confirmation email shortly, and our team will contact you within 1-2 business days to schedule your complimentary workspace tour.`);
-      
-      // Reset form would go here
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit application');
+      }
+
+      console.log('✅ Application submitted successfully:', data);
+
+      // Show success message
+      setSuccess(`Thank you ${application.first_name}! Your membership application has been submitted successfully. You'll receive a confirmation email at ${application.email} shortly, and our team will contact you within 1-2 business days to schedule your complimentary workspace tour.`);
+
     } catch (error) {
-      console.error('Error submitting application:', error);
-      setError('Failed to submit application. Please try again.');
+      console.error('❌ Error submitting application:', error);
+      setError(error instanceof Error ? error.message : 'Failed to submit application. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -336,7 +343,7 @@ export default function MembershipApplicationPage() {
             Apply for Membership
           </h1>
           <p className="text-xl text-gray-600 mb-8">
-            Join our community of professionals in the heart of Sloan's Lake. 
+            Join our community of professionals in the heart of Sloan's Lake.
             Complete your application below to get started.
           </p>
           <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
@@ -372,23 +379,22 @@ export default function MembershipApplicationPage() {
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <form onSubmit={handleSubmitApplication} className="space-y-8">
-            
-            {/* MOVED TO TOP: Membership Selection */}
+
+            {/* Membership Selection */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-6">
                 <CreditCard className="w-6 h-6 text-orange-600" />
                 <h3 className="text-xl font-semibold text-gray-900">Choose Your Membership</h3>
               </div>
-              
+
               <div className="grid md:grid-cols-2 gap-4">
                 {membershipPlans.map((plan) => (
                   <div
                     key={plan.id}
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition ${
-                      application.membership_type === plan.id
+                    className={`border-2 rounded-lg p-4 cursor-pointer transition ${application.membership_type === plan.id
                         ? 'border-orange-500 bg-orange-50'
                         : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                      }`}
                     onClick={() => setApplication(prev => ({ ...prev, membership_type: plan.id as any }))}
                   >
                     <div className="flex items-start justify-between mb-3">
@@ -414,7 +420,6 @@ export default function MembershipApplicationPage() {
                 ))}
               </div>
 
-              {/* Show selected plan summary */}
               {selectedPlanDetails && (
                 <div className="mt-6 bg-orange-50 p-4 rounded-lg border border-orange-200">
                   <h4 className="font-semibold text-orange-900 mb-2">Selected Plan: {selectedPlanDetails.name}</h4>
@@ -455,7 +460,7 @@ export default function MembershipApplicationPage() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
                   <input
@@ -466,7 +471,7 @@ export default function MembershipApplicationPage() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
                   <input
@@ -477,7 +482,7 @@ export default function MembershipApplicationPage() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
                   <input
@@ -508,7 +513,7 @@ export default function MembershipApplicationPage() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Job Title *</label>
                   <input
@@ -519,7 +524,7 @@ export default function MembershipApplicationPage() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Industry *</label>
                   <select
@@ -534,7 +539,7 @@ export default function MembershipApplicationPage() {
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Team Size</label>
                   <input
@@ -546,7 +551,7 @@ export default function MembershipApplicationPage() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn URL</label>
                   <input
@@ -557,7 +562,7 @@ export default function MembershipApplicationPage() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Website URL</label>
                   <input
@@ -602,7 +607,7 @@ export default function MembershipApplicationPage() {
                       <option value="daily">Daily</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">How did you hear about us? *</label>
                     <select
@@ -621,7 +626,7 @@ export default function MembershipApplicationPage() {
               </div>
             </div>
 
-            {/* NEW: Credit References */}
+            {/* Credit References */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-6">
                 <CreditCard className="w-6 h-6 text-orange-600" />
@@ -729,7 +734,7 @@ export default function MembershipApplicationPage() {
               </button>
             </div>
 
-            {/* NEW: Prior Lease Information (Optional) */}
+            {/* Prior Lease Information */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-6">
                 <Mail className="w-6 h-6 text-orange-600" />
@@ -897,7 +902,7 @@ export default function MembershipApplicationPage() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
                   <input
@@ -908,7 +913,7 @@ export default function MembershipApplicationPage() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Relationship *</label>
                   <input
@@ -929,7 +934,7 @@ export default function MembershipApplicationPage() {
                 <Calendar className="w-6 h-6 text-orange-600" />
                 <h3 className="text-xl font-semibold text-gray-900">Additional Information</h3>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Special Requirements or Requests</label>
                 <textarea
@@ -964,7 +969,7 @@ export default function MembershipApplicationPage() {
                     <span className="text-red-500"> *</span>
                   </div>
                 </label>
-                
+
                 <label className="flex items-start">
                   <input
                     type="checkbox"
@@ -976,7 +981,7 @@ export default function MembershipApplicationPage() {
                     I consent to a background check as part of the membership approval process <span className="text-red-500">*</span>
                   </div>
                 </label>
-                
+
                 <label className="flex items-start">
                   <input
                     type="checkbox"
@@ -1007,7 +1012,7 @@ export default function MembershipApplicationPage() {
                   'Submit Application'
                 )}
               </button>
-              
+
               <p className="text-sm text-gray-600 text-center mt-4">
                 By submitting this application, you acknowledge that all information provided is accurate and complete.
               </p>
