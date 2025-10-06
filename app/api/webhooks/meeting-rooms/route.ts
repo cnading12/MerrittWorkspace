@@ -1,4 +1,4 @@
-// Create this file: app/api/webhooks/meeting-rooms/route.ts
+// app/api/webhooks/meeting-rooms/route.ts - FIXED VERSION
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
@@ -124,16 +124,19 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       // Don't fail the entire process if calendar creation fails
     }
 
-    console.log('📧 Sending confirmation emails...');
+    console.log('📧 Sending confirmation emails for PAID booking...');
 
-    // Send confirmation emails
+    // 🔥 CRITICAL FIX: Send confirmation emails with ALL required parameters
     try {
       await sendMemberBookingConfirmationEmail({
         to: updatedBooking.customer_email,
         customerName: updatedBooking.customer_name,
         booking: updatedBooking,
         roomName: session.metadata?.room_name || 'Conference Room',
-        isMemberBooking: false, // This is a paid booking
+        isMemberBooking: false, // ✅ This is a PAID booking, not a member booking
+        memberHoursUsed: 0, // ✅ Not applicable for paid bookings
+        remainingHours: undefined, // ✅ Not applicable for paid bookings
+        memberInfo: undefined // ✅ Not applicable for paid bookings
       });
 
       // Update confirmation sent status
@@ -145,7 +148,15 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       console.log('✅ PAID BOOKING: Payment successful, booking confirmed, emails sent, and calendar event created');
     } catch (emailError) {
       console.error('❌ Failed to send confirmation emails:', emailError);
+      // Log the detailed error for debugging
+      console.error('Email error details:', {
+        bookingId,
+        customerEmail: updatedBooking.customer_email,
+        customerName: updatedBooking.customer_name,
+        error: emailError instanceof Error ? emailError.message : 'Unknown error'
+      });
       // Don't fail the entire process if email sending fails
+      // The booking is still valid and confirmed
     }
 
   } catch (error) {
