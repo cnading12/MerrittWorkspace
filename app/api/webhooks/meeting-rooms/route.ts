@@ -124,11 +124,20 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       // Don't fail the entire process if calendar creation fails
     }
 
-    console.log('📧 Sending confirmation emails for PAID booking...');
+    console.log('📧 CRITICAL: Preparing to send confirmation emails for PAID booking...');
+    console.log('📧 Email Configuration Check:', {
+      RESEND_API_KEY_configured: !!process.env.RESEND_API_KEY,
+      customer_email: updatedBooking.customer_email,
+      customer_name: updatedBooking.customer_name,
+      booking_id: bookingId,
+      manager_email: 'manager@merrittworkspace.net'
+    });
 
     // 🔥 CRITICAL FIX: Send confirmation emails with ALL required parameters
     try {
-      await sendMemberBookingConfirmationEmail({
+      console.log('📧 Calling sendMemberBookingConfirmationEmail...');
+      
+      const emailResult = await sendMemberBookingConfirmationEmail({
         to: updatedBooking.customer_email,
         customerName: updatedBooking.customer_name,
         booking: updatedBooking,
@@ -139,24 +148,43 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         memberInfo: undefined // ✅ Not applicable for paid bookings
       });
 
+      console.log('📧 Email function returned:', emailResult);
+      console.log('✅ Customer email result:', emailResult.customerEmail);
+      console.log('✅ Manager email result:', emailResult.managerEmail);
+
       // Update confirmation sent status
       await meetingRoomAPI.supabase
         .from('bookings')
         .update({ confirmation_sent: true })
         .eq('id', bookingId);
 
-      console.log('✅ PAID BOOKING: Payment successful, booking confirmed, emails sent, and calendar event created');
+      console.log('✅✅✅ PAID BOOKING COMPLETE: Payment successful, booking confirmed, emails sent, and calendar event created');
+      console.log('📧 Confirmation emails sent to:', {
+        customer: updatedBooking.customer_email,
+        manager: 'manager@merrittworkspace.net',
+        customer_email_id: emailResult.customerEmail?.data?.id,
+        manager_email_id: emailResult.managerEmail?.data?.id
+      });
     } catch (emailError) {
-      console.error('❌ Failed to send confirmation emails:', emailError);
+      console.error('❌❌❌ CRITICAL ERROR: Failed to send confirmation emails');
+      console.error('❌ Full error object:', emailError);
+      console.error('❌ Error message:', emailError instanceof Error ? emailError.message : 'Unknown error');
+      console.error('❌ Error stack:', emailError instanceof Error ? emailError.stack : 'No stack trace');
+      
       // Log the detailed error for debugging
-      console.error('Email error details:', {
+      console.error('❌ Email error context:', {
         bookingId,
         customerEmail: updatedBooking.customer_email,
         customerName: updatedBooking.customer_name,
-        error: emailError instanceof Error ? emailError.message : 'Unknown error'
+        roomName: session.metadata?.room_name || 'Conference Room',
+        RESEND_API_KEY_exists: !!process.env.RESEND_API_KEY,
+        error: emailError instanceof Error ? emailError.message : 'Unknown error',
+        errorType: emailError?.constructor?.name
       });
+      
       // Don't fail the entire process if email sending fails
       // The booking is still valid and confirmed
+      console.warn('⚠️ Booking is still valid despite email failure');
     }
 
   } catch (error) {
