@@ -14,7 +14,7 @@ const getGoogleAuth = () => {
   }
 
   const privateKey = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n');
-  
+
   const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: process.env.GOOGLE_CLIENT_EMAIL,
@@ -51,11 +51,11 @@ export const googleCalendarAPI = {
   async createBookingEvent(booking: Booking): Promise<string | null> {
     try {
       const auth = getGoogleAuth();
-      
+
       // Combine date and time for proper datetime format
-      const startDateTime = new Date(`${booking.booking_date}T${booking.start_time}`);
-      const endDateTime = new Date(`${booking.booking_date}T${booking.end_time}`);
-      
+      const startDateTime = `${booking.booking_date}T${booking.start_time}:00`;
+      const endDateTime = `${booking.booking_date}T${booking.end_time}:00`;
+
       const event: CalendarEvent = {
         summary: `Meeting Room Booking - ${booking.customer_name}`,
         description: `
@@ -84,7 +84,7 @@ Customer notifications are handled via email separately.
       };
 
       console.log('📅 Creating calendar event (no attendees)...');
-      
+
       // Create event WITHOUT attendees - no Domain-Wide Delegation needed!
       const response = await calendar.events.insert({
         auth,
@@ -95,7 +95,7 @@ Customer notifications are handled via email separately.
 
       console.log('✅ Calendar event created successfully:', response.data.id);
       return response.data.id || null;
-      
+
     } catch (error) {
       console.error('❌ Error creating calendar event:', error);
       return null;
@@ -112,10 +112,10 @@ Customer notifications are handled via email separately.
       }
 
       const auth = getGoogleAuth();
-      
+
       const startOfDay = new Date(`${date}T00:00:00`);
       const endOfDay = new Date(`${date}T23:59:59`);
-      
+
       const response = await calendar.events.list({
         auth,
         calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
@@ -136,16 +136,16 @@ Customer notifications are handled via email separately.
   async checkCalendarConflict(date: string, startTime: string, endTime: string): Promise<boolean> {
     try {
       const events = await this.getEventsForDate(date);
-      
+
       const bookingStart = new Date(`${date}T${startTime}`);
       const bookingEnd = new Date(`${date}T${endTime}`);
-      
+
       for (const event of events) {
         if (!event.start?.dateTime || !event.end?.dateTime) continue;
-        
+
         const eventStart = new Date(event.start.dateTime);
         const eventEnd = new Date(event.end.dateTime);
-        
+
         // Check for overlap
         if (
           (bookingStart >= eventStart && bookingStart < eventEnd) ||
@@ -155,7 +155,7 @@ Customer notifications are handled via email separately.
           return true; // Conflict found
         }
       }
-      
+
       return false; // No conflict
     } catch (error) {
       console.error('❌ Error checking calendar conflicts:', error);
@@ -167,10 +167,10 @@ Customer notifications are handled via email separately.
   async updateBookingEvent(eventId: string, booking: Booking): Promise<boolean> {
     try {
       const auth = getGoogleAuth();
-      
+
       const startDateTime = new Date(`${booking.booking_date}T${booking.start_time}`);
       const endDateTime = new Date(`${booking.booking_date}T${booking.end_time}`);
-      
+
       const event: CalendarEvent = {
         summary: `Meeting Room Booking - ${booking.customer_name} (${booking.status.toUpperCase()})`,
         description: `
@@ -219,7 +219,7 @@ Customer notifications are handled via email separately.
   async cancelBookingEvent(eventId: string): Promise<boolean> {
     try {
       const auth = getGoogleAuth();
-      
+
       await calendar.events.delete({
         auth,
         calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
