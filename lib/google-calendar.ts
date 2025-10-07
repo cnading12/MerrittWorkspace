@@ -1,14 +1,13 @@
+// lib/google-calendar.ts - UPDATED to be the source of truth for availability
 import { google } from 'googleapis';
 import { type Booking } from './supabase';
 
 // Initialize Google Calendar API
 const getGoogleAuth = () => {
-  // Check if we're in a build environment
   if (process.env.NEXT_PHASE === 'phase-production-build') {
     throw new Error('Google Calendar API should not be called during build');
   }
 
-  // Check if credentials are available
   if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
     throw new Error('Missing Google Calendar credentials');
   }
@@ -46,66 +45,15 @@ export interface CalendarEvent {
   location?: string;
 }
 
+export interface TimeSlot {
+  time_slot: string;
+  is_available: boolean;
+}
+
 export const googleCalendarAPI = {
-  // Create a calendar event for a booking (NO ATTENDEES - emails handle notifications)
-  async createBookingEvent(booking: Booking): Promise<string | null> {
-    try {
-      const auth = getGoogleAuth();
-
-      // Combine date and time for proper datetime format
-      const startDateTime = `${booking.booking_date}T${booking.start_time}:00`;
-      const endDateTime = `${booking.booking_date}T${booking.end_time}:00`;
-
-      const event: CalendarEvent = {
-        summary: `Meeting Room Booking - ${booking.customer_name}`,
-        description: `
-Meeting Room Booking Details:
-- Customer: ${booking.customer_name}
-- Email: ${booking.customer_email}
-- Company: ${booking.company || 'N/A'}
-- Phone: ${booking.customer_phone || 'N/A'}
-- Attendees: ${booking.attendees}
-- Purpose: ${booking.purpose || 'N/A'}
-- Booking ID: ${booking.id}
-- Total Amount: $${booking.total_amount}
-
-This is an automated booking from Merritt Workspace.
-Customer notifications are handled via email separately.
-        `.trim(),
-        start: {
-          dateTime: startDateTime.toISOString(),
-          timeZone: 'America/Denver',
-        },
-        end: {
-          dateTime: endDateTime.toISOString(),
-          timeZone: 'America/Denver',
-        },
-        location: '2246 Irving Street, Denver, CO 80211',
-      };
-
-      console.log('📅 Creating calendar event (no attendees)...');
-
-      // Create event WITHOUT attendees - no Domain-Wide Delegation needed!
-      const response = await calendar.events.insert({
-        auth,
-        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
-        requestBody: event,
-        sendUpdates: 'none', // No automatic invitations
-      });
-
-      console.log('✅ Calendar event created successfully:', response.data.id);
-      return response.data.id || null;
-
-    } catch (error) {
-      console.error('❌ Error creating calendar event:', error);
-      return null;
-    }
-  },
-
-  // Get events for a specific date (to check actual calendar conflicts)
+  // ✅ PRIMARY FUNCTION: Get all events for a specific date
   async getEventsForDate(date: string): Promise<any[]> {
     try {
-      // Don't call during build
       if (process.env.NEXT_PHASE === 'phase-production-build') {
         console.log('⚠️ Skipping calendar check during build');
         return [];
@@ -125,6 +73,7 @@ Customer notifications are handled via email separately.
         orderBy: 'startTime',
       });
 
+      console.log(`📅 Found ${response.data.items?.length || 0} events for ${date}`);
       return response.data.items || [];
     } catch (error) {
       console.error('❌ Error fetching calendar events:', error);
@@ -132,7 +81,67 @@ Customer notifications are handled via email separately.
     }
   },
 
-  // Check if a time slot conflicts with existing calendar events
+  // ✅ NEW: Get available time slots based on Google Calendar
+  async getAvailableTimeSlots(date: string): Promise<TimeSlot[]> {
+    try {
+      console.log('🔍 Checking Google Calendar availability for:', date);
+
+      // Get all events for the date from Google Calendar
+      const calendarEvents = await this.getEventsForDate(date);
+
+      // Create a set of booked hours
+      const bookedHours = new Set<number>();
+
+      calendarEvents.forEach(event => {
+        if (event.start?.dateTime && event.end?.dateTime) {
+          const start = new Date(event.start.dateTime);
+          const end = new Date(event.end.dateTime);
+          
+          const startHour = start.getHours();
+          const endHour = end.getHours();
+          
+          // Mark all hours in the event as booked
+          for (let hour = startHour; hour < endHour; hour++) {
+            bookedHours.add(hour);
+          }
+        }
+      });
+
+      // Generate time slots for business hours (8 AM to 6 PM)
+      const timeSlots: TimeSlot[] = [];
+      for (let hour = 8; hour <= 18; hour++) {
+        const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+        const isAvailable = !bookedHours.has(hour);
+        
+        timeSlots.push({
+          time_slot: timeSlot,
+          is_available: isAvailable
+        });
+      }
+
+      console.log('✅ Generated time slots from calendar:', {
+        total: timeSlots.length,
+        available: timeSlots.filter(s => s.is_available).length,
+        booked_hours: Array.from(bookedHours).sort()
+      });
+
+      return timeSlots;
+    } catch (error) {
+      console.error('❌ Error getting available time slots:', error);
+      
+      // Return default slots on error
+      const fallbackSlots: TimeSlot[] = [];
+      for (let hour = 8; hour <= 18; hour++) {
+        fallbackSlots.push({
+          time_slot: `${hour.toString().padStart(2, '0')}:00`,
+          is_available: true
+        });
+      }
+      return fallbackSlots;
+    }
+  },
+
+  // ✅ Check if a specific time slot conflicts with calendar events
   async checkCalendarConflict(date: string, startTime: string, endTime: string): Promise<boolean> {
     try {
       const events = await this.getEventsForDate(date);
@@ -152,6 +161,7 @@ Customer notifications are handled via email separately.
           (bookingEnd > eventStart && bookingEnd <= eventEnd) ||
           (bookingStart <= eventStart && bookingEnd >= eventEnd)
         ) {
+          console.log('⚠️ Calendar conflict found with event:', event.summary);
           return true; // Conflict found
         }
       }
@@ -163,16 +173,17 @@ Customer notifications are handled via email separately.
     }
   },
 
-  // Update, cancel, and other methods remain the same...
-  async updateBookingEvent(eventId: string, booking: Booking): Promise<boolean> {
+  // ✅ Create a calendar event for a booking
+  async createBookingEvent(booking: Booking): Promise<string | null> {
     try {
       const auth = getGoogleAuth();
 
-      const startDateTime = new Date(`${booking.booking_date}T${booking.start_time}`);
-      const endDateTime = new Date(`${booking.booking_date}T${booking.end_time}`);
+      // Combine date and time for proper datetime format
+      const startDateTime = new Date(`${booking.booking_date}T${booking.start_time}:00`);
+      const endDateTime = new Date(`${booking.booking_date}T${booking.end_time}:00`);
 
       const event: CalendarEvent = {
-        summary: `Meeting Room Booking - ${booking.customer_name} (${booking.status.toUpperCase()})`,
+        summary: `${booking.is_member_booking ? '[MEMBER]' : '[PAID]'} Meeting Room - ${booking.customer_name}`,
         description: `
 Meeting Room Booking Details:
 - Customer: ${booking.customer_name}
@@ -181,13 +192,10 @@ Meeting Room Booking Details:
 - Phone: ${booking.customer_phone || 'N/A'}
 - Attendees: ${booking.attendees}
 - Purpose: ${booking.purpose || 'N/A'}
+- Booking Type: ${booking.is_member_booking ? 'Member Booking (FREE)' : `Paid Booking ($${booking.total_amount})`}
 - Booking ID: ${booking.id}
-- Total Amount: $${booking.total_amount}
-- Status: ${booking.status.toUpperCase()}
-- Payment Status: ${booking.payment_status.toUpperCase()}
 
 This is an automated booking from Merritt Workspace.
-Customer notifications are handled via email separately.
         `.trim(),
         start: {
           dateTime: startDateTime.toISOString(),
@@ -197,7 +205,61 @@ Customer notifications are handled via email separately.
           dateTime: endDateTime.toISOString(),
           timeZone: 'America/Denver',
         },
-        location: '2246 Irving Street, Denver, CO 80211',
+        location: 'Merritt Workspace - 2246 Irving Street, Denver, CO 80211',
+      };
+
+      console.log('📅 Creating calendar event...');
+
+      const response = await calendar.events.insert({
+        auth,
+        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
+        requestBody: event,
+        sendUpdates: 'none',
+      });
+
+      console.log('✅ Calendar event created successfully:', response.data.id);
+      return response.data.id || null;
+
+    } catch (error) {
+      console.error('❌ Error creating calendar event:', error);
+      return null;
+    }
+  },
+
+  // Update calendar event
+  async updateBookingEvent(eventId: string, booking: Booking): Promise<boolean> {
+    try {
+      const auth = getGoogleAuth();
+
+      const startDateTime = new Date(`${booking.booking_date}T${booking.start_time}`);
+      const endDateTime = new Date(`${booking.booking_date}T${booking.end_time}`);
+
+      const event: CalendarEvent = {
+        summary: `${booking.is_member_booking ? '[MEMBER]' : '[PAID]'} Meeting Room - ${booking.customer_name} (${booking.status.toUpperCase()})`,
+        description: `
+Meeting Room Booking Details:
+- Customer: ${booking.customer_name}
+- Email: ${booking.customer_email}
+- Company: ${booking.company || 'N/A'}
+- Phone: ${booking.customer_phone || 'N/A'}
+- Attendees: ${booking.attendees}
+- Purpose: ${booking.purpose || 'N/A'}
+- Booking Type: ${booking.is_member_booking ? 'Member Booking (FREE)' : `Paid Booking ($${booking.total_amount})`}
+- Status: ${booking.status.toUpperCase()}
+- Payment Status: ${booking.payment_status.toUpperCase()}
+- Booking ID: ${booking.id}
+
+This is an automated booking from Merritt Workspace.
+        `.trim(),
+        start: {
+          dateTime: startDateTime.toISOString(),
+          timeZone: 'America/Denver',
+        },
+        end: {
+          dateTime: endDateTime.toISOString(),
+          timeZone: 'America/Denver',
+        },
+        location: 'Merritt Workspace - 2246 Irving Street, Denver, CO 80211',
       };
 
       await calendar.events.update({
@@ -216,6 +278,7 @@ Customer notifications are handled via email separately.
     }
   },
 
+  // Cancel calendar event
   async cancelBookingEvent(eventId: string): Promise<boolean> {
     try {
       const auth = getGoogleAuth();
@@ -236,7 +299,7 @@ Customer notifications are handled via email separately.
   },
 };
 
-// Utility functions remain the same...
+// Utility functions
 export const calendarUtils = {
   formatDateTime: (date: string, time: string): string => {
     return new Date(`${date}T${time}`).toISOString();

@@ -1,5 +1,4 @@
-// app/api/bookings/route.ts - FIXED VERSION
-
+// app/api/bookings/route.ts - UPDATED to use Google Calendar as source of truth
 import { NextRequest, NextResponse } from 'next/server';
 import { meetingRoomAPI, type Booking } from '@/lib/supabase';
 import { googleCalendarAPI } from '@/lib/google-calendar';
@@ -29,28 +28,29 @@ export async function POST(request: NextRequest) {
     // Calculate end time
     const endTime = calculateEndTime(bookingData.start_time, bookingData.duration_hours);
 
-    // **MEMBER BOOKING FLOW** - Redirect to success page
+    // ✅ CRITICAL: Check Google Calendar for conflicts FIRST
+    console.log('🔍 Checking Google Calendar for conflicts...');
+    const hasCalendarConflict = await googleCalendarAPI.checkCalendarConflict(
+      bookingData.booking_date,
+      bookingData.start_time,
+      endTime
+    );
+
+    if (hasCalendarConflict) {
+      return NextResponse.json(
+        { error: 'Time slot conflicts with existing calendar events. Please choose a different time.' },
+        { status: 409 }
+      );
+    }
+
+    // **MEMBER BOOKING FLOW**
     if (bookingData.is_member_booking === true) {
       console.log('🎯 Processing MEMBER booking...');
 
       // Generate booking ID
       const bookingId = `MH-${Date.now()}`;
 
-      // Check for calendar conflicts only (no database check needed for members)
-      const hasCalendarConflict = await googleCalendarAPI.checkCalendarConflict(
-        bookingData.booking_date,
-        bookingData.start_time,
-        endTime
-      );
-
-      if (hasCalendarConflict) {
-        return NextResponse.json(
-          { error: 'Time slot conflicts with existing calendar events' },
-          { status: 409 }
-        );
-      }
-
-      // Create simplified booking object for emails/calendar
+      // Create simplified booking object
       const simplifiedBooking = {
         id: bookingId,
         room_id: null as string | null,
@@ -70,25 +70,29 @@ export async function POST(request: NextRequest) {
         confirmation_sent: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        is_member_booking: true
       } as Booking;
 
+      // ✅ IMMEDIATELY create Google Calendar event
       console.log('📅 Creating Google Calendar event for MEMBER booking...');
-
-      // Create Google Calendar event for manager visibility
       let calendarEventId = null;
       try {
         calendarEventId = await googleCalendarAPI.createBookingEvent(simplifiedBooking);
         if (calendarEventId) {
-          console.log('✅ MEMBER BOOKING: Google Calendar event created successfully:', calendarEventId);
+          console.log('✅ MEMBER BOOKING: Calendar event created:', calendarEventId);
+        } else {
+          throw new Error('Calendar event creation returned null');
         }
       } catch (calendarError) {
-        console.error('❌ MEMBER BOOKING: Failed to create calendar event:', calendarError);
-        // Continue with booking despite calendar failure
+        console.error('❌ CRITICAL: Failed to create calendar event:', calendarError);
+        return NextResponse.json(
+          { error: 'Failed to create calendar event. Please try again or contact support.' },
+          { status: 500 }
+        );
       }
 
-      console.log('📧 Sending confirmation emails...');
-
       // Send confirmation emails
+      console.log('📧 Sending confirmation emails...');
       try {
         await sendMemberBookingConfirmationEmail({
           to: bookingData.customer_email,
@@ -100,19 +104,17 @@ export async function POST(request: NextRequest) {
         });
         console.log('✅ MEMBER BOOKING: Confirmation emails sent');
       } catch (emailError) {
-        console.error('❌ MEMBER BOOKING: Error sending emails:', emailError);
+        console.error('⚠️ Email sending failed:', emailError);
         // Don't fail the booking if emails fail
       }
 
-      // Store booking data temporarily in a way we can retrieve it
-      // Since we're not using a database, we'll encode it in the redirect URL
+      // Encode booking data for success page
       const bookingDataEncoded = Buffer.from(JSON.stringify({
         ...simplifiedBooking,
-        calendar_event_created: !!calendarEventId,
+        calendar_event_created: true,
         calendar_event_id: calendarEventId
       })).toString('base64');
 
-      // Return redirect URL to member success page
       return NextResponse.json({
         success: true,
         redirect_to: `/booking-success/member?data=${bookingDataEncoded}`,
@@ -124,18 +126,18 @@ export async function POST(request: NextRequest) {
           start_time: bookingData.start_time,
           end_time: endTime,
           duration_hours: bookingData.duration_hours,
-          calendar_event_created: !!calendarEventId,
+          calendar_event_created: true,
           calendar_event_id: calendarEventId,
           is_member_booking: true,
           status: 'confirmed',
-          payment_status: 'paid'
+          payment_status: 'completed'
         },
-        message: 'Member booking confirmed! Redirecting to confirmation page...'
+        message: 'Member booking confirmed! Calendar event created successfully.'
       });
     }
 
-    // **PAID BOOKING FLOW** - Existing logic remains the same
-    console.log('Processing paid booking...');
+    // **PAID BOOKING FLOW**
+    console.log('💳 Processing PAID booking...');
 
     const paidRequiredFields = ['room_id', 'total_amount'];
     for (const field of paidRequiredFields) {
@@ -147,36 +149,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check availability in database for paid bookings
-    const isAvailable = await meetingRoomAPI.checkAvailability(
-      bookingData.room_id,
-      bookingData.booking_date,
-      bookingData.start_time,
-      endTime
-    );
-
-    if (!isAvailable) {
-      return NextResponse.json(
-        { error: 'Time slot is no longer available' },
-        { status: 409 }
-      );
-    }
-
-    // Check for calendar conflicts with Google Calendar
-    const hasCalendarConflict = await googleCalendarAPI.checkCalendarConflict(
-      bookingData.booking_date,
-      bookingData.start_time,
-      endTime
-    );
-
-    if (hasCalendarConflict) {
-      return NextResponse.json(
-        { error: 'Time slot conflicts with existing calendar events' },
-        { status: 409 }
-      );
-    }
-
-    // Create booking in database for paid bookings
+    // Create booking in database with pending status
     const booking = await meetingRoomAPI.createBooking({
       ...bookingData,
       end_time: endTime,
@@ -186,7 +159,25 @@ export async function POST(request: NextRequest) {
       is_member_booking: false
     });
 
-    console.log('Paid booking created in database:', booking.id);
+    console.log('📝 Paid booking created in database:', booking.id);
+
+    // ✅ IMMEDIATELY create Google Calendar event (will be cancelled if payment fails)
+    console.log('📅 Creating Google Calendar event for PAID booking...');
+    let calendarEventId = null;
+    try {
+      calendarEventId = await googleCalendarAPI.createBookingEvent(booking);
+      if (calendarEventId) {
+        // Update booking with calendar event ID
+        await meetingRoomAPI.supabase
+          .from('bookings')
+          .update({ calendar_event_id: calendarEventId })
+          .eq('id', booking.id);
+        console.log('✅ PAID BOOKING: Calendar event created:', calendarEventId);
+      }
+    } catch (calendarError) {
+      console.error('⚠️ Calendar event creation failed:', calendarError);
+      // Continue with payment flow even if calendar fails
+    }
 
     // Create Stripe checkout session
     try {
@@ -220,11 +211,17 @@ export async function POST(request: NextRequest) {
         booking,
         checkout_url: checkoutData.url,
         session_id: checkoutData.sessionId,
-        message: 'Paid booking created successfully. Redirecting to payment...'
+        calendar_event_id: calendarEventId,
+        message: 'Paid booking created. Calendar event created. Redirecting to payment...'
       });
 
     } catch (stripeError) {
-      console.error('Error creating Stripe session:', stripeError);
+      console.error('❌ Stripe session creation failed:', stripeError);
+
+      // If calendar event was created, cancel it
+      if (calendarEventId) {
+        await googleCalendarAPI.cancelBookingEvent(calendarEventId);
+      }
 
       return NextResponse.json({
         success: false,
@@ -235,7 +232,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Error creating booking:', error);
+    console.error('❌ Booking creation error:', error);
     return NextResponse.json(
       { error: 'Failed to create booking. Please try again.' },
       { status: 500 }
@@ -253,15 +250,19 @@ export async function GET(request: NextRequest) {
       const bookings = await meetingRoomAPI.getBookingsByEmail(email);
       return NextResponse.json({
         bookings,
-        note: 'Only shows paid bookings. Member bookings are not stored in the database.'
+        note: 'Only shows paid bookings from database. Check Google Calendar for all bookings.'
       });
     }
 
     if (date) {
-      const bookings = await meetingRoomAPI.getBookingsForDate(date);
+      // Get bookings from both database and calendar
+      const dbBookings = await meetingRoomAPI.getBookingsForDate(date);
+      const calendarEvents = await googleCalendarAPI.getEventsForDate(date);
+      
       return NextResponse.json({
-        bookings,
-        note: 'Only shows paid bookings. Check Google Calendar for member bookings.'
+        database_bookings: dbBookings,
+        calendar_events: calendarEvents,
+        note: 'Shows both database bookings and calendar events. Calendar is the source of truth.'
       });
     }
 
@@ -271,7 +272,7 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Error fetching bookings:', error);
+    console.error('❌ Error fetching bookings:', error);
     return NextResponse.json(
       { error: 'Failed to fetch bookings' },
       { status: 500 }
@@ -279,7 +280,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Helper function to calculate end time
+// Helper function
 function calculateEndTime(startTime: string, durationHours: number): string {
   const [hours, minutes] = startTime.split(':').map(Number);
   const date = new Date();
