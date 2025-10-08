@@ -1,12 +1,11 @@
-// app/api/booking-success/route.ts
+// app/api/booking-success/route.ts - Works without database
 import { NextRequest, NextResponse } from 'next/server';
-import { meetingRoomAPI } from '@/lib/supabase';
 import Stripe from 'stripe';
 
 export const dynamic = 'force-dynamic';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-08-27.basil', // Updated to latest version
+  apiVersion: '2025-08-27.basil',
 });
 
 export async function GET(request: NextRequest) {
@@ -31,51 +30,48 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const bookingId = session.metadata?.booking_id;
+    // Extract booking details from session metadata
+    const {
+      booking_id,
+      customer_name,
+      customer_email,
+      customer_phone,
+      company,
+      room_name,
+      booking_date,
+      start_time,
+      end_time,
+      duration_hours,
+      attendees,
+      total_amount,
+      purpose
+    } = session.metadata || {};
 
-    if (!bookingId) {
+    if (!booking_id || !customer_name || !customer_email) {
       return NextResponse.json(
-        { error: 'No booking ID found in session' },
+        { error: 'Missing booking information in session' },
         { status: 404 }
       );
     }
 
-    // Get booking details with room information
-    const { data: bookingData, error: bookingError } = await meetingRoomAPI.supabase
-      .from('bookings')
-      .select(`
-        *,
-        meeting_rooms (
-          name
-        )
-      `)
-      .eq('id', bookingId)
-      .single();
-
-    if (bookingError || !bookingData) {
-      console.error('Error fetching booking:', bookingError);
-      return NextResponse.json(
-        { error: 'Booking not found' },
-        { status: 404 }
-      );
-    }
-
-    // Format the response
+    // Format the response with booking details from Stripe metadata
     const booking = {
-      id: bookingData.id,
-      customer_name: bookingData.customer_name,
-      customer_email: bookingData.customer_email,
-      booking_date: bookingData.booking_date,
-      start_time: bookingData.start_time,
-      end_time: bookingData.end_time,
-      duration_hours: bookingData.duration_hours,
-      total_amount: bookingData.total_amount,
-      attendees: bookingData.attendees,
-      purpose: bookingData.purpose,
-      room_name: bookingData.meeting_rooms?.name || 'Meeting Room',
-      is_member_booking: bookingData.is_member_booking,
-      status: bookingData.status,
-      payment_status: bookingData.payment_status,
+      id: booking_id,
+      customer_name,
+      customer_email,
+      customer_phone: customer_phone || '',
+      company: company || '',
+      booking_date,
+      start_time,
+      end_time,
+      duration_hours: parseInt(duration_hours || '1'),
+      total_amount: parseFloat(total_amount || '0'),
+      attendees: parseInt(attendees || '1'),
+      purpose: purpose || '',
+      room_name: room_name || 'Conference Room',
+      is_member_booking: false,
+      status: 'confirmed',
+      payment_status: 'paid',
     };
 
     return NextResponse.json({ booking });

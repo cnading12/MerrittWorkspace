@@ -1,6 +1,5 @@
 // lib/google-calendar.ts - UPDATED to be the source of truth for availability
 import { google } from 'googleapis';
-import { type Booking } from './supabase';
 
 // Initialize Google Calendar API
 const getGoogleAuth = () => {
@@ -48,6 +47,25 @@ export interface CalendarEvent {
 export interface TimeSlot {
   time_slot: string;
   is_available: boolean;
+}
+
+// Flexible booking type to work with or without database
+export interface FlexibleBooking {
+  id: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone?: string;
+  company?: string;
+  booking_date: string;
+  start_time: string;
+  end_time: string;
+  duration_hours: number;
+  attendees: number;
+  purpose?: string;
+  total_amount: number;
+  is_member_booking?: boolean;
+  status?: string;
+  payment_status?: string;
 }
 
 export const googleCalendarAPI = {
@@ -173,8 +191,8 @@ export const googleCalendarAPI = {
     }
   },
 
-  // ✅ Create a calendar event for a booking
-  async createBookingEvent(booking: Booking): Promise<string | null> {
+  // ✅ Create a calendar event for a booking (works with any booking object)
+  async createBookingEvent(booking: FlexibleBooking): Promise<string | null> {
     try {
       const auth = getGoogleAuth();
 
@@ -227,7 +245,7 @@ This is an automated booking from Merritt Workspace.
   },
 
   // Update calendar event
-  async updateBookingEvent(eventId: string, booking: Booking): Promise<boolean> {
+  async updateBookingEvent(eventId: string, booking: FlexibleBooking): Promise<boolean> {
     try {
       const auth = getGoogleAuth();
 
@@ -235,7 +253,7 @@ This is an automated booking from Merritt Workspace.
       const endDateTime = new Date(`${booking.booking_date}T${booking.end_time}`);
 
       const event: CalendarEvent = {
-        summary: `${booking.is_member_booking ? '[MEMBER]' : '[PAID]'} Meeting Room - ${booking.customer_name} (${booking.status.toUpperCase()})`,
+        summary: `${booking.is_member_booking ? '[MEMBER]' : '[PAID]'} Meeting Room - ${booking.customer_name} (${booking.status?.toUpperCase() || 'CONFIRMED'})`,
         description: `
 Meeting Room Booking Details:
 - Customer: ${booking.customer_name}
@@ -245,8 +263,8 @@ Meeting Room Booking Details:
 - Attendees: ${booking.attendees}
 - Purpose: ${booking.purpose || 'N/A'}
 - Booking Type: ${booking.is_member_booking ? 'Member Booking (FREE)' : `Paid Booking ($${booking.total_amount})`}
-- Status: ${booking.status.toUpperCase()}
-- Payment Status: ${booking.payment_status.toUpperCase()}
+- Status: ${booking.status?.toUpperCase() || 'CONFIRMED'}
+- Payment Status: ${booking.payment_status?.toUpperCase() || 'PAID'}
 - Booking ID: ${booking.id}
 
 This is an automated booking from Merritt Workspace.
