@@ -1,7 +1,6 @@
-// app/api/create-meeting-checkout/route.ts
+// app/api/create-meeting-checkout/route.ts - UPDATED FOR DATABASE-FREE
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { meetingRoomAPI } from '@/lib/supabase';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
@@ -13,6 +12,8 @@ export async function POST(request: NextRequest) {
       booking_id,
       customer_name,
       customer_email,
+      customer_phone,
+      company,
       room_name,
       booking_date,
       start_time,
@@ -20,10 +21,11 @@ export async function POST(request: NextRequest) {
       duration_hours,
       attendees,
       total_amount,
-      purpose
+      purpose,
+      calendar_event_id
     } = await request.json();
 
-    console.log('🔷 Creating Stripe checkout session for meeting room booking:', {
+    console.log('🔷 Creating Stripe checkout session for meeting room:', {
       booking_id,
       customer: customer_name,
       email: customer_email,
@@ -40,35 +42,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the booking exists and is still pending
-    const booking = await meetingRoomAPI.getBooking(booking_id);
-    if (!booking) {
-      return NextResponse.json(
-        { error: 'Booking not found' },
-        { status: 404 }
-      );
-    }
-
-    if (booking.status !== 'pending') {
-      return NextResponse.json(
-        { error: 'Booking is no longer available for payment' },
-        { status: 400 }
-      );
-    }
-
     // Create line item for Stripe
     const line_items = [{
       price_data: {
         currency: 'usd',
         product_data: {
-          name: `Meeting Room - ${room_name}`,
+          name: `Meeting Room - ${room_name || 'Conference Room'}`,
           description: `${new Date(booking_date).toLocaleDateString()} at ${start_time} - ${end_time} (${duration_hours} hour${duration_hours > 1 ? 's' : ''})`,
           metadata: {
-            room_name,
+            room_name: room_name || 'Conference Room',
             booking_date,
             start_time,
             end_time,
-            attendees: attendees.toString(),
+            attendees: attendees?.toString() || '1',
             booking_id
           }
         },
@@ -77,52 +63,41 @@ export async function POST(request: NextRequest) {
       quantity: 1,
     }];
 
-    // Create Stripe checkout session
+    // Create Stripe checkout session with ALL booking data in metadata
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/member-resources/meeting-rooms?canceled=true&booking_id=${booking_id}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/member-resources/meeting-rooms?canceled=true`,
       customer_email: customer_email,
       metadata: {
+        booking_type: 'meeting_room',
         booking_id,
         customer_name,
         customer_email,
-        room_name,
+        customer_phone: customer_phone || '',
+        company: company || '',
+        room_name: room_name || 'Conference Room',
         booking_date,
         start_time,
         end_time,
-        duration_hours: duration_hours.toString(),
-        attendees: attendees.toString(),
-        total_amount: total_amount.toString(),
+        duration_hours: duration_hours?.toString() || '1',
+        attendees: attendees?.toString() || '1',
+        total_amount: total_amount?.toString() || '0',
         purpose: purpose || '',
-        booking_type: 'meeting_room'
+        calendar_event_id: calendar_event_id || ''
       },
-      // Add shipping address collection for business bookings
       billing_address_collection: 'required',
-      // Customize the checkout
       custom_text: {
         submit: {
           message: 'Your meeting room will be confirmed after payment!'
         }
       },
-      // Set session expiration (30 minutes)
-      expires_at: Math.floor(Date.now() / 1000) + (30 * 60),
+      expires_at: Math.floor(Date.now() / 1000) + (30 * 60), // 30 minutes
     });
 
     console.log('✅ Stripe checkout session created:', session.id);
-
-    // Update booking with session ID
-    try {
-      console.log('Updating booking payment info...');
-      const updatedBooking = await meetingRoomAPI.updateBookingPayment(booking_id, session.id);
-      console.log('Booking updated successfully:', updatedBooking.id);
-    } catch (updateError) {
-      console.error('Failed to update booking with session ID:', updateError);
-      // Don't fail the entire process if update fails - the session is still valid
-      console.warn('Continuing with checkout despite update failure');
-    }
 
     return NextResponse.json({ 
       sessionId: session.id,

@@ -1,4 +1,4 @@
-// app/api/bookings/route.ts - FULLY DATABASE-FREE VERSION
+// app/api/bookings/route.ts - FULLY DATABASE-FREE VERSION WITH BETTER ERROR HANDLING
 import { NextRequest, NextResponse } from 'next/server';
 import { googleCalendarAPI } from '@/lib/google-calendar';
 import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
@@ -31,6 +31,7 @@ interface SimpleBooking {
 export async function POST(request: NextRequest) {
   try {
     const bookingData = await request.json();
+    console.log('📥 Received booking data:', bookingData);
 
     // Validate required fields
     const requiredFields = [
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
 
     for (const field of requiredFields) {
       if (!bookingData[field]) {
+        console.error(`❌ Missing required field: ${field}`);
         return NextResponse.json(
           { error: `Missing required field: ${field}` },
           { status: 400 }
@@ -162,6 +164,7 @@ export async function POST(request: NextRequest) {
     console.log('💳 Processing PAID booking (database-free)...');
 
     if (!bookingData.total_amount) {
+      console.error('❌ Missing total_amount for paid booking');
       return NextResponse.json(
         { error: 'Total amount is required for paid bookings' },
         { status: 400 }
@@ -207,14 +210,20 @@ export async function POST(request: NextRequest) {
     } catch (calendarError) {
       console.error('⚠️ Calendar event creation failed:', calendarError);
       return NextResponse.json(
-        { error: 'Failed to create calendar event. Please try again.' },
+        { 
+          error: 'Failed to create calendar event. Please check your Google Calendar configuration.',
+          details: calendarError instanceof Error ? calendarError.message : 'Unknown error'
+        },
         { status: 500 }
       );
     }
 
     // Create Stripe checkout session with booking data in metadata
     try {
-      const checkoutResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/create-meeting-checkout`, {
+      console.log('💳 Creating Stripe checkout session...');
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      
+      const checkoutResponse = await fetch(`${baseUrl}/api/create-meeting-checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -235,12 +244,15 @@ export async function POST(request: NextRequest) {
         })
       });
 
+      console.log('Stripe checkout response status:', checkoutResponse.status);
+
       if (!checkoutResponse.ok) {
         const errorData = await checkoutResponse.json();
-        console.error('❌ Stripe checkout error:', errorData);
+        console.error('❌ Stripe checkout error response:', errorData);
         
         // If calendar event was created, cancel it
         if (calendarEventId) {
+          console.log('🗑️ Cancelling calendar event due to Stripe error...');
           await googleCalendarAPI.cancelBookingEvent(calendarEventId);
         }
         
@@ -248,6 +260,7 @@ export async function POST(request: NextRequest) {
       }
 
       const checkoutData = await checkoutResponse.json();
+      console.log('✅ Stripe checkout session created:', checkoutData.sessionId);
 
       return NextResponse.json({
         success: true,
@@ -263,12 +276,14 @@ export async function POST(request: NextRequest) {
 
       // If calendar event was created, cancel it
       if (calendarEventId) {
+        console.log('🗑️ Cancelling calendar event due to Stripe error...');
         await googleCalendarAPI.cancelBookingEvent(calendarEventId);
       }
 
       return NextResponse.json({
         success: false,
         error: stripeError instanceof Error ? stripeError.message : 'Payment system unavailable. Please try again or contact support.',
+        details: stripeError instanceof Error ? stripeError.message : 'Unknown error',
         booking,
         fallback: true
       }, { status: 500 });
