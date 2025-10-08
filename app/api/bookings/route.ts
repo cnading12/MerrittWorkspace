@@ -1,4 +1,4 @@
-// app/api/bookings/route.ts - UPDATED to use Google Calendar as source of truth
+// app/api/bookings/route.ts - UPDATED to work without database meeting rooms
 import { NextRequest, NextResponse } from 'next/server';
 import { meetingRoomAPI, type Booking } from '@/lib/supabase';
 import { googleCalendarAPI } from '@/lib/google-calendar';
@@ -139,19 +139,17 @@ export async function POST(request: NextRequest) {
     // **PAID BOOKING FLOW**
     console.log('💳 Processing PAID booking...');
 
-    const paidRequiredFields = ['room_id', 'total_amount'];
-    for (const field of paidRequiredFields) {
-      if (!bookingData[field]) {
-        return NextResponse.json(
-          { error: `Missing required field for paid booking: ${field}` },
-          { status: 400 }
-        );
-      }
+    if (!bookingData.total_amount) {
+      return NextResponse.json(
+        { error: 'Total amount is required for paid bookings' },
+        { status: 400 }
+      );
     }
 
-    // Create booking in database with pending status
+    // Create booking in database with pending status (room_id can be null or static)
     const booking = await meetingRoomAPI.createBooking({
       ...bookingData,
+      room_id: bookingData.room_id || null, // Allow null or use provided room_id
       end_time: endTime,
       status: 'pending',
       payment_status: 'pending',

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, Monitor, Wifi, Coffee, MapPin, CheckCircle, XCircle, Loader2, AlertCircle, CreditCard, Gift } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
-import { meetingRoomAPI, formatTime, calculateEndTime, type MeetingRoom, type TimeSlot } from '@/lib/supabase';
+import { formatTime, calculateEndTime } from '@/lib/supabase';
 
 interface BookingForm {
   name: string;
@@ -19,7 +19,15 @@ interface BookingForm {
   bookingType: 'member' | 'paid' | null;
 }
 
-// NEW: Error Display Component
+interface TimeSlot {
+  time_slot: string;
+  is_available: boolean;
+}
+
+const HOURLY_RATE = 25; // Conference room rate per hour
+const ROOM_CAPACITY = 8; // Max attendees
+
+// Error Display Component
 const ErrorDisplay = ({ error }: { error: string | null }) => {
   if (!error) return null;
 
@@ -30,18 +38,13 @@ const ErrorDisplay = ({ error }: { error: string | null }) => {
         <div>
           <p className="text-red-700 font-medium">Booking Error</p>
           <p className="text-red-600 text-sm mt-1">{error}</p>
-          {error.includes('Domain-Wide Delegation') && (
-            <p className="text-red-600 text-sm mt-2">
-              <strong>Note:</strong> Your booking is still valid - you'll receive email confirmation.
-            </p>
-          )}
         </div>
       </div>
     </div>
   );
 };
 
-// NEW: Success Message Component
+// Success Message Component
 const SuccessMessage = ({ message, onClose }: { message: string; onClose: () => void }) => (
   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
     <div className="flex items-start justify-between">
@@ -59,7 +62,7 @@ const SuccessMessage = ({ message, onClose }: { message: string; onClose: () => 
   </div>
 );
 
-// NEW: Loading State Component
+// Loading State Component
 const LoadingState = ({ message }: { message: string }) => (
   <div className="text-center py-8">
     <Loader2 className="w-8 h-8 animate-spin text-orange-600 mx-auto mb-4" />
@@ -69,18 +72,15 @@ const LoadingState = ({ message }: { message: string }) => (
 );
 
 export default function MeetingRoomsPage() {
-  const [rooms, setRooms] = useState<MeetingRoom[]>([]);
-  const [selectedRoom, setSelectedRoom] = useState<MeetingRoom | null>(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [showBookingOptions, setShowBookingOptions] = useState(false);
   const [showBookingForm, setShowBookingForm] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null); // NEW
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [bookingForm, setBookingForm] = useState<BookingForm>({
     name: '',
     email: '',
@@ -95,7 +95,6 @@ export default function MeetingRoomsPage() {
   });
 
   useEffect(() => {
-    loadRooms();
     // Set minimum date to today
     const today = new Date().toISOString().split('T')[0];
     setSelectedDate(today);
@@ -108,40 +107,6 @@ export default function MeetingRoomsPage() {
     }
   }, [selectedDate]);
 
-  const loadRooms = async () => {
-    try {
-      setError(null);
-      console.log('Loading rooms from Supabase...');
-
-      // Test Supabase connection first
-      const { data: testData, error: testError } = await meetingRoomAPI.supabase
-        .from('meeting_rooms')
-        .select('count')
-        .limit(1);
-
-      if (testError) {
-        throw new Error(`Supabase connection failed: ${testError.message}`);
-      }
-
-      const roomsData = await meetingRoomAPI.getRooms();
-      console.log('Rooms loaded successfully:', roomsData);
-
-      if (roomsData.length === 0) {
-        setError('No meeting rooms found. Please ensure your database has meeting room data.');
-        return;
-      }
-
-      setRooms(roomsData);
-      setSelectedRoom(roomsData[0]); // Select first room by default
-    } catch (error) {
-      console.error('Error loading rooms:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setError(`Failed to load meeting rooms: ${errorMessage}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadAvailableSlots = async () => {
     if (!selectedDate) return;
 
@@ -149,23 +114,21 @@ export default function MeetingRoomsPage() {
     setError(null);
 
     try {
-      console.log('🏢 Loading availability for THE conference room on:', selectedDate);
+      console.log('📅 Loading availability from Google Calendar for:', selectedDate);
 
-      // Simple API call - no room ID needed since there's only one room
       const response = await fetch(`/api/availability?date=${selectedDate}`);
       const data = await response.json();
 
       if (response.ok && data.success) {
-        console.log('✅ Conference room availability loaded:', {
+        console.log('✅ Availability loaded from Google Calendar:', {
           total: data.total_slots,
           available: data.available_slots,
           booked: data.booked_times
         });
         setAvailableSlots(data.time_slots);
 
-        // Show helpful info if times are booked
         if (data.booked_times && data.booked_times.length > 0) {
-          console.log('🚫 Currently booked times:', data.booked_times.join(', '));
+          console.log('🚫 Booked times:', data.booked_times.join(', '));
         }
       } else {
         throw new Error(data.error || 'Failed to load availability');
@@ -191,93 +154,29 @@ export default function MeetingRoomsPage() {
     }
   };
 
-  const handleTimeSelect = async (time: string) => {
-    if (!selectedRoom) return;
-
-    const endTime = calculateEndTime(time, bookingForm.duration);
-
-    // Check availability for the selected duration
-    try {
-      setError(null);
-      const isAvailable = await meetingRoomAPI.checkAvailability(
-        selectedRoom.id,
-        selectedDate,
-        time,
-        endTime
-      );
-
-      if (!isAvailable) {
-        setError('This time slot is not available for the selected duration. Please choose a different time or duration.');
-        return;
-      }
-
-      setSelectedTime(time);
-      setBookingForm(prev => ({ ...prev, time }));
-      setShowBookingOptions(true);
-      setShowBookingForm(false);
-    } catch (error) {
-      console.error('Error checking availability:', error);
-      setError('Failed to check availability. Please try again.');
-    }
+  const handleTimeSelect = (time: string) => {
+    setSelectedTime(time);
+    setBookingForm(prev => ({ ...prev, time }));
+    setShowBookingOptions(true);
+    setShowBookingForm(false);
+    setError(null);
   };
 
   const handleDurationChange = (duration: number) => {
     setBookingForm(prev => ({ ...prev, duration }));
-
-    // If time is already selected, recheck availability
-    if (selectedTime && selectedRoom) {
-      const endTime = calculateEndTime(selectedTime, duration);
-      meetingRoomAPI.checkAvailability(
-        selectedRoom.id,
-        selectedDate,
-        selectedTime,
-        endTime
-      ).then(isAvailable => {
-        if (!isAvailable) {
-          setError('The selected duration is not available for this time slot. Please choose a different duration or time.');
-          setShowBookingOptions(false);
-          setShowBookingForm(false);
-          setSelectedTime('');
-        }
-      }).catch(error => {
-        console.error('Error checking availability:', error);
-      });
-    }
   };
 
-  // UPDATED: Better booking type selection
-  const handleBookingTypeSelection = async (type: 'member' | 'paid') => {
+  const handleBookingTypeSelection = (type: 'member' | 'paid') => {
     setBookingForm(prev => ({ ...prev, bookingType: type }));
-
-    // For member bookings, we don't need room selection since there's only one room
-    if (type === 'member') {
-      // Skip room selection and go straight to form
-      setShowBookingForm(true);
-    } else {
-      // For paid bookings, ensure a room is selected
-      if (!selectedRoom && rooms.length > 0) {
-        setSelectedRoom(rooms[0]); // Select first available room
-      }
-      setShowBookingForm(true);
-    }
+    setShowBookingForm(true);
   };
 
   const calculatePrice = (duration: number) => {
-    return selectedRoom ? selectedRoom.hourly_rate * duration : 0;
+    return HOURLY_RATE * duration;
   };
 
-  // UPDATED: Improved booking submission with better error handling
-  // Updated section of app/member-resources/meeting-rooms/page.tsx
-  // Only showing the updated handleSubmitBooking function and related changes
-
-  // UPDATED: Improved booking submission with Stripe payment handling
   const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!selectedRoom && bookingForm.bookingType !== 'member') {
-      setError('Please select a room');
-      return;
-    }
 
     setSubmitting(true);
     setError(null);
@@ -301,9 +200,9 @@ export default function MeetingRoomsPage() {
         is_member_booking: bookingForm.bookingType === 'member'
       };
 
-      // Add room and payment info only for paid bookings
+      // Add payment info only for paid bookings
       if (bookingForm.bookingType !== 'member') {
-        bookingPayload.room_id = selectedRoom!.id;
+        bookingPayload.room_id = 'conference-room'; // Static ID since we only have one room
         bookingPayload.total_amount = totalAmount;
       }
 
@@ -327,55 +226,45 @@ export default function MeetingRoomsPage() {
       console.log('Booking response:', data);
 
       if (bookingForm.bookingType === 'member') {
-        // Show success message for member booking
-        const successMsg = `🎉 Member booking confirmed! 
-        
+        // For member bookings, redirect to success page
+        if (data.redirect_to) {
+          window.location.href = data.redirect_to;
+        } else {
+          setSuccessMessage(`🎉 Member booking confirmed! 
+
 ✅ Booking ID: ${data.booking.id}
 📅 Date: ${new Date(selectedDate).toLocaleDateString()}
-⏰ Time: ${selectedTime} - ${data.booking.end_time}
+⏰ Time: ${selectedTime} - ${endTime}
 ⌛ Duration: ${bookingForm.duration} hour${bookingForm.duration > 1 ? 's' : ''}
 👥 Attendees: ${bookingForm.attendees}
 
-📧 A confirmation email with calendar invitation has been sent to ${bookingForm.email}
+📧 A confirmation email has been sent to ${bookingForm.email}
 
-✨ Your meeting room is ready to go!`;
-
-        setSuccessMessage(successMsg);
+✨ Your meeting room is ready to go!`);
+        }
       } else {
         // For paid bookings, redirect to Stripe checkout
         if (data.checkout_url) {
           console.log('Redirecting to Stripe checkout:', data.checkout_url);
-
-          // Show loading message before redirect
           setSuccessMessage(`Creating payment session... 
-          
+
 Booking ID: ${data.booking.id}
 Total: $${totalAmount.toFixed(2)}
 
 You will be redirected to secure payment in a moment.`);
 
-          // Small delay to show the message, then redirect
           setTimeout(() => {
             window.location.href = data.checkout_url;
           }, 2000);
-
           return;
         } else if (data.fallback) {
-          // Payment system error fallback
           setError(`Booking created but payment system is currently unavailable. 
-          
+
 Booking ID: ${data.booking.id}
-Please contact us to complete payment: (303) 555-0123
-          
+Please contact us to complete payment: (303) 359-8337
+
 Your time slot is temporarily reserved.`);
           return;
-        } else {
-          setSuccessMessage(`Booking created successfully! 
-          
-Booking ID: ${data.booking.id}
-Total: $${totalAmount.toFixed(2)}
-
-Payment processing...`);
         }
       }
 
@@ -400,13 +289,8 @@ Payment processing...`);
       console.error('Error creating booking:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create booking. Please try again.';
 
-      // Show user-friendly error messages
       if (errorMessage.includes('conflicts')) {
         setError('This time slot is no longer available. Please select a different time.');
-      } else if (errorMessage.includes('Domain-Wide Delegation')) {
-        setError('Booking created but calendar invitation may not be sent automatically. You will receive an email confirmation.');
-      } else if (errorMessage.includes('Payment system')) {
-        setError('Payment system is temporarily unavailable. Please try again in a few minutes or contact support.');
       } else {
         setError(errorMessage);
       }
@@ -415,32 +299,6 @@ Payment processing...`);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
-        <LoadingState message="Loading meeting rooms..." />
-      </div>
-    );
-  }
-
-  if (error && rooms.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
-        <div className="text-center max-w-md px-4">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Connection Error</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={loadRooms}
-            className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       {/* Hero Section */}
@@ -448,17 +306,17 @@ Payment processing...`);
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Professional Meeting Rooms
+              Professional Conference Room
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Book our state-of-the-art conference rooms with A/V equipment, high-speed wifi,
+              Book our state-of-the-art conference room with A/V equipment, high-speed wifi,
               and a professional atmosphere. Members get simple booking with no payment required!
             </p>
           </div>
         </div>
       </section>
 
-      {/* UPDATED: Better Error and Success Display */}
+      {/* Error and Success Display */}
       {(error || successMessage) && (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
           <ErrorDisplay error={error} />
@@ -499,7 +357,7 @@ Payment processing...`);
                   <strong>Members:</strong> FREE booking
                 </p>
                 <p className="text-orange-800">
-                  <strong>Non-members:</strong> ${selectedRoom?.hourly_rate || 25}/hour
+                  <strong>Non-members:</strong> ${HOURLY_RATE}/hour
                 </p>
                 <p className="text-sm text-orange-600 mt-2">
                   Minimum 1 hour • Maximum 4 hours per session
@@ -541,7 +399,7 @@ Payment processing...`);
               <label className="block text-lg font-semibold text-gray-900 mb-4">Available Time Slots</label>
 
               {loadingSlots ? (
-                <LoadingState message="Loading available times..." />
+                <LoadingState message="Loading available times from Google Calendar..." />
               ) : availableSlots.length > 0 ? (
                 <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
                   {availableSlots.map(({ time_slot, is_available }) => {
@@ -553,12 +411,13 @@ Payment processing...`);
                         key={time_slot}
                         onClick={() => is_available && handleTimeSelect(time_slot)}
                         disabled={!is_available}
-                        className={`p-3 rounded-lg border-2 font-medium transition ${!is_available
+                        className={`p-3 rounded-lg border-2 font-medium transition ${
+                          !is_available
                             ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
                             : isSelected
-                              ? 'bg-orange-600 border-orange-600 text-white'
-                              : 'bg-white border-gray-300 text-gray-700 hover:border-orange-500 hover:text-orange-600'
-                          }`}
+                            ? 'bg-orange-600 border-orange-600 text-white'
+                            : 'bg-white border-gray-300 text-gray-700 hover:border-orange-500 hover:text-orange-600'
+                        }`}
                       >
                         {displayTime}
                         {!is_available && <XCircle className="w-4 h-4 inline ml-1" />}
@@ -568,7 +427,7 @@ Payment processing...`);
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-600">No time slots available. Please check your database setup.</p>
+                  <p className="text-gray-600">No time slots available for this date.</p>
                 </div>
               )}
             </div>
@@ -582,10 +441,11 @@ Payment processing...`);
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Member Booking */}
                 <div
-                  className={`p-6 border-2 rounded-xl cursor-pointer transition ${bookingForm.bookingType === 'member'
+                  className={`p-6 border-2 rounded-xl cursor-pointer transition ${
+                    bookingForm.bookingType === 'member'
                       ? 'border-green-500 bg-green-50'
                       : 'border-gray-200 hover:border-green-300'
-                    }`}
+                  }`}
                   onClick={() => handleBookingTypeSelection('member')}
                 >
                   <div className="flex items-center mb-4">
@@ -603,10 +463,11 @@ Payment processing...`);
 
                 {/* Paid Booking */}
                 <div
-                  className={`p-6 border-2 rounded-xl cursor-pointer transition ${bookingForm.bookingType === 'paid'
+                  className={`p-6 border-2 rounded-xl cursor-pointer transition ${
+                    bookingForm.bookingType === 'paid'
                       ? 'border-orange-500 bg-orange-50'
                       : 'border-gray-200 hover:border-orange-300'
-                    }`}
+                  }`}
                   onClick={() => handleBookingTypeSelection('paid')}
                 >
                   <div className="flex items-center mb-4">
@@ -702,7 +563,7 @@ Payment processing...`);
                       onChange={(e) => setBookingForm(prev => ({ ...prev, attendees: parseInt(e.target.value) }))}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                     >
-                      {Array.from({ length: selectedRoom?.capacity || 8 }, (_, i) => i + 1).map(num => (
+                      {Array.from({ length: ROOM_CAPACITY }, (_, i) => i + 1).map(num => (
                         <option key={num} value={num}>{num} {num === 1 ? 'person' : 'people'}</option>
                       ))}
                     </select>
@@ -730,7 +591,7 @@ Payment processing...`);
                     <p><strong>Duration:</strong> {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
                     <p><strong>Type:</strong> {bookingForm.bookingType === 'member' ? 'Member Booking' : 'Paid Booking'}</p>
                     <p className="text-lg font-semibold text-orange-600 pt-2">
-                      Total: {bookingForm.bookingType === 'member' ? 'FREE' : `${calculatePrice(bookingForm.duration)}`}
+                      Total: {bookingForm.bookingType === 'member' ? 'FREE' : `$${calculatePrice(bookingForm.duration)}`}
                     </p>
                   </div>
                 </div>
@@ -777,7 +638,7 @@ Payment processing...`);
 
             <div className="text-center">
               <Users className="w-12 h-12 text-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Seats up to 8</h3>
+              <h3 className="text-lg font-semibold mb-2">Seats up to {ROOM_CAPACITY}</h3>
               <p className="text-gray-600">Comfortable seating for small to medium team meetings</p>
             </div>
 
