@@ -1,4 +1,4 @@
-// lib/google-calendar.ts - UPDATED to be the source of truth for availability
+// lib/google-calendar.ts - FIXED TIMEZONE HANDLING
 import { google } from 'googleapis';
 
 // Initialize Google Calendar API
@@ -79,8 +79,9 @@ export const googleCalendarAPI = {
 
       const auth = getGoogleAuth();
 
-      const startOfDay = new Date(`${date}T00:00:00`);
-      const endOfDay = new Date(`${date}T23:59:59`);
+      // ✅ FIX: Create dates in Denver timezone
+      const startOfDay = new Date(`${date}T00:00:00-07:00`); // Denver timezone
+      const endOfDay = new Date(`${date}T23:59:59-07:00`);   // Denver timezone
 
       const response = await calendar.events.list({
         auth,
@@ -112,11 +113,21 @@ export const googleCalendarAPI = {
 
       calendarEvents.forEach(event => {
         if (event.start?.dateTime && event.end?.dateTime) {
+          // ✅ FIX: Parse dates properly considering timezone
           const start = new Date(event.start.dateTime);
           const end = new Date(event.end.dateTime);
           
-          const startHour = start.getHours();
-          const endHour = end.getHours();
+          // Get hours in Denver timezone
+          const startHour = parseInt(start.toLocaleString('en-US', { 
+            hour: 'numeric', 
+            hour12: false,
+            timeZone: 'America/Denver' 
+          }));
+          const endHour = parseInt(end.toLocaleString('en-US', { 
+            hour: 'numeric', 
+            hour12: false,
+            timeZone: 'America/Denver' 
+          }));
           
           // Mark all hours in the event as booked
           for (let hour = startHour; hour < endHour; hour++) {
@@ -125,7 +136,7 @@ export const googleCalendarAPI = {
         }
       });
 
-      // Generate time slots for business hours (8 AM to 6 PM)
+      // Generate time slots for business hours (8 AM to 6 PM Denver time)
       const timeSlots: TimeSlot[] = [];
       for (let hour = 8; hour <= 18; hour++) {
         const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
@@ -164,8 +175,9 @@ export const googleCalendarAPI = {
     try {
       const events = await this.getEventsForDate(date);
 
-      const bookingStart = new Date(`${date}T${startTime}`);
-      const bookingEnd = new Date(`${date}T${endTime}`);
+      // ✅ FIX: Create booking times in Denver timezone
+      const bookingStart = new Date(`${date}T${startTime}:00-07:00`);
+      const bookingEnd = new Date(`${date}T${endTime}:00-07:00`);
 
       for (const event of events) {
         if (!event.start?.dateTime || !event.end?.dateTime) continue;
@@ -191,14 +203,21 @@ export const googleCalendarAPI = {
     }
   },
 
-  // ✅ Create a calendar event for a booking (works with any booking object)
+  // ✅ Create a calendar event for a booking (FIXED TIMEZONE)
   async createBookingEvent(booking: FlexibleBooking): Promise<string | null> {
     try {
       const auth = getGoogleAuth();
 
-      // Combine date and time for proper datetime format
-      const startDateTime = new Date(`${booking.booking_date}T${booking.start_time}:00`);
-      const endDateTime = new Date(`${booking.booking_date}T${booking.end_time}:00`);
+      // ✅ FIX: Create datetime strings with Denver timezone offset
+      // Format: YYYY-MM-DDTHH:MM:SS-07:00 (for Denver/Mountain Time)
+      const startDateTime = `${booking.booking_date}T${booking.start_time}:00-07:00`;
+      const endDateTime = `${booking.booking_date}T${booking.end_time}:00-07:00`;
+
+      console.log('📅 Creating calendar event with times:', {
+        start: startDateTime,
+        end: endDateTime,
+        timezone: 'America/Denver'
+      });
 
       const event: CalendarEvent = {
         summary: `${booking.is_member_booking ? '[MEMBER]' : '[PAID]'} Meeting Room - ${booking.customer_name}`,
@@ -216,17 +235,15 @@ Meeting Room Booking Details:
 This is an automated booking from Merritt Workspace.
         `.trim(),
         start: {
-          dateTime: startDateTime.toISOString(),
+          dateTime: startDateTime,
           timeZone: 'America/Denver',
         },
         end: {
-          dateTime: endDateTime.toISOString(),
+          dateTime: endDateTime,
           timeZone: 'America/Denver',
         },
         location: 'Merritt Workspace - 2246 Irving Street, Denver, CO 80211',
       };
-
-      console.log('📅 Creating calendar event...');
 
       const response = await calendar.events.insert({
         auth,
@@ -236,6 +253,9 @@ This is an automated booking from Merritt Workspace.
       });
 
       console.log('✅ Calendar event created successfully:', response.data.id);
+      console.log('   Start time (Denver):', startDateTime);
+      console.log('   End time (Denver):', endDateTime);
+      
       return response.data.id || null;
 
     } catch (error) {
@@ -244,13 +264,14 @@ This is an automated booking from Merritt Workspace.
     }
   },
 
-  // Update calendar event
+  // Update calendar event (FIXED TIMEZONE)
   async updateBookingEvent(eventId: string, booking: FlexibleBooking): Promise<boolean> {
     try {
       const auth = getGoogleAuth();
 
-      const startDateTime = new Date(`${booking.booking_date}T${booking.start_time}`);
-      const endDateTime = new Date(`${booking.booking_date}T${booking.end_time}`);
+      // ✅ FIX: Use Denver timezone
+      const startDateTime = `${booking.booking_date}T${booking.start_time}:00-07:00`;
+      const endDateTime = `${booking.booking_date}T${booking.end_time}:00-07:00`;
 
       const event: CalendarEvent = {
         summary: `${booking.is_member_booking ? '[MEMBER]' : '[PAID]'} Meeting Room - ${booking.customer_name} (${booking.status?.toUpperCase() || 'CONFIRMED'})`,
@@ -270,11 +291,11 @@ Meeting Room Booking Details:
 This is an automated booking from Merritt Workspace.
         `.trim(),
         start: {
-          dateTime: startDateTime.toISOString(),
+          dateTime: startDateTime,
           timeZone: 'America/Denver',
         },
         end: {
-          dateTime: endDateTime.toISOString(),
+          dateTime: endDateTime,
           timeZone: 'America/Denver',
         },
         location: 'Merritt Workspace - 2246 Irving Street, Denver, CO 80211',
@@ -320,7 +341,8 @@ This is an automated booking from Merritt Workspace.
 // Utility functions
 export const calendarUtils = {
   formatDateTime: (date: string, time: string): string => {
-    return new Date(`${date}T${time}`).toISOString();
+    // Return in Denver timezone format
+    return `${date}T${time}:00-07:00`;
   },
 
   formatDateTimeForDisplay: (dateTime: string): string => {
