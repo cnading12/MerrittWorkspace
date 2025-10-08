@@ -57,7 +57,7 @@ export default function ImprovedHomePage() {
               </h1>
 
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Premium offices and dedicated desks in a beautifully restored space with distinctive burnt orange floors and vibrant event space.
+                Premium offices and dedicated desks in a beautifully restored space. Denver's most distinctive coworking environment—where history and modern work culture meet.
               </p>
 
               {/* Key Features */}
@@ -138,7 +138,7 @@ export default function ImprovedHomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-4xl font-bold text-orange-500 mb-2">13</div>
+              <div className="text-4xl font-bold text-orange-500 mb-2">14</div>
               <div className="text-gray-400">Office Spaces</div>
             </div>
             <div>
@@ -150,8 +150,8 @@ export default function ImprovedHomePage() {
               <div className="text-gray-400">To I-25</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-orange-500 mb-2">100+</div>
-              <div className="text-gray-400">Members</div>
+              <div className="text-4xl font-bold text-orange-500 mb-2">20+</div>
+              <div className="text-gray-400">Dedicated Desks</div>
             </div>
           </div>
         </div>
@@ -379,7 +379,7 @@ export default function ImprovedHomePage() {
 
             <div className="relative h-96 rounded-2xl overflow-hidden shadow-2xl">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3048.3751849999447!2d-105.02659242404156!3d39.75089969486985!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x876c79e0c86f6b7b%3A0x8c8b8b8b8b8b8b8b!2s2246%20Irving%20St%2C%20Denver%2C%20CO%2080211!5e0!3m2!1sen!2sus!4v1693846800000!5m2!1sen!2sus"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3067.4953180826856!2d-105.03225422342487!3d39.75098609588881!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x876c7932ec70db2b%3A0x8c38dd4cf4df270d!2sMerritt%20Workspace!5e0!3m2!1sen!2sus!4v1759948992207!5m2!1sen!2sus"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
