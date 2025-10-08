@@ -1,4 +1,4 @@
-// lib/google-calendar.ts - FIXED TIMEZONE HANDLING
+// lib/google-calendar.ts - FIXED FOR DAYLIGHT SAVING TIME
 import { google } from 'googleapis';
 
 // Initialize Google Calendar API
@@ -68,6 +68,22 @@ export interface FlexibleBooking {
   payment_status?: string;
 }
 
+// Helper to get current Denver timezone offset
+function getDenverOffset(): string {
+  const now = new Date();
+  const denverTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Denver' }));
+  const utcTime = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+  
+  const offsetHours = (denverTime.getTime() - utcTime.getTime()) / (1000 * 60 * 60);
+  const offsetMinutes = Math.abs(offsetHours % 1) * 60;
+  
+  const sign = offsetHours >= 0 ? '+' : '-';
+  const hours = Math.abs(Math.floor(offsetHours)).toString().padStart(2, '0');
+  const minutes = offsetMinutes.toString().padStart(2, '0');
+  
+  return `${sign}${hours}:${minutes}`;
+}
+
 export const googleCalendarAPI = {
   // ✅ PRIMARY FUNCTION: Get all events for a specific date
   async getEventsForDate(date: string): Promise<any[]> {
@@ -79,9 +95,10 @@ export const googleCalendarAPI = {
 
       const auth = getGoogleAuth();
 
-      // ✅ FIX: Create dates in Denver timezone
-      const startOfDay = new Date(`${date}T00:00:00-07:00`); // Denver timezone
-      const endOfDay = new Date(`${date}T23:59:59-07:00`);   // Denver timezone
+      // ✅ FIX: Use proper Denver timezone with auto DST detection
+      const offset = getDenverOffset();
+      const startOfDay = new Date(`${date}T00:00:00${offset}`);
+      const endOfDay = new Date(`${date}T23:59:59${offset}`);
 
       const response = await calendar.events.list({
         auth,
@@ -175,9 +192,10 @@ export const googleCalendarAPI = {
     try {
       const events = await this.getEventsForDate(date);
 
-      // ✅ FIX: Create booking times in Denver timezone
-      const bookingStart = new Date(`${date}T${startTime}:00-07:00`);
-      const bookingEnd = new Date(`${date}T${endTime}:00-07:00`);
+      // ✅ FIX: Create booking times with proper Denver timezone offset
+      const offset = getDenverOffset();
+      const bookingStart = new Date(`${date}T${startTime}:00${offset}`);
+      const bookingEnd = new Date(`${date}T${endTime}:00${offset}`);
 
       for (const event of events) {
         if (!event.start?.dateTime || !event.end?.dateTime) continue;
@@ -203,19 +221,20 @@ export const googleCalendarAPI = {
     }
   },
 
-  // ✅ Create a calendar event for a booking (FIXED TIMEZONE)
+  // ✅ Create a calendar event for a booking (AUTO DST DETECTION)
   async createBookingEvent(booking: FlexibleBooking): Promise<string | null> {
     try {
       const auth = getGoogleAuth();
 
-      // ✅ FIX: Create datetime strings with Denver timezone offset
-      // Format: YYYY-MM-DDTHH:MM:SS-07:00 (for Denver/Mountain Time)
-      const startDateTime = `${booking.booking_date}T${booking.start_time}:00-07:00`;
-      const endDateTime = `${booking.booking_date}T${booking.end_time}:00-07:00`;
+      // ✅ FIX: Use dynamic timezone offset (auto-detects DST)
+      const offset = getDenverOffset();
+      const startDateTime = `${booking.booking_date}T${booking.start_time}:00${offset}`;
+      const endDateTime = `${booking.booking_date}T${booking.end_time}:00${offset}`;
 
       console.log('📅 Creating calendar event with times:', {
         start: startDateTime,
         end: endDateTime,
+        offset: offset,
         timezone: 'America/Denver'
       });
 
@@ -255,6 +274,7 @@ This is an automated booking from Merritt Workspace.
       console.log('✅ Calendar event created successfully:', response.data.id);
       console.log('   Start time (Denver):', startDateTime);
       console.log('   End time (Denver):', endDateTime);
+      console.log('   Timezone offset:', offset);
       
       return response.data.id || null;
 
@@ -264,14 +284,15 @@ This is an automated booking from Merritt Workspace.
     }
   },
 
-  // Update calendar event (FIXED TIMEZONE)
+  // Update calendar event (AUTO DST)
   async updateBookingEvent(eventId: string, booking: FlexibleBooking): Promise<boolean> {
     try {
       const auth = getGoogleAuth();
 
-      // ✅ FIX: Use Denver timezone
-      const startDateTime = `${booking.booking_date}T${booking.start_time}:00-07:00`;
-      const endDateTime = `${booking.booking_date}T${booking.end_time}:00-07:00`;
+      // ✅ FIX: Use dynamic timezone offset
+      const offset = getDenverOffset();
+      const startDateTime = `${booking.booking_date}T${booking.start_time}:00${offset}`;
+      const endDateTime = `${booking.booking_date}T${booking.end_time}:00${offset}`;
 
       const event: CalendarEvent = {
         summary: `${booking.is_member_booking ? '[MEMBER]' : '[PAID]'} Meeting Room - ${booking.customer_name} (${booking.status?.toUpperCase() || 'CONFIRMED'})`,
@@ -341,8 +362,9 @@ This is an automated booking from Merritt Workspace.
 // Utility functions
 export const calendarUtils = {
   formatDateTime: (date: string, time: string): string => {
-    // Return in Denver timezone format
-    return `${date}T${time}:00-07:00`;
+    // Return in Denver timezone format with auto DST detection
+    const offset = getDenverOffset();
+    return `${date}T${time}:00${offset}`;
   },
 
   formatDateTimeForDisplay: (dateTime: string): string => {
