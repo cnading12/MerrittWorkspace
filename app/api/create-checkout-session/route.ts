@@ -1,4 +1,4 @@
-// Create this file at: app/api/create-checkout-session/route.ts
+// app/api/create-checkout-session/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/member-resources/snackshop?canceled=true`,
       customer_email: customer_email,
       metadata: {
+        order_type: 'snackshop', // IMPORTANT: Identifies this as a snackshop order for webhook
         order_id: tempOrderId,
         customer_name,
         customer_email,

@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  console.log('🎯 Snackshop webhook event received:', event.type);
+  console.log('🔔 Snackshop webhook received:', event.type);
 
   try {
     switch (event.type) {
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        console.log(`ℹ️ Unhandled event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
@@ -63,14 +63,6 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   console.log('🎯 Processing completed snackshop checkout session:', session.id);
 
   try {
-    const orderType = session.metadata?.order_type;
-
-    // Only handle snackshop orders
-    if (orderType !== 'snackshop') {
-      console.log('Not a snackshop order, skipping...');
-      return;
-    }
-
     const {
       order_id,
       customer_name,
@@ -80,8 +72,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       cart_items
     } = session.metadata || {};
 
-    if (!order_id || !customer_email || !cart_items) {
-      console.error('❌ Missing required order data in session metadata');
+    if (!order_id || !customer_email || !customer_name) {
+      console.error('❌ Missing required snackshop data in session metadata');
       return;
     }
 
@@ -90,19 +82,19 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     // Parse cart items
     let parsedCartItems = [];
     try {
-      parsedCartItems = JSON.parse(cart_items);
+      parsedCartItems = cart_items ? JSON.parse(cart_items) : [];
     } catch (error) {
-      console.error('Error parsing cart items:', error);
+      console.error('❌ Error parsing cart items:', error);
     }
 
     // Calculate total from session
     const totalAmount = (session.amount_total || 0) / 100; // Convert from cents
 
-    // Prepare payment details
-    const paymentDetails = {
+    // Prepare order details
+    const orderDetails = {
       order_id,
       total: totalAmount,
-      customer_name: customer_name || '',
+      customer_name,
       customer_email,
       office_number: office_number || '',
       notes: notes || '',
@@ -112,15 +104,15 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       timestamp: new Date().toISOString()
     };
 
-    console.log('💳 Snackshop payment details prepared:', paymentDetails);
+    console.log('📧 Sending confirmation emails for paid snackshop order...');
 
     // Send confirmation emails
     try {
-      await sendSnackshopConfirmationEmails(paymentDetails);
-      console.log('✅ Snackshop confirmation emails sent');
+      await sendPaymentConfirmationEmails(orderDetails);
+      console.log('✅ Snackshop confirmation emails sent successfully');
     } catch (emailError) {
-      console.error('❌ Failed to send snackshop confirmation emails:', emailError);
-      // Don't fail the entire request if emails fail
+      console.error('⚠️ Failed to send confirmation emails:', emailError);
+      // Don't throw - we still want to return success to Stripe
     }
 
     console.log('✅✅✅ SNACKSHOP ORDER COMPLETE: Payment confirmed, emails sent');
@@ -132,7 +124,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 }
 
 async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
-  console.log('⚠️ Processing failed snackshop payment intent:', paymentIntent.id);
+  console.log('⚠️ Processing failed payment intent for snackshop:', paymentIntent.id);
 
   try {
     // Get session with this payment intent
@@ -147,80 +139,57 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
     }
 
     const session = sessions.data[0];
-    const orderType = session.metadata?.order_type;
+    const orderInfo = session.metadata;
 
-    if (orderType !== 'snackshop') {
-      return;
-    }
+    console.log('💔 Failed payment for order:', orderInfo?.order_id);
 
-    const orderId = session.metadata?.order_id;
-    const customerEmail = session.metadata?.customer_email;
-
-    console.log('❌ Snackshop payment failed for order:', orderId);
-
-    // Optionally send a failure notification to customer
-    if (customerEmail && process.env.RESEND_API_KEY) {
+    // Optional: Send failure notification to customer
+    if (orderInfo?.customer_email) {
       try {
         await resend.emails.send({
           from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
-          to: customerEmail,
-          subject: `Payment Failed - Order ${orderId}`,
+          to: orderInfo.customer_email,
+          subject: `Payment Failed - Order ${orderInfo.order_id}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background: #dc2626; color: white; padding: 20px; text-align: center;">
-                <h1>Payment Failed</h1>
+              <div style="background: #fee; padding: 20px; text-align: center;">
+                <h1 style="color: #c00;">Payment Failed</h1>
               </div>
               <div style="padding: 20px;">
-                <p>Unfortunately, your payment for order ${orderId} could not be processed.</p>
+                <p>Hi ${orderInfo.customer_name},</p>
+                <p>Unfortunately, we were unable to process your payment for order <strong>${orderInfo.order_id}</strong>.</p>
                 <p>Please try again or contact us if you need assistance.</p>
-                <p style="margin-top: 20px;">
-                  <a href="${process.env.NEXT_PUBLIC_BASE_URL}/member-resources/snackshop" 
-                     style="background: #ed7611; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
-                    Try Again
-                  </a>
-                </p>
+                <p>You can retry your order at: <a href="${process.env.NEXT_PUBLIC_BASE_URL}/member-resources/snackshop">Merritt Snackshop</a></p>
               </div>
             </div>
-          `,
-          text: `Payment Failed - Order ${orderId}\n\nUnfortunately, your payment could not be processed. Please try again or contact us if you need assistance.`
+          `
         });
         console.log('✅ Payment failure notification sent');
-      } catch (error) {
-        console.error('Failed to send payment failure email:', error);
+      } catch (emailError) {
+        console.error('⚠️ Failed to send payment failure email:', emailError);
       }
     }
 
   } catch (error) {
-    console.error('Error processing failed snackshop payment:', error);
+    console.error('❌ Error processing failed payment:', error);
     throw error;
   }
 }
 
 async function handleCheckoutSessionExpired(session: Stripe.Checkout.Session) {
-  console.log('⏰ Processing expired snackshop checkout session:', session.id);
+  console.log('⏰ Processing expired checkout session:', session.id);
 
-  try {
-    const orderType = session.metadata?.order_type;
+  const orderInfo = session.metadata;
+  console.log('Session expired for order:', orderInfo?.order_id);
 
-    // Only handle snackshop orders
-    if (orderType !== 'snackshop') {
-      return;
-    }
-
-    const orderId = session.metadata?.order_id;
-    console.log('⏰ Snackshop checkout session expired for order:', orderId);
-
-    // No action needed - order was never completed
-
-  } catch (error) {
-    console.error('Error processing expired snackshop checkout session:', error);
-    throw error;
-  }
+  // Optional: Clean up any pending orders or notify customer
+  // Most of the time you don't need to do anything here
 }
 
-async function sendSnackshopConfirmationEmails(paymentDetails: any) {
+// Helper function to send confirmation emails
+async function sendPaymentConfirmationEmails(orderDetails: any) {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('No RESEND_API_KEY configured, skipping emails');
+    console.warn('⚠️ No RESEND_API_KEY configured, skipping emails');
     return;
   }
 
@@ -232,7 +201,7 @@ async function sendSnackshopConfirmationEmails(paymentDetails: any) {
     office_number,
     notes,
     items
-  } = paymentDetails;
+  } = orderDetails;
 
   const itemsList = items.map((item: any) => 
     item.quantity > 1 
@@ -353,7 +322,8 @@ Merritt Workspace Team
     
     console.log('✅ Customer confirmation email sent');
   } catch (error) {
-    console.error('Failed to send customer email:', error);
+    console.error('❌ Failed to send customer email:', error);
+    throw error; // Throw so we know emails failed
   }
 
   // Send manager notification
@@ -426,6 +396,7 @@ Customer confirmation email sent automatically.
     
     console.log('✅ Manager notification email sent');
   } catch (error) {
-    console.error('Failed to send manager email:', error);
+    console.error('❌ Failed to send manager email:', error);
+    // Don't throw - manager email is less critical
   }
 }
