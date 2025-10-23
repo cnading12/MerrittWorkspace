@@ -25,13 +25,13 @@ export default function Footer() {
               <p>Denver, CO</p>
               <p className="text-burnt-orange-300">3 minutes to I-25</p>
               <p className="mt-4">
-                <a href="tel:+1234567890" className="hover:text-white transition">
-                  (123) 456-7890
+                <a href="tel:+3033598337" className="hover:text-white transition">
+                  (303) 359-8337
                 </a>
               </p>
               <p>
-                <a href="mailto:info@merrittworkspace.com" className="hover:text-white transition">
-                  info@merrittworkspace.com
+                <a href="mailto:manager@merrittworkspace.net" className="hover:text-white transition">
+                  manager@merrittworkspace.net
                 </a>
               </p>
             </div>

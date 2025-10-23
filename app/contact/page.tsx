@@ -53,7 +53,7 @@ export default function ContactPage() {
                 <Phone className="w-5 h-5" />
                 Call Now: (303) 359-8337
               </a>
-              <a href="mailto:manager@merrittworkspace.com" className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition inline-flex items-center justify-center gap-2">
+              <a href="mailto:manager@merrittworkspace.net" className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition inline-flex items-center justify-center gap-2">
                 <Mail className="w-5 h-5" />
                 Email Us
               </a>
@@ -105,8 +105,8 @@ export default function ContactPage() {
                 <Mail className="w-6 h-6 text-burnt-orange-600" />
                 <div>
                   <h3 className="font-semibold text-gray-900">Email</h3>
-                  <a href="mailto:manager@merrittworkspace.com" className="text-burnt-orange-600 hover:underline">
-                    manager@merrittworkspace.com
+                  <a href="mailto:manager@merrittworkspace.net" className="text-burnt-orange-600 hover:underline">
+                    manager@merrittworkspace.net
                   </a>
                 </div>
               </div>
