@@ -16,7 +16,7 @@ const membershipPlans = [
     privacy: 'Shared Space',
     image: '/images/hero/dedicated-desk.jpg',
     color: 'burnt-orange',
-    badge: 'Most Popular',
+    badge: 'Best Value',
     features: [
       '24/7 building access',
       'Your own dedicated desk with storage',
