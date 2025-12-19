@@ -123,7 +123,7 @@ export default function DedicatedDeskPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <div className="bg-burnt-orange-600 text-white px-4 py-2 rounded-full text-sm font-semibold inline-block mb-4">
-              Most Popular Choice
+              Best Value
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Dedicated Desk

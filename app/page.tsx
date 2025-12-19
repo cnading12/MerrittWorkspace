@@ -243,7 +243,7 @@ export default function ImprovedHomePage() {
               <div className="relative bg-white rounded-2xl shadow-xl border-4 border-orange-500 overflow-hidden max-w-4xl mx-auto">
                 <div className="absolute top-6 right-6">
                   <span className="bg-orange-500 text-white px-4 py-2 rounded-full text-sm font-bold">
-                    Most Popular
+                    Best Value
                   </span>
                 </div>
 
