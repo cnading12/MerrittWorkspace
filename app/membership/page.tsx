@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from 'react';
-import { MapPin, Wifi, Shield, Phone, Coffee, Users, Calendar, CheckCircle, Building2, Clock, Mail, Heart, ArrowRight, Star, Zap, TrendingUp } from 'lucide-react';
+import { MapPin, Wifi, Shield, Phone, Coffee, Users, Calendar, CheckCircle, Building2, Clock, ArrowRight, Star, Zap, Sparkles, Quote } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -15,8 +14,8 @@ const membershipPlans = [
     capacity: '1 person',
     privacy: 'Shared Space',
     image: '/images/hero/dedicated-desk.webp',
-    color: 'burnt-orange',
     badge: 'Best Value',
+    featured: true,
     features: [
       '24/7 building access',
       'Your own dedicated desk with storage',
@@ -30,7 +29,6 @@ const membershipPlans = [
       'Community networking events'
     ],
     ideal_for: 'Freelancers, consultants, and remote workers',
-    category: 'shared',
     link: '/membership/dedicated-desk'
   },
   {
@@ -41,7 +39,7 @@ const membershipPlans = [
     capacity: '1 person',
     privacy: 'Private Office',
     image: '/images/private-offices/single.webp',
-    color: 'blue',
+    featured: false,
     features: [
       'Private lockable office',
       'Professional business address',
@@ -56,7 +54,6 @@ const membershipPlans = [
       'Community events'
     ],
     ideal_for: 'Solo professionals needing complete privacy',
-    category: 'private',
     link: '/membership/private-office'
   },
   {
@@ -67,7 +64,8 @@ const membershipPlans = [
     capacity: '2 people',
     privacy: 'Private Office',
     image: '/images/private-offices/2-desk.webp',
-    color: 'green',
+    badge: 'Popular',
+    featured: false,
     features: [
       'Private lockable office with 2 desks',
       'Professional business address',
@@ -83,7 +81,6 @@ const membershipPlans = [
       'Community events'
     ],
     ideal_for: 'Small teams and business partnerships',
-    category: 'private',
     link: '/membership/private-office'
   },
   {
@@ -94,7 +91,7 @@ const membershipPlans = [
     capacity: '4-8 people',
     privacy: 'Private Office',
     image: '/images/private-offices/4-desk.webp',
-    color: 'purple',
+    featured: false,
     features: [
       'Large private office (4-8 desks)',
       'Professional business address',
@@ -111,7 +108,6 @@ const membershipPlans = [
       'Dedicated team support'
     ],
     ideal_for: 'Growing teams and established companies',
-    category: 'private',
     link: '/membership/private-office'
   }
 ];
@@ -178,140 +174,191 @@ const testimonials = [
     role: 'Marketing Consultant',
     plan: 'Dedicated Desk Member',
     content: 'The community at Merritt House is incredible. I\'ve made genuine connections and even found new clients through networking here.',
-    rating: 5
+    initial: 'J'
   },
   {
     name: 'Ryan Thompson',
     role: 'Tech Startup Founder',
     plan: '2-Desk Office Member',
     content: 'Having a private office for our small team has been perfect. The flexibility and amenities are exactly what we needed as we grow.',
-    rating: 5
+    initial: 'R'
   },
   {
     name: 'Amanda Chen',
     role: 'Financial Advisor',
     plan: 'Single Office Member',
     content: 'The professional environment and privacy for client meetings is outstanding. Best decision I made for my business.',
-    rating: 5
+    initial: 'A'
   }
 ];
 
 export default function MembershipPage() {
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'shared' | 'private'>('all');
-
-  const filteredPlans = selectedCategory === 'all' 
-    ? membershipPlans 
-    : membershipPlans.filter(plan => plan.category === selectedCategory);
-
   return (
-    <main className="min-h-screen bg-gray-50 pt-16">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+    <main className="min-h-screen bg-white">
+      {/* Hero Section - Enhanced */}
+      <section className="relative bg-gradient-to-br from-burnt-orange-50 via-white to-orange-50 pt-32 pb-20 overflow-hidden">
+        {/* Background decorative elements */}
+        <div className="absolute inset-0 bg-hero-pattern opacity-30" />
+        <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-burnt-orange-200/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-orange-100/30 rounded-full blur-3xl" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-4xl mx-auto">
+            <div className="badge badge-orange mb-6">
+              <Sparkles className="w-4 h-4" />
+              Flexible Membership Options
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight tracking-tight">
               Find Your Perfect
-              <span className="text-burnt-orange-600 block">Workspace</span>
+              <span className="block text-gradient">Workspace</span>
             </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Experience premium coworking in the heart of Sloan's Lake. Choose from dedicated desks to private offices,
+
+            <p className="text-xl text-gray-600 mb-10 leading-relaxed max-w-3xl mx-auto">
+              Experience premium coworking in the heart of Sloan&apos;s Lake. Choose from dedicated desks to private offices,
               all with our distinctive character and collaborative atmosphere.
             </p>
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link 
-                href="/membership/apply" 
-                className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition inline-flex items-center justify-center gap-2"
+              <Link
+                href="/membership/apply"
+                className="btn-primary"
               >
+                <Sparkles className="w-5 h-5 mr-2" />
                 Apply for Membership
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
-              <Link 
-                href="/contact" 
-                className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition"
+              <Link
+                href="/contact"
+                className="btn-secondary"
               >
                 Schedule a Tour
               </Link>
+            </div>
+
+            {/* Trust indicators */}
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                <span>Free trial day included</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                <span>No long-term contracts</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                <span>Month-to-month flexibility</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Membership Plans */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Choose Your Membership</h2>
-            <p className="text-xl text-gray-600">Find the perfect workspace solution for your needs</p>
+      {/* Membership Plans - Enhanced */}
+      <section className="py-24 bg-white relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-px bg-gradient-to-r from-transparent via-burnt-orange-200 to-transparent" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="badge badge-orange mb-4">
+              <Star className="w-4 h-4" />
+              Membership Options
+            </div>
+            <h2 className="section-heading mb-4">Choose Your Membership</h2>
+            <p className="section-subheading">Find the perfect workspace solution for your needs</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {filteredPlans.map((plan) => (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {membershipPlans.map((plan) => (
               <div
                 key={plan.id}
-                className="bg-white rounded-xl shadow-lg border-2 border-gray-200 overflow-hidden hover:shadow-2xl transition group flex flex-col"
+                className={`group relative bg-white rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 flex flex-col ${
+                  plan.featured
+                    ? 'shadow-soft-xl border-2 border-burnt-orange-400 ring-4 ring-burnt-orange-100'
+                    : 'shadow-soft-lg border border-gray-100 hover:border-burnt-orange-200 hover:shadow-soft-xl'
+                }`}
               >
+                {/* Badge */}
+                {plan.badge && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <div className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg ${
+                      plan.badge === 'Best Value'
+                        ? 'bg-burnt-orange-500 text-white'
+                        : 'bg-blue-500 text-white'
+                    }`}>
+                      {plan.badge === 'Best Value' ? <Star className="w-3 h-3 fill-current" /> : <Zap className="w-3 h-3" />}
+                      {plan.badge}
+                    </div>
+                  </div>
+                )}
+
                 {/* Image */}
                 <div className="relative h-48 overflow-hidden">
                   <Image
                     src={plan.image}
                     alt={plan.name}
                     fill
-                    className="object-cover group-hover:scale-105 transition duration-300"
+                    className="object-cover group-hover:scale-110 transition-transform duration-700"
                   />
-                  {plan.badge && (
-                    <div className="absolute top-4 right-4 bg-burnt-orange-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                      {plan.badge}
-                    </div>
-                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 </div>
 
                 {/* Content */}
                 <div className="p-6 flex flex-col flex-grow">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                  
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+
                   <div className="flex items-baseline gap-2 mb-4">
-                    <span className="text-4xl font-bold text-burnt-orange-600">${plan.price}</span>
-                    <span className="text-lg text-gray-500">/month</span>
+                    <span className={`text-4xl font-bold ${plan.featured ? 'text-gradient' : 'text-gray-900'}`}>
+                      ${plan.price}
+                    </span>
+                    <span className="text-gray-500">/month</span>
                   </div>
 
-                  <p className="text-gray-600 mb-4">{plan.description}</p>
+                  <p className="text-gray-600 text-sm mb-4 leading-relaxed">{plan.description}</p>
 
-                  <div className="space-y-2 mb-4 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-burnt-orange-600" />
+                  <div className="flex gap-4 mb-4 text-sm">
+                    <div className="flex items-center gap-1.5 text-gray-600">
+                      <Users className="w-4 h-4 text-burnt-orange-500" />
                       <span>{plan.capacity}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-burnt-orange-600" />
+                    <div className="flex items-center gap-1.5 text-gray-600">
+                      <Shield className="w-4 h-4 text-burnt-orange-500" />
                       <span>{plan.privacy}</span>
                     </div>
                   </div>
 
                   <div className="mb-6 flex-grow">
-                    <p className="text-sm font-semibold text-gray-700 mb-3">Key Features:</p>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Key Features</p>
                     <ul className="space-y-2">
                       {plan.features.slice(0, 5).map((feature, index) => (
                         <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
-                          <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <CheckCircle className="w-3 h-3 text-green-600" />
+                          </div>
                           <span>{feature}</span>
                         </li>
                       ))}
                     </ul>
                     {plan.features.length > 5 && (
-                      <p className="text-xs text-gray-500 mt-2">+ {plan.features.length - 5} more features</p>
+                      <p className="text-xs text-burnt-orange-600 font-medium mt-3">+ {plan.features.length - 5} more features</p>
                     )}
                   </div>
 
                   <div className="space-y-3 mt-auto">
                     <Link
                       href={plan.link}
-                      className="w-full bg-burnt-orange-600 hover:bg-burnt-orange-700 text-white py-3 px-4 rounded-lg font-semibold transition text-center block"
+                      className={`w-full py-3.5 px-4 rounded-xl font-semibold transition-all duration-300 text-center block ${
+                        plan.featured
+                          ? 'bg-gradient-to-r from-burnt-orange-500 to-burnt-orange-600 text-white hover:from-burnt-orange-600 hover:to-burnt-orange-700 shadow-lg shadow-burnt-orange-500/25'
+                          : 'bg-gray-900 text-white hover:bg-gray-800'
+                      }`}
                     >
                       Learn More
                     </Link>
                     <Link
                       href="/membership/apply"
-                      className="w-full border-2 border-burnt-orange-600 text-burnt-orange-600 hover:bg-burnt-orange-600 hover:text-white py-3 px-4 rounded-lg font-semibold transition text-center block"
+                      className="w-full border-2 border-burnt-orange-500 text-burnt-orange-600 hover:bg-burnt-orange-500 hover:text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 text-center block"
                     >
                       Apply Now
                     </Link>
@@ -320,105 +367,118 @@ export default function MembershipPage() {
               </div>
             ))}
           </div>
-
-          <div className="text-center mt-12">
-            <p className="text-gray-600 mb-2">All memberships include a <strong>free trial day</strong> to experience the space.</p>
-            <p className="text-sm text-gray-500">No long-term contracts • Month-to-month flexibility</p>
-          </div>
         </div>
       </section>
 
-      {/* Comparison Table */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Compare All Options</h2>
-            <p className="text-xl text-gray-600">Find the perfect fit for your needs</p>
+      {/* Comparison Table - Enhanced */}
+      <section className="py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-burnt-orange-50 rounded-full blur-3xl opacity-50" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="badge badge-orange mb-4">
+              <Zap className="w-4 h-4" />
+              Quick Comparison
+            </div>
+            <h2 className="section-heading mb-4">Compare All Options</h2>
+            <p className="section-subheading">Find the perfect fit for your needs</p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-soft-xl overflow-hidden border border-gray-100">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-burnt-orange-50 border-b border-gray-200">
-                    <th className="text-left p-4 font-semibold text-gray-900 min-w-[200px]">Feature</th>
-                    <th className="text-center p-4 font-semibold text-gray-900 min-w-[150px]">
-                      Dedicated<br />Desk
+                  <tr className="bg-gradient-to-r from-burnt-orange-50 to-orange-50 border-b border-gray-100">
+                    <th className="text-left p-5 font-bold text-gray-900 min-w-[200px]">Feature</th>
+                    <th className="text-center p-5 min-w-[140px]">
+                      <div className="font-bold text-gray-900">Dedicated</div>
+                      <div className="text-sm text-gray-500">Desk</div>
                     </th>
-                    <th className="text-center p-4 font-semibold text-gray-900 min-w-[150px]">
-                      Single<br />Office
+                    <th className="text-center p-5 min-w-[140px]">
+                      <div className="font-bold text-gray-900">Single</div>
+                      <div className="text-sm text-gray-500">Office</div>
                     </th>
-                    <th className="text-center p-4 font-semibold text-gray-900 min-w-[150px]">
-                      2-Desk<br />Office
+                    <th className="text-center p-5 min-w-[140px]">
+                      <div className="font-bold text-gray-900">2-Desk</div>
+                      <div className="text-sm text-gray-500">Office</div>
                     </th>
-                    <th className="text-center p-4 font-semibold text-gray-900 min-w-[150px]">
-                      Large<br />Office
+                    <th className="text-center p-5 min-w-[140px]">
+                      <div className="font-bold text-gray-900">Large</div>
+                      <div className="text-sm text-gray-500">Office</div>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-4 font-medium text-gray-900">Monthly Price</td>
-                    <td className="p-4 text-center text-burnt-orange-600 font-bold">$300</td>
-                    <td className="p-4 text-center text-burnt-orange-600 font-bold">$500</td>
-                    <td className="p-4 text-center text-burnt-orange-600 font-bold">$700</td>
-                    <td className="p-4 text-center text-burnt-orange-600 font-bold">$1,200</td>
+                  <tr className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                    <td className="p-5 font-medium text-gray-900">Monthly Price</td>
+                    <td className="p-5 text-center">
+                      <span className="text-xl font-bold text-gradient">$300</span>
+                    </td>
+                    <td className="p-5 text-center">
+                      <span className="text-xl font-bold text-gray-900">$500</span>
+                    </td>
+                    <td className="p-5 text-center">
+                      <span className="text-xl font-bold text-gray-900">$700</span>
+                    </td>
+                    <td className="p-5 text-center">
+                      <span className="text-xl font-bold text-gray-900">$1,200</span>
+                    </td>
                   </tr>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <td className="p-4 font-medium text-gray-900">Capacity</td>
-                    <td className="p-4 text-center text-gray-600">1 person</td>
-                    <td className="p-4 text-center text-gray-600">1 person</td>
-                    <td className="p-4 text-center text-gray-600">2 people</td>
-                    <td className="p-4 text-center text-gray-600">4-8 people</td>
+                  <tr className="border-b border-gray-100 bg-gray-50/30 hover:bg-gray-50/50 transition-colors">
+                    <td className="p-5 font-medium text-gray-900">Capacity</td>
+                    <td className="p-5 text-center text-gray-600">1 person</td>
+                    <td className="p-5 text-center text-gray-600">1 person</td>
+                    <td className="p-5 text-center text-gray-600">2 people</td>
+                    <td className="p-5 text-center text-gray-600">4-8 people</td>
                   </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-4 font-medium text-gray-900">Privacy</td>
-                    <td className="p-4 text-center text-gray-600">Shared space</td>
-                    <td className="p-4 text-center text-gray-600">Private office</td>
-                    <td className="p-4 text-center text-gray-600">Private office</td>
-                    <td className="p-4 text-center text-gray-600">Private office</td>
+                  <tr className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                    <td className="p-5 font-medium text-gray-900">Privacy</td>
+                    <td className="p-5 text-center text-gray-600">Shared space</td>
+                    <td className="p-5 text-center text-gray-600">Private office</td>
+                    <td className="p-5 text-center text-gray-600">Private office</td>
+                    <td className="p-5 text-center text-gray-600">Private office</td>
                   </tr>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <td className="p-4 font-medium text-gray-900">24/7 Access</td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
+                  <tr className="border-b border-gray-100 bg-gray-50/30 hover:bg-gray-50/50 transition-colors">
+                    <td className="p-5 font-medium text-gray-900">24/7 Access</td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
                   </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-4 font-medium text-gray-900">Meeting Room Credits</td>
-                    <td className="p-4 text-center text-gray-600">2 hrs/mo</td>
-                    <td className="p-4 text-center text-gray-600">4 hrs/mo</td>
-                    <td className="p-4 text-center text-gray-600">6 hrs/mo</td>
-                    <td className="p-4 text-center text-gray-600">Unlimited</td>
+                  <tr className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                    <td className="p-5 font-medium text-gray-900">Meeting Room Credits</td>
+                    <td className="p-5 text-center text-gray-600">2 hrs/mo</td>
+                    <td className="p-5 text-center text-gray-600">4 hrs/mo</td>
+                    <td className="p-5 text-center text-gray-600">6 hrs/mo</td>
+                    <td className="p-5 text-center font-semibold text-burnt-orange-600">Unlimited</td>
                   </tr>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <td className="p-4 font-medium text-gray-900">Business Address</td>
-                    <td className="p-4 text-center text-gray-400">—</td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
+                  <tr className="border-b border-gray-100 bg-gray-50/30 hover:bg-gray-50/50 transition-colors">
+                    <td className="p-5 font-medium text-gray-900">Business Address</td>
+                    <td className="p-5 text-center text-gray-300">—</td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
                   </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-4 font-medium text-gray-900">Phone Booths</td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
+                  <tr className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                    <td className="p-5 font-medium text-gray-900">Phone Booths</td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
                   </tr>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <td className="p-4 font-medium text-gray-900">Pet-Friendly</td>
-                    <td className="p-4 text-center text-gray-600 text-sm">Common areas</td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
+                  <tr className="border-b border-gray-100 bg-gray-50/30 hover:bg-gray-50/50 transition-colors">
+                    <td className="p-5 font-medium text-gray-900">Pet-Friendly</td>
+                    <td className="p-5 text-center text-gray-600 text-sm">Common areas</td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
                   </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-4 font-medium text-gray-900">Lockable Storage</td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
+                  <tr className="hover:bg-gray-50/50 transition-colors">
+                    <td className="p-5 font-medium text-gray-900">Lockable Storage</td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
+                    <td className="p-5 text-center"><div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mx-auto"><CheckCircle className="w-4 h-4 text-green-600" /></div></td>
                   </tr>
                 </tbody>
               </table>
@@ -427,24 +487,33 @@ export default function MembershipPage() {
         </div>
       </section>
 
-      {/* Why Choose Merritt */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Merritt House?</h2>
-            <p className="text-xl text-gray-600">More than just a workspace - it's a community</p>
+      {/* Why Choose Merritt - Enhanced */}
+      <section className="py-24 bg-white relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-burnt-orange-50 rounded-full blur-3xl opacity-50" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="badge badge-orange mb-4">
+              <Building2 className="w-4 h-4" />
+              Why Choose Us
+            </div>
+            <h2 className="section-heading mb-4">Why Choose Merritt Workspace?</h2>
+            <p className="section-subheading">More than just a workspace - it&apos;s a community</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {whyChooseFeatures.map((feature, index) => {
               const IconComponent = feature.icon;
               return (
-                <div key={index} className="bg-gray-50 rounded-xl p-6 hover:shadow-lg transition">
-                  <div className="w-12 h-12 bg-burnt-orange-100 rounded-lg flex items-center justify-center mb-4">
-                    <IconComponent className="w-6 h-6 text-burnt-orange-600" />
+                <div
+                  key={index}
+                  className="group card-premium p-8 hover:border-burnt-orange-200"
+                >
+                  <div className="w-14 h-14 bg-gradient-to-br from-burnt-orange-100 to-burnt-orange-50 rounded-2xl flex items-center justify-center mb-6 group-hover:from-burnt-orange-500 group-hover:to-burnt-orange-600 transition-all duration-300">
+                    <IconComponent className="w-7 h-7 text-burnt-orange-600 group-hover:text-white transition-colors duration-300" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
-                  <p className="text-gray-600">{feature.description}</p>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+                  <p className="text-gray-600 leading-relaxed">{feature.description}</p>
                 </div>
               );
             })}
@@ -452,27 +521,46 @@ export default function MembershipPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Members Say</h2>
-            <p className="text-xl text-gray-600">Join a community of successful professionals</p>
+      {/* Testimonials - Enhanced */}
+      <section className="py-24 bg-gradient-to-br from-gray-50 via-white to-gray-50 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-burnt-orange-100/30 rounded-full blur-3xl" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="badge badge-orange mb-4">
+              <Star className="w-4 h-4" />
+              Testimonials
+            </div>
+            <h2 className="section-heading mb-4">What Our Members Say</h2>
+            <p className="section-subheading">Join a community of successful professionals</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-xl p-6 shadow-lg">
-                <div className="flex mb-4">
+              <div key={index} className="card-premium p-8 relative">
+                {/* Quote icon */}
+                <Quote className="absolute top-6 right-6 w-10 h-10 text-burnt-orange-100" />
+
+                {/* Stars */}
+                <div className="flex gap-1 mb-6">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="w-5 h-5 text-yellow-400 fill-current" />
+                    <Star key={star} className="w-5 h-5 text-amber-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-gray-700 mb-4">"{testimonial.content}"</p>
-                <div>
-                  <div className="font-semibold text-gray-900">{testimonial.name}</div>
-                  <div className="text-sm text-gray-600">{testimonial.role}</div>
-                  <div className="text-xs text-burnt-orange-600 mt-1">{testimonial.plan}</div>
+
+                <p className="text-gray-700 mb-6 leading-relaxed relative z-10">
+                  &ldquo;{testimonial.content}&rdquo;
+                </p>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-burnt-orange-400 to-burnt-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    {testimonial.initial}
+                  </div>
+                  <div>
+                    <div className="font-bold text-gray-900">{testimonial.name}</div>
+                    <div className="text-sm text-gray-600">{testimonial.role}</div>
+                    <div className="text-xs text-burnt-orange-600 font-medium mt-0.5">{testimonial.plan}</div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -480,58 +568,84 @@ export default function MembershipPage() {
         </div>
       </section>
 
-      {/* Application Process */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Simple Application Process</h2>
-            <p className="text-xl text-gray-600">Get started in four easy steps</p>
+      {/* Application Process - Enhanced */}
+      <section className="py-24 bg-white relative overflow-hidden">
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-burnt-orange-50 rounded-full blur-3xl opacity-50" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="badge badge-green mb-4">
+              <CheckCircle className="w-4 h-4" />
+              Easy Process
+            </div>
+            <h2 className="section-heading mb-4">Simple Application Process</h2>
+            <p className="section-subheading">Get started in four easy steps</p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-8">
-            {processSteps.map((step) => (
-              <div key={step.number} className="text-center">
-                <div className="w-16 h-16 bg-burnt-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl font-bold text-burnt-orange-600">{step.number}</span>
+          <div className="grid md:grid-cols-4 gap-8 mb-16">
+            {processSteps.map((step, index) => (
+              <div key={step.number} className="relative text-center group">
+                {/* Connecting line */}
+                {index < processSteps.length - 1 && (
+                  <div className="hidden md:block absolute top-8 left-1/2 w-full h-0.5 bg-gradient-to-r from-burnt-orange-200 to-burnt-orange-100" />
+                )}
+
+                <div className="relative z-10">
+                  <div className="w-16 h-16 bg-gradient-to-br from-burnt-orange-500 to-burnt-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-burnt-orange-500/25 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-2xl font-bold text-white">{step.number}</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">{step.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{step.description}</p>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{step.title}</h3>
-                <p className="text-gray-600 text-sm">{step.description}</p>
               </div>
             ))}
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center">
             <Link
               href="/membership/apply"
-              className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition inline-flex items-center gap-2"
+              className="btn-primary"
             >
+              <Sparkles className="w-5 h-5 mr-2" />
               Start Your Application
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-16 bg-gradient-to-r from-burnt-orange-500 to-burnt-orange-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Join Our Community?
+      {/* Final CTA - Enhanced */}
+      <section className="py-24 bg-gray-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-hero-pattern opacity-5" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-burnt-orange-600 via-burnt-orange-500 to-burnt-orange-600" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-burnt-orange-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-burnt-orange-600/10 rounded-full blur-3xl" />
+
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 bg-burnt-orange-500/20 text-burnt-orange-300 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+            <Sparkles className="w-4 h-4" />
+            Join Our Community
+          </div>
+
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+            Ready to Join Our<br />
+            <span className="text-gradient-dark">Community?</span>
           </h2>
-          <p className="text-xl text-burnt-orange-100 mb-8">
-            Experience the difference of a truly collaborative workspace at Sloan's Lake
+          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+            Experience the difference of a truly collaborative workspace at Sloan&apos;s Lake
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/membership/apply"
-              className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
+              className="group inline-flex items-center justify-center bg-gradient-to-r from-burnt-orange-500 to-burnt-orange-600 text-white px-10 py-5 rounded-xl font-bold hover:from-burnt-orange-600 hover:to-burnt-orange-700 transition-all duration-300 shadow-xl shadow-burnt-orange-500/30 hover:shadow-2xl hover:shadow-burnt-orange-500/40"
             >
+              <Sparkles className="w-5 h-5 mr-2" />
               Apply for Membership
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
               href="/contact"
-              className="bg-burnt-orange-700 text-white py-4 px-8 rounded-lg font-semibold hover:bg-burnt-orange-800 transition inline-flex items-center justify-center border-2 border-white"
+              className="inline-flex items-center justify-center bg-white/10 backdrop-blur-sm text-white border border-white/20 px-10 py-5 rounded-xl font-semibold hover:bg-white hover:text-gray-900 transition-all duration-300"
             >
               Schedule a Tour
             </Link>
