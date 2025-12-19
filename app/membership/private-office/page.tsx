@@ -19,8 +19,8 @@ export default function PrivateOfficePage() {
       desks: 1,
       color: 'blue',
       description: 'Perfect for solo professionals who need complete privacy',
-      image1: '/images/private-offices/single.png',
-      image2: '/images/private-offices/single2.png',
+      image1: '/images/private-offices/single.webp',
+      image2: '/images/private-offices/single2.webp',
       features: [
         'Private lockable office',
         'Professional business address',
@@ -40,8 +40,8 @@ export default function PrivateOfficePage() {
       desks: 2,
       color: 'green',
       description: 'Ideal for partnerships and small collaborative teams',
-      image1: '/images/private-offices/2-desk.png',
-      image2: '/images/private-offices/2-desk2.png',
+      image1: '/images/private-offices/2-desk.webp',
+      image2: '/images/private-offices/2-desk2.webp',
       features: [
         'Private lockable office with 2 desks',
         'Professional business address',
@@ -62,8 +62,8 @@ export default function PrivateOfficePage() {
       desks: '4-8',
       color: 'purple',
       description: 'Spacious office for established teams and growing companies',
-      image1: '/images/private-offices/4-desk.png',
-      image2: '/images/private-offices/4-desk2.png',
+      image1: '/images/private-offices/4-desk.webp',
+      image2: '/images/private-offices/4-desk2.webp',
       features: [
         'Large private office (4-8 desks)',
         'Professional business address',

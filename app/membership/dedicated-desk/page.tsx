@@ -202,7 +202,7 @@ export default function DedicatedDeskPage() {
               <div className="space-y-4">
                 <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
                   <Image
-                    src="/images/hero/dedicated-desk.jpg"
+                    src="/images/hero/dedicated-desk.webp"
                     alt="Dedicated desk workspace at Merritt Workspace coworking space in Sloan's Lake, Denver - $300/month"
                     fill
                     priority
@@ -212,7 +212,7 @@ export default function DedicatedDeskPage() {
                 </div>
                 <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
                   <Image
-                    src="/images/hero/dedicated-desk2.jpg"
+                    src="/images/hero/dedicated-desk2.webp"
                     alt="Private phone booths available to dedicated desk members at Merritt Workspace Denver"
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
@@ -264,7 +264,7 @@ export default function DedicatedDeskPage() {
             <div className="grid lg:grid-cols-2 gap-8">
               <div className="relative h-64 lg:h-full min-h-[300px]">
                 <Image
-                  src="/images/private-offices/phone-booth.png"
+                  src="/images/private-offices/phone-booth.webp"
                   alt="Private soundproof phone booths at Merritt Workspace coworking space in Denver"
                   fill
                   sizes="(max-width: 1024px) 100vw, 50vw"

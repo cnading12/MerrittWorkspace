@@ -2,8 +2,22 @@ import { Resend } from 'resend';
 import { type Order, type OrderItem } from './snackshop';
 import { type Booking } from './supabase';
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-load Resend client to avoid build-time errors
+let resendClient: Resend | null = null;
+
+function getResend(): Resend {
+    if (!resendClient) {
+        resendClient = new Resend(process.env.RESEND_API_KEY);
+    }
+    return resendClient;
+}
+
+// Helper to get the resend instance
+const resend = {
+    emails: {
+        send: (params: Parameters<Resend['emails']['send']>[0]) => getResend().emails.send(params)
+    }
+};
 
 // Centralized manager email configuration
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';

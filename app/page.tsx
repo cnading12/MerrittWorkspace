@@ -11,25 +11,25 @@ export default function ImprovedHomePage() {
 
   const heroImages = [
     {
-      src: '/images/hero/outside-hero.jpg',
+      src: '/images/hero/outside-hero.webp',
       title: 'Historic Character',
       subtitle: 'Next to the landmark Merritt Church Building',
       alt: 'Merritt Workspace exterior - historic 1905 coworking space in Sloan\'s Lake, Denver near I-25'
     },
     {
-      src: '/images/hero/conference-room.jpg',
+      src: '/images/hero/conference-room.webp',
       title: 'First-Class Meeting Rooms',
       subtitle: '75" Smart TV and conference calling',
       alt: 'Professional conference room at Merritt Workspace coworking space in Denver\'s Sloan\'s Lake neighborhood'
     },
     {
-      src: '/images/hero/dedicated-desk.jpg',
+      src: '/images/hero/dedicated-desk.webp',
       title: 'Your Dedicated Workspace',
       subtitle: 'Distinctive burnt orange floors',
       alt: 'Dedicated desk workspace at Merritt Workspace - affordable coworking in Sloan\'s Lake, Denver'
     },
     {
-      src: '/images/hero/kitchen.jpg',
+      src: '/images/hero/kitchen.webp',
       title: 'Full Kitchen Amenities',
       subtitle: 'Coffee, snacks, and more',
       alt: 'Full kitchen with unlimited coffee and tea at Merritt Workspace coworking space in Denver'
@@ -232,7 +232,7 @@ export default function ImprovedHomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center mb-12">
             <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
               <Image
-                src="/images/event-space/event-space-1.png"
+                src="/images/event-space/event-space-1.webp"
                 alt="Event space with projector and flexible seating at Merritt Workspace in Sloan's Lake, Denver"
                 fill
                 className="object-cover"
@@ -263,7 +263,7 @@ export default function ImprovedHomePage() {
           <div className="grid md:grid-cols-2 gap-8">
             <div className="relative h-64 rounded-xl overflow-hidden shadow-lg">
               <Image
-                src="/images/event-space/event-space-2.png"
+                src="/images/event-space/event-space-2.webp"
                 alt="Flexible meeting and event space at Merritt Workspace coworking in Sloan's Lake, Denver"
                 fill
                 className="object-cover"
@@ -275,7 +275,7 @@ export default function ImprovedHomePage() {
             </div>
             <div className="relative h-64 rounded-xl overflow-hidden shadow-lg">
               <Image
-                src="/images/event-space/coffee-shop.png"
+                src="/images/event-space/coffee-shop.webp"
                 alt="Coffee shop and casual meeting area at Merritt Workspace in Denver's West Side"
                 fill
                 className="object-cover"

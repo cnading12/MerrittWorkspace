@@ -14,7 +14,7 @@ const membershipPlans = [
     description: 'Your own workspace in our vibrant coworking community',
     capacity: '1 person',
     privacy: 'Shared Space',
-    image: '/images/hero/dedicated-desk.jpg',
+    image: '/images/hero/dedicated-desk.webp',
     color: 'burnt-orange',
     badge: 'Best Value',
     features: [
@@ -40,7 +40,7 @@ const membershipPlans = [
     description: 'Private lockable office for individual professionals',
     capacity: '1 person',
     privacy: 'Private Office',
-    image: '/images/private-offices/single.png',
+    image: '/images/private-offices/single.webp',
     color: 'blue',
     features: [
       'Private lockable office',
@@ -66,7 +66,7 @@ const membershipPlans = [
     description: 'Ideal for partnerships and small collaborative teams',
     capacity: '2 people',
     privacy: 'Private Office',
-    image: '/images/private-offices/2-desk.png',
+    image: '/images/private-offices/2-desk.webp',
     color: 'green',
     features: [
       'Private lockable office with 2 desks',
@@ -93,7 +93,7 @@ const membershipPlans = [
     description: 'Spacious office for established teams and growing companies',
     capacity: '4-8 people',
     privacy: 'Private Office',
-    image: '/images/private-offices/4-desk.png',
+    image: '/images/private-offices/4-desk.webp',
     color: 'purple',
     features: [
       'Large private office (4-8 desks)',
