@@ -190,12 +190,11 @@ export default function PrivateOfficePage() {
               Professional Choice
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Private Office
-              <span className="text-blue-600 block">Memberships</span>
+              Private Office Rental
+              <span className="text-blue-600 block">in Sloan's Lake, Denver</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Choose from three private office sizes to match your team's needs. All offices feature complete privacy, 
-              professional amenities, and the flexibility to grow with your business.
+              Lockable private offices in Denver's Sloan's Lake neighborhood, just 3 minutes from I-25. Choose from single ($500/mo), double ($700/mo), or team offices ($1,200/mo). All include 24/7 access, professional business address, and meeting room credits.
             </p>
           </div>
 
@@ -289,16 +288,19 @@ export default function PrivateOfficePage() {
                 <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
                   <Image
                     src={selectedPlanDetails.image1}
-                    alt={`${selectedPlanDetails.name} - view 1`}
+                    alt={`${selectedPlanDetails.name} private office rental at Merritt Workspace in Sloan's Lake, Denver`}
                     fill
+                    priority
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                   />
                 </div>
                 <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
                   <Image
                     src={selectedPlanDetails.image2}
-                    alt={`${selectedPlanDetails.name} - view 2`}
+                    alt={`${selectedPlanDetails.name} interior view - private office near I-25 Denver`}
                     fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                   />
                 </div>
@@ -393,14 +395,28 @@ export default function PrivateOfficePage() {
         </div>
       </section>
 
+      {/* Internal Links Section */}
+      <section className="py-12 bg-gray-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Explore Other Options</h3>
+          <p className="text-gray-600 mb-6">
+            Looking for a more affordable option? Our <Link href="/membership/dedicated-desk" className="text-blue-600 hover:underline font-semibold">dedicated desks start at just $300/month</Link>.
+            Or <Link href="/membership" className="text-blue-600 hover:underline font-semibold">compare all membership options</Link> to find your perfect Sloan's Lake office space.
+          </p>
+          <p className="text-sm text-gray-500">
+            Questions? <Link href="/contact" className="text-blue-600 hover:underline">Contact us</Link> or visit our <Link href="/member-resources/faqs" className="text-blue-600 hover:underline">FAQ page</Link>
+          </p>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-16 bg-blue-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Claim Your Private Office?
+            Ready to Claim Your Private Office in Sloan's Lake?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join Denver's premier coworking community at Sloan's Lake
+            Join Denver's premier coworking community—just 3 minutes from I-25
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

@@ -1,9 +1,71 @@
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import LocalBusinessSchema from "@/components/LocalBusinessSchema";
+import { Metadata } from "next";
 
-export const metadata = {
-  title: "Merritt Workspace - Premium Coworking in Denver",
-  description: "Premium workspace in the heart of Sloan's Lake, Denver. Offices, dedicated desks, and conference rooms in a beautifully restored space.",
+export const metadata: Metadata = {
+  metadataBase: new URL('https://merrittworkspace.net'),
+  title: {
+    default: "Merritt Workspace | Coworking Space in Sloan's Lake, Denver",
+    template: "%s | Merritt Workspace Denver"
+  },
+  description: "Premium coworking space in Sloan's Lake, Denver. Dedicated desks from $300/mo, private offices from $500/mo. 24/7 access, 3 min to I-25, historic 1905 building. Free trial day available.",
+  keywords: [
+    "coworking space Sloan's Lake",
+    "dedicated desk Denver",
+    "private office rental Denver",
+    "coworking near I-25 Denver",
+    "Sloan's Lake office space",
+    "West Denver coworking",
+    "Denver office rental",
+    "shared office space Denver",
+    "coworking Denver",
+    "flexible office Denver"
+  ],
+  authors: [{ name: "Merritt Workspace" }],
+  creator: "Merritt Workspace",
+  publisher: "Merritt Workspace",
+  formatDetection: {
+    email: true,
+    address: true,
+    telephone: true,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://merrittworkspace.net",
+    siteName: "Merritt Workspace",
+    title: "Merritt Workspace | Coworking Space in Sloan's Lake, Denver",
+    description: "Premium coworking in a restored 1905 church building. Dedicated desks $300/mo, private offices from $500/mo. 24/7 access, 3 min to I-25. Free trial day!",
+    images: [
+      {
+        url: "/images/hero/outside-hero.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Merritt Workspace - Historic coworking space in Sloan's Lake, Denver",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Merritt Workspace | Coworking Space in Sloan's Lake, Denver",
+    description: "Premium coworking in a restored 1905 church building. Dedicated desks $300/mo, private offices from $500/mo. 24/7 access, 3 min to I-25.",
+    images: ["/images/hero/outside-hero.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: "https://merrittworkspace.net",
+  },
   icons: {
     icon: [
       { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
@@ -13,14 +75,18 @@ export const metadata = {
     apple: '/apple-touch-icon.png',
   },
   manifest: '/site.webmanifest',
-  appleWebApp: {
-    title: 'MW'
-  }
+  other: {
+    'geo.region': 'US-CO',
+    'geo.placename': 'Denver',
+    'geo.position': '39.75098609588881;-105.03225422342487',
+    'ICBM': '39.75098609588881, -105.03225422342487',
+  },
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#de5f07",
 };
 
 export default function RootLayout({
@@ -30,6 +96,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="ios-fix">
+      <head>
+        <LocalBusinessSchema />
+      </head>
       <body className="font-helvetica text-black bg-white">
         <Navbar />
         {children}
