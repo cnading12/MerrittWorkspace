@@ -1,17 +1,28 @@
-// app/api/test-email/route.ts - CREATE THIS FILE TO TEST EMAILS
+// app/api/test-email/route.ts - TEST ENDPOINT (PROTECTED)
 import { NextRequest, NextResponse } from 'next/server';
 import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
 import { meetingRoomAPI } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
+    // SECURITY: Only allow in development or with admin secret
+    const isDev = process.env.NODE_ENV === 'development';
+    const adminSecret = process.env.ADMIN_API_SECRET;
+    const providedSecret = request.headers.get('x-admin-secret');
+
+    if (!isDev && (!adminSecret || providedSecret !== adminSecret)) {
+      return NextResponse.json(
+        { error: 'This endpoint is disabled in production' },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const bookingId = searchParams.get('booking_id');
 
     if (!bookingId) {
       return NextResponse.json({
-        error: 'Please provide booking_id query parameter',
-        example: '/api/test-email?booking_id=YOUR_BOOKING_ID'
+        error: 'Please provide booking_id query parameter'
       }, { status: 400 });
     }
 
@@ -83,12 +94,10 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Email test failed:', error);
-    
+
+    // SECURITY: Don't expose error details or stack traces
     return NextResponse.json({
-      error: 'Email sending failed',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      resend_configured: !!process.env.RESEND_API_KEY
+      error: 'Email sending failed'
     }, { status: 500 });
   }
 }

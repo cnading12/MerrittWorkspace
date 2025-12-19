@@ -91,13 +91,11 @@ export async function POST(request: NextRequest) {
       tempOrderId 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Stripe checkout error:', error);
+    // SECURITY: Don't expose internal error details
     return NextResponse.json(
-      { 
-        error: 'Failed to create payment session',
-        details: error.message 
-      },
+      { error: 'Failed to create payment session' },
       { status: 500 }
     );
   }

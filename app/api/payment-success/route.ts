@@ -96,18 +96,19 @@ export async function GET(request: NextRequest) {
       message: 'Payment processed successfully. Confirmation emails will be sent shortly.'
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Payment success API error:', error);
-    
+
+    // SECURITY: Don't expose internal error details
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(
-        { error: 'Payment session error', details: error.message },
+        { error: 'Payment session error' },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { meetingRoomAPI } from '@/lib/supabase';
 import { googleCalendarAPI } from '@/lib/google-calendar';
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-08-27.basil',
+});
 
 export async function POST(
   request: NextRequest,
@@ -9,6 +14,41 @@ export async function POST(
   try {
     const bookingId = params.id;
     const { payment_intent_id, session_id } = await request.json();
+
+    // SECURITY: Require session_id for verification
+    if (!session_id) {
+      return NextResponse.json(
+        { error: 'Session ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // SECURITY: Verify the Stripe session is valid and paid
+    let stripeSession: Stripe.Checkout.Session;
+    try {
+      stripeSession = await stripe.checkout.sessions.retrieve(session_id);
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid session' },
+        { status: 401 }
+      );
+    }
+
+    // SECURITY: Verify payment was successful
+    if (stripeSession.payment_status !== 'paid') {
+      return NextResponse.json(
+        { error: 'Payment not completed' },
+        { status: 403 }
+      );
+    }
+
+    // SECURITY: Verify this session is for this booking
+    if (stripeSession.metadata?.booking_id !== bookingId) {
+      return NextResponse.json(
+        { error: 'Session does not match booking' },
+        { status: 403 }
+      );
+    }
 
     // Get the booking
     const booking = await meetingRoomAPI.getBooking(bookingId);
@@ -67,6 +107,17 @@ export async function DELETE(
 ) {
   try {
     const bookingId = params.id;
+
+    // SECURITY: Require admin secret for cancellation
+    const authHeader = request.headers.get('authorization');
+    const adminSecret = process.env.ADMIN_API_SECRET;
+
+    if (!adminSecret || authHeader !== `Bearer ${adminSecret}`) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
     // Get the booking
     const booking = await meetingRoomAPI.getBooking(bookingId);

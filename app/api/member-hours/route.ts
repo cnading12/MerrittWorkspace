@@ -2,13 +2,56 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+// Simple in-memory rate limiter (per IP)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_MAX = 5; // 5 requests per minute
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (record.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+
+  record.count++;
+  return true;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    // SECURITY: Rate limiting to prevent enumeration attacks
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0] ||
+                     request.headers.get('x-real-ip') ||
+                     'unknown';
+
+    if (!checkRateLimit(clientIp)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
+    const { email, verification_token } = await request.json();
 
     if (!email) {
       return NextResponse.json(
         { error: 'Email is required' },
+        { status: 400 }
+      );
+    }
+
+    // SECURITY: Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
         { status: 400 }
       );
     }
@@ -64,11 +107,10 @@ export async function POST(request: NextRequest) {
       membership_type: member.membership_type
     };
 
+    // SECURITY: Return limited information - don't expose member ID or full details
     return NextResponse.json({
       memberHours,
       member: {
-        id: member.id,
-        email: member.email,
         membership_type: member.membership_type,
         status: member.status
       }
