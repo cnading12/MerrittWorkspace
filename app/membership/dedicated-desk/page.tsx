@@ -126,12 +126,11 @@ export default function DedicatedDeskPage() {
               Best Value
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Dedicated Desk
-              <span className="text-burnt-orange-600 block">Membership</span>
+              Dedicated Desk in
+              <span className="text-burnt-orange-600 block">Sloan's Lake, Denver</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Your own workspace in our vibrant coworking community. Perfect for freelancers, consultants, 
-              and remote workers who want consistency, community, and professional amenities.
+              Your own permanent workspace in Denver's premier coworking space. Located just 3 minutes from I-25 in the heart of Sloan's Lake, our dedicated desks offer freelancers, consultants, and remote workers the perfect balance of consistency, community, and professional amenities—all for just $300/month.
             </p>
           </div>
 
@@ -204,16 +203,19 @@ export default function DedicatedDeskPage() {
                 <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
                   <Image
                     src="/images/hero/dedicated-desk.jpg"
-                    alt="Dedicated desk workspace at Merritt House"
+                    alt="Dedicated desk workspace at Merritt Workspace coworking space in Sloan's Lake, Denver - $300/month"
                     fill
+                    priority
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                   />
                 </div>
                 <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
                   <Image
                     src="/images/hero/dedicated-desk2.jpg"
-                    alt="Private phone booths available to all members"
+                    alt="Private phone booths available to dedicated desk members at Merritt Workspace Denver"
                     fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                   />
                 </div>
@@ -263,8 +265,9 @@ export default function DedicatedDeskPage() {
               <div className="relative h-64 lg:h-full min-h-[300px]">
                 <Image
                   src="/images/private-offices/phone-booth.png"
-                  alt="Private phone booths at Merritt House"
+                  alt="Private soundproof phone booths at Merritt Workspace coworking space in Denver"
                   fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
                 />
               </div>
@@ -383,14 +386,28 @@ export default function DedicatedDeskPage() {
         </div>
       </section>
 
+      {/* Internal Links Section */}
+      <section className="py-12 bg-gray-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Explore Other Options</h3>
+          <p className="text-gray-600 mb-6">
+            Need more privacy? Check out our <Link href="/membership/private-office" className="text-burnt-orange-600 hover:underline font-semibold">private office rentals in Denver</Link> starting at $500/month.
+            Or <Link href="/membership" className="text-burnt-orange-600 hover:underline font-semibold">compare all membership options</Link> to find your perfect workspace.
+          </p>
+          <p className="text-sm text-gray-500">
+            Questions? <Link href="/contact" className="text-burnt-orange-600 hover:underline">Contact us</Link> or visit our <Link href="/member-resources/faqs" className="text-burnt-orange-600 hover:underline">FAQ page</Link>
+          </p>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-burnt-orange-500 to-burnt-orange-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Claim Your Dedicated Desk?
+            Ready to Claim Your Dedicated Desk in Sloan's Lake?
           </h2>
           <p className="text-xl text-burnt-orange-100 mb-8">
-            Join Denver's premier coworking community at Sloan's Lake
+            Join Denver's premier coworking community—just 3 minutes from I-25
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
