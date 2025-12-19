@@ -1,14 +1,30 @@
 // app/api/member-hours/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import {
+  isValidEmail,
+  checkRateLimit,
+  rateLimitExceededResponse,
+  getClientIP,
+  sanitizeString
+} from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    // SECURITY: Rate limiting - 20 requests per minute per IP
+    const clientIP = getClientIP(request);
+    const rateLimit = checkRateLimit(`member-hours:${clientIP}`, 20, 60000);
+    if (!rateLimit.allowed) {
+      return rateLimitExceededResponse(rateLimit.resetTime);
+    }
 
-    if (!email) {
+    const body = await request.json();
+    const email = typeof body.email === 'string' ? body.email.trim() : '';
+
+    // SECURITY: Validate email format
+    if (!email || !isValidEmail(email)) {
       return NextResponse.json(
-        { error: 'Email is required' },
+        { error: 'Valid email is required' },
         { status: 400 }
       );
     }
@@ -64,10 +80,10 @@ export async function POST(request: NextRequest) {
       membership_type: member.membership_type
     };
 
+    // SECURITY: Return minimal information - don't expose member ID
     return NextResponse.json({
       memberHours,
       member: {
-        id: member.id,
         email: member.email,
         membership_type: member.membership_type,
         status: member.status

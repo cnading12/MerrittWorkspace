@@ -1,10 +1,31 @@
-// app/api/test-email/route.ts - CREATE THIS FILE TO TEST EMAILS
+// app/api/test-email/route.ts - ADMIN-PROTECTED TEST ENDPOINT
 import { NextRequest, NextResponse } from 'next/server';
 import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
 import { meetingRoomAPI } from '@/lib/supabase';
+import {
+  validateAdminAuth,
+  unauthorizedResponse,
+  checkRateLimit,
+  rateLimitExceededResponse,
+  getClientIP
+} from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    // SECURITY: Require admin authentication
+    const auth = validateAdminAuth(request);
+    if (!auth.valid) {
+      console.warn('🚫 Unauthorized test-email access attempt');
+      return unauthorizedResponse(auth.error);
+    }
+
+    // Rate limiting - 10 requests per minute
+    const clientIP = getClientIP(request);
+    const rateLimit = checkRateLimit(`test-email:${clientIP}`, 10, 60000);
+    if (!rateLimit.allowed) {
+      return rateLimitExceededResponse(rateLimit.resetTime);
+    }
+
     const { searchParams } = new URL(request.url);
     const bookingId = searchParams.get('booking_id');
 
@@ -83,11 +104,11 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Email test failed:', error);
-    
+
+    // SECURITY: Don't expose stack traces in production
     return NextResponse.json({
       error: 'Email sending failed',
       details: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
       resend_configured: !!process.env.RESEND_API_KEY
     }, { status: 500 });
   }

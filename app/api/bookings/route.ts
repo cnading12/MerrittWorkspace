@@ -2,6 +2,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { googleCalendarAPI } from '@/lib/google-calendar';
 import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
+import {
+  isValidEmail,
+  isValidDate,
+  isValidTime,
+  isValidLength,
+  isPositiveInteger,
+  isNonNegativeNumber,
+  sanitizeString,
+  checkRateLimit,
+  rateLimitExceededResponse,
+  getClientIP
+} from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
