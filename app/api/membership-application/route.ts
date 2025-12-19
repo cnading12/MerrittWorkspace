@@ -4,7 +4,22 @@ import { Resend } from 'resend';
 
 export const dynamic = 'force-dynamic';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-load Resend client to avoid build-time errors
+let resendClient: Resend | null = null;
+
+function getResend(): Resend {
+    if (!resendClient) {
+        resendClient = new Resend(process.env.RESEND_API_KEY);
+    }
+    return resendClient;
+}
+
+const resend = {
+    emails: {
+        send: (params: Parameters<Resend['emails']['send']>[0]) => getResend().emails.send(params)
+    }
+};
+
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 
 export async function POST(request: NextRequest) {

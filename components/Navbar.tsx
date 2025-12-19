@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Menu, X, ChevronDown } from 'lucide-react';
@@ -9,37 +9,40 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = useRef(0);
+  const ticking = useRef(false);
+
+  const controlNavbar = useCallback(() => {
+    const currentScrollY = window.scrollY;
+
+    // Show navbar when at top of page
+    if (currentScrollY < 10) {
+      setIsVisible(true);
+    }
+    // Hide when scrolling down, show when scrolling up
+    else if (currentScrollY > lastScrollY.current) {
+      setIsVisible(false);
+      setIsMenuOpen(false);
+      setIsDropdownOpen(null);
+    } else {
+      setIsVisible(true);
+    }
+
+    lastScrollY.current = currentScrollY;
+    ticking.current = false;
+  }, []);
 
   useEffect(() => {
-    const controlNavbar = () => {
-      if (typeof window !== 'undefined') {
-        const currentScrollY = window.scrollY;
-        
-        // Show navbar when at top of page
-        if (currentScrollY < 10) {
-          setIsVisible(true);
-        }
-        // Hide when scrolling down, show when scrolling up
-        else if (currentScrollY > lastScrollY) {
-          setIsVisible(false);
-          setIsMenuOpen(false); // Close mobile menu when hiding
-          setIsDropdownOpen(null); // Close dropdown when hiding
-        } else {
-          setIsVisible(true);
-        }
-        
-        setLastScrollY(currentScrollY);
+    const handleScroll = () => {
+      if (!ticking.current) {
+        requestAnimationFrame(controlNavbar);
+        ticking.current = true;
       }
     };
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('scroll', controlNavbar);
-      return () => {
-        window.removeEventListener('scroll', controlNavbar);
-      };
-    }
-  }, [lastScrollY]);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [controlNavbar]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -73,7 +76,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="hover:opacity-80 transition">
             <Image 
-              src="/images/hero/logo.png" 
+              src="/images/hero/logo.webp" 
               alt="Merritt Workspace Logo" 
               width={180} 
               height={48}
