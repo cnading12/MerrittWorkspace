@@ -19,8 +19,9 @@ const resend = {
     }
 };
 
-// Centralized manager email configuration
+// Centralized email configuration
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
+const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
 // Email templates and functions
 export const emailTemplates = {
@@ -430,7 +431,7 @@ export async function sendOrderConfirmationEmail(data: {
             text: template.text,
         });
 
-        // Send copy to manager - UPDATED TO USE CENTRALIZED MANAGER EMAIL
+        // Send copy to manager
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
             to: MANAGER_EMAIL,
@@ -446,8 +447,24 @@ export async function sendOrderConfirmationEmail(data: {
             text: `[CUSTOMER EMAIL COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\n\n${template.text}`,
         });
 
-        console.log('Order confirmation email sent to customer and manager:', { customerEmail, managerEmail });
-        return { customerEmail, managerEmail };
+        // Send copy to member services
+        const memberServicesEmail = await resend.emails.send({
+            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
+            to: MEMBER_SERVICES_EMAIL,
+            subject: `[COPY] ${template.subject}`,
+            html: `
+        <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+          <strong>📧 Customer Email Copy</strong><br>
+          <strong>Sent to:</strong> ${data.to}<br>
+          <strong>Customer:</strong> ${data.customerName}
+        </div>
+        ${template.html}
+      `,
+            text: `[CUSTOMER EMAIL COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\n\n${template.text}`,
+        });
+
+        console.log('Order confirmation email sent to customer, manager, and member services:', { customerEmail, managerEmail, memberServicesEmail });
+        return { customerEmail, managerEmail, memberServicesEmail };
     } catch (error) {
         console.error('Failed to send order confirmation email:', error);
         throw error;
@@ -472,7 +489,7 @@ export async function sendBookingConfirmationEmail(data: {
             text: template.text,
         });
 
-        // Send copy to manager - UPDATED TO USE CENTRALIZED MANAGER EMAIL
+        // Send copy to manager
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
             to: MANAGER_EMAIL,
@@ -490,8 +507,26 @@ export async function sendBookingConfirmationEmail(data: {
             text: `[MEETING BOOKING COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\nRoom: ${data.roomName}\nDate: ${data.booking.booking_date} at ${data.booking.start_time}\n\n${template.text}`,
         });
 
-        console.log('Booking confirmation email sent to customer and manager:', { customerEmail, managerEmail });
-        return { customerEmail, managerEmail };
+        // Send copy to member services
+        const memberServicesEmail = await resend.emails.send({
+            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
+            to: MEMBER_SERVICES_EMAIL,
+            subject: `[COPY] ${template.subject}`,
+            html: `
+        <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+          <strong>📅 Meeting Room Booking Copy</strong><br>
+          <strong>Sent to:</strong> ${data.to}<br>
+          <strong>Customer:</strong> ${data.customerName}<br>
+          <strong>Room:</strong> ${data.roomName}<br>
+          <strong>Date:</strong> ${data.booking.booking_date} at ${data.booking.start_time}
+        </div>
+        ${template.html}
+      `,
+            text: `[MEETING BOOKING COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\nRoom: ${data.roomName}\nDate: ${data.booking.booking_date} at ${data.booking.start_time}\n\n${template.text}`,
+        });
+
+        console.log('Booking confirmation email sent to customer, manager, and member services:', { customerEmail, managerEmail, memberServicesEmail });
+        return { customerEmail, managerEmail, memberServicesEmail };
     } catch (error) {
         console.error('Failed to send booking confirmation email:', error);
         throw error;
@@ -517,7 +552,7 @@ export async function sendMembershipApplicationEmail(data: {
             text: template.text,
         });
 
-        // Send notification to manager - UPDATED TO USE CENTRALIZED MANAGER EMAIL
+        // Send notification to manager
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Membership <membership@merrittworkspace.net>',
             to: MANAGER_EMAIL,
@@ -526,7 +561,7 @@ export async function sendMembershipApplicationEmail(data: {
         <div style="background: #f0f0f0; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
           <h3 style="margin-top: 0;">New Membership Application Received</h3>
         </div>
-        
+
         <div style="background: #fff8e1; padding: 15px; border-radius: 5px; border-left: 4px solid #ed7611;">
           <h4>Application Details:</h4>
           <p><strong>Name:</strong> ${data.applicantName}</p>
@@ -542,7 +577,7 @@ export async function sendMembershipApplicationEmail(data: {
                 minute: '2-digit'
             })}</p>
         </div>
-        
+
         <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
           <h4>Next Steps:</h4>
           <ol>
@@ -553,15 +588,58 @@ export async function sendMembershipApplicationEmail(data: {
           </ol>
           <p><strong>Action Required:</strong> Please follow up within 1-2 business days as promised.</p>
         </div>
-        
+
         <hr style="margin: 20px 0;">
         <p style="color: #666; font-size: 14px;"><em>A copy of the welcome email was also sent to the applicant.</em></p>
       `,
             text: `NEW MEMBERSHIP APPLICATION\n\nApplicant: ${data.applicantName}\nEmail: ${data.email}\nMembership Type: ${data.membershipType}\nApplication ID: ${data.applicationId}\nSubmitted: ${new Date().toLocaleString()}\n\nNext Steps:\n1. Review the application\n2. Contact ${data.applicantName} to schedule a tour\n3. Arrange their free trial day\n4. Process membership approval\n\nACTION REQUIRED: Please follow up within 1-2 business days.\n\nA copy of the welcome email was also sent to the applicant.`,
         });
 
-        console.log('Membership application email sent to applicant and manager:', { applicantEmail, managerEmail });
-        return { applicantEmail, managerEmail };
+        // Send notification to member services
+        const memberServicesEmail = await resend.emails.send({
+            from: 'Merritt Workspace Membership <membership@merrittworkspace.net>',
+            to: MEMBER_SERVICES_EMAIL,
+            subject: `🆕 New Membership Application - ${data.applicantName} (${data.membershipType})`,
+            html: `
+        <div style="background: #f0f0f0; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+          <h3 style="margin-top: 0;">New Membership Application Received</h3>
+        </div>
+
+        <div style="background: #fff8e1; padding: 15px; border-radius: 5px; border-left: 4px solid #ed7611;">
+          <h4>Application Details:</h4>
+          <p><strong>Name:</strong> ${data.applicantName}</p>
+          <p><strong>Email:</strong> ${data.email}</p>
+          <p><strong>Membership Type:</strong> ${data.membershipType}</p>
+          <p><strong>Application ID:</strong> ${data.applicationId}</p>
+          <p><strong>Submitted:</strong> ${new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })}</p>
+        </div>
+
+        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+          <h4>Next Steps:</h4>
+          <ol>
+            <li>Review the application in your dashboard</li>
+            <li>Contact ${data.applicantName} to schedule a tour</li>
+            <li>Arrange their free trial day</li>
+            <li>Process membership approval</li>
+          </ol>
+          <p><strong>Action Required:</strong> Please follow up within 1-2 business days as promised.</p>
+        </div>
+
+        <hr style="margin: 20px 0;">
+        <p style="color: #666; font-size: 14px;"><em>A copy of the welcome email was also sent to the applicant.</em></p>
+      `,
+            text: `NEW MEMBERSHIP APPLICATION\n\nApplicant: ${data.applicantName}\nEmail: ${data.email}\nMembership Type: ${data.membershipType}\nApplication ID: ${data.applicationId}\nSubmitted: ${new Date().toLocaleString()}\n\nNext Steps:\n1. Review the application\n2. Contact ${data.applicantName} to schedule a tour\n3. Arrange their free trial day\n4. Process membership approval\n\nACTION REQUIRED: Please follow up within 1-2 business days.\n\nA copy of the welcome email was also sent to the applicant.`,
+        });
+
+        console.log('Membership application email sent to applicant, manager, and member services:', { applicantEmail, managerEmail, memberServicesEmail });
+        return { applicantEmail, managerEmail, memberServicesEmail };
     } catch (error) {
         console.error('Failed to send membership application email:', error);
         throw error;
@@ -1029,7 +1107,7 @@ export async function sendMemberBookingConfirmationEmail(data: {
             text: customerTemplate.text,
         });
 
-        // Send notification to manager - UPDATED TO USE CENTRALIZED MANAGER EMAIL
+        // Send notification to manager
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
             to: MANAGER_EMAIL,
@@ -1038,8 +1116,17 @@ export async function sendMemberBookingConfirmationEmail(data: {
             text: managerTemplate.text,
         });
 
-        console.log('Booking confirmation emails sent:', { customerEmail, managerEmail });
-        return { customerEmail, managerEmail };
+        // Send notification to member services
+        const memberServicesEmail = await resend.emails.send({
+            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
+            to: MEMBER_SERVICES_EMAIL,
+            subject: managerTemplate.subject,
+            html: managerTemplate.html,
+            text: managerTemplate.text,
+        });
+
+        console.log('Booking confirmation emails sent:', { customerEmail, managerEmail, memberServicesEmail });
+        return { customerEmail, managerEmail, memberServicesEmail };
     } catch (error) {
         console.error('Failed to send booking confirmation emails:', error);
         throw error;
