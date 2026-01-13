@@ -21,6 +21,7 @@ const resend = {
 };
 
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
+const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,8 +65,10 @@ export async function POST(request: NextRequest) {
     let emailResults = {
       applicant_sent: false,
       manager_sent: false,
+      member_services_sent: false,
       applicant_error: null as string | null,
-      manager_error: null as string | null
+      manager_error: null as string | null,
+      member_services_error: null as string | null
     };
 
     // Format membership type for display
@@ -135,6 +138,35 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
       console.error('❌ Manager email failed:', error);
       emailResults.manager_error = error.message;
+    }
+
+    // Send notification to member services with full application details
+    try {
+      console.log('📧 Sending member services notification email...');
+
+      const memberServicesEmail = await resend.emails.send({
+        from: 'Merritt Workspace Membership <membership@merrittworkspace.net>',
+        to: MEMBER_SERVICES_EMAIL,
+        subject: `🆕 New Membership Application - ${applicationData.first_name} ${applicationData.last_name} (${membershipTypeDisplay})`,
+        html: generateManagerEmailHTML({
+          applicationData,
+          membershipTypeDisplay,
+          applicationId,
+          submittedAt
+        }),
+        text: generateManagerEmailText({
+          applicationData,
+          membershipTypeDisplay,
+          applicationId,
+          submittedAt
+        })
+      });
+
+      emailResults.member_services_sent = true;
+      console.log('✅ Member services email sent:', memberServicesEmail.data?.id);
+    } catch (error: any) {
+      console.error('❌ Member services email failed:', error);
+      emailResults.member_services_error = error.message;
     }
 
     console.log('📊 Email results:', emailResults);
