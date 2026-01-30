@@ -49,31 +49,31 @@ export default function DedicatedDeskPage() {
     },
     {
       icon: MapPin,
-      title: 'Event Space Access',
-      description: 'Use our multi-purpose event space next door until 4:30 PM daily'
+      title: 'FREE Church Flex Space',
+      description: 'Work or host events in our stunning 1905 church with stained glass—free until 4:30 PM daily'
     }
   ];
 
   const eventSpaceFeatures = [
     {
       icon: Coffee,
-      title: 'Coffee Shop Area',
-      description: 'Casual seating for informal meetings and collaboration'
-    },
-    {
-      icon: Zap,
-      title: 'Projector Setup',
-      description: 'Professional presentation equipment for client meetings'
+      title: 'Church Coffee Shop',
+      description: 'Work surrounded by stunning stained glass windows and café seating'
     },
     {
       icon: Users,
-      title: 'Sound System',
-      description: 'High-quality audio for presentations and events'
+      title: 'Free Workshops & Meetings',
+      description: 'Host team meetings, client presentations, and networking events at no cost'
+    },
+    {
+      icon: Zap,
+      title: 'Projector & Sound System',
+      description: 'Professional AV equipment ready for your presentations'
     },
     {
       icon: TrendingUp,
-      title: 'Recreation Area',
-      description: 'Ping pong table and break areas for networking'
+      title: 'Recreation & Breaks',
+      description: 'Ping pong, flexible seating, and space to recharge'
     }
   ];
 
@@ -122,6 +122,9 @@ export default function DedicatedDeskPage() {
       <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
+            <div className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold inline-block mb-3 animate-pulse">
+              FIRST MONTH FREE — Limited Time
+            </div>
             <div className="bg-burnt-orange-600 text-white px-4 py-2 rounded-full text-sm font-semibold inline-block mb-4">
               Best Value
             </div>
@@ -130,7 +133,7 @@ export default function DedicatedDeskPage() {
               <span className="text-burnt-orange-600 block">Sloan's Lake, Denver</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Your own permanent workspace in Denver's premier coworking space. Located just 3 minutes from I-25 in the heart of Sloan's Lake, our dedicated desks offer freelancers, consultants, and remote workers the perfect balance of consistency, community, and professional amenities—all for just $300/month.
+              Your own permanent workspace in Denver's premier coworking space—<strong>plus FREE access to our stunning 1905 church flex space</strong>. Located just 3 minutes from I-25 in the heart of Sloan's Lake. Work in the main building or the historic church coffee shop. Host meetings and workshops in the flex space at no extra cost.
             </p>
           </div>
 
@@ -140,12 +143,15 @@ export default function DedicatedDeskPage() {
               {/* Left Column - Details */}
               <div>
                 <div className="mb-6">
-                  <div className="flex items-baseline gap-2 mb-6">
-                    <span className="text-5xl font-bold text-burnt-orange-600">$300</span>
-                    <span className="text-2xl text-gray-500">/month</span>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-2xl text-gray-400 line-through">$300</span>
+                    <span className="text-5xl font-bold text-green-600">$0</span>
+                    <span className="text-2xl text-gray-500">first month</span>
                   </div>
-                  <p className="text-gray-600 text-lg mb-2">No long-term contracts required</p>
-                  <p className="text-gray-600">Month-to-month flexibility with professional consistency</p>
+                  <p className="text-gray-600 text-lg mb-4">Then $300/month • No long-term contracts</p>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                    <p className="text-green-800 font-semibold text-sm">Limited Time: Get your first month completely free!</p>
+                  </div>
                 </div>
 
                 <div className="mb-8">
@@ -181,7 +187,11 @@ export default function DedicatedDeskPage() {
                     </li>
                     <li className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700">Event space access until 4:30 PM daily</span>
+                      <span className="text-gray-700"><strong>FREE historic church flex space access</strong> until 4:30 PM daily</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700"><strong>Host workshops & meetings FREE</strong> in our stunning church space</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -190,11 +200,11 @@ export default function DedicatedDeskPage() {
                   </ul>
                 </div>
 
-                <Link 
+                <Link
                   href="/membership/apply"
                   className="w-full bg-burnt-orange-600 hover:bg-burnt-orange-700 text-white py-4 px-6 rounded-lg font-semibold transition text-center block"
                 >
-                  Apply for Dedicated Desk
+                  Claim Your Free Month
                 </Link>
               </div>
 
@@ -310,9 +320,13 @@ export default function DedicatedDeskPage() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Bonus: Event Space Access</h2>
-            <p className="text-xl text-gray-600">
-              Use our multi-purpose event space next door until 4:30 PM daily
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-bold mb-4">
+              <Check className="w-4 h-4" />
+              FREE for Members
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Our "Wow" Factor: Historic Church Flex Space</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              This is what sets us apart. Work in our stunning 1905 church with stained glass windows, host workshops, large meetings, and networking events—<strong>completely free</strong> until 4:30 PM daily. No other Denver coworking space offers this.
             </p>
           </div>
 
@@ -403,27 +417,33 @@ export default function DedicatedDeskPage() {
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-burnt-orange-500 to-burnt-orange-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 bg-white text-green-700 px-4 py-2 rounded-full text-sm font-bold mb-6">
+            First Month Free — Limited Time
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Claim Your Dedicated Desk in Sloan's Lake?
+            Ready to Work from a Historic Church?
           </h2>
           <p className="text-xl text-burnt-orange-100 mb-8">
-            Join Denver's premier coworking community—just 3 minutes from I-25
+            Get your dedicated desk + free access to our stunning 1905 church flex space. Just 3 min from I-25.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/membership/apply"
               className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
             >
-              Apply for Membership
+              Claim Your Free Month
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
               href="/contact"
               className="bg-burnt-orange-700 text-white py-4 px-8 rounded-lg font-semibold hover:bg-burnt-orange-800 transition inline-flex items-center justify-center border-2 border-white"
             >
-              Schedule a Tour
+              Book Your Free Tour
             </Link>
           </div>
+          <p className="text-burnt-orange-200 mt-6">
+            Call or text: <a href="tel:3033598337" className="text-white hover:underline font-semibold">(303) 359-8337</a>
+          </p>
         </div>
       </section>
 
