@@ -168,18 +168,6 @@ export default function ImprovedHomePage() {
         </div>
       </section>
 
-      {/* Two Buildings - Your Membership Includes */}
-      <section className="py-12 bg-gradient-to-r from-orange-600 to-orange-700 text-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Your Membership Includes Two Spaces</h2>
-            <p className="text-lg text-orange-100 max-w-3xl mx-auto">
-              <strong className="text-white">Main coworking building</strong> with dedicated desks and private offices, <strong className="text-white">plus</strong> all-day access (until 4:30 PM) to our adjacent <strong className="text-white">1905 historic church</strong> featuring café seating with stained glass windows, a projector, and event space—<strong className="text-white">completely free</strong> for workshops, large meetings, and networking.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Social Proof / Stats */}
       <section className="py-12 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -200,6 +188,18 @@ export default function ImprovedHomePage() {
               <div className="text-4xl font-bold text-orange-500 mb-2">20+</div>
               <div className="text-gray-400">Dedicated Desks</div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Two Buildings - Your Membership Includes */}
+      <section className="py-12 bg-gradient-to-r from-orange-600 to-orange-700 text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">Your Membership Includes Two Spaces</h2>
+            <p className="text-lg text-orange-100 max-w-3xl mx-auto">
+              <strong className="text-white">Main coworking building</strong> with dedicated desks and private offices, <strong className="text-white">plus</strong> all-day access (until 4:30 PM) to our adjacent <strong className="text-white">1905 historic church</strong> featuring café seating with stained glass windows, a projector, and event space—<strong className="text-white">completely free</strong> for workshops, large meetings, and networking.
+            </p>
           </div>
         </div>
       </section>
