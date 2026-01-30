@@ -256,7 +256,7 @@ export default function ImprovedHomePage() {
               <CheckCircle className="w-4 h-4" />
               FREE for Members Until 4:30 PM
             </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Our "Wow" Factor: The Historic Church Flex Space</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">What Sets Us Apart: The Historic Church Flex Space</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               This is what sets us apart from every other coworking space in Denver. Your membership includes <strong>free access</strong> to our stunning 1905 church with stained glass windows, café seating, projector, and event space—perfect for workshops, large meetings, and networking events.
             </p>
