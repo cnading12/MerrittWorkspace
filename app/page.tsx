@@ -13,8 +13,20 @@ export default function ImprovedHomePage() {
     {
       src: '/images/hero/outside-hero.webp',
       title: 'Historic Character',
-      subtitle: 'Next to the landmark Merritt Church Building',
+      subtitle: 'Next to the landmark 1905 Merritt Church Building',
       alt: 'Merritt Workspace exterior - historic 1905 coworking space in Sloan\'s Lake, Denver near I-25'
+    },
+    {
+      src: '/images/event-space/coffee-shop.webp',
+      title: 'Work in the Church',
+      subtitle: 'Stained glass, café seating, and unlimited coffee until 4:30 PM',
+      alt: 'Historic church coffee shop with stained glass windows at Merritt Workspace in Sloan\'s Lake, Denver'
+    },
+    {
+      src: '/images/event-space/event-space-1.webp',
+      title: 'Free Flex Space for Members',
+      subtitle: 'Host workshops, meetings, and events in our stunning church space',
+      alt: 'Event and flex space in historic 1905 church at Merritt Workspace - free for members until 4:30 PM'
     },
     {
       src: '/images/hero/conference-room.webp',
@@ -46,23 +58,29 @@ export default function ImprovedHomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-orange-50 via-white to-orange-50 pt-32 pb-5">
+      <section className="relative bg-gradient-to-br from-orange-50 via-white to-orange-50 pt-32 pb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-2 items-center">
             {/* Content */}
             <div>
+              {/* Promo Banner */}
+              <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-bold mb-4 animate-pulse">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                First Month Free on Dedicated Desks—Limited Time
+              </div>
+
               <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
                 <MapPin className="w-4 h-4" />
                 Sloan's Lake, Denver • 3 Min to I-25
               </div>
 
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Coworking Space in
-                <span className="block text-orange-600">Sloan's Lake, Denver</span>
+                Work from a 1905 Church
+                <span className="block text-orange-600">—Seriously</span>
               </h1>
 
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Premium <strong>dedicated desks</strong> and <strong>private office rentals</strong> in a beautifully restored 1905 church building. Denver's most distinctive <strong>coworking space near I-25</strong>—where history and modern work culture meet.
+                <strong>Dedicated desks</strong> and <strong>private offices</strong> in Sloan's Lake, with member access to our stunning historic church space. Stained glass, unlimited coffee, 22 free parking spots, 3 min to I-25.
               </p>
 
               {/* Key Features */}
@@ -73,11 +91,11 @@ export default function ImprovedHomePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-gray-700">3 min to I-25</span>
+                  <span className="text-gray-700">22 Free Parking Spots</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-gray-700">Free Trial Day</span>
+                  <span className="text-gray-700">Free Church Flex Space Access</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
@@ -85,14 +103,21 @@ export default function ImprovedHomePage() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/membership" className="inline-flex items-center justify-center bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg hover:shadow-xl">
-                  Schedule Free Tour
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <Link href="/membership/dedicated-desk" className="inline-flex items-center justify-center bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg hover:shadow-xl">
+                  Claim Your Free Month
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
                 <a href="#pricing" className="inline-flex items-center justify-center border-2 border-gray-900 text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-gray-900 hover:text-white transition">
-                  View Pricing
+                  See Pricing
                 </a>
+              </div>
+
+              {/* Phone Number */}
+              <div className="flex items-center gap-2 text-gray-700">
+                <Phone className="w-5 h-5 text-orange-600" />
+                <a href="tel:3033598337" className="font-semibold hover:text-orange-600 transition">(303) 359-8337</a>
+                <span className="text-gray-400">— Call or text anytime</span>
               </div>
             </div>
 
@@ -167,6 +192,18 @@ export default function ImprovedHomePage() {
         </div>
       </section>
 
+      {/* Two Buildings - Your Membership Includes */}
+      <section className="py-12 bg-gradient-to-r from-orange-600 to-orange-700 text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">Your Membership Includes Two Spaces</h2>
+            <p className="text-lg text-orange-100 max-w-3xl mx-auto">
+              <strong className="text-white">Main coworking building</strong> with dedicated desks and private offices, <strong className="text-white">plus</strong> all-day access (until 4:30 PM) to our adjacent <strong className="text-white">1905 historic church</strong> featuring café seating with stained glass windows, a projector, and event space—<strong className="text-white">completely free</strong> for workshops, large meetings, and networking.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Neighborhood Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -215,17 +252,23 @@ export default function ImprovedHomePage() {
       <section className="py-20 bg-gradient-to-br from-blue-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium mb-4">
-              <Calendar className="w-4 h-4" />
-              Bonus Space Next Door
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-bold mb-4">
+              <CheckCircle className="w-4 h-4" />
+              FREE for Members Until 4:30 PM
             </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Multi-Purpose Event Space</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Our "Wow" Factor: The Historic Church Flex Space</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Connected to our main workspace, members have access to our versatile event space with coffee shop area, projector, sound system, and recreation facilities
+              This is what sets us apart from every other coworking space in Denver. Your membership includes <strong>free access</strong> to our stunning 1905 church with stained glass windows, café seating, projector, and event space—perfect for workshops, large meetings, and networking events.
             </p>
-            <div className="inline-flex items-center gap-2 mt-4 text-green-700 font-semibold">
-              <Clock className="w-5 h-5" />
-              Open to members daily until 4:30 PM
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-6">
+              <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full font-semibold">
+                <Clock className="w-5 h-5" />
+                Free access daily until 4:30 PM
+              </div>
+              <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-full font-semibold">
+                <Calendar className="w-5 h-5" />
+                Converts to wellness space after 4:30 PM
+              </div>
             </div>
           </div>
 
@@ -242,10 +285,10 @@ export default function ImprovedHomePage() {
 
             <div className="space-y-6">
               {[
-                { icon: Coffee, title: 'Coffee Shop Area', desc: 'Permanent seating in 1/4 of the space for casual meetings and coffee breaks' },
-                { icon: Projector, title: 'Presentation Ready', desc: 'Professional projector and screen setup for team presentations' },
-                { icon: Volume2, title: 'Sound System', desc: 'High-quality audio for presentations, music, or events' },
-                { icon: Circle, title: 'Recreation', desc: 'Ping pong table and flexible space for team building' }
+                { icon: Coffee, title: 'Work in the Church Coffee Shop', desc: 'Café seating with stained glass windows—a stunning alternative workspace until 4:30 PM daily' },
+                { icon: Users, title: 'Host Free Workshops & Meetings', desc: 'Use the flex space for team meetings, client presentations, or networking events—completely free' },
+                { icon: Projector, title: 'Presentation Ready', desc: 'Professional projector, screen, and sound system for your events' },
+                { icon: Circle, title: 'Recreation & Team Building', desc: 'Ping pong table and flexible space for breaks and team activities' }
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-4 bg-white p-4 rounded-xl shadow-sm">
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -260,7 +303,7 @@ export default function ImprovedHomePage() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 mb-8">
             <div className="relative h-64 rounded-xl overflow-hidden shadow-lg">
               <Image
                 src="/images/event-space/event-space-2.webp"
@@ -270,7 +313,7 @@ export default function ImprovedHomePage() {
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
               <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-lg">
-                <p className="font-semibold text-gray-900">Flexible Meeting Space</p>
+                <p className="font-semibold text-gray-900">Free Flex Space for Members</p>
               </div>
             </div>
             <div className="relative h-64 rounded-xl overflow-hidden shadow-lg">
@@ -282,9 +325,26 @@ export default function ImprovedHomePage() {
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
               <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-lg">
-                <p className="font-semibold text-gray-900">Coffee Shop Corner</p>
+                <p className="font-semibold text-gray-900">Church Coffee Shop</p>
               </div>
             </div>
+          </div>
+
+          {/* Wellness Space Info */}
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-8 text-center">
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">After 4:30 PM? The Space Transforms.</h3>
+            <p className="text-gray-600 max-w-2xl mx-auto mb-4">
+              After 4:30 PM and on weekends, the church converts to <strong>Merritt Wellness</strong>—offering yoga, fitness, and wellness classes. As a workspace member, you get <strong>discounted rates</strong> to book the space for evening events or join wellness classes.
+            </p>
+            <a
+              href="https://merrittwellness.net"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-purple-600 font-semibold hover:text-purple-700 transition"
+            >
+              Visit Merritt Wellness
+              <ArrowRight className="w-4 h-4" />
+            </a>
           </div>
         </div>
       </section>
@@ -301,7 +361,10 @@ export default function ImprovedHomePage() {
             {/* Dedicated Desk - Featured */}
             <div className="lg:col-span-4 mb-8">
               <div className="relative bg-white rounded-2xl shadow-xl border-4 border-orange-500 overflow-hidden max-w-4xl mx-auto">
-                <div className="absolute top-6 right-6">
+                <div className="absolute top-6 right-6 flex flex-col gap-2 items-end">
+                  <span className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold animate-pulse">
+                    FIRST MONTH FREE
+                  </span>
                   <span className="bg-orange-500 text-white px-4 py-2 rounded-full text-sm font-bold">
                     Best Value
                   </span>
@@ -310,15 +373,17 @@ export default function ImprovedHomePage() {
                 <div className="grid md:grid-cols-2 gap-8 p-8">
                   <div>
                     <h3 className="text-3xl font-bold text-gray-900 mb-4">Dedicated Desk</h3>
-                    <p className="text-gray-600 mb-6">Your own workspace in our collaborative Sloan's Lake coworking environment</p>
+                    <p className="text-gray-600 mb-6">Your own workspace in our collaborative Sloan's Lake coworking environment + free access to our historic church flex space</p>
 
-                    <div className="flex items-baseline gap-2 mb-6">
-                      <span className="text-5xl font-bold text-orange-600">$300</span>
-                      <span className="text-xl text-gray-500">/month</span>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-2xl text-gray-400 line-through">$300</span>
+                      <span className="text-5xl font-bold text-green-600">$0</span>
+                      <span className="text-xl text-gray-500">first month</span>
                     </div>
+                    <p className="text-gray-500 mb-6">Then $300/month</p>
 
                     <Link href="/membership/dedicated-desk" className="inline-flex items-center justify-center w-full bg-orange-600 text-white px-6 py-4 rounded-lg font-semibold hover:bg-orange-700 transition">
-                      Get Started
+                      Claim Your Free Month
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </div>
@@ -331,7 +396,8 @@ export default function ImprovedHomePage() {
                         'Personal storage',
                         'Kitchen access',
                         '2 hours meeting room credits',
-                        'Event space access',
+                        'FREE church flex space (until 4:30 PM)',
+                        'Host workshops & meetings for free',
                         'All-you-can-drink coffee & tea'
                       ].map((feature, i) => (
                         <div key={i} className="flex items-center gap-3">
@@ -367,7 +433,7 @@ export default function ImprovedHomePage() {
                       <div>Business address</div>
                     </div>
                     <Link href="/membership/private-office" className="block text-center bg-gray-900 text-white px-4 py-3 rounded-lg font-semibold hover:bg-gray-800 transition">
-                      Learn More
+                      See Office Options
                     </Link>
                   </div>
                 ))}
@@ -472,17 +538,24 @@ export default function ImprovedHomePage() {
       {/* CTA */}
       <section className="py-20 bg-gray-900 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-6">Ready to Join Our Sloan's Lake Community?</h2>
-          <p className="text-xl text-gray-300 mb-8">
-            Start with a free trial day and experience Denver's most distinctive coworking space
+          <div className="inline-flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-6">
+            First Month Free on Dedicated Desks
+          </div>
+          <h2 className="text-4xl font-bold mb-6">Ready to Work from a Historic Church?</h2>
+          <p className="text-xl text-gray-300 mb-4">
+            Get your dedicated desk or private office—plus free access to our stunning 1905 church flex space
+          </p>
+          <p className="text-lg text-gray-400 mb-8">
+            <Phone className="w-4 h-4 inline mr-2" />
+            Call or text: <a href="tel:3033598337" className="text-orange-400 hover:text-orange-300">(303) 359-8337</a>
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/membership" className="inline-flex items-center justify-center bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg">
-              Schedule Free Tour
+            <Link href="/membership/dedicated-desk" className="inline-flex items-center justify-center bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg">
+              Claim Your Free Month
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
-            <Link href="/contact" className="inline-flex items-center justify-center bg-white text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition">
-              Contact Us
+            <Link href="/membership" className="inline-flex items-center justify-center bg-white text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition">
+              Book Your Free Tour
             </Link>
           </div>
         </div>

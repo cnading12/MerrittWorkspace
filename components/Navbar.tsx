@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X, ChevronDown, Phone } from 'lucide-react';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -170,9 +170,15 @@ export default function Navbar() {
               Contact
             </Link>
 
+            {/* Phone Number */}
+            <a href="tel:3033598337" className="flex items-center gap-1 text-gray-700 hover:text-burnt-orange-600 transition">
+              <Phone className="w-4 h-4" />
+              <span className="hidden lg:inline">(303) 359-8337</span>
+            </a>
+
             {/* Apply Today Button */}
-            <Link 
-              href="/membership/apply" 
+            <Link
+              href="/membership/apply"
               className="bg-burnt-orange-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-burnt-orange-700 transition shadow-md"
             >
               Apply Today
@@ -277,17 +283,26 @@ export default function Navbar() {
               >
                 About
               </Link>
-              <Link 
-                href="/contact" 
+              <Link
+                href="/contact"
                 className="text-gray-700 hover:text-burnt-orange-600 transition py-2"
                 onClick={closeAllMenus}
               >
                 Contact
               </Link>
 
+              {/* Mobile Phone Number */}
+              <a
+                href="tel:3033598337"
+                className="flex items-center gap-2 text-burnt-orange-600 font-semibold py-2"
+              >
+                <Phone className="w-5 h-5" />
+                (303) 359-8337
+              </a>
+
               {/* Mobile Apply Today Button */}
-              <Link 
-                href="/membership/apply" 
+              <Link
+                href="/membership/apply"
                 className="bg-burnt-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-burnt-orange-700 transition shadow-md text-center mt-4"
                 onClick={closeAllMenus}
               >
