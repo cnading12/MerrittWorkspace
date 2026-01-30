@@ -58,7 +58,7 @@ export default function ImprovedHomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-orange-50 via-white to-orange-50 pt-32 pb-20">
+      <section className="relative bg-gradient-to-br from-orange-50 via-white to-orange-50 pt-32 pb-36">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-2 items-center">
             {/* Content */}
