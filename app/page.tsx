@@ -58,7 +58,7 @@ export default function ImprovedHomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-orange-50 via-white to-orange-50 pt-32 pb-16">
+      <section className="relative bg-gradient-to-br from-orange-50 via-white to-orange-50 pt-24 pb-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-2 items-center">
             {/* Content */}
@@ -123,7 +123,7 @@ export default function ImprovedHomePage() {
 
             {/* Image Carousel with LCP Optimization */}
             <div className="relative">
-              <div className="relative h-[450px] md:h-[550px] lg:h-[640px] rounded-2xl overflow-hidden shadow-2xl">
+              <div className="relative h-[350px] md:h-[420px] lg:h-[480px] rounded-2xl overflow-hidden shadow-2xl">
                 {heroImages.map((image, index) => (
                   <div
                     key={index}
