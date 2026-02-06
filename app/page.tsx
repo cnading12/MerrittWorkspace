@@ -17,6 +17,18 @@ export default function ImprovedHomePage() {
       alt: 'Merritt Workspace exterior - historic coworking space in Sloan\'s Lake, Denver near I-25'
     },
     {
+      src: '/images/event-space/coffee-shop.webp',
+      title: 'Beautiful Flex Space',
+      subtitle: 'Café seating and unlimited coffee until 4:30 PM',
+      alt: 'Coffee lounge and flex space at Merritt Workspace in Sloan\'s Lake, Denver'
+    },
+    {
+      src: '/images/event-space/event-space-1.webp',
+      title: 'Free Flex Space for Members',
+      subtitle: 'Host workshops, meetings, and events in our stunning space',
+      alt: 'Event and flex space at Merritt Workspace - free for members until 4:30 PM'
+    },
+    {
       src: '/images/hero/conference-room.webp',
       title: 'First-Class Meeting Rooms',
       subtitle: '75" Smart TV and conference calling',
