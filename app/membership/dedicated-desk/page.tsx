@@ -144,11 +144,11 @@ export default function DedicatedDeskPage() {
               <div>
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-2xl text-gray-400 line-through">$300</span>
+                    <span className="text-2xl text-gray-400 line-through">$200</span>
                     <span className="text-5xl font-bold text-green-600">$0</span>
                     <span className="text-2xl text-gray-500">first month</span>
                   </div>
-                  <p className="text-gray-600 text-lg mb-4">Then $300/month • No long-term contracts</p>
+                  <p className="text-gray-600 text-lg mb-4">Then $200/month • No long-term contracts</p>
                   <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
                     <p className="text-green-800 font-semibold text-sm">Limited Time: Get your first month completely free!</p>
                   </div>
@@ -213,7 +213,7 @@ export default function DedicatedDeskPage() {
                 <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
                   <Image
                     src="/images/hero/dedicated-desk.webp"
-                    alt="Dedicated desk workspace at Merritt Workspace coworking space in Sloan's Lake, Denver - $300/month"
+                    alt="Dedicated desk workspace at Merritt Workspace coworking space in Sloan's Lake, Denver - $200/month"
                     fill
                     priority
                     sizes="(max-width: 768px) 100vw, 50vw"

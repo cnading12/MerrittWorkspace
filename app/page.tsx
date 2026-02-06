@@ -13,20 +13,20 @@ export default function ImprovedHomePage() {
     {
       src: '/images/hero/outside-hero.webp',
       title: 'Historic Character',
-      subtitle: 'Next to the landmark 1905 Merritt Church Building',
-      alt: 'Merritt Workspace exterior - historic 1905 coworking space in Sloan\'s Lake, Denver near I-25'
+      subtitle: 'Next to the landmark Merritt Building',
+      alt: 'Merritt Workspace exterior - historic coworking space in Sloan\'s Lake, Denver near I-25'
     },
     {
       src: '/images/event-space/coffee-shop.webp',
-      title: 'Work in the Church',
-      subtitle: 'Stained glass, café seating, and unlimited coffee until 4:30 PM',
-      alt: 'Historic church coffee shop with stained glass windows at Merritt Workspace in Sloan\'s Lake, Denver'
+      title: 'Beautiful Flex Space',
+      subtitle: 'Café seating and unlimited coffee until 4:30 PM',
+      alt: 'Coffee lounge and flex space at Merritt Workspace in Sloan\'s Lake, Denver'
     },
     {
       src: '/images/event-space/event-space-1.webp',
       title: 'Free Flex Space for Members',
-      subtitle: 'Host workshops, meetings, and events in our stunning church space',
-      alt: 'Event and flex space in historic 1905 church at Merritt Workspace - free for members until 4:30 PM'
+      subtitle: 'Host workshops, meetings, and events in our stunning space',
+      alt: 'Event and flex space at Merritt Workspace - free for members until 4:30 PM'
     },
     {
       src: '/images/hero/conference-room.webp',
@@ -75,12 +75,12 @@ export default function ImprovedHomePage() {
               </div>
 
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Work from a 1905 Church
-                <span className="block text-orange-600">—Seriously</span>
+                Coworking Space in
+                <span className="block text-orange-600">Sloan's Lake, Denver</span>
               </h1>
 
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                <strong>Dedicated desks</strong> and <strong>private offices</strong> in Sloan's Lake, with member access to our stunning historic church space. Stained glass, unlimited coffee, 22 free parking spots, 3 min to I-25.
+                Premium <strong>dedicated desks</strong> and <strong>private offices</strong> in Sloan's Lake, with member access to our beautiful flex space. Unlimited coffee, 22 free parking spots, 3 min to I-25.
               </p>
 
               {/* Key Features */}
@@ -95,7 +95,7 @@ export default function ImprovedHomePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-gray-700">Free Church Flex Space Access</span>
+                  <span className="text-gray-700">Free Flex Space Access</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
@@ -192,18 +192,6 @@ export default function ImprovedHomePage() {
         </div>
       </section>
 
-      {/* Two Buildings - Your Membership Includes */}
-      <section className="py-12 bg-gradient-to-r from-orange-600 to-orange-700 text-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Your Membership Includes Two Spaces</h2>
-            <p className="text-lg text-orange-100 max-w-3xl mx-auto">
-              <strong className="text-white">Main coworking building</strong> with dedicated desks and private offices, <strong className="text-white">plus</strong> all-day access (until 4:30 PM) to our adjacent <strong className="text-white">1905 historic church</strong> featuring café seating with stained glass windows, a projector, and event space—<strong className="text-white">completely free</strong> for workshops, large meetings, and networking.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Neighborhood Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -256,9 +244,9 @@ export default function ImprovedHomePage() {
               <CheckCircle className="w-4 h-4" />
               FREE for Members Until 4:30 PM
             </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">What Sets Us Apart: The Historic Church Flex Space</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">What Sets Us Apart: The Beautiful Flex Space</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              This is what sets us apart from every other coworking space in Denver. Your membership includes <strong>free access</strong> to our stunning 1905 church with stained glass windows, café seating, projector, and event space—perfect for workshops, large meetings, and networking events.
+              This is what sets us apart from every other coworking space in Denver. Your membership includes <strong>free access</strong> to our stunning flex space with café seating, projector, and event space—perfect for workshops, large meetings, and networking events.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-6">
               <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full font-semibold">
@@ -285,7 +273,7 @@ export default function ImprovedHomePage() {
 
             <div className="space-y-6">
               {[
-                { icon: Coffee, title: 'Work in the Church Coffee Shop', desc: 'Café seating with stained glass windows—a stunning alternative workspace until 4:30 PM daily' },
+                { icon: Coffee, title: 'Work in the Coffee Lounge', desc: 'Café seating in a beautiful historic space—a stunning alternative workspace until 4:30 PM daily' },
                 { icon: Users, title: 'Host Free Workshops & Meetings', desc: 'Use the flex space for team meetings, client presentations, or networking events—completely free' },
                 { icon: Projector, title: 'Presentation Ready', desc: 'Professional projector, screen, and sound system for your events' },
                 { icon: Circle, title: 'Recreation & Team Building', desc: 'Ping pong table and flexible space for breaks and team activities' }
@@ -325,7 +313,7 @@ export default function ImprovedHomePage() {
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
               <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-lg">
-                <p className="font-semibold text-gray-900">Church Coffee Shop</p>
+                <p className="font-semibold text-gray-900">Coffee Lounge</p>
               </div>
             </div>
           </div>
@@ -334,7 +322,7 @@ export default function ImprovedHomePage() {
           <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-8 text-center">
             <h3 className="text-2xl font-bold text-gray-900 mb-3">After 4:30 PM? The Space Transforms.</h3>
             <p className="text-gray-600 max-w-2xl mx-auto mb-4">
-              After 4:30 PM and on weekends, the church converts to <strong>Merritt Wellness</strong>—offering yoga, fitness, and wellness classes. As a workspace member, you get <strong>discounted rates</strong> to book the space for evening events or join wellness classes.
+              After 4:30 PM and on weekends, the flex space converts to <strong>Merritt Wellness</strong>—offering yoga, fitness, and wellness classes. As a workspace member, you get <strong>discounted rates</strong> to book the space for evening events or join wellness classes.
             </p>
             <a
               href="https://merrittwellness.net"
@@ -373,14 +361,14 @@ export default function ImprovedHomePage() {
                 <div className="grid md:grid-cols-2 gap-8 p-8">
                   <div>
                     <h3 className="text-3xl font-bold text-gray-900 mb-4">Dedicated Desk</h3>
-                    <p className="text-gray-600 mb-6">Your own workspace in our collaborative Sloan's Lake coworking environment + free access to our historic church flex space</p>
+                    <p className="text-gray-600 mb-6">Your own workspace in our collaborative Sloan's Lake coworking environment + free access to our beautiful flex space</p>
 
                     <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-2xl text-gray-400 line-through">$300</span>
+                      <span className="text-2xl text-gray-400 line-through">$200</span>
                       <span className="text-5xl font-bold text-green-600">$0</span>
                       <span className="text-xl text-gray-500">first month</span>
                     </div>
-                    <p className="text-gray-500 mb-6">Then $300/month</p>
+                    <p className="text-gray-500 mb-6">Then $200/month</p>
 
                     <Link href="/membership/dedicated-desk" className="inline-flex items-center justify-center w-full bg-orange-600 text-white px-6 py-4 rounded-lg font-semibold hover:bg-orange-700 transition">
                       Claim Your Free Month
@@ -396,7 +384,7 @@ export default function ImprovedHomePage() {
                         'Personal storage',
                         'Kitchen access',
                         '2 hours meeting room credits',
-                        'FREE church flex space (until 4:30 PM)',
+                        'FREE flex space access (until 4:30 PM)',
                         'Host workshops & meetings for free',
                         'All-you-can-drink coffee & tea'
                       ].map((feature, i) => (
@@ -541,9 +529,9 @@ export default function ImprovedHomePage() {
           <div className="inline-flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-6">
             First Month Free on Dedicated Desks
           </div>
-          <h2 className="text-4xl font-bold mb-6">Ready to Work from a Historic Church?</h2>
+          <h2 className="text-4xl font-bold mb-6">Ready to Find Your Workspace?</h2>
           <p className="text-xl text-gray-300 mb-4">
-            Get your dedicated desk or private office—plus free access to our stunning 1905 church flex space
+            Get your dedicated desk or private office—plus free access to our beautiful flex space
           </p>
           <p className="text-lg text-gray-400 mb-8">
             <Phone className="w-4 h-4 inline mr-2" />
