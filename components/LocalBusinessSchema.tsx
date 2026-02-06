@@ -45,7 +45,7 @@ export default function LocalBusinessSchema() {
         "description": "Office hours for tours and support"
       }
     ],
-    "priceRange": "$300 - $1200/month",
+    "priceRange": "$200 - $1200/month",
     "currenciesAccepted": "USD",
     "paymentAccepted": ["Credit Card", "Debit Card"],
     "areaServed": [
@@ -90,11 +90,11 @@ export default function LocalBusinessSchema() {
             "name": "Dedicated Desk",
             "description": "Your own permanent desk in our collaborative coworking space in Sloan's Lake, Denver. Includes 24/7 access, high-speed WiFi, 2 hours meeting room credits, and all-you-can-drink coffee and tea."
           },
-          "price": "300",
+          "price": "200",
           "priceCurrency": "USD",
           "priceSpecification": {
             "@type": "UnitPriceSpecification",
-            "price": "300",
+            "price": "200",
             "priceCurrency": "USD",
             "unitText": "month"
           }

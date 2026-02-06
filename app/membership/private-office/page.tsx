@@ -400,7 +400,7 @@ export default function PrivateOfficePage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h3 className="text-xl font-semibold text-gray-900 mb-4">Explore Other Options</h3>
           <p className="text-gray-600 mb-6">
-            Looking for a more affordable option? Our <Link href="/membership/dedicated-desk" className="text-blue-600 hover:underline font-semibold">dedicated desks start at just $300/month</Link>.
+            Looking for a more affordable option? Our <Link href="/membership/dedicated-desk" className="text-blue-600 hover:underline font-semibold">dedicated desks start at just $200/month</Link>.
             Or <Link href="/membership" className="text-blue-600 hover:underline font-semibold">compare all membership options</Link> to find your perfect Sloan's Lake office space.
           </p>
           <p className="text-sm text-gray-500">
