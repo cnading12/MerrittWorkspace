@@ -324,7 +324,7 @@ export default function DedicatedDeskPage() {
               <Check className="w-4 h-4" />
               FREE for Members
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Our "Wow" Factor: Historic Church Flex Space</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Sets Us Apart: Historic Church Flex Space</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               This is what sets us apart. Work in our stunning 1905 church with stained glass windows, host workshops, large meetings, and networking events—<strong>completely free</strong> until 4:30 PM daily. No other Denver coworking space offers this.
             </p>
