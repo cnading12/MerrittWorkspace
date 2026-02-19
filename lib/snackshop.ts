@@ -408,22 +408,6 @@ export const snackshopAPI = {
       console.error('Error getting daily sales:', error);
       throw new Error(`Failed to get daily sales: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  },
-
-  async getLowStockProducts(threshold: number = 5): Promise<Product[]> {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('is_active', true)
-      .lte('stock_quantity', threshold)
-      .order('stock_quantity');
-    
-    if (error) {
-      console.error('Error fetching low stock products:', error);
-      throw new Error(`Failed to fetch low stock products: ${error.message}`);
-    }
-    
-    return data || [];
   }
 };
 
