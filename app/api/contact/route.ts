@@ -125,6 +125,9 @@ ${message}
 
 Reply directly to this email to respond to ${name}.`;
 
+        // Helper to avoid Resend rate limit (2 req/sec on free plan)
+        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
         // Send to manager
         let managerSent = false;
         try {
@@ -141,6 +144,9 @@ Reply directly to this email to respond to ${name}.`;
         } catch (error) {
             console.error('Failed to send contact form email to manager:', error);
         }
+
+        // Wait to avoid Resend rate limit
+        await delay(1000);
 
         // Send to member services
         let memberServicesSent = false;

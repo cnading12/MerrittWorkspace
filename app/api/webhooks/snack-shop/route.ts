@@ -195,6 +195,9 @@ async function handleCheckoutSessionExpired(session: Stripe.Checkout.Session) {
   // Most of the time you don't need to do anything here
 }
 
+// Helper to avoid Resend rate limit (2 req/sec on free plan)
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Helper function to send confirmation emails
 async function sendPaymentConfirmationEmails(orderDetails: any) {
   if (!process.env.RESEND_API_KEY) {
@@ -335,6 +338,9 @@ Merritt Workspace Team
     throw error; // Throw so we know emails failed
   }
 
+  // Wait to avoid Resend rate limit
+  await delay(1000);
+
   // Send manager notification
   try {
     await resend.emails.send({
@@ -408,6 +414,9 @@ Customer confirmation email sent automatically.
     console.error('❌ Failed to send manager email:', error);
     // Don't throw - manager email is less critical
   }
+
+  // Wait to avoid Resend rate limit
+  await delay(1000);
 
   // Send member services notification
   try {
