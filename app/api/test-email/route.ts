@@ -1,4 +1,4 @@
-// app/api/test-email/route.ts - Diagnostic endpoint for email delivery
+// app/api/test-email/route.ts - Diagnostic: test different FROM addresses
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
@@ -13,48 +13,61 @@ export async function GET(request: NextRequest) {
 
     const results: Record<string, any> = {};
 
-    // Test 1: Send to manager@
+    // Test 1: from manager@ to memberservices@ (WORKED last time)
     try {
-        const managerResult = await resend.emails.send({
-            from: 'Merritt Workspace <manager@merrittworkspace.net>',
-            to: 'manager@merrittworkspace.net',
-            subject: 'Diagnostic Test - Manager Email',
-            text: 'This is a diagnostic test email sent to manager@merrittworkspace.net. If you receive this, email delivery to this address is working.',
-        });
-        results.manager = {
-            data: managerResult.data,
-            error: managerResult.error,
-        };
-    } catch (error: any) {
-        results.manager = {
-            thrown_error: error.message,
-            stack: error.stack,
-        };
-    }
-
-    // Test 2: Send to memberservices@
-    try {
-        const memberServicesResult = await resend.emails.send({
+        const r = await resend.emails.send({
             from: 'Merritt Workspace <manager@merrittworkspace.net>',
             to: 'memberservices@merrittworkspace.net',
-            subject: 'Diagnostic Test - Member Services Email',
-            text: 'This is a diagnostic test email sent to memberservices@merrittworkspace.net. If you receive this, email delivery to this address is working.',
+            subject: 'Test 1: FROM manager@ TO memberservices@',
+            text: 'This email was sent FROM manager@merrittworkspace.net. If you receive this, the from=manager address works.',
         });
-        results.memberservices = {
-            data: memberServicesResult.data,
-            error: memberServicesResult.error,
-        };
-    } catch (error: any) {
-        results.memberservices = {
-            thrown_error: error.message,
-            stack: error.stack,
-        };
+        results.test1_from_manager = { data: r.data, error: r.error };
+    } catch (e: any) {
+        results.test1_from_manager = { thrown_error: e.message };
+    }
+
+    // Test 2: from membership@ to memberservices@ (this is what applications use)
+    try {
+        const r = await resend.emails.send({
+            from: 'Merritt Workspace Membership <membership@merrittworkspace.net>',
+            to: 'memberservices@merrittworkspace.net',
+            subject: 'Test 2: FROM membership@ TO memberservices@',
+            text: 'This email was sent FROM membership@merrittworkspace.net. If you receive this, the from=membership address works.',
+        });
+        results.test2_from_membership = { data: r.data, error: r.error };
+    } catch (e: any) {
+        results.test2_from_membership = { thrown_error: e.message };
+    }
+
+    // Test 3: from snackshop@ to memberservices@ (this is what snackshop orders use)
+    try {
+        const r = await resend.emails.send({
+            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
+            to: 'memberservices@merrittworkspace.net',
+            subject: 'Test 3: FROM snackshop@ TO memberservices@',
+            text: 'This email was sent FROM snackshop@merrittworkspace.net. If you receive this, the from=snackshop address works.',
+        });
+        results.test3_from_snackshop = { data: r.data, error: r.error };
+    } catch (e: any) {
+        results.test3_from_snackshop = { thrown_error: e.message };
+    }
+
+    // Test 4: from meetings@ to memberservices@ (this is what booking confirmations use)
+    try {
+        const r = await resend.emails.send({
+            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
+            to: 'memberservices@merrittworkspace.net',
+            subject: 'Test 4: FROM meetings@ TO memberservices@',
+            text: 'This email was sent FROM meetings@merrittworkspace.net. If you receive this, the from=meetings address works.',
+        });
+        results.test4_from_meetings = { data: r.data, error: r.error };
+    } catch (e: any) {
+        results.test4_from_meetings = { thrown_error: e.message };
     }
 
     return NextResponse.json({
         timestamp: new Date().toISOString(),
-        resend_sdk_version: '6.x',
         results,
-        instructions: 'Check the "error" field for each result. If "data.id" exists, Resend accepted the email. If "error" exists, Resend rejected it.',
+        instructions: 'All 4 tests send TO memberservices@. Check which ones actually ARRIVE in the inbox. Resend will accept all of them, but Google Workspace may silently drop ones from non-existent sender addresses on your domain.',
     });
 }
