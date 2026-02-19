@@ -10,7 +10,7 @@ const membershipPlans = [
   {
     id: 'dedicated_desk',
     name: 'Dedicated Desk',
-    price: 300,
+    price: 200,
     description: 'Your own workspace in our vibrant coworking community',
     capacity: '1 person',
     privacy: 'Shared Space',
