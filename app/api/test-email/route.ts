@@ -4,6 +4,8 @@ import { Resend } from 'resend';
 
 export const dynamic = 'force-dynamic';
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export async function GET(request: NextRequest) {
     if (!process.env.RESEND_API_KEY) {
         return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 });
@@ -13,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     const results: Record<string, any> = {};
 
-    // Test 1: from manager@ to memberservices@ (WORKED last time)
+    // Test 1: from manager@ to memberservices@
     try {
         const r = await resend.emails.send({
             from: 'Merritt Workspace <manager@merrittworkspace.net>',
@@ -25,6 +27,8 @@ export async function GET(request: NextRequest) {
     } catch (e: any) {
         results.test1_from_manager = { thrown_error: e.message };
     }
+
+    await delay(1000);
 
     // Test 2: from membership@ to memberservices@ (this is what applications use)
     try {
@@ -39,6 +43,8 @@ export async function GET(request: NextRequest) {
         results.test2_from_membership = { thrown_error: e.message };
     }
 
+    await delay(1000);
+
     // Test 3: from snackshop@ to memberservices@ (this is what snackshop orders use)
     try {
         const r = await resend.emails.send({
@@ -51,6 +57,8 @@ export async function GET(request: NextRequest) {
     } catch (e: any) {
         results.test3_from_snackshop = { thrown_error: e.message };
     }
+
+    await delay(1000);
 
     // Test 4: from meetings@ to memberservices@ (this is what booking confirmations use)
     try {
@@ -68,6 +76,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
         timestamp: new Date().toISOString(),
         results,
-        instructions: 'All 4 tests send TO memberservices@. Check which ones actually ARRIVE in the inbox. Resend will accept all of them, but Google Workspace may silently drop ones from non-existent sender addresses on your domain.',
+        instructions: 'All 4 tests send TO memberservices@. Check which ones actually ARRIVE in the inbox.',
     });
 }

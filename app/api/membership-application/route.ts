@@ -78,6 +78,9 @@ export async function POST(request: NextRequest) {
       .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
 
+    // Helper to avoid Resend rate limit (2 req/sec on free plan)
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
     // Send confirmation email to applicant
     try {
       console.log('📧 Sending applicant confirmation email...');
@@ -111,6 +114,9 @@ export async function POST(request: NextRequest) {
       emailResults.applicant_error = error.message;
     }
 
+    // Wait to avoid Resend rate limit
+    await delay(1000);
+
     // Send notification to manager with full application details
     try {
       console.log('📧 Sending manager notification email...');
@@ -139,6 +145,9 @@ export async function POST(request: NextRequest) {
       console.error('❌ Manager email failed:', error);
       emailResults.manager_error = error.message;
     }
+
+    // Wait to avoid Resend rate limit
+    await delay(1000);
 
     // Send notification to member services with full application details
     try {

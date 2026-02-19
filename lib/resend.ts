@@ -19,6 +19,9 @@ const resend = {
     }
 };
 
+// Helper to avoid Resend rate limit (2 req/sec on free plan)
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Centralized email configuration
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
@@ -431,6 +434,8 @@ export async function sendOrderConfirmationEmail(data: {
             text: template.text,
         });
 
+        await delay(1000);
+
         // Send copy to manager
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
@@ -446,6 +451,8 @@ export async function sendOrderConfirmationEmail(data: {
       `,
             text: `[CUSTOMER EMAIL COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\n\n${template.text}`,
         });
+
+        await delay(1000);
 
         // Send copy to member services
         const memberServicesEmail = await resend.emails.send({
@@ -489,6 +496,8 @@ export async function sendBookingConfirmationEmail(data: {
             text: template.text,
         });
 
+        await delay(1000);
+
         // Send copy to manager
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
@@ -506,6 +515,8 @@ export async function sendBookingConfirmationEmail(data: {
       `,
             text: `[MEETING BOOKING COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\nRoom: ${data.roomName}\nDate: ${data.booking.booking_date} at ${data.booking.start_time}\n\n${template.text}`,
         });
+
+        await delay(1000);
 
         // Send copy to member services
         const memberServicesEmail = await resend.emails.send({
@@ -552,6 +563,8 @@ export async function sendMembershipApplicationEmail(data: {
             text: template.text,
         });
 
+        await delay(1000);
+
         // Send notification to manager
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Membership <membership@merrittworkspace.net>',
@@ -594,6 +607,8 @@ export async function sendMembershipApplicationEmail(data: {
       `,
             text: `NEW MEMBERSHIP APPLICATION\n\nApplicant: ${data.applicantName}\nEmail: ${data.email}\nMembership Type: ${data.membershipType}\nApplication ID: ${data.applicationId}\nSubmitted: ${new Date().toLocaleString()}\n\nNext Steps:\n1. Review the application\n2. Contact ${data.applicantName} to schedule a tour\n3. Arrange their free trial day\n4. Process membership approval\n\nACTION REQUIRED: Please follow up within 1-2 business days.\n\nA copy of the welcome email was also sent to the applicant.`,
         });
+
+        await delay(1000);
 
         // Send notification to member services
         const memberServicesEmail = await resend.emails.send({
@@ -675,6 +690,8 @@ export async function sendOrderStatusUpdate(data: {
             text: `Hi ${data.customerName},\n\nYour order ${data.orderNumber} status has been updated to: ${data.newStatus.replace('_', ' ').toUpperCase()}\n\n${data.message || statusMessages[data.newStatus as keyof typeof statusMessages] || 'Your order status has been updated.'}\n\nThank you for using Merritt Workspace Snackshop!`
         });
 
+        await delay(1000);
+
         // Send copy to manager - UPDATED TO USE CENTRALIZED MANAGER EMAIL
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
@@ -696,6 +713,8 @@ export async function sendOrderStatusUpdate(data: {
       `,
             text: `[ORDER STATUS UPDATE COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\nOrder: ${data.orderNumber}\nNew Status: ${data.newStatus.replace('_', ' ').toUpperCase()}\n\nHi ${data.customerName},\n\nYour order ${data.orderNumber} status has been updated to: ${data.newStatus.replace('_', ' ').toUpperCase()}\n\n${data.message || statusMessages[data.newStatus as keyof typeof statusMessages] || 'Your order status has been updated.'}\n\nThank you for using Merritt Workspace Snackshop!`
         });
+
+        await delay(1000);
 
         // Send copy to member services
         const memberServicesEmail = await resend.emails.send({
@@ -776,6 +795,8 @@ export async function sendNewOrderNotification(order: Order, items: OrderItem[])
       `,
             text: `NEW SNACKSHOP ORDER: ${order.order_number}\n\nCustomer: ${order.customer_name}\nEmail: ${order.customer_email}\nOffice/Desk: ${order.office_number}\nTotal: ${order.total_amount.toFixed(2)}\nPayment: ${order.payment_method}\n${order.delivery_notes ? `Notes: ${order.delivery_notes}\n` : ''}\nItems to Prepare:\n${items.map(item => `- ${item.product_name} (Qty: ${item.quantity}) - ${item.total_price.toFixed(2)}`).join('\n')}\n\nACTION REQUIRED: Please prepare this order for delivery to ${order.office_number} within 15 minutes.`
         });
+
+        await delay(1000);
 
         // Send to member services
         const memberServicesResult = await resend.emails.send({
@@ -1122,6 +1143,8 @@ export async function sendMemberBookingConfirmationEmail(data: {
             text: customerTemplate.text,
         });
 
+        await delay(1000);
+
         // Send notification to manager
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
@@ -1130,6 +1153,8 @@ export async function sendMemberBookingConfirmationEmail(data: {
             html: managerTemplate.html,
             text: managerTemplate.text,
         });
+
+        await delay(1000);
 
         // Send notification to member services
         const memberServicesEmail = await resend.emails.send({
