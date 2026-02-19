@@ -15,17 +15,32 @@ export default function ContactPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setError('');
 
-    // Mock form submission
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
-    console.log('Contact form submitted:', formData);
-    setSubmitted(true);
-    setSubmitting(false);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send message.');
+      }
+
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again or call us at (303) 359-8337.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -285,6 +300,12 @@ export default function ContactPage() {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
                     />
                   </div>
+
+                  {error && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                      {error}
+                    </div>
+                  )}
 
                   <button
                     type="submit"

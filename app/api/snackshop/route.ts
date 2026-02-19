@@ -19,6 +19,7 @@ function getResend(): Resend {
 const resend = { emails: { send: (params: Parameters<Resend['emails']['send']>[0]) => getResend().emails.send(params) } };
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET_SNACKSHOP!;
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
+const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -435,5 +436,78 @@ Customer confirmation email sent automatically.
     console.log('✅ Manager notification email sent');
   } catch (error) {
     console.error('Failed to send manager email:', error);
+  }
+
+  // Send member services notification
+  try {
+    await resend.emails.send({
+      from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
+      to: MEMBER_SERVICES_EMAIL,
+      subject: `💳 Paid Order Complete - $${total.toFixed(2)} - ${order_id}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #27ae60; color: white; padding: 20px; text-align: center;">
+            <h2>💳 PAID SNACKSHOP ORDER</h2>
+            <p style="font-size: 18px; margin: 5px 0;"><strong>$${total.toFixed(2)} PAID</strong></p>
+          </div>
+
+          <div style="padding: 20px;">
+            <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #27ae60;">
+              <p><strong>✅ Payment Completed</strong></p>
+              <p><strong>💰 Amount:</strong> $${total.toFixed(2)}</p>
+              <p><strong>🆔 Order ID:</strong> ${order_id}</p>
+              <p><strong>⏰ Time:</strong> ${orderTime}</p>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <h3>👤 Customer Information</h3>
+              <p><strong>Name:</strong> ${customer_name}</p>
+              <p><strong>Email:</strong> ${customer_email}</p>
+              <p><strong>Office/Desk:</strong> ${office_number}</p>
+              ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
+            </div>
+
+            <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border: 2px solid #27ae60;">
+              <h3>🛒 Paid Items:</h3>
+              <p style="font-size: 16px; font-weight: bold;">${itemsList}</p>
+            </div>
+
+            <div style="background: #fff8e1; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin-top: 20px;">
+              <h3>📋 Order Status</h3>
+              <p><strong>✅ Payment: COMPLETED</strong></p>
+              <p><strong>📍 Pickup: Ready in kitchen</strong></p>
+              <p style="color: #666; font-size: 14px;"><em>Customer confirmation email sent automatically.</em></p>
+            </div>
+          </div>
+        </div>
+      `,
+      text: `
+PAID SNACKSHOP ORDER: $${total.toFixed(2)}
+
+✅ Payment Completed
+Order ID: ${order_id}
+Amount: $${total.toFixed(2)}
+Time: ${orderTime}
+
+Customer Information:
+- Name: ${customer_name}
+- Email: ${customer_email}
+- Office/Desk: ${office_number}
+${notes ? `- Notes: ${notes}` : ''}
+
+Paid Items:
+${items.map((item: any) => `- ${item.name} (x${item.quantity}) - $${(item.price * item.quantity).toFixed(2)}`).join('\n')}
+
+Order Status:
+✅ Payment: COMPLETED
+📍 Pickup: Ready in kitchen
+
+Customer confirmation email sent automatically.
+      `
+    });
+
+    console.log('✅ Member services notification email sent');
+  } catch (error) {
+    console.error('Failed to send member services email:', error);
   }
 }
