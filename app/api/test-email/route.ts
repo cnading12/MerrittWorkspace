@@ -1,94 +1,60 @@
-// app/api/test-email/route.ts - CREATE THIS FILE TO TEST EMAILS
+// app/api/test-email/route.ts - Diagnostic endpoint for email delivery
 import { NextRequest, NextResponse } from 'next/server';
-import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
-import { meetingRoomAPI } from '@/lib/supabase';
+import { Resend } from 'resend';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const bookingId = searchParams.get('booking_id');
-
-    if (!bookingId) {
-      return NextResponse.json({
-        error: 'Please provide booking_id query parameter',
-        example: '/api/test-email?booking_id=YOUR_BOOKING_ID'
-      }, { status: 400 });
-    }
-
-    console.log('🧪 Testing email sending for booking:', bookingId);
-
-    // Get the booking
-    const booking = await meetingRoomAPI.getBooking(bookingId);
-    
-    if (!booking) {
-      return NextResponse.json({
-        error: 'Booking not found',
-        booking_id: bookingId
-      }, { status: 404 });
-    }
-
-    console.log('📋 Booking found:', {
-      id: booking.id,
-      customer: booking.customer_name,
-      email: booking.customer_email,
-      status: booking.status,
-      payment_status: booking.payment_status,
-      is_member: booking.is_member_booking
-    });
-
-    // Check if RESEND_API_KEY is configured
     if (!process.env.RESEND_API_KEY) {
-      return NextResponse.json({
-        error: 'RESEND_API_KEY not configured in environment variables',
-        booking: booking,
-        action: 'Please add RESEND_API_KEY to your .env.local file'
-      }, { status: 500 });
+        return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 });
     }
 
-    console.log('📧 Attempting to send confirmation email...');
-    console.log('📧 Email will be sent to:', booking.customer_email);
-    console.log('📧 Manager email configured as: manager@merrittworkspace.net');
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
-    // Try to send the email
-    const emailResult = await sendMemberBookingConfirmationEmail({
-      to: booking.customer_email,
-      customerName: booking.customer_name,
-      booking: booking,
-      roomName: 'Conference Room',
-      isMemberBooking: booking.is_member_booking || false,
-      memberHoursUsed: booking.is_member_booking ? booking.duration_hours : 0,
-      remainingHours: undefined,
-      memberInfo: undefined
-    });
+    const results: Record<string, any> = {};
 
-    console.log('✅ Email sent successfully:', emailResult);
+    // Test 1: Send to manager@
+    try {
+        const managerResult = await resend.emails.send({
+            from: 'Merritt Workspace <manager@merrittworkspace.net>',
+            to: 'manager@merrittworkspace.net',
+            subject: 'Diagnostic Test - Manager Email',
+            text: 'This is a diagnostic test email sent to manager@merrittworkspace.net. If you receive this, email delivery to this address is working.',
+        });
+        results.manager = {
+            data: managerResult.data,
+            error: managerResult.error,
+        };
+    } catch (error: any) {
+        results.manager = {
+            thrown_error: error.message,
+            stack: error.stack,
+        };
+    }
+
+    // Test 2: Send to memberservices@
+    try {
+        const memberServicesResult = await resend.emails.send({
+            from: 'Merritt Workspace <manager@merrittworkspace.net>',
+            to: 'memberservices@merrittworkspace.net',
+            subject: 'Diagnostic Test - Member Services Email',
+            text: 'This is a diagnostic test email sent to memberservices@merrittworkspace.net. If you receive this, email delivery to this address is working.',
+        });
+        results.memberservices = {
+            data: memberServicesResult.data,
+            error: memberServicesResult.error,
+        };
+    } catch (error: any) {
+        results.memberservices = {
+            thrown_error: error.message,
+            stack: error.stack,
+        };
+    }
 
     return NextResponse.json({
-      success: true,
-      message: 'Email sent successfully!',
-      booking: {
-        id: booking.id,
-        customer_name: booking.customer_name,
-        customer_email: booking.customer_email,
-        booking_date: booking.booking_date,
-        start_time: booking.start_time,
-        is_member_booking: booking.is_member_booking
-      },
-      email_result: {
-        customer_email_id: emailResult.customerEmail?.data?.id || 'unknown',
-        manager_email_id: emailResult.managerEmail?.data?.id || 'unknown'
-      },
-      resend_configured: !!process.env.RESEND_API_KEY
+        timestamp: new Date().toISOString(),
+        resend_sdk_version: '6.x',
+        results,
+        instructions: 'Check the "error" field for each result. If "data.id" exists, Resend accepted the email. If "error" exists, Resend rejected it.',
     });
-
-  } catch (error) {
-    console.error('❌ Email test failed:', error);
-    
-    return NextResponse.json({
-      error: 'Email sending failed',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      resend_configured: !!process.env.RESEND_API_KEY
-    }, { status: 500 });
-  }
 }
