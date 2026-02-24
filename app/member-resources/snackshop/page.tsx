@@ -28,7 +28,7 @@ const PRODUCTS = [
     { id: '4', name: 'Naked Smoothie', price: 3.50, category: 'beverages', image: '/images/snackshop/drinks/naked.avif' },
     { id: '5', name: 'Premium Soda', price: 2.00, category: 'beverages', image: '/images/snackshop/drinks/soda.avif' },
     { id: '6', name: 'Herbal Tea', price: 1.50, category: 'beverages', image: '/images/snackshop/drinks/tea.avif' },
-    { id: '7', name: 'Spring Water', price: 2.00, category: 'beverages', image: '/images/snackshop/drinks/Water.jpeg' },
+    { id: '7', name: 'Spring Water', price: 3.00, category: 'beverages', image: '/images/snackshop/drinks/Water.jpeg' },
     // Snacks
     { id: '8', name: 'CLIF Energy Bar', price: 2.75, category: 'snacks', image: '/images/snackshop/snacks/cliff.avif' },
     { id: '9', name: 'KIND Nut Bar', price: 2.50, category: 'snacks', image: '/images/snackshop/snacks/kind.avif' },
@@ -39,7 +39,6 @@ const PRODUCTS = [
     { id: '13', name: 'Instant Oatmeal', price: 2.75, category: 'meals', image: '/images/snackshop/soup/oatmeal.avif' },
     { id: '14', name: 'Quaker Instant Meal', price: 3.00, category: 'meals', image: '/images/snackshop/soup/quaker.avif' },
     { id: '15', name: 'Instant Ramen', price: 2.25, category: 'meals', image: '/images/snackshop/soup/ramen.avif' },
-    { id: '16', name: 'Sweet Corn Cup', price: 2.50, category: 'meals', image: '/images/snackshop/soup/sweet-corn.avif' }
 ];
 
 const CATEGORIES = [
