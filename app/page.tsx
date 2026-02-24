@@ -69,6 +69,13 @@ export default function ImprovedHomePage() {
                 First Month Free on Dedicated Desks—Limited Time
               </div>
 
+              {/* GRIT Boxing Event Banner */}
+              <a href="https://near.tl/sm/Wj7ymCtge" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-red-100 text-red-800 px-4 py-2 rounded-full text-sm font-bold mb-4 hover:bg-red-200 transition">
+                <Calendar className="w-4 h-4" />
+                GRIT Boxing Event — Register Now
+                <ArrowRight className="w-4 h-4" />
+              </a>
+
               <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
                 <MapPin className="w-4 h-4" />
                 Sloan's Lake, Denver • 3 Min to I-25
