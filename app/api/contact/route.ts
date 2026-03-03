@@ -30,17 +30,138 @@ const INQUIRY_LABELS: Record<string, string> = {
     other: 'Other',
 };
 
+// --- Spam Protection ---
+
+// Rate limiting: track submissions by IP (in-memory, resets on server restart)
+const rateLimitMap = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX = 3; // max submissions per window
+
+function isRateLimited(ip: string): boolean {
+    const now = Date.now();
+    const timestamps = rateLimitMap.get(ip) || [];
+    // Remove expired entries
+    const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+    rateLimitMap.set(ip, recent);
+
+    if (recent.length >= RATE_LIMIT_MAX) {
+        return true;
+    }
+    recent.push(now);
+    rateLimitMap.set(ip, recent);
+    return false;
+}
+
+// Email validation - stricter than just "type=email"
+function isValidEmail(email: string): boolean {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) return false;
+    // Block disposable/temporary email domains commonly used by spammers
+    const disposableDomains = [
+        'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'throwaway.email',
+        'fakeinbox.com', 'sharklasers.com', 'guerrillamailblock.com', 'grr.la',
+        'dispostable.com', 'yopmail.com', 'trashmail.com', 'tempail.com',
+        'maildrop.cc', 'temp-mail.org', 'getnada.com', '10minutemail.com',
+    ];
+    const domain = email.split('@')[1]?.toLowerCase();
+    if (disposableDomains.includes(domain)) return false;
+    return true;
+}
+
+// Content-based spam detection
+function isSpamContent(message: string, name: string): boolean {
+    const combined = `${name} ${message}`.toLowerCase();
+
+    // Check for excessive URLs (more than 2 links is suspicious for a contact form)
+    const urlCount = (combined.match(/https?:\/\//g) || []).length;
+    if (urlCount > 2) return true;
+
+    // Common spam phrases
+    const spamPhrases = [
+        'buy now', 'click here', 'free money', 'act now', 'limited time offer',
+        'you have been selected', 'congratulations you won', 'dear friend',
+        'nigerian prince', 'wire transfer', 'crypto opportunity', 'earn money fast',
+        'work from home opportunity', 'double your income', 'million dollars',
+        'casino online', 'online pharmacy', 'viagra', 'cialis',
+        'seo services', 'backlink', 'link building', 'web traffic',
+    ];
+    for (const phrase of spamPhrases) {
+        if (combined.includes(phrase)) return true;
+    }
+
+    // All-caps message (more than 80% uppercase and longer than 20 chars)
+    if (message.length > 20) {
+        const uppercaseCount = (message.match(/[A-Z]/g) || []).length;
+        const letterCount = (message.match(/[a-zA-Z]/g) || []).length;
+        if (letterCount > 0 && uppercaseCount / letterCount > 0.8) return true;
+    }
+
+    return false;
+}
+
+// Minimum time (ms) a human would need to fill out the form
+const MIN_FORM_TIME_MS = 3000; // 3 seconds
+
 export async function POST(request: NextRequest) {
     try {
         const data = await request.json();
 
-        const { name, email, phone, company, message, inquiry_type } = data;
+        const { name, email, phone, company, message, inquiry_type, website, _t } = data;
+
+        // 1. Honeypot check - if the hidden "website" field is filled, it's a bot
+        if (website) {
+            // Return success to not tip off the bot, but don't actually send
+            console.log('Spam blocked: honeypot field filled');
+            return NextResponse.json({
+                success: true,
+                message: 'Your message has been sent. We will get back to you within 24 hours.',
+            });
+        }
+
+        // 2. Timing check - bots submit forms instantly
+        if (_t && typeof _t === 'number') {
+            const elapsed = Date.now() - _t;
+            if (elapsed < MIN_FORM_TIME_MS) {
+                console.log(`Spam blocked: form submitted too fast (${elapsed}ms)`);
+                return NextResponse.json({
+                    success: true,
+                    message: 'Your message has been sent. We will get back to you within 24 hours.',
+                });
+            }
+        }
+
+        // 3. Rate limiting by IP
+        const forwarded = request.headers.get('x-forwarded-for');
+        const ip = forwarded?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown';
+        if (isRateLimited(ip)) {
+            return NextResponse.json(
+                { error: 'Too many messages sent. Please wait a few minutes before trying again.' },
+                { status: 429 }
+            );
+        }
 
         if (!name || !email || !message) {
             return NextResponse.json(
                 { error: 'Name, email, and message are required.' },
                 { status: 400 }
             );
+        }
+
+        // 4. Stricter email validation
+        if (!isValidEmail(email)) {
+            return NextResponse.json(
+                { error: 'Please enter a valid email address.' },
+                { status: 400 }
+            );
+        }
+
+        // 5. Content-based spam detection
+        if (isSpamContent(message, name)) {
+            console.log(`Spam blocked: suspicious content from ${email}`);
+            return NextResponse.json({
+                success: true,
+                message: 'Your message has been sent. We will get back to you within 24 hours.',
+            });
         }
 
         if (!process.env.RESEND_API_KEY) {
