@@ -11,11 +11,13 @@ export default function ContactPage() {
     phone: '',
     company: '',
     message: '',
-    inquiry_type: 'general'
+    inquiry_type: 'general',
+    website: '', // honeypot field - bots fill this, humans don't see it
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [formLoadedAt] = useState(() => Date.now());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +28,10 @@ export default function ContactPage() {
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          _t: formLoadedAt, // timestamp for timing validation
+        }),
       });
 
       const result = await response.json();
@@ -193,7 +198,8 @@ export default function ContactPage() {
                         phone: '',
                         company: '',
                         message: '',
-                        inquiry_type: 'general'
+                        inquiry_type: 'general',
+                        website: '',
                       });
                     }}
                     className="text-burnt-orange-600 hover:underline"
@@ -203,6 +209,20 @@ export default function ContactPage() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Honeypot field - hidden from humans, bots will fill it */}
+                  <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }}>
+                    <label htmlFor="website">Website</label>
+                    <input
+                      type="text"
+                      id="website"
+                      name="website"
+                      value={formData.website}
+                      onChange={handleInputChange}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
+
                   <div>
                     <label htmlFor="inquiry_type" className="block text-sm font-medium text-gray-700 mb-2">
                       What can we help you with?
