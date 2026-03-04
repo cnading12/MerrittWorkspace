@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { MapPin, Wifi, Shield, Phone, Monitor, Coffee, Users, Calendar, Clock, ArrowRight, CheckCircle, Projector, Volume2, Circle, Music, DollarSign, MessageCircle } from 'lucide-react';
+import { MapPin, Wifi, Shield, Phone, Monitor, Coffee, Users, Calendar, Clock, ArrowRight, CheckCircle, Projector, Volume2, Circle } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -518,90 +518,6 @@ export default function ImprovedHomePage() {
                 title="Merritt Workspace - Coworking Space at 2246 Irving Street, Sloan's Lake, Denver, CO 80211"
                 className="rounded-2xl"
               />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Community Events Section */}
-      <section className="py-20 bg-gradient-to-br from-orange-50 via-white to-orange-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-bold mb-4">
-              <Calendar className="w-4 h-4" />
-              Community Events
-            </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Upcoming Events at Merritt</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Join our vibrant community events hosted at Merritt Workspace
-            </p>
-          </div>
-
-          {/* Latin Dance Class Event */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-5xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-0">
-              {/* Event Image */}
-              <div className="relative w-full" style={{ minHeight: '400px' }}>
-                <Image
-                  src="/images/events/dance/MHQ.PNG"
-                  alt="Latin Dance Classes - Salsa and Bachata beginner classes at Merritt Workspace in Denver"
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-contain"
-                />
-              </div>
-
-              {/* Event Details */}
-              <div className="p-8 flex flex-col justify-center">
-                <div className="inline-flex items-center gap-2 bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-xs font-bold mb-4 w-fit">
-                  <Music className="w-3 h-3" />
-                  8-Week Series
-                </div>
-
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Absolute Beginner Salsa & Bachata</h3>
-
-                <p className="text-gray-600 mb-4 text-sm leading-relaxed">
-                  We will be starting a weekly 8 Week Absolute Beginner Class for salsa and bachata. Join us for two classes each Wednesday at 6:30-8:30PM: one hour of salsa and one hour of bachata. Our goal is to teach you the basics of social dancing so that you can feel confident joining Denver&apos;s growing social dance scene across many amazing venues in the city. By the end of the 8 weeks, you should have a basic working knowledge of social dancing within these dance styles, and will be able to go to any dance function and move confidently with a partner!
-                </p>
-
-                {/* Event Details Grid */}
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-orange-600 flex-shrink-0" />
-                    <span className="text-gray-700 text-sm"><strong>Dates:</strong> March 11 – May 6, 2026 (Every Wednesday)</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-5 h-5 text-orange-600 flex-shrink-0" />
-                    <span className="text-gray-700 text-sm"><strong>Time:</strong> 6:30 PM – 8:30 PM</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <DollarSign className="w-5 h-5 text-orange-600 flex-shrink-0" />
-                    <span className="text-gray-700 text-sm"><strong>Cost:</strong> $80 for the full series ($5 per class)</span>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <a
-                    href="https://www.paypal.com/qrcodes/venmocs/03688acd-e9cd-4d15-a2c0-0a3ee4a1ecd8?created=1772574619.18876&printed=1"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 transition shadow-md text-sm"
-                  >
-                    <DollarSign className="w-4 h-4 mr-2" />
-                    Pay via Venmo
-                  </a>
-                  <a
-                    href="https://chat.whatsapp.com/ChIgscJQQdaHlxzbVU89FA?mode=gi_t"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-md text-sm"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Join WhatsApp Group
-                  </a>
-                </div>
-              </div>
             </div>
           </div>
         </div>
