@@ -228,7 +228,7 @@ export default function Navbar() {
                       Meeting Rooms
                     </Link>
                     <Link 
-                      href="/member-resources/faq" 
+                      href="/member-resources/faqs"
                       className="block text-gray-600 hover:text-burnt-orange-600 transition py-1"
                       onClick={closeAllMenus}
                     >
