@@ -76,7 +76,7 @@ function MemberBookingSuccessContent() {
 ⏰ Time: ${booking.start_time} - ${booking.end_time}
 ⌛ Duration: ${booking.duration_hours} hour${booking.duration_hours > 1 ? 's' : ''}
 👥 Attendees: ${booking.attendees}
-🏢 Location: Merritt House Conference Room
+🏢 Location: Merritt Workspace Conference Room
 💳 Member Booking: FREE
     `;
 
@@ -226,7 +226,7 @@ function MemberBookingSuccessContent() {
                         <div>
                           <p className="font-semibold text-gray-900">Location</p>
                           <p className="text-gray-700 text-lg">Conference Room</p>
-                          <p className="text-gray-600 text-sm">Merritt House Coworking</p>
+                          <p className="text-gray-600 text-sm">Merritt Workspace Coworking</p>
                         </div>
                       </div>
                     </div>

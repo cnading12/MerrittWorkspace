@@ -177,7 +177,7 @@ const testimonials = [
     name: 'Jessica Martinez',
     role: 'Marketing Consultant',
     plan: 'Dedicated Desk Member',
-    content: 'The community at Merritt House is incredible. I\'ve made genuine connections and even found new clients through networking here.',
+    content: 'The community at Merritt Workspace is incredible. I\'ve made genuine connections and even found new clients through networking here.',
     rating: 5
   },
   {
@@ -431,7 +431,7 @@ export default function MembershipPage() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Merritt House?</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Merritt Workspace?</h2>
             <p className="text-xl text-gray-600">More than just a workspace - it's a community</p>
           </div>
 
