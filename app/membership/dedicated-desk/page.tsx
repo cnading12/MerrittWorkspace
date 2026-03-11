@@ -105,7 +105,7 @@ export default function DedicatedDeskPage() {
     {
       name: 'Mike Chen',
       role: 'Software Developer',
-      content: 'Working from home was killing my productivity. Having a dedicated desk at Merritt House has been game-changing. The phone booths are perfect for client calls.',
+      content: 'Working from home was killing my productivity. Having a dedicated desk at Merritt Workspace has been game-changing. The phone booths are perfect for client calls.',
       rating: 5
     },
     {
