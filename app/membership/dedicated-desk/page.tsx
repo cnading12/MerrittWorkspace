@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Clock, Wifi, Shield, Coffee, Users, Calendar, MapPin, Phone, Mail, Heart, Star, ArrowRight, Briefcase, TrendingUp, Zap } from 'lucide-react';
+import { Check, Clock, Wifi, Shield, Coffee, Users, Calendar, MapPin, Phone, Mail, Heart, ArrowRight, Briefcase, TrendingUp, Zap } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
 import Image from 'next/image';
@@ -95,26 +95,6 @@ export default function DedicatedDeskPage() {
     }
   ];
 
-  const testimonials = [
-    {
-      name: 'Sarah Johnson',
-      role: 'Marketing Consultant',
-      content: 'The dedicated desk gives me the perfect balance of consistency and community. I love having my own space while being surrounded by other motivated professionals.',
-      rating: 5
-    },
-    {
-      name: 'Mike Chen',
-      role: 'Software Developer',
-      content: 'Working from home was killing my productivity. Having a dedicated desk at Merritt Workspace has been game-changing. The phone booths are perfect for client calls.',
-      rating: 5
-    },
-    {
-      name: 'Emma Rodriguez',
-      role: 'Graphic Designer',
-      content: 'Best decision for my business! The 24/7 access means I can work when inspiration strikes, and the community has led to several client referrals.',
-      rating: 5
-    }
-  ];
 
   return (
     <main className="min-h-screen bg-gray-50 pt-16">
@@ -386,33 +366,7 @@ export default function DedicatedDeskPage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Members Say</h2>
-            <p className="text-xl text-gray-600">Real feedback from dedicated desk members</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-gray-50 rounded-xl p-6">
-                <div className="flex mb-4">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="w-5 h-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-700 mb-4">"{testimonial.content}"</p>
-                <div>
-                  <div className="font-semibold text-gray-900">{testimonial.name}</div>
-                  <div className="text-sm text-gray-600">{testimonial.role}</div>
-                  <div className="text-xs text-burnt-orange-600 mt-1">Dedicated Desk Member</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Testimonials removed — to be added when real member quotes are collected */}
 
       {/* Internal Links Section */}
       <section className="py-12 bg-gray-100">
