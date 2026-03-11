@@ -49,16 +49,16 @@ export default function DedicatedDeskPage() {
     },
     {
       icon: MapPin,
-      title: 'FREE Church Flex Space',
-      description: 'Work or host events in our stunning 1905 church with stained glass—free until 4:30 PM daily'
+      title: 'FREE Flex Space Next Door',
+      description: 'Use our beautiful flex space in the adjacent building for meetings and events—free until 4:30 PM daily'
     }
   ];
 
   const eventSpaceFeatures = [
     {
       icon: Coffee,
-      title: 'Church Coffee Shop',
-      description: 'Work surrounded by stunning stained glass windows and café seating'
+      title: 'Flex Space Coffee Lounge',
+      description: 'Café seating and a beautiful space to recharge in our flex space next door'
     },
     {
       icon: Users,
@@ -133,7 +133,7 @@ export default function DedicatedDeskPage() {
               <span className="text-burnt-orange-600 block">Sloan's Lake, Denver</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Your own permanent workspace in Denver's premier coworking space—<strong>plus FREE access to our stunning 1905 church flex space</strong>. Located just 3 minutes from I-25 in the heart of Sloan's Lake. Work in the main building or the historic church coffee shop. Host meetings and workshops in the flex space at no extra cost.
+              Your own permanent workspace in Denver's premier coworking space—<strong>plus FREE access to our beautiful flex space next door</strong>. Located just 3 minutes from I-25 in the heart of Sloan's Lake. Work from your dedicated desk in the main building, and use the flex space next door for meetings, workshops, and coffee breaks at no extra cost.
             </p>
           </div>
 
@@ -187,11 +187,11 @@ export default function DedicatedDeskPage() {
                     </li>
                     <li className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700"><strong>FREE historic church flex space access</strong> until 4:30 PM daily</span>
+                      <span className="text-gray-700"><strong>FREE flex space access next door</strong> until 4:30 PM daily</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700"><strong>Host workshops & meetings FREE</strong> in our stunning church space</span>
+                      <span className="text-gray-700"><strong>Host workshops & meetings FREE</strong> in our flex space next door</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -324,9 +324,9 @@ export default function DedicatedDeskPage() {
               <Check className="w-4 h-4" />
               FREE for Members
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Sets Us Apart: Historic Church Flex Space</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Sets Us Apart: Beautiful Flex Space Next Door</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              This is what sets us apart. Work in our stunning 1905 church with stained glass windows, host workshops, large meetings, and networking events—<strong>completely free</strong> until 4:30 PM daily. No other Denver coworking space offers this.
+              This is what sets us apart. Your membership includes free access to our stunning flex space in the adjacent building—host workshops, large meetings, and networking events <strong>completely free</strong> until 4:30 PM daily. No other Denver coworking space offers this.
             </p>
           </div>
 
@@ -421,10 +421,10 @@ export default function DedicatedDeskPage() {
             First Month Free — Limited Time
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Work from a Historic Church?
+            Your Desk + Free Access to Our Beautiful Flex Space
           </h2>
           <p className="text-xl text-burnt-orange-100 mb-8">
-            Get your dedicated desk + free access to our stunning 1905 church flex space. Just 3 min from I-25.
+            Get your dedicated desk in the main building + free access to our beautiful flex space next door. Just 3 min from I-25.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
