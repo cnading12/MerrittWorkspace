@@ -273,7 +273,7 @@ export default function ImprovedHomePage() {
 
             <div className="space-y-6">
               {[
-                { icon: Coffee, title: 'Work in the Coffee Lounge', desc: 'Café seating in a beautiful historic space—a stunning alternative workspace until 4:30 PM daily' },
+                { icon: Coffee, title: 'Coffee Lounge Next Door', desc: 'Café seating in a beautiful space next door—a great change of scenery, free for members until 4:30 PM daily' },
                 { icon: Users, title: 'Host Free Workshops & Meetings', desc: 'Use the flex space for team meetings, client presentations, or networking events—completely free' },
                 { icon: Projector, title: 'Presentation Ready', desc: 'Professional projector, screen, and sound system for your events' },
                 { icon: Circle, title: 'Recreation & Team Building', desc: 'Ping pong table and flexible space for breaks and team activities' }
