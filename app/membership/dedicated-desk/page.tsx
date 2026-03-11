@@ -118,23 +118,37 @@ export default function DedicatedDeskPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 pt-16">
+      {/* Urgency Banner */}
+      <div className="bg-yellow-400 text-gray-900 py-3 text-center font-semibold text-sm md:text-base">
+        <Zap className="w-4 h-4 inline-block mr-1 -mt-0.5" /> Limited Deal: First 10 members lock in $100/month — half off our standard $200/month rate. Only a few spots remain.
+      </div>
+
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <div className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold inline-block mb-3 animate-pulse">
-              FIRST MONTH FREE — Limited Time
-            </div>
-            <div className="bg-burnt-orange-600 text-white px-4 py-2 rounded-full text-sm font-semibold inline-block mb-4">
-              Best Value
-            </div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Dedicated Desk in
-              <span className="text-burnt-orange-600 block">Sloan's Lake, Denver</span>
+              Dedicated Desk — $100/Month.
+              <span className="text-burnt-orange-600 block">Only 10 Spots.</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Your own permanent workspace in Denver's premier coworking space—<strong>plus FREE access to our beautiful flex space next door</strong>. Located just 3 minutes from I-25 in the heart of Sloan's Lake. Work from your dedicated desk in the main building, and use the flex space next door for meetings, workshops, and coffee breaks at no extra cost.
+              Our standard rate is $200/month. For a limited time, 10 desks are available at $100/month. Once they're claimed, this rate is gone.
             </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
+              <Link
+                href="/membership/apply"
+                className="bg-burnt-orange-600 hover:bg-burnt-orange-700 text-white py-4 px-8 rounded-lg font-semibold transition inline-flex items-center justify-center gap-2"
+              >
+                Claim Your Spot — $100/Month
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+              <a
+                href="tel:3033598337"
+                className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center border-2 border-burnt-orange-600"
+              >
+                Call or Text: (303) 359-8337
+              </a>
+            </div>
           </div>
 
           {/* Main Content Card */}
@@ -144,13 +158,13 @@ export default function DedicatedDeskPage() {
               <div>
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-2xl text-gray-400 line-through">$200</span>
-                    <span className="text-5xl font-bold text-green-600">$0</span>
-                    <span className="text-2xl text-gray-500">first month</span>
+                    <span className="text-2xl text-gray-400 line-through">$200/month</span>
+                    <span className="text-5xl font-bold text-green-600">$100</span>
+                    <span className="text-2xl text-gray-500">/month</span>
                   </div>
-                  <p className="text-gray-600 text-lg mb-4">Then $200/month • No long-term contracts</p>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                    <p className="text-green-800 font-semibold text-sm">Limited Time: Get your first month completely free!</p>
+                  <p className="text-gray-600 text-lg mb-4">Save $100/month off the standard rate • No long-term contracts</p>
+                  <div className="bg-burnt-orange-50 border border-burnt-orange-200 rounded-lg p-3 mb-4">
+                    <p className="text-burnt-orange-800 font-bold text-sm">10 SPOTS ONLY — LIMITED TIME</p>
                   </div>
                 </div>
 
@@ -204,7 +218,7 @@ export default function DedicatedDeskPage() {
                   href="/membership/apply"
                   className="w-full bg-burnt-orange-600 hover:bg-burnt-orange-700 text-white py-4 px-6 rounded-lg font-semibold transition text-center block"
                 >
-                  Claim Your Free Month
+                  Claim Your Spot — $100/Month
                 </Link>
               </div>
 
@@ -414,35 +428,34 @@ export default function DedicatedDeskPage() {
         </div>
       </section>
 
+      {/* Scarcity Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">This Rate Won't Last</h2>
+          <p className="text-lg text-gray-600">
+            Merritt Workspace has been a neighborhood coworking home for over 4 years. This $100/month rate is a one-time promotional offer — not our standard pricing. When 10 spots are claimed, the rate returns to $200/month. Lock it in now.
+          </p>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-burnt-orange-500 to-burnt-orange-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 bg-white text-green-700 px-4 py-2 rounded-full text-sm font-bold mb-6">
-            First Month Free — Limited Time
-          </div>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Your Desk + Free Access to Our Beautiful Flex Space
+            Reserve Your Desk at $100/Month
           </h2>
           <p className="text-xl text-burnt-orange-100 mb-8">
-            Get your dedicated desk in the main building + free access to our beautiful flex space next door. Just 3 min from I-25.
+            Only 10 spots at this rate. Standard rate is $200/month.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/membership/apply"
-              className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
-            >
-              Claim Your Free Month
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              href="/contact"
-              className="bg-burnt-orange-700 text-white py-4 px-8 rounded-lg font-semibold hover:bg-burnt-orange-800 transition inline-flex items-center justify-center border-2 border-white"
-            >
-              Book Your Free Tour
-            </Link>
-          </div>
+          <Link
+            href="/membership/apply"
+            className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
+          >
+            Apply Now — $100/Month Deal
+            <ArrowRight className="w-5 h-5" />
+          </Link>
           <p className="text-burnt-orange-200 mt-6">
-            Call or text: <a href="tel:3033598337" className="text-white hover:underline font-semibold">(303) 359-8337</a>
+            Questions? Call or text <a href="tel:3033598337" className="text-white hover:underline font-semibold">(303) 359-8337</a>
           </p>
         </div>
       </section>
