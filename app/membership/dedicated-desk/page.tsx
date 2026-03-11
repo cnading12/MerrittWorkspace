@@ -120,7 +120,7 @@ export default function DedicatedDeskPage() {
     <main className="min-h-screen bg-gray-50 pt-16">
       {/* Urgency Banner */}
       <div className="bg-yellow-400 text-gray-900 py-3 text-center font-semibold text-sm md:text-base">
-        <Zap className="w-4 h-4 inline-block mr-1 -mt-0.5" /> Limited Deal: First 10 members lock in $100/month — half off our standard $200/month rate. Only a few spots remain.
+        <Zap className="w-4 h-4 inline-block mr-1 -mt-0.5" /> Limited Deal: First 10 members lock in $100/month — $200 off our standard $300/month rate. Only a few spots remain.
       </div>
 
       {/* Hero Section */}
@@ -132,7 +132,7 @@ export default function DedicatedDeskPage() {
               <span className="text-burnt-orange-600 block">Only 10 Spots.</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Our standard rate is $200/month. For a limited time, 10 desks are available at $100/month. Once they're claimed, this rate is gone.
+              Our standard rate is $300/month. For a limited time, 10 desks are available at $100/month. Once they're claimed, this rate is gone.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
               <Link
@@ -158,11 +158,11 @@ export default function DedicatedDeskPage() {
               <div>
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-2xl text-gray-400 line-through">$200/month</span>
+                    <span className="text-2xl text-gray-400 line-through">$300/month</span>
                     <span className="text-5xl font-bold text-green-600">$100</span>
                     <span className="text-2xl text-gray-500">/month</span>
                   </div>
-                  <p className="text-gray-600 text-lg mb-4">Save $100/month off the standard rate • No long-term contracts</p>
+                  <p className="text-gray-600 text-lg mb-4">Save $200/month off the standard rate • No long-term contracts</p>
                   <div className="bg-burnt-orange-50 border border-burnt-orange-200 rounded-lg p-3 mb-4">
                     <p className="text-burnt-orange-800 font-bold text-sm">10 SPOTS ONLY — LIMITED TIME</p>
                   </div>
@@ -227,7 +227,7 @@ export default function DedicatedDeskPage() {
                 <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
                   <Image
                     src="/images/hero/dedicated-desk.webp"
-                    alt="Dedicated desk workspace at Merritt Workspace coworking space in Sloan's Lake, Denver - $200/month"
+                    alt="Dedicated desk workspace at Merritt Workspace coworking space in Sloan's Lake, Denver - $300/month"
                     fill
                     priority
                     sizes="(max-width: 768px) 100vw, 50vw"
@@ -433,7 +433,7 @@ export default function DedicatedDeskPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-6">This Rate Won't Last</h2>
           <p className="text-lg text-gray-600">
-            Merritt Workspace has been a neighborhood coworking home for over 4 years. This $100/month rate is a one-time promotional offer — not our standard pricing. When 10 spots are claimed, the rate returns to $200/month. Lock it in now.
+            Merritt Workspace has been a neighborhood coworking home for over 4 years. This $100/month rate is a one-time promotional offer — not our standard pricing. When 10 spots are claimed, the rate returns to $300/month. Lock it in now.
           </p>
         </div>
       </section>
@@ -445,7 +445,7 @@ export default function DedicatedDeskPage() {
             Reserve Your Desk at $100/Month
           </h2>
           <p className="text-xl text-burnt-orange-100 mb-8">
-            Only 10 spots at this rate. Standard rate is $200/month.
+            Only 10 spots at this rate. Standard rate is $300/month.
           </p>
           <Link
             href="/membership/apply"
