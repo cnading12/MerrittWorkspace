@@ -2,7 +2,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Coworking Memberships | Dedicated Desks & Private Offices",
-  description: "Find your perfect workspace in Sloan's Lake, Denver. Dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, meeting rooms, free coffee. Compare all membership options.",
+  description: "Find your perfect workspace in Sloan's Lake, Denver. Dedicated desks from $300/mo, private offices from $500/mo. 24/7 access, meeting rooms, free coffee. Compare all membership options.",
   keywords: [
     "dedicated desk Denver",
     "private office rental Denver",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Coworking Memberships | Merritt Workspace Denver",
-    description: "Dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, 3 min to I-25. Find your perfect workspace in Sloan's Lake, Denver.",
+    description: "Dedicated desks from $300/mo, private offices from $500/mo. 24/7 access, 3 min to I-25. Find your perfect workspace in Sloan's Lake, Denver.",
     url: "https://merrittworkspace.net/membership",
     images: [
       {

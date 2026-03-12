@@ -10,7 +10,7 @@ const membershipPlans = [
   {
     id: 'dedicated_desk',
     name: 'Dedicated Desk',
-    price: 200,
+    price: 300,
     description: 'Your own workspace in our vibrant coworking community',
     capacity: '1 person',
     privacy: 'Shared Space',
@@ -335,7 +335,7 @@ export default function MembershipPage() {
                 <tbody>
                   <tr className="border-b border-gray-200">
                     <td className="p-4 font-medium text-gray-900">Monthly Price</td>
-                    <td className="p-4 text-center text-burnt-orange-600 font-bold">$200</td>
+                    <td className="p-4 text-center text-burnt-orange-600 font-bold">$300</td>
                     <td className="p-4 text-center text-burnt-orange-600 font-bold">$500</td>
                     <td className="p-4 text-center text-burnt-orange-600 font-bold">$700</td>
                     <td className="p-4 text-center text-burnt-orange-600 font-bold">$1,200</td>

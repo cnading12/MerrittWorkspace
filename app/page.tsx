@@ -364,11 +364,11 @@ export default function ImprovedHomePage() {
                     <p className="text-gray-600 mb-6">Your own workspace in our collaborative Sloan's Lake coworking environment + free access to our beautiful flex space</p>
 
                     <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-2xl text-gray-400 line-through">$200</span>
+                      <span className="text-2xl text-gray-400 line-through">$300</span>
                       <span className="text-5xl font-bold text-green-600">$0</span>
                       <span className="text-xl text-gray-500">first month</span>
                     </div>
-                    <p className="text-gray-500 mb-6">Then $200/month</p>
+                    <p className="text-gray-500 mb-6">Then $300/month</p>
 
                     <Link href="/membership/dedicated-desk" className="inline-flex items-center justify-center w-full bg-orange-600 text-white px-6 py-4 rounded-lg font-semibold hover:bg-orange-700 transition">
                       Claim Your Free Month
