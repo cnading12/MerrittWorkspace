@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Check, Clock, Wifi, Shield, Coffee, Users, Calendar, Phone, Mail, Lock, Building2, Heart, Star, ArrowRight, Briefcase, Eye, UserCheck } from 'lucide-react';
+import { Check, Clock, Wifi, Shield, Coffee, Users, Calendar, Phone, Mail, Lock, Building2, Heart, ArrowRight, Briefcase, Eye, UserCheck } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
 import Image from 'next/image';
@@ -128,30 +128,6 @@ export default function PrivateOfficePage() {
       icon: Shield,
       title: 'Premium Storage',
       description: 'Multiple storage options including filing cabinets and shelving'
-    }
-  ];
-
-  const testimonials = [
-    {
-      name: 'David Thompson',
-      role: 'Financial Consultant',
-      plan: 'Single Desk Office',
-      content: 'Having my own private office has been essential for client confidentiality. The professional atmosphere and ability to bring my dog to work is a huge bonus.',
-      rating: 5
-    },
-    {
-      name: 'Lisa Martinez & Associates',
-      role: 'Legal Partnership',
-      plan: '2-Desk Office',
-      content: 'The double desk setup is perfect for our partnership. We can work together when needed but also have space for private client calls.',
-      rating: 5
-    },
-    {
-      name: 'TechStart Denver Team',
-      role: 'Growing Startup',
-      plan: 'Large Team Office',
-      content: 'We went from 3 to 7 people and the large office adapted with us. The unlimited meeting rooms are essential for our client work and team collaboration.',
-      rating: 5
     }
   ];
 
@@ -367,33 +343,7 @@ export default function PrivateOfficePage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Members Say</h2>
-            <p className="text-xl text-gray-600">Real feedback from private office members</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-gray-50 rounded-xl p-6">
-                <div className="flex mb-4">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="w-5 h-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-700 mb-4">"{testimonial.content}"</p>
-                <div>
-                  <div className="font-semibold text-gray-900">{testimonial.name}</div>
-                  <div className="text-sm text-gray-600">{testimonial.role}</div>
-                  <div className="text-xs text-blue-600 mt-1">{testimonial.plan}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Testimonials removed — to be added when real member quotes are collected */}
 
       {/* Internal Links Section */}
       <section className="py-12 bg-gray-100">
