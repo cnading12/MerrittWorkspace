@@ -28,10 +28,12 @@ export default function ImprovedAboutPage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="relative">
               <Image
-                src="/images/event-space/outside.jpg"
+                src="/images/event-space/outside.webp"
                 alt="Historic Merritt Church Building transformed into workspace"
                 width={600}
                 height={400}
+                placeholder="blur"
+                blurDataURL="data:image/webp;base64,UklGRjIAAABXRUJQVlA4ICYAAACwAQCdASoKAAgABUB8JYgCdADQU94AAP49G2a/dbp6oybwgjwAAA=="
                 className="rounded-xl object-cover w-full h-96 shadow-lg"
                 priority
               />

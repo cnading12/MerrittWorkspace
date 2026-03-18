@@ -23,12 +23,12 @@ interface CartItem {
 const PRODUCTS = [
     // Beverages
     { id: '1', name: 'Celsius Energy Drink', price: 2.50, category: 'beverages', image: '/images/snackshop/drinks/celsius.avif' },
-    { id: '2', name: 'Chocolate Milk', price: 3.00, category: 'beverages', image: '/images/snackshop/drinks/chocolate-milk.jpeg' },
+    { id: '2', name: 'Chocolate Milk', price: 3.00, category: 'beverages', image: '/images/snackshop/drinks/chocolate-milk.webp' },
     { id: '3', name: 'IZZE Sparkling Juice', price: 2.25, category: 'beverages', image: '/images/snackshop/drinks/izze.avif' },
     { id: '4', name: 'Naked Smoothie', price: 3.50, category: 'beverages', image: '/images/snackshop/drinks/naked.avif' },
     { id: '5', name: 'Premium Soda', price: 2.00, category: 'beverages', image: '/images/snackshop/drinks/soda.avif' },
     { id: '6', name: 'Herbal Tea', price: 1.50, category: 'beverages', image: '/images/snackshop/drinks/tea.avif' },
-    { id: '7', name: 'Spring Water', price: 3.00, category: 'beverages', image: '/images/snackshop/drinks/Water.jpeg' },
+    { id: '7', name: 'Spring Water', price: 3.00, category: 'beverages', image: '/images/snackshop/drinks/Water.webp' },
     // Snacks
     { id: '8', name: 'CLIF Energy Bar', price: 2.75, category: 'snacks', image: '/images/snackshop/snacks/cliff.avif' },
     { id: '9', name: 'KIND Nut Bar', price: 2.50, category: 'snacks', image: '/images/snackshop/snacks/kind.avif' },
