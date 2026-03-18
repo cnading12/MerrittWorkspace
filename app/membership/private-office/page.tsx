@@ -21,6 +21,8 @@ export default function PrivateOfficePage() {
       description: 'Perfect for solo professionals who need complete privacy',
       image1: '/images/private-offices/single.webp',
       image2: '/images/private-offices/single2.webp',
+      blur1: 'data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAACQAQCdASoKAA0ABUB8JZQC7ABpDmAAj/vsp3SQ/qO4OdwA',
+      blur2: 'data:image/webp;base64,UklGRiwAAABXRUJQVlA4ICAAAACwAQCdASoKAA0ABUB8JYwAAfWgTXrAAF+mDYcT9+WAAA==',
       features: [
         'Private lockable office',
         'Professional business address',
@@ -42,6 +44,8 @@ export default function PrivateOfficePage() {
       description: 'Ideal for partnerships and small collaborative teams',
       image1: '/images/private-offices/2-desk.webp',
       image2: '/images/private-offices/2-desk2.webp',
+      blur1: 'data:image/webp;base64,UklGRiwAAABXRUJQVlA4ICAAAABQAQCdASoKAA0AD8B8JQBdgCgAAP6/F7byZ3GAPAgAAA==',
+      blur2: 'data:image/webp;base64,UklGRiwAAABXRUJQVlA4ICAAAACwAQCdASoKAA0ABUB8JZQAAUoqQOQAAPnBWbJDuUusAA==',
       features: [
         'Private lockable office with 2 desks',
         'Professional business address',
@@ -64,6 +68,8 @@ export default function PrivateOfficePage() {
       description: 'Spacious office for established teams and growing companies',
       image1: '/images/private-offices/4-desk.webp',
       image2: '/images/private-offices/4-desk2.webp',
+      blur1: 'data:image/webp;base64,UklGRjAAAABXRUJQVlA4ICQAAABQAQCdASoKAA0ABUB8JQBOgAAAAOc8gv7uy41SNTE8bIfgAAA=',
+      blur2: 'data:image/webp;base64,UklGRjIAAABXRUJQVlA4ICYAAABwAQCdASoKAA0ABUB8JQBdgBGLIADM9faIdT5iRGlJCB/J2gAAAA==',
       features: [
         'Large private office (4-8 desks)',
         'Professional business address',
@@ -267,6 +273,8 @@ export default function PrivateOfficePage() {
                     alt={`${selectedPlanDetails.name} private office rental at Merritt Workspace in Sloan's Lake, Denver`}
                     fill
                     priority
+                    placeholder="blur"
+                    blurDataURL={selectedPlanDetails.blur1}
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                   />
@@ -276,6 +284,8 @@ export default function PrivateOfficePage() {
                     src={selectedPlanDetails.image2}
                     alt={`${selectedPlanDetails.name} interior view - private office near I-25 Denver`}
                     fill
+                    placeholder="blur"
+                    blurDataURL={selectedPlanDetails.blur2}
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                   />

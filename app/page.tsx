@@ -14,37 +14,43 @@ export default function ImprovedHomePage() {
       src: '/images/hero/outside-hero.webp',
       title: 'Historic Character',
       subtitle: 'Next to the landmark Merritt Building',
-      alt: 'Merritt Workspace exterior - historic coworking space in Sloan\'s Lake, Denver near I-25'
+      alt: 'Merritt Workspace exterior - historic coworking space in Sloan\'s Lake, Denver near I-25',
+      blurDataURL: 'data:image/webp;base64,UklGRjAAAABXRUJQVlA4ICQAAACQAQCdASoKAAUABUB8JQBOgBuZjyQA/nS23b7sLJ+jmnAAAAA='
     },
     {
       src: '/images/event-space/coffee-shop.webp',
       title: 'Beautiful Flex Space',
       subtitle: 'Café seating and unlimited coffee until 4:30 PM',
-      alt: 'Coffee lounge and flex space at Merritt Workspace in Sloan\'s Lake, Denver'
+      alt: 'Coffee lounge and flex space at Merritt Workspace in Sloan\'s Lake, Denver',
+      blurDataURL: 'data:image/webp;base64,UklGRjIAAABXRUJQVlA4ICYAAAAwAQCdASoKAAgABUB8JZQAA3AA/ukPySihXbdkw9nh0tWvbA4AAA=='
     },
     {
       src: '/images/event-space/event-space-1.webp',
       title: 'Free Flex Space for Members',
       subtitle: 'Host workshops, meetings, and events in our stunning space',
-      alt: 'Event and flex space at Merritt Workspace - free for members until 4:30 PM'
+      alt: 'Event and flex space at Merritt Workspace - free for members until 4:30 PM',
+      blurDataURL: 'data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAACwAQCdASoKAAgABUB8JQBOgCHM6AgAAP0b+oExhej6AAAA'
     },
     {
       src: '/images/hero/conference-room.webp',
       title: 'First-Class Meeting Rooms',
       subtitle: '75" Smart TV and conference calling',
-      alt: 'Professional conference room at Merritt Workspace coworking space in Denver\'s Sloan\'s Lake neighborhood'
+      alt: 'Professional conference room at Merritt Workspace coworking space in Denver\'s Sloan\'s Lake neighborhood',
+      blurDataURL: 'data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAACQAQCdASoKAA0ABUB8JbACdACfUaAA/FNPQ67B1oLHaX7afp+zAAAA'
     },
     {
       src: '/images/hero/dedicated-desk.webp',
       title: 'Your Dedicated Workspace',
       subtitle: 'Distinctive burnt orange floors',
-      alt: 'Dedicated desk workspace at Merritt Workspace - affordable coworking in Sloan\'s Lake, Denver'
+      alt: 'Dedicated desk workspace at Merritt Workspace - affordable coworking in Sloan\'s Lake, Denver',
+      blurDataURL: 'data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAACwAQCdASoKAA0ABUB8JZACdADYt8AAAOD9JmNTjrhhjajRJ8jDWLTrgAA='
     },
     {
       src: '/images/hero/kitchen.webp',
       title: 'Full Kitchen Amenities',
       subtitle: 'Coffee, snacks, and more',
-      alt: 'Full kitchen with unlimited coffee and tea at Merritt Workspace coworking space in Denver'
+      alt: 'Full kitchen with unlimited coffee and tea at Merritt Workspace coworking space in Denver',
+      blurDataURL: 'data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAACQAQCdASoKAA0ABUB8JQAAPruLlAAA1oXxgWMqlm+0Lsqfz3O7gAAA'
     }
   ];
 
@@ -135,6 +141,8 @@ export default function ImprovedHomePage() {
                       alt={image.alt}
                       fill
                       priority={index === 0}
+                      placeholder="blur"
+                      blurDataURL={image.blurDataURL}
                       sizes="(max-width: 768px) 100vw, 50vw"
                       className={`${index === 0 ? 'object-contain bg-gray-900' : 'object-cover'}`}
                     />
@@ -266,6 +274,8 @@ export default function ImprovedHomePage() {
                 src="/images/event-space/event-space-1.webp"
                 alt="Event space with projector and flexible seating at Merritt Workspace in Sloan's Lake, Denver"
                 fill
+                placeholder="blur"
+                blurDataURL="data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAACwAQCdASoKAAgABUB8JQBOgCHM6AgAAP0b+oExhej6AAAA"
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
@@ -297,6 +307,8 @@ export default function ImprovedHomePage() {
                 src="/images/event-space/event-space-2.webp"
                 alt="Flexible meeting and event space at Merritt Workspace coworking in Sloan's Lake, Denver"
                 fill
+                placeholder="blur"
+                blurDataURL="data:image/webp;base64,UklGRiwAAABXRUJQVlA4ICAAAABwAQCdASoKAAgABUB8JYwCdAFAAAD+3oeen1/ECNBQAA=="
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
@@ -309,6 +321,8 @@ export default function ImprovedHomePage() {
                 src="/images/event-space/coffee-shop.webp"
                 alt="Coffee shop and casual meeting area at Merritt Workspace in Denver's West Side"
                 fill
+                placeholder="blur"
+                blurDataURL="data:image/webp;base64,UklGRjIAAABXRUJQVlA4ICYAAAAwAQCdASoKAAgABUB8JZQAA3AA/ukPySihXbdkw9nh0tWvbA4AAA=="
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 50vw"
               />

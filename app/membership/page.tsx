@@ -15,6 +15,7 @@ const membershipPlans = [
     capacity: '1 person',
     privacy: 'Shared Space',
     image: '/images/hero/dedicated-desk.webp',
+    blurDataURL: 'data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAACwAQCdASoKAA0ABUB8JZACdADYt8AAAOD9JmNTjrhhjajRJ8jDWLTrgAA=',
     color: 'burnt-orange',
     badge: 'Best Value',
     features: [
@@ -41,6 +42,7 @@ const membershipPlans = [
     capacity: '1 person',
     privacy: 'Private Office',
     image: '/images/private-offices/single.webp',
+    blurDataURL: 'data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAACQAQCdASoKAA0ABUB8JZQC7ABpDmAAj/vsp3SQ/qO4OdwA',
     color: 'blue',
     features: [
       'Private lockable office',
@@ -67,6 +69,7 @@ const membershipPlans = [
     capacity: '2 people',
     privacy: 'Private Office',
     image: '/images/private-offices/2-desk.webp',
+    blurDataURL: 'data:image/webp;base64,UklGRiwAAABXRUJQVlA4ICAAAABQAQCdASoKAA0AD8B8JQBdgCgAAP6/F7byZ3GAPAgAAA==',
     color: 'green',
     features: [
       'Private lockable office with 2 desks',
@@ -94,6 +97,7 @@ const membershipPlans = [
     capacity: '4-8 people',
     privacy: 'Private Office',
     image: '/images/private-offices/4-desk.webp',
+    blurDataURL: 'data:image/webp;base64,UklGRjAAAABXRUJQVlA4ICQAAABQAQCdASoKAA0ABUB8JQBOgAAAAOc8gv7uy41SNTE8bIfgAAA=',
     color: 'purple',
     features: [
       'Large private office (4-8 desks)',
@@ -232,6 +236,8 @@ export default function MembershipPage() {
                     src={plan.image}
                     alt={plan.name}
                     fill
+                    placeholder="blur"
+                    blurDataURL={plan.blurDataURL}
                     className="object-cover group-hover:scale-105 transition duration-300"
                   />
                   {plan.badge && (

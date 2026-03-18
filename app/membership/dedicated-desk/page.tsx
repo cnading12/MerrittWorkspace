@@ -209,6 +209,8 @@ export default function DedicatedDeskPage() {
                     src="/images/hero/dedicated-desk.webp"
                     alt="Dedicated desk workspace at Merritt Workspace coworking space in Sloan's Lake, Denver - $300/month"
                     fill
+                    placeholder="blur"
+                    blurDataURL="data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAACwAQCdASoKAA0ABUB8JZACdADYt8AAAOD9JmNTjrhhjajRJ8jDWLTrgAA="
                     priority
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
@@ -219,6 +221,8 @@ export default function DedicatedDeskPage() {
                     src="/images/hero/dedicated-desk2.webp"
                     alt="Private phone booths available to dedicated desk members at Merritt Workspace Denver"
                     fill
+                    placeholder="blur"
+                    blurDataURL="data:image/webp;base64,UklGRjgAAABXRUJQVlA4ICwAAADQAQCdASoKAA0ABUB8JbACdADzb+1ioAD8burtvIdt4s/VhXKBfhJKiewAAA=="
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                   />
@@ -271,6 +275,8 @@ export default function DedicatedDeskPage() {
                   src="/images/private-offices/phone-booth.webp"
                   alt="Private soundproof phone booths at Merritt Workspace coworking space in Denver"
                   fill
+                  placeholder="blur"
+                  blurDataURL="data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAACQAQCdASoKAA0ABUB8JYwC7ABV5SAA4HaeU5YMqltZnwAA"
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
                 />
