@@ -1,4 +1,5 @@
 import "./globals.css";
+import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import LocalBusinessSchema from "@/components/LocalBusinessSchema";
 import { Metadata } from "next";
@@ -98,6 +99,18 @@ export default function RootLayout({
     <html lang="en" className="ios-fix">
       <head>
         <LocalBusinessSchema />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-18009340460"
+          strategy="afterInteractive"
+        />
+        <Script id="google-gtag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-18009340460');
+          `}
+        </Script>
       </head>
       <body className="font-helvetica text-black bg-white">
         <Navbar />
