@@ -436,24 +436,6 @@ export async function sendOrderConfirmationEmail(data: {
 
         await delay(1000);
 
-        // Send copy to manager
-        const managerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
-            to: MANAGER_EMAIL,
-            subject: `[COPY] ${template.subject}`,
-            html: `
-        <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
-          <strong>📧 Customer Email Copy</strong><br>
-          <strong>Sent to:</strong> ${data.to}<br>
-          <strong>Customer:</strong> ${data.customerName}
-        </div>
-        ${template.html}
-      `,
-            text: `[CUSTOMER EMAIL COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\n\n${template.text}`,
-        });
-
-        await delay(1000);
-
         // Send copy to member services
         const memberServicesEmail = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
@@ -470,8 +452,8 @@ export async function sendOrderConfirmationEmail(data: {
             text: `[CUSTOMER EMAIL COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\n\n${template.text}`,
         });
 
-        console.log('Order confirmation email sent to customer, manager, and member services:', { customerEmail, managerEmail, memberServicesEmail });
-        return { customerEmail, managerEmail, memberServicesEmail };
+        console.log('Order confirmation email sent to customer and member services:', { customerEmail, memberServicesEmail });
+        return { customerEmail, memberServicesEmail };
     } catch (error) {
         console.error('Failed to send order confirmation email:', error);
         throw error;
@@ -498,26 +480,6 @@ export async function sendBookingConfirmationEmail(data: {
 
         await delay(1000);
 
-        // Send copy to manager
-        const managerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
-            to: MANAGER_EMAIL,
-            subject: `[COPY] ${template.subject}`,
-            html: `
-        <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
-          <strong>📅 Meeting Room Booking Copy</strong><br>
-          <strong>Sent to:</strong> ${data.to}<br>
-          <strong>Customer:</strong> ${data.customerName}<br>
-          <strong>Room:</strong> ${data.roomName}<br>
-          <strong>Date:</strong> ${data.booking.booking_date} at ${data.booking.start_time}
-        </div>
-        ${template.html}
-      `,
-            text: `[MEETING BOOKING COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\nRoom: ${data.roomName}\nDate: ${data.booking.booking_date} at ${data.booking.start_time}\n\n${template.text}`,
-        });
-
-        await delay(1000);
-
         // Send copy to member services
         const memberServicesEmail = await resend.emails.send({
             from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
@@ -536,8 +498,8 @@ export async function sendBookingConfirmationEmail(data: {
             text: `[MEETING BOOKING COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\nRoom: ${data.roomName}\nDate: ${data.booking.booking_date} at ${data.booking.start_time}\n\n${template.text}`,
         });
 
-        console.log('Booking confirmation email sent to customer, manager, and member services:', { customerEmail, managerEmail, memberServicesEmail });
-        return { customerEmail, managerEmail, memberServicesEmail };
+        console.log('Booking confirmation email sent to customer and member services:', { customerEmail, memberServicesEmail });
+        return { customerEmail, memberServicesEmail };
     } catch (error) {
         console.error('Failed to send booking confirmation email:', error);
         throw error;
@@ -692,30 +654,6 @@ export async function sendOrderStatusUpdate(data: {
 
         await delay(1000);
 
-        // Send copy to manager - UPDATED TO USE CENTRALIZED MANAGER EMAIL
-        const managerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
-            to: MANAGER_EMAIL,
-            subject: `[COPY] Order Update - ${data.orderNumber}`,
-            html: `
-        <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
-          <strong>📦 Order Status Update Copy</strong><br>
-          <strong>Sent to:</strong> ${data.to}<br>
-          <strong>Customer:</strong> ${data.customerName}<br>
-          <strong>Order:</strong> ${data.orderNumber}<br>
-          <strong>New Status:</strong> ${data.newStatus.replace('_', ' ').toUpperCase()}
-        </div>
-        <p>Hi ${data.customerName},</p>
-        <p>Your order <strong>${data.orderNumber}</strong> status has been updated:</p>
-        <p><strong>New Status:</strong> ${data.newStatus.replace('_', ' ').toUpperCase()}</p>
-        <p>${data.message || statusMessages[data.newStatus as keyof typeof statusMessages] || 'Your order status has been updated.'}</p>
-        <p>Thank you for using Merritt Workspace Snackshop!</p>
-      `,
-            text: `[ORDER STATUS UPDATE COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\nOrder: ${data.orderNumber}\nNew Status: ${data.newStatus.replace('_', ' ').toUpperCase()}\n\nHi ${data.customerName},\n\nYour order ${data.orderNumber} status has been updated to: ${data.newStatus.replace('_', ' ').toUpperCase()}\n\n${data.message || statusMessages[data.newStatus as keyof typeof statusMessages] || 'Your order status has been updated.'}\n\nThank you for using Merritt Workspace Snackshop!`
-        });
-
-        await delay(1000);
-
         // Send copy to member services
         const memberServicesEmail = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
@@ -738,8 +676,8 @@ export async function sendOrderStatusUpdate(data: {
             text: `[ORDER STATUS UPDATE COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\nOrder: ${data.orderNumber}\nNew Status: ${data.newStatus.replace('_', ' ').toUpperCase()}\n\nHi ${data.customerName},\n\nYour order ${data.orderNumber} status has been updated to: ${data.newStatus.replace('_', ' ').toUpperCase()}\n\n${data.message || statusMessages[data.newStatus as keyof typeof statusMessages] || 'Your order status has been updated.'}\n\nThank you for using Merritt Workspace Snackshop!`
         });
 
-        console.log('Order status update email sent to customer, manager, and member services:', { customerEmail, managerEmail, memberServicesEmail });
-        return { customerEmail, managerEmail, memberServicesEmail };
+        console.log('Order status update email sent to customer and member services:', { customerEmail, memberServicesEmail });
+        return { customerEmail, memberServicesEmail };
     } catch (error) {
         console.error('Failed to send order status update email:', error);
         throw error;
@@ -749,55 +687,6 @@ export async function sendOrderStatusUpdate(data: {
 // Admin notification emails (only to manager)
 export async function sendNewOrderNotification(order: Order, items: OrderItem[]) {
     try {
-        const result = await resend.emails.send({
-            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
-            to: MANAGER_EMAIL, // UPDATED TO USE CENTRALIZED MANAGER EMAIL
-            subject: `🛒 New Snackshop Order - ${order.order_number}`,
-            html: `
-        <div style="background: #fff8e1; padding: 15px; margin-bottom: 20px; border-radius: 5px; border-left: 4px solid #ed7611;">
-          <h2 style="margin-top: 0;">🛒 New Snackshop Order Received</h2>
-        </div>
-        
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-          <h3>Order Details:</h3>
-          <p><strong>Order Number:</strong> ${order.order_number}</p>
-          <p><strong>Customer:</strong> ${order.customer_name}</p>
-          <p><strong>Email:</strong> ${order.customer_email}</p>
-          <p><strong>Office/Desk:</strong> ${order.office_number}</p>
-          <p><strong>Total:</strong> ${order.total_amount.toFixed(2)}</p>
-          <p><strong>Payment Method:</strong> ${order.payment_method}</p>
-          ${order.delivery_notes ? `<p><strong>Delivery Notes:</strong> ${order.delivery_notes}</p>` : ''}
-        </div>
-        
-        <h3>Items to Prepare:</h3>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-          <thead>
-            <tr style="background: #f8f9fa;">
-              <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Item</th>
-              <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Qty</th>
-              <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${items.map(item => `
-              <tr>
-                <td style="padding: 10px; border: 1px solid #ddd;">${item.product_name}</td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${item.total_price.toFixed(2)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        
-        <div style="background: #e8f5e8; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745;">
-          <p style="margin: 0;"><strong>⏰ Action Required:</strong> Please prepare this order for delivery to <strong>${order.office_number}</strong> within 15 minutes.</p>
-        </div>
-      `,
-            text: `NEW SNACKSHOP ORDER: ${order.order_number}\n\nCustomer: ${order.customer_name}\nEmail: ${order.customer_email}\nOffice/Desk: ${order.office_number}\nTotal: ${order.total_amount.toFixed(2)}\nPayment: ${order.payment_method}\n${order.delivery_notes ? `Notes: ${order.delivery_notes}\n` : ''}\nItems to Prepare:\n${items.map(item => `- ${item.product_name} (Qty: ${item.quantity}) - ${item.total_price.toFixed(2)}`).join('\n')}\n\nACTION REQUIRED: Please prepare this order for delivery to ${order.office_number} within 15 minutes.`
-        });
-
-        await delay(1000);
-
         // Send to member services
         const memberServicesResult = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
@@ -846,8 +735,8 @@ export async function sendNewOrderNotification(order: Order, items: OrderItem[])
             text: `NEW SNACKSHOP ORDER: ${order.order_number}\n\nCustomer: ${order.customer_name}\nEmail: ${order.customer_email}\nOffice/Desk: ${order.office_number}\nTotal: ${order.total_amount.toFixed(2)}\nPayment: ${order.payment_method}\n${order.delivery_notes ? `Notes: ${order.delivery_notes}\n` : ''}\nItems to Prepare:\n${items.map(item => `- ${item.product_name} (Qty: ${item.quantity}) - ${item.total_price.toFixed(2)}`).join('\n')}\n\nACTION REQUIRED: Please prepare this order for delivery to ${order.office_number} within 15 minutes.`
         });
 
-        console.log('New order notification sent to manager and member services:', { result, memberServicesResult });
-        return { result, memberServicesResult };
+        console.log('New order notification sent to member services:', { memberServicesResult });
+        return { memberServicesResult };
     } catch (error) {
         console.error('Failed to send new order notification:', error);
         throw error;
@@ -1145,17 +1034,6 @@ export async function sendMemberBookingConfirmationEmail(data: {
 
         await delay(1000);
 
-        // Send notification to manager
-        const managerEmail = await resend.emails.send({
-            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
-            to: MANAGER_EMAIL,
-            subject: managerTemplate.subject,
-            html: managerTemplate.html,
-            text: managerTemplate.text,
-        });
-
-        await delay(1000);
-
         // Send notification to member services
         const memberServicesEmail = await resend.emails.send({
             from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
@@ -1165,8 +1043,8 @@ export async function sendMemberBookingConfirmationEmail(data: {
             text: managerTemplate.text,
         });
 
-        console.log('Booking confirmation emails sent:', { customerEmail, managerEmail, memberServicesEmail });
-        return { customerEmail, managerEmail, memberServicesEmail };
+        console.log('Booking confirmation emails sent:', { customerEmail, memberServicesEmail });
+        return { customerEmail, memberServicesEmail };
     } catch (error) {
         console.error('Failed to send booking confirmation emails:', error);
         throw error;
