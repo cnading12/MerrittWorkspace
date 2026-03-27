@@ -391,12 +391,17 @@ export default function MembershipApplicationPage() {
                 {membershipPlans.map((plan) => (
                   <div
                     key={plan.id}
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition ${application.membership_type === plan.id
+                    className={`border-2 rounded-lg p-4 cursor-pointer transition relative ${application.membership_type === plan.id
                         ? 'border-orange-500 bg-orange-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        : plan.id === 'dedicated_desk' ? 'border-green-400 hover:border-green-500' : 'border-gray-200 hover:border-gray-300'
                       }`}
                     onClick={() => setApplication(prev => ({ ...prev, membership_type: plan.id as any }))}
                   >
+                    {plan.id === 'dedicated_desk' && (
+                      <div className="absolute -top-3 left-4 bg-green-500 text-white px-3 py-0.5 rounded-full text-xs font-bold">
+                        LIMITED DEAL — $100/MO FOR LIFE
+                      </div>
+                    )}
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <h4 className="font-semibold text-gray-900">{plan.name}</h4>
@@ -404,8 +409,18 @@ export default function MembershipApplicationPage() {
                         <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{plan.category}</span>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-orange-600">${plan.price}</p>
-                        <p className="text-xs text-gray-500">/month</p>
+                        {plan.id === 'dedicated_desk' ? (
+                          <>
+                            <p className="text-sm text-gray-400 line-through">${plan.price}</p>
+                            <p className="text-2xl font-bold text-green-600">$100</p>
+                            <p className="text-xs text-gray-500">/month for life</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-2xl font-bold text-orange-600">${plan.price}</p>
+                            <p className="text-xs text-gray-500">/month</p>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -416,16 +431,26 @@ export default function MembershipApplicationPage() {
                         </div>
                       ))}
                     </div>
+                    {plan.id === 'dedicated_desk' && (
+                      <p className="text-xs text-green-700 font-medium mt-2">First 10 members only — Save $200/month off standard rate</p>
+                    )}
                   </div>
                 ))}
               </div>
 
               {selectedPlanDetails && (
-                <div className="mt-6 bg-orange-50 p-4 rounded-lg border border-orange-200">
-                  <h4 className="font-semibold text-orange-900 mb-2">Selected Plan: {selectedPlanDetails.name}</h4>
+                <div className={`mt-6 p-4 rounded-lg border ${selectedPlanDetails.id === 'dedicated_desk' ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'}`}>
+                  <h4 className={`font-semibold mb-2 ${selectedPlanDetails.id === 'dedicated_desk' ? 'text-green-900' : 'text-orange-900'}`}>Selected Plan: {selectedPlanDetails.name}</h4>
                   <div className="flex justify-between items-center">
-                    <span className="text-orange-700">{selectedPlanDetails.description}</span>
-                    <span className="text-xl font-bold text-orange-600">${selectedPlanDetails.price}/month</span>
+                    <span className={selectedPlanDetails.id === 'dedicated_desk' ? 'text-green-700' : 'text-orange-700'}>{selectedPlanDetails.description}</span>
+                    {selectedPlanDetails.id === 'dedicated_desk' ? (
+                      <div className="text-right">
+                        <span className="text-sm text-gray-400 line-through mr-2">${selectedPlanDetails.price}/mo</span>
+                        <span className="text-xl font-bold text-green-600">$100/month for life</span>
+                      </div>
+                    ) : (
+                      <span className="text-xl font-bold text-orange-600">${selectedPlanDetails.price}/month</span>
+                    )}
                   </div>
                 </div>
               )}
