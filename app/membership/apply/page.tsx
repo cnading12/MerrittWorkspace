@@ -59,7 +59,7 @@ const membershipPlans = [
   {
     id: 'dedicated_desk',
     name: 'Dedicated Desk',
-    price: 200,
+    price: 300,
     description: 'Your own workspace in our collaborative environment',
     category: 'Shared Workspace',
     features: ['24/7 access', 'High-speed WiFi', 'Printing access', 'Kitchen access', '2 meeting room hours/month']

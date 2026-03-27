@@ -72,7 +72,7 @@ export default function ImprovedHomePage() {
               {/* Promo Banner */}
               <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-bold mb-4 animate-pulse">
                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                First Month Free on Dedicated Desks—Limited Time
+                Dedicated Desks $100/Month for Life — First 10 Members Only
               </div>
 
               <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
@@ -365,10 +365,10 @@ export default function ImprovedHomePage() {
               <div className="relative bg-white rounded-2xl shadow-xl border-4 border-orange-500 overflow-hidden max-w-4xl mx-auto">
                 <div className="absolute top-6 right-6 flex flex-col gap-2 items-end">
                   <span className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold animate-pulse">
-                    FIRST MONTH FREE
+                    $100/MO FOR LIFE
                   </span>
                   <span className="bg-orange-500 text-white px-4 py-2 rounded-full text-sm font-bold">
-                    Best Value
+                    10 Spots Only
                   </span>
                 </div>
 
@@ -378,14 +378,14 @@ export default function ImprovedHomePage() {
                     <p className="text-gray-600 mb-6">Your own workspace in our collaborative Sloan's Lake coworking environment + free access to our beautiful flex space</p>
 
                     <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-2xl text-gray-400 line-through">$200</span>
-                      <span className="text-5xl font-bold text-green-600">$0</span>
-                      <span className="text-xl text-gray-500">first month</span>
+                      <span className="text-2xl text-gray-400 line-through">$300</span>
+                      <span className="text-5xl font-bold text-green-600">$100</span>
+                      <span className="text-xl text-gray-500">/month for life</span>
                     </div>
-                    <p className="text-gray-500 mb-6">Then $200/month</p>
+                    <p className="text-gray-500 mb-6">First 10 members only — Save $200/month off standard rate</p>
 
                     <Link href="/membership/dedicated-desk" className="inline-flex items-center justify-center w-full bg-orange-600 text-white px-6 py-4 rounded-lg font-semibold hover:bg-orange-700 transition">
-                      Claim Your Free Month
+                      Claim Your Spot — $100/Month
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Link>
                   </div>
