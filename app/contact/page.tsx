@@ -3,6 +3,7 @@
 import { MapPin, Phone, Mail, Clock, Calendar, MessageSquare, Building2, Car } from 'lucide-react';
 import Footer from "@/components/Footer";
 import { useState } from 'react';
+import { trackFormSubmission, trackPhoneClick, trackEmailClick } from '@/lib/gtag';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -40,6 +41,7 @@ export default function ContactPage() {
         throw new Error(result.error || 'Failed to send message.');
       }
 
+      trackFormSubmission();
       setSubmitted(true);
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again or call us at (303) 359-8337.');
@@ -69,11 +71,11 @@ export default function ContactPage() {
               We're here to help you find the perfect solution for your business needs.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="tel:303-359-8337" className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition inline-flex items-center justify-center gap-2">
+              <a href="tel:303-359-8337" onClick={trackPhoneClick} className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition inline-flex items-center justify-center gap-2">
                 <Phone className="w-5 h-5" />
                 Call Now: (303) 359-8337
               </a>
-              <a href="mailto:manager@merrittworkspace.net" className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition inline-flex items-center justify-center gap-2">
+              <a href="mailto:manager@merrittworkspace.net" onClick={trackEmailClick} className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition inline-flex items-center justify-center gap-2">
                 <Mail className="w-5 h-5" />
                 Email Us
               </a>
@@ -115,7 +117,7 @@ export default function ContactPage() {
                 <Phone className="w-6 h-6 text-burnt-orange-600" />
                 <div>
                   <h3 className="font-semibold text-gray-900">Phone</h3>
-                  <a href="tel:303-359-8337" className="text-burnt-orange-600 hover:underline">
+                  <a href="tel:303-359-8337" onClick={trackPhoneClick} className="text-burnt-orange-600 hover:underline">
                     (303) 359-8337
                   </a>
                 </div>
@@ -125,7 +127,7 @@ export default function ContactPage() {
                 <Mail className="w-6 h-6 text-burnt-orange-600" />
                 <div>
                   <h3 className="font-semibold text-gray-900">Email</h3>
-                  <a href="mailto:manager@merrittworkspace.net" className="text-burnt-orange-600 hover:underline">
+                  <a href="mailto:manager@merrittworkspace.net" onClick={trackEmailClick} className="text-burnt-orange-600 hover:underline">
                     manager@merrittworkspace.net
                   </a>
                 </div>
@@ -150,7 +152,7 @@ export default function ContactPage() {
                   <p className="text-gray-700 mb-3">
                     Experience our workspace with a complimentary tour and free trial day.
                   </p>
-                  <a href="tel:303-359-8337" className="bg-burnt-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-burnt-orange-700 transition inline-block">
+                  <a href="tel:303-359-8337" onClick={trackPhoneClick} className="bg-burnt-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-burnt-orange-700 transition inline-block">
                     Call to Schedule
                   </a>
                 </div>

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Menu, X, ChevronDown, Phone } from 'lucide-react';
+import { trackPhoneClick } from '@/lib/gtag';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -171,7 +172,7 @@ export default function Navbar() {
             </Link>
 
             {/* Phone Number */}
-            <a href="tel:3033598337" className="flex items-center gap-1 text-gray-700 hover:text-burnt-orange-600 transition">
+            <a href="tel:3033598337" onClick={trackPhoneClick} className="flex items-center gap-1 text-gray-700 hover:text-burnt-orange-600 transition">
               <Phone className="w-4 h-4" />
               <span className="hidden lg:inline">(303) 359-8337</span>
             </a>
@@ -294,6 +295,7 @@ export default function Navbar() {
               {/* Mobile Phone Number */}
               <a
                 href="tel:3033598337"
+                onClick={trackPhoneClick}
                 className="flex items-center gap-2 text-burnt-orange-600 font-semibold py-2"
               >
                 <Phone className="w-5 h-5" />
