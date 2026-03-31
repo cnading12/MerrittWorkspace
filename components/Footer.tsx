@@ -1,4 +1,7 @@
+"use client";
+
 import Link from 'next/link';
+import { trackPhoneClick, trackEmailClick } from '@/lib/gtag';
 
 export default function Footer() {
   return (
@@ -25,12 +28,12 @@ export default function Footer() {
               <p>Denver, CO</p>
               <p className="text-burnt-orange-300">3 minutes to I-25</p>
               <p className="mt-4">
-                <a href="tel:+3033598337" className="hover:text-white transition">
+                <a href="tel:+3033598337" onClick={trackPhoneClick} className="hover:text-white transition">
                   (303) 359-8337
                 </a>
               </p>
               <p>
-                <a href="mailto:manager@merrittworkspace.net" className="hover:text-white transition">
+                <a href="mailto:manager@merrittworkspace.net" onClick={trackEmailClick} className="hover:text-white transition">
                   manager@merrittworkspace.net
                 </a>
               </p>
