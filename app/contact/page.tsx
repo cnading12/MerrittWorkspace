@@ -189,23 +189,6 @@ export default function ContactPage() {
               </div>
             </div>
 
-            {/* Quick Links */}
-            <div className="mt-8 p-6 bg-burnt-orange-50 rounded-xl border border-burnt-orange-200">
-              <h3 className="font-semibold text-burnt-orange-900 mb-4">Quick Actions</h3>
-              <div className="space-y-2">
-                <a href="/membership" className="block text-burnt-orange-700 hover:text-burnt-orange-900 hover:underline">
-                  → Apply for Membership
-                </a>
-                <a href="/meeting-rooms" className="block text-burnt-orange-700 hover:text-burnt-orange-900 hover:underline">
-                  → Book a Meeting Room
-                </a>
-                <a href="/snackshop" className="block text-burnt-orange-700 hover:text-burnt-orange-900 hover:underline">
-                  → Order from Snackshop
-                </a>
-                <a href="https://maps.google.com/?q=2246+Irving+Street,+Denver,+CO+80211" target="_blank" className="block text-burnt-orange-700 hover:text-burnt-orange-900 hover:underline">
-                  → Get Directions
-                </a>
-              </div>
             </div>
           </div>
 
@@ -368,6 +351,25 @@ export default function ContactPage() {
                   </button>
                 </form>
               )}
+            </div>
+
+            {/* Quick Links */}
+            <div className="mt-6 p-6 bg-burnt-orange-50 rounded-xl border border-burnt-orange-200">
+              <h3 className="font-semibold text-burnt-orange-900 mb-4">Quick Actions</h3>
+              <div className="space-y-2">
+                <a href="/membership" className="block text-burnt-orange-700 hover:text-burnt-orange-900 hover:underline">
+                  → Apply for Membership
+                </a>
+                <a href="/meeting-rooms" className="block text-burnt-orange-700 hover:text-burnt-orange-900 hover:underline">
+                  → Book a Meeting Room
+                </a>
+                <a href="/snackshop" className="block text-burnt-orange-700 hover:text-burnt-orange-900 hover:underline">
+                  → Order from Snackshop
+                </a>
+                <a href="https://maps.google.com/?q=2246+Irving+Street,+Denver,+CO+80211" target="_blank" className="block text-burnt-orange-700 hover:text-burnt-orange-900 hover:underline">
+                  → Get Directions
+                </a>
+              </div>
             </div>
           </div>
         </div>
