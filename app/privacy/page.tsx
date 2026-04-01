@@ -359,8 +359,8 @@ export default function PrivacyPolicyPage() {
                   </p>
                   <p>
                     <strong>Phone:</strong>{' '}
-                    <a href="tel:303-359-8337" className="text-blue-600 hover:underline">
-                      (303) 359-8337
+                    <a href="tel:720-357-9499" className="text-blue-600 hover:underline">
+                      (720) 357-9499
                     </a>
                   </p>
                 </div>

@@ -28,8 +28,8 @@ export default function Footer() {
               <p>Denver, CO</p>
               <p className="text-burnt-orange-300">3 minutes to I-25</p>
               <p className="mt-4">
-                <a href="tel:+3033598337" onClick={trackPhoneClick} className="hover:text-white transition">
-                  (303) 359-8337
+                <a href="tel:+17203579499" onClick={trackPhoneClick} className="hover:text-white transition">
+                  (720) 357-9499
                 </a>
               </p>
               <p>

@@ -13,7 +13,7 @@ export default function LocalBusinessSchema() {
       "https://merrittworkspace.net/images/hero/dedicated-desk.jpg",
       "https://merrittworkspace.net/images/private-offices/single.png"
     ],
-    "telephone": "+1-303-359-8337",
+    "telephone": "+1-720-357-9499",
     "email": "manager@merrittworkspace.net",
     "address": {
       "@type": "PostalAddress",

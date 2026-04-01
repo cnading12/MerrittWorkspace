@@ -2,7 +2,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Contact & Location | Coworking Space Sloan's Lake Denver",
-  description: "Visit Merritt Workspace at 2246 Irving St, Denver CO 80211. Schedule a free tour of our Sloan's Lake coworking space. Call (303) 359-8337. 3 minutes to I-25, free parking.",
+  description: "Visit Merritt Workspace at 2246 Irving St, Denver CO 80211. Schedule a free tour of our Sloan's Lake coworking space. Call (720) 357-9499. 3 minutes to I-25, free parking.",
   keywords: [
     "coworking space Sloan's Lake",
     "office space 80211",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Contact & Location | Merritt Workspace Denver",
-    description: "2246 Irving St, Sloan's Lake, Denver. Schedule a free tour and trial day. Call (303) 359-8337. 3 min to I-25, free parking available.",
+    description: "2246 Irving St, Sloan's Lake, Denver. Schedule a free tour and trial day. Call (720) 357-9499. 3 min to I-25, free parking available.",
     url: "https://merrittworkspace.net/contact",
     images: [
       {

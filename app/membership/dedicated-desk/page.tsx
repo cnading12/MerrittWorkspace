@@ -123,10 +123,10 @@ export default function DedicatedDeskPage() {
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <a
-                href="tel:3033598337"
+                href="tel:7203579499"
                 className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center border-2 border-burnt-orange-600"
               >
-                Call or Text: (303) 359-8337
+                Call or Text: (720) 357-9499
               </a>
             </div>
           </div>
@@ -415,7 +415,7 @@ export default function DedicatedDeskPage() {
             <ArrowRight className="w-5 h-5" />
           </Link>
           <p className="text-burnt-orange-200 mt-6">
-            Questions? Call or text <a href="tel:3033598337" className="text-white hover:underline font-semibold">(303) 359-8337</a>
+            Questions? Call or text <a href="tel:7203579499" className="text-white hover:underline font-semibold">(720) 357-9499</a>
           </p>
         </div>
       </section>

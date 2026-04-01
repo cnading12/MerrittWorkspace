@@ -125,7 +125,7 @@ function MemberBookingSuccessContent() {
               Back to Meeting Rooms
             </Link>
             <p className="text-sm text-gray-500">
-              Need help? <Link href="/contact" className="text-orange-600 hover:underline font-medium">Contact Support</Link> or call <a href="tel:(303)359-8337" className="text-orange-600 hover:underline font-medium">(303) 359-8337</a>
+              Need help? <Link href="/contact" className="text-orange-600 hover:underline font-medium">Contact Support</Link> or call <a href="tel:(720)357-9499" className="text-orange-600 hover:underline font-medium">(720) 357-9499</a>
             </p>
           </div>
         </div>
@@ -426,7 +426,7 @@ function MemberBookingSuccessContent() {
               <strong>Questions about your booking?</strong>
             </p>
             <p className="text-gray-600">
-              Call us at <a href="tel:(303)359-8337" className="text-orange-600 hover:underline font-bold">(303) 359-8337</a> or 
+              Call us at <a href="tel:(720)357-9499" className="text-orange-600 hover:underline font-bold">(720) 357-9499</a> or
               email <a href="mailto:support@merritthouse.net" className="text-orange-600 hover:underline font-bold">support@merritthouse.net</a>
             </p>
             <p className="text-sm text-gray-500 mt-2">We're here to help make your meeting successful!</p>

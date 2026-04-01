@@ -122,7 +122,7 @@ export default function ImprovedHomePage() {
               {/* Phone Number */}
               <div className="flex items-center gap-2 text-gray-700">
                 <Phone className="w-5 h-5 text-orange-600" />
-                <a href="tel:3033598337" className="font-semibold hover:text-orange-600 transition">(303) 359-8337</a>
+                <a href="tel:7203579499" className="font-semibold hover:text-orange-600 transition">(720) 357-9499</a>
                 <span className="text-gray-400">— Call or text anytime</span>
               </div>
             </div>
@@ -549,7 +549,7 @@ export default function ImprovedHomePage() {
           </p>
           <p className="text-lg text-gray-400 mb-8">
             <Phone className="w-4 h-4 inline mr-2" />
-            Call or text: <a href="tel:3033598337" className="text-orange-400 hover:text-orange-300">(303) 359-8337</a>
+            Call or text: <a href="tel:7203579499" className="text-orange-400 hover:text-orange-300">(720) 357-9499</a>
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/membership/dedicated-desk" className="inline-flex items-center justify-center bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg">
