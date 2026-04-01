@@ -325,8 +325,8 @@ export default function TermsOfServicePage() {
               </p>
               <p>
                 <strong>Phone:</strong>{' '}
-                <a href="tel:303-359-8337" className="text-orange-600 hover:underline">
-                  (303) 359-8337
+                <a href="tel:720-357-9499" className="text-orange-600 hover:underline">
+                  (720) 357-9499
                 </a>
               </p>
             </div>

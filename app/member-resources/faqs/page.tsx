@@ -344,14 +344,14 @@ export default function FAQPage() {
               <div className="space-y-2 text-burnt-orange-700">
                 <div className="flex items-center">
                   <Mail className="w-4 h-4 mr-2" />
-                  <a href="mailto:manager@merrittworkspace.com" className="hover:underline">
-                    manager@merrittworkspace.com
+                  <a href="mailto:manager@merrittworkspace.net" className="hover:underline">
+                    manager@merrittworkspace.net
                   </a>
                 </div>
                 <div className="flex items-center">
                   <Phone className="w-4 h-4 mr-2" />
-                  <a href="tel:303-359-8337" className="hover:underline">
-                    (303) 359-8337
+                  <a href="tel:720-357-9499" className="hover:underline">
+                    (720) 357-9499
                   </a>
                 </div>
               </div>
@@ -393,11 +393,11 @@ export default function FAQPage() {
               Can't find what you're looking for? We're here to help!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="mailto:manager@merrittworkspace.com" className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition">
+              <a href="mailto:manager@merrittworkspace.net" className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition">
                 Email Us
               </a>
-              <a href="tel:303-359-8337" className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition">
-                Call: (303) 359-8337
+              <a href="tel:720-357-9499" className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition">
+                Call: (720) 357-9499
               </a>
             </div>
           </div>
@@ -489,7 +489,7 @@ export default function FAQPage() {
               <h3 className="text-lg font-semibold mb-2">Email Support</h3>
               <p className="text-gray-600 mb-4">Get detailed answers to your questions</p>
               <a
-                href="mailto:manager@merrittworkspace.com"
+                href="mailto:manager@merrittworkspace.net"
                 className="bg-burnt-orange-600 text-white px-6 py-2 rounded-lg hover:bg-burnt-orange-700 transition inline-block"
               >
                 Send Email
@@ -500,7 +500,7 @@ export default function FAQPage() {
               <h3 className="text-lg font-semibold mb-2">Phone Support</h3>
               <p className="text-gray-600 mb-4">Speak directly with our team</p>
               <a
-                href="tel:303-359-8337"
+                href="tel:720-357-9499"
                 className="bg-burnt-orange-600 text-white px-6 py-2 rounded-lg hover:bg-burnt-orange-700 transition inline-block"
               >
                 Call Now

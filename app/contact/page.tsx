@@ -44,7 +44,7 @@ export default function ContactPage() {
       trackFormSubmission();
       setSubmitted(true);
     } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again or call us at (303) 359-8337.');
+      setError(err.message || 'Something went wrong. Please try again or call us at (720) 357-9499.');
     } finally {
       setSubmitting(false);
     }
@@ -71,9 +71,9 @@ export default function ContactPage() {
               We're here to help you find the perfect solution for your business needs.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="tel:303-359-8337" onClick={trackPhoneClick} className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition inline-flex items-center justify-center gap-2">
+              <a href="tel:720-357-9499" onClick={trackPhoneClick} className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition inline-flex items-center justify-center gap-2">
                 <Phone className="w-5 h-5" />
-                Call Now: (303) 359-8337
+                Call Now: (720) 357-9499
               </a>
               <a href="mailto:manager@merrittworkspace.net" onClick={trackEmailClick} className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition inline-flex items-center justify-center gap-2">
                 <Mail className="w-5 h-5" />
@@ -111,25 +111,55 @@ export default function ContactPage() {
               </div>
             </div>
 
-            {/* Contact Methods */}
+            {/* Contact Methods - Two Roles */}
             <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Phone className="w-6 h-6 text-burnt-orange-600" />
-                <div>
-                  <h3 className="font-semibold text-gray-900">Phone</h3>
-                  <a href="tel:303-359-8337" onClick={trackPhoneClick} className="text-burnt-orange-600 hover:underline">
-                    (303) 359-8337
-                  </a>
+              {/* Manager - New Members */}
+              <div className="p-6 bg-white rounded-xl shadow-sm border border-burnt-orange-200">
+                <div className="flex items-start gap-4">
+                  <Building2 className="w-6 h-6 text-burnt-orange-600 mt-1 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">New Members & Tours</h3>
+                    <p className="text-sm text-gray-500 mb-3">Interested in joining? Schedule a tour or ask about membership.</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-burnt-orange-600" />
+                        <a href="tel:720-357-9499" onClick={trackPhoneClick} className="text-burnt-orange-600 hover:underline">
+                          (720) 357-9499
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-burnt-orange-600" />
+                        <a href="mailto:manager@merrittworkspace.net" onClick={trackEmailClick} className="text-burnt-orange-600 hover:underline">
+                          manager@merrittworkspace.net
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <Mail className="w-6 h-6 text-burnt-orange-600" />
-                <div>
-                  <h3 className="font-semibold text-gray-900">Email</h3>
-                  <a href="mailto:manager@merrittworkspace.net" onClick={trackEmailClick} className="text-burnt-orange-600 hover:underline">
-                    manager@merrittworkspace.net
-                  </a>
+              {/* Member Services - Existing Members */}
+              <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="flex items-start gap-4">
+                  <MessageSquare className="w-6 h-6 text-burnt-orange-600 mt-1 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Member Services</h3>
+                    <p className="text-sm text-gray-500 mb-3">Already a member? Reach out for day-to-day support and inquiries.</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-burnt-orange-600" />
+                        <a href="tel:303-359-8337" onClick={trackPhoneClick} className="text-burnt-orange-600 hover:underline">
+                          (303) 359-8337
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-burnt-orange-600" />
+                        <a href="mailto:memberservices@merrittworkspace.net" onClick={trackEmailClick} className="text-burnt-orange-600 hover:underline">
+                          memberservices@merrittworkspace.net
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -152,7 +182,7 @@ export default function ContactPage() {
                   <p className="text-gray-700 mb-3">
                     Experience our workspace with a complimentary tour and free trial day.
                   </p>
-                  <a href="tel:303-359-8337" onClick={trackPhoneClick} className="bg-burnt-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-burnt-orange-700 transition inline-block">
+                  <a href="tel:720-357-9499" onClick={trackPhoneClick} className="bg-burnt-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-burnt-orange-700 transition inline-block">
                     Call to Schedule
                   </a>
                 </div>

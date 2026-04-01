@@ -172,9 +172,9 @@ export default function Navbar() {
             </Link>
 
             {/* Phone Number */}
-            <a href="tel:3033598337" onClick={trackPhoneClick} className="flex items-center gap-1 text-gray-700 hover:text-burnt-orange-600 transition">
+            <a href="tel:7203579499" onClick={trackPhoneClick} className="flex items-center gap-1 text-gray-700 hover:text-burnt-orange-600 transition">
               <Phone className="w-4 h-4" />
-              <span className="hidden lg:inline">(303) 359-8337</span>
+              <span className="hidden lg:inline">(720) 357-9499</span>
             </a>
 
             {/* Apply Today Button */}
@@ -294,12 +294,12 @@ export default function Navbar() {
 
               {/* Mobile Phone Number */}
               <a
-                href="tel:3033598337"
+                href="tel:7203579499"
                 onClick={trackPhoneClick}
                 className="flex items-center gap-2 text-burnt-orange-600 font-semibold py-2"
               >
                 <Phone className="w-5 h-5" />
-                (303) 359-8337
+                (720) 357-9499
               </a>
 
               {/* Mobile Apply Today Button */}
