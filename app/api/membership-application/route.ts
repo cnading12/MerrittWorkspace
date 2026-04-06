@@ -52,6 +52,24 @@ export async function POST(request: NextRequest) {
     const applicationId = `APP-${Date.now()}`;
     const submittedAt = new Date();
 
+    // Persist to member_applications so the admin panel can review it.
+    try {
+      const { getServiceSupabase } = await import('@/lib/portal/supabaseAdmin');
+      await getServiceSupabase().from('member_applications').insert({
+        email: applicationData.email,
+        first_name: applicationData.first_name,
+        last_name: applicationData.last_name,
+        phone: applicationData.phone,
+        company_name: applicationData.company_name,
+        membership_type: applicationData.membership_type,
+        start_date: applicationData.start_date,
+        payload: applicationData,
+      });
+    } catch (e) {
+      console.error('Failed to persist application:', e);
+      // Non-fatal — emails still go out below.
+    }
+
     // Check if Resend API key is configured
     if (!process.env.RESEND_API_KEY) {
       console.error('❌ RESEND_API_KEY not configured');
