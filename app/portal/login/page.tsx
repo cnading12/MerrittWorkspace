@@ -40,14 +40,14 @@ export default function PortalLoginPage() {
       setError(error.message);
       return;
     }
-    setInfo('Check your email for a sign-in link. After clicking it you can set (or reset) your password.');
+    setInfo('Check your email for a password reset link.');
   }
 
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow p-8">
       <h1 className="text-2xl font-semibold text-gray-900 mb-2">Member sign in</h1>
       <p className="text-sm text-gray-500 mb-6">
-        New member? Use the email link option below to receive your first-time sign-in link.
+        Sign in with your email and password. Forgot your password? Use the reset option below.
       </p>
 
       <form onSubmit={handleSignIn} className="space-y-4">
@@ -85,7 +85,7 @@ export default function PortalLoginPage() {
           disabled={loading || !email}
           className="w-full border py-2 rounded hover:bg-gray-50 disabled:opacity-50"
         >
-          Email me a sign-in link
+          Forgot password? Email me a reset link
         </button>
       </form>
     </div>

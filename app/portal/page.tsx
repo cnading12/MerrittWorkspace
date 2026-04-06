@@ -80,20 +80,10 @@ export default function PortalDashboard() {
               ` · $${(member.monthly_cost_cents / 100).toFixed(2)}/mo`}
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <a
-            href="/portal/set-password"
-            className="text-sm text-gray-700 hover:text-gray-900 underline"
-          >
-            Set / change password
-          </a>
-          <button onClick={signOut} className="text-sm text-gray-500 hover:text-gray-900">
-            Sign out
-          </button>
-        </div>
+        <button onClick={signOut} className="text-sm text-gray-500 hover:text-gray-900">
+          Sign out
+        </button>
       </div>
-
-      <PasswordReminder />
 
       <ProgressBar member={member} />
 
@@ -132,54 +122,6 @@ export default function PortalDashboard() {
           setAccessRequestStatus={setAccessRequestStatus}
         />
       )}
-    </div>
-  );
-}
-
-function PasswordReminder() {
-  // Supabase stores a boolean on the user's app_metadata-ish object:
-  // user.identities contains a 'password' provider once a password is set.
-  // If it doesn't, we nudge the user to set one so they can sign in again
-  // later without needing a new magic-link email every time.
-  const [needsPassword, setNeedsPassword] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      const identities = data.user?.identities ?? [];
-      const hasPassword = identities.some((i) => i.provider === 'email');
-      // If the user has an "email" identity AND has ever set a password,
-      // Supabase marks it via `last_sign_in_at` on that identity. As a
-      // conservative heuristic, treat missing email identity as "no password".
-      if (!hasPassword) setNeedsPassword(true);
-    })();
-  }, []);
-
-  if (!needsPassword || dismissed) return null;
-  return (
-    <div className="bg-amber-50 border border-amber-200 rounded p-4 flex items-start justify-between gap-4">
-      <div>
-        <p className="text-sm font-medium text-amber-900">Set a password for future sign-ins</p>
-        <p className="text-sm text-amber-800">
-          You&apos;re signed in with a one-time email link. Set a password now so you can sign in
-          directly next time instead of waiting for another email.
-        </p>
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <a
-          href="/portal/set-password"
-          className="bg-amber-600 text-white text-sm px-3 py-1.5 rounded hover:bg-amber-700"
-        >
-          Set password
-        </a>
-        <button
-          onClick={() => setDismissed(true)}
-          className="text-amber-800 text-sm hover:text-amber-900"
-        >
-          Dismiss
-        </button>
-      </div>
     </div>
   );
 }
