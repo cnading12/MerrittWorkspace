@@ -323,6 +323,33 @@ function DocumentsTab({
 function PaymentsTab({ member, payments }: { member: Member; payments: PaymentHistoryRow[] }) {
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const cancelPending = member.subscription_status === 'cancel_at_period_end';
+
+  async function cancelMembership() {
+    const ok = window.confirm(
+      'Cancel your membership? Your access will continue through the end of the current billing period, then your subscription will end. This cannot be undone from the portal — contact us to reactivate.'
+    );
+    if (!ok) return;
+    setCancelLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await fetch('/api/portal/cancel-subscription', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to cancel');
+      }
+      window.location.reload();
+    } catch (e: any) {
+      alert(e.message);
+      setCancelLoading(false);
+    }
+  }
+
   const canSetUp =
     member.agreement_signed && member.monthly_cost_cents != null && !member.stripe_subscription_id;
 
@@ -391,13 +418,29 @@ function PaymentsTab({ member, payments }: { member: Member; payments: PaymentHi
             <div className="text-sm text-green-700">
               ✓ Auto-pay is set up. Status: {member.subscription_status || 'active'}
             </div>
-            <button
-              onClick={openBillingPortal}
-              disabled={portalLoading}
-              className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
-            >
-              {portalLoading ? 'Opening…' : 'Manage payment method'}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={openBillingPortal}
+                disabled={portalLoading}
+                className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
+              >
+                {portalLoading ? 'Opening…' : 'Manage payment method'}
+              </button>
+              {!cancelPending && (
+                <button
+                  onClick={cancelMembership}
+                  disabled={cancelLoading}
+                  className="text-sm border border-red-300 text-red-700 rounded px-3 py-1.5 hover:bg-red-50 disabled:opacity-50"
+                >
+                  {cancelLoading ? 'Cancelling…' : 'Cancel membership'}
+                </button>
+              )}
+            </div>
+            {cancelPending && (
+              <p className="text-xs text-amber-700">
+                Your membership is set to end at the end of the current billing period.
+              </p>
+            )}
           </div>
         ) : (
           <button
