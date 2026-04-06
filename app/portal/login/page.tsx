@@ -33,14 +33,14 @@ export default function PortalLoginPage() {
     setInfo(null);
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/portal` },
+      options: { emailRedirectTo: `${window.location.origin}/portal/set-password` },
     });
     setLoading(false);
     if (error) {
       setError(error.message);
       return;
     }
-    setInfo('Check your email for a sign-in link. You can set a password after signing in.');
+    setInfo('Check your email for a sign-in link. After clicking it you can set (or reset) your password.');
   }
 
   return (
