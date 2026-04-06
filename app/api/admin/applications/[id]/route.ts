@@ -49,7 +49,7 @@ export async function POST(
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const { data: invite, error: inviteErr } = await sb.auth.admin.inviteUserByEmail(
       app.email,
-      { redirectTo: `${baseUrl}/portal` }
+      { redirectTo: `${baseUrl}/portal/set-password` }
     );
     if (inviteErr && !inviteErr.message.toLowerCase().includes('already')) {
       return NextResponse.json({ error: inviteErr.message }, { status: 500 });
