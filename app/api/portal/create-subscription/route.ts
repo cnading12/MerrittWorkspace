@@ -40,8 +40,18 @@ export async function POST(req: NextRequest) {
         .eq('id', member.id);
     }
 
-    // Compute proration for first charge: charge today for the rest of this
-    // month, then bill on the 1st of each subsequent month.
+    // Billing logic:
+    //   - We anchor the monthly cycle to the 1st of next month at 12:00 UTC
+    //     (subscription_data.billing_cycle_anchor below).
+    //   - Because the anchor is in the FUTURE relative to subscription
+    //     creation and we set `proration_behavior: 'create_prorations'`,
+    //     Stripe will charge a prorated amount immediately covering the
+    //     period from today through (1st of next month - 1 day), then
+    //     charge the full monthly amount on the 1st of each subsequent
+    //     month. This matches "charged on first of month (prorated)".
+    //   - We also compute the prorated cents locally so we can stash it
+    //     in session metadata for our own bookkeeping/email receipts.
+    //     Stripe is the source of truth for the actual charge amount.
     const now = new Date();
     const year = now.getUTCFullYear();
     const month = now.getUTCMonth();
@@ -52,7 +62,8 @@ export async function POST(req: NextRequest) {
       (member.monthly_cost_cents * remaining) / daysInMonth
     );
 
-    // Anchor billing to the 1st of next month (UTC).
+    // Anchor billing to the 1st of next month (UTC). Date.UTC handles
+    // December → January rollover (month + 1 === 12 becomes Jan of year+1).
     const anchor = Math.floor(Date.UTC(year, month + 1, 1, 12, 0, 0) / 1000);
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';

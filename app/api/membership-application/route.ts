@@ -53,17 +53,30 @@ export async function POST(request: NextRequest) {
     const submittedAt = new Date();
 
     // Persist to member_applications so the admin panel can review it.
+    // Core fields land in dedicated columns; everything else (credit
+    // references, prior lease, emergency contact, etc.) goes into the
+    // `payload` JSON catch-all so the admin detail view can still see it.
     try {
       const { getServiceSupabase } = await import('@/lib/portal/supabaseAdmin');
+      const {
+        email,
+        first_name,
+        last_name,
+        phone,
+        company_name,
+        membership_type,
+        start_date,
+        ...extraPayload
+      } = applicationData;
       await getServiceSupabase().from('member_applications').insert({
-        email: applicationData.email,
-        first_name: applicationData.first_name,
-        last_name: applicationData.last_name,
-        phone: applicationData.phone,
-        company_name: applicationData.company_name,
-        membership_type: applicationData.membership_type,
-        start_date: applicationData.start_date,
-        payload: applicationData,
+        email,
+        first_name,
+        last_name,
+        phone,
+        company_name,
+        membership_type,
+        start_date,
+        payload: extraPayload,
       });
     } catch (e) {
       console.error('Failed to persist application:', e);
