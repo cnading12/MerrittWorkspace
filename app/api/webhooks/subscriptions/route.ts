@@ -53,13 +53,14 @@ export async function POST(req: NextRequest) {
         const sub = event.data.object as Stripe.Subscription;
         const memberId = sub.metadata?.member_id;
         if (!memberId) break;
+        const cpe = (sub as any).current_period_end as number | undefined;
         await sb
           .from('members')
           .update({
             stripe_subscription_id: sub.id,
             subscription_status: sub.status,
-            next_charge_date: sub.current_period_end
-              ? new Date(sub.current_period_end * 1000).toISOString().slice(0, 10)
+            next_charge_date: cpe
+              ? new Date(cpe * 1000).toISOString().slice(0, 10)
               : null,
           })
           .eq('id', memberId);

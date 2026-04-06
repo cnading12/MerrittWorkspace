@@ -1,10 +1,10 @@
 // Server-only Supabase client using the service role key.
 // NEVER import this from client components.
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-let cached: ReturnType<typeof createClient> | null = null;
+let cached: SupabaseClient<any, any, any> | null = null;
 
-export function getServiceSupabase() {
+export function getServiceSupabase(): SupabaseClient<any, any, any> {
   if (cached) return cached;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
