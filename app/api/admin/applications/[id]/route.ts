@@ -45,21 +45,41 @@ export async function POST(
     }
 
     // Approve flow
-    // 1. Invite the user via Supabase Auth (creates auth.users row + sends email).
+    // 1. Ensure an auth.users row exists for this email. We use createUser
+    //    (instead of inviteUserByEmail) so Supabase's built-in SMTP — which
+    //    is rate-limited to a handful of messages per hour — is never used.
+    //    We send the invite ourselves below via Resend.
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const { data: invite, error: inviteErr } = await sb.auth.admin.inviteUserByEmail(
-      app.email,
-      { redirectTo: `${baseUrl}/portal/set-password` }
-    );
-    if (inviteErr && !inviteErr.message.toLowerCase().includes('already')) {
-      return NextResponse.json({ error: inviteErr.message }, { status: 500 });
-    }
+    const redirectTo = `${baseUrl}/portal/set-password`;
 
-    // 2. Look up the auth user (existing or just-invited).
-    let userId = invite?.user?.id || null;
+    let userId: string | null = null;
+    const { data: created, error: createErr } = await sb.auth.admin.createUser({
+      email: app.email,
+      email_confirm: true,
+    });
+    if (created?.user?.id) {
+      userId = created.user.id;
+    } else if (createErr && !createErr.message.toLowerCase().includes('already')) {
+      return NextResponse.json({ error: createErr.message }, { status: 500 });
+    }
     if (!userId) {
       const { data: list } = await sb.auth.admin.listUsers();
       userId = list.users.find((u) => u.email === app.email)?.id || null;
+    }
+
+    // 2. Generate a one-time sign-in link without triggering Supabase's mailer.
+    //    `type: 'magiclink'` works for existing users and avoids the invite
+    //    email being sent by Supabase directly.
+    let actionLink: string | null = null;
+    const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
+      type: 'magiclink',
+      email: app.email,
+      options: { redirectTo },
+    });
+    if (linkErr) {
+      console.error('generateLink error', linkErr);
+    } else {
+      actionLink = linkData?.properties?.action_link ?? null;
     }
 
     // 3. Create or update the member row.
@@ -100,7 +120,7 @@ export async function POST(
       const resend = new Resend(process.env.RESEND_API_KEY);
       const tpl = membershipApprovedEmail({
         firstName: app.first_name,
-        portalUrl: `${baseUrl}/portal/login`,
+        portalUrl: actionLink || `${baseUrl}/portal/login`,
       });
       await resend.emails
         .send({
