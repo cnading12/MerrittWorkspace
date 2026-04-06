@@ -3,13 +3,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, ChevronDown, Phone } from 'lucide-react';
+import { Menu, X, ChevronDown, Phone, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { trackPhoneClick } from '@/lib/gtag';
+import { supabase } from '@/lib/supabase';
 
 export default function Navbar() {
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
 
@@ -32,6 +37,30 @@ export default function Navbar() {
     lastScrollY.current = currentScrollY;
     ticking.current = false;
   }, []);
+
+  // Track Supabase auth state
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setUserEmail(data.session?.user?.email ?? null);
+      setAuthLoaded(true);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email ?? null);
+      setAuthLoaded(true);
+    });
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    closeAllMenus();
+    router.push('/');
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -177,21 +206,58 @@ export default function Navbar() {
               <span className="hidden lg:inline">(720) 357-9499</span>
             </a>
 
-            {/* Member Login Button */}
-            <Link
-              href="/portal/login"
-              className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-5 py-1.5 rounded-lg font-semibold hover:bg-burnt-orange-50 transition"
-            >
-              Member Login
-            </Link>
+            {/* Auth-aware actions */}
+            {authLoaded && userEmail ? (
+              <div className="relative">
+                <button
+                  onClick={(e) => handleDropdownClick(e, 'account')}
+                  className="flex items-center gap-2 bg-burnt-orange-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-burnt-orange-700 transition shadow-md"
+                  data-dropdown="account"
+                >
+                  <User className="w-4 h-4" />
+                  My Portal
+                  <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen === 'account' ? 'rotate-180' : ''}`} />
+                </button>
 
-            {/* Apply Today Button */}
-            <Link
-              href="/membership/apply"
-              className="bg-burnt-orange-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-burnt-orange-700 transition shadow-md"
-            >
-              Apply Today
-            </Link>
+                {isDropdownOpen === 'account' && (
+                  <div className="absolute top-full right-0 mt-2 w-60 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                    <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100 truncate">
+                      {userEmail}
+                    </div>
+                    <Link
+                      href="/portal"
+                      className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-burnt-orange-50 hover:text-burnt-orange-600 transition"
+                      onClick={closeAllMenus}
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-burnt-orange-50 hover:text-burnt-orange-600 transition"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/portal/login"
+                  className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-5 py-1.5 rounded-lg font-semibold hover:bg-burnt-orange-50 transition"
+                >
+                  Member Login
+                </Link>
+                <Link
+                  href="/membership/apply"
+                  className="bg-burnt-orange-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-burnt-orange-700 transition shadow-md"
+                >
+                  Apply Today
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -310,23 +376,46 @@ export default function Navbar() {
                 (720) 357-9499
               </a>
 
-              {/* Mobile Member Login Button */}
-              <Link
-                href="/portal/login"
-                className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-burnt-orange-50 transition text-center mt-4"
-                onClick={closeAllMenus}
-              >
-                Member Login
-              </Link>
-
-              {/* Mobile Apply Today Button */}
-              <Link
-                href="/membership/apply"
-                className="bg-burnt-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-burnt-orange-700 transition shadow-md text-center mt-2"
-                onClick={closeAllMenus}
-              >
-                Apply Today
-              </Link>
+              {/* Mobile auth-aware actions */}
+              {authLoaded && userEmail ? (
+                <>
+                  <div className="mt-4 px-1 text-xs text-gray-500 truncate">
+                    Signed in as {userEmail}
+                  </div>
+                  <Link
+                    href="/portal"
+                    className="flex items-center justify-center gap-2 bg-burnt-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-burnt-orange-700 transition shadow-md text-center mt-2"
+                    onClick={closeAllMenus}
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    My Portal
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center justify-center gap-2 border-2 border-burnt-orange-600 text-burnt-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-burnt-orange-50 transition text-center mt-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/portal/login"
+                    className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-burnt-orange-50 transition text-center mt-4"
+                    onClick={closeAllMenus}
+                  >
+                    Member Login
+                  </Link>
+                  <Link
+                    href="/membership/apply"
+                    className="bg-burnt-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-burnt-orange-700 transition shadow-md text-center mt-2"
+                    onClick={closeAllMenus}
+                  >
+                    Apply Today
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}
