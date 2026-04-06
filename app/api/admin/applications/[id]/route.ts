@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { membershipApprovedEmail, PORTAL_FROM } from '@/lib/portal/emails';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,9 +11,10 @@ export const dynamic = 'force-dynamic';
 // (passwordless magic link), and email them with portal sign-in info.
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const admin = await requireAdmin(req);
     const { action, decision_note } = await req.json();
     if (!['approve', 'decline'].includes(action)) {
@@ -23,7 +25,7 @@ export async function POST(
     const { data: app, error } = await sb
       .from('member_applications')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
     if (error || !app) {
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
@@ -38,7 +40,7 @@ export async function POST(
           decided_by: admin.id,
           decided_at: new Date().toISOString(),
         })
-        .eq('id', params.id);
+        .eq('id', id);
       return NextResponse.json({ ok: true });
     }
 
@@ -91,27 +93,21 @@ export async function POST(
         decided_by: admin.id,
         decided_at: new Date().toISOString(),
       })
-      .eq('id', params.id);
+      .eq('id', id);
 
     // 5. Send "next steps" email.
     if (process.env.RESEND_API_KEY) {
       const resend = new Resend(process.env.RESEND_API_KEY);
+      const tpl = membershipApprovedEmail({
+        firstName: app.first_name,
+        portalUrl: `${baseUrl}/portal/login`,
+      });
       await resend.emails
         .send({
-          from: 'Merritt Workspace <manager@merrittworkspace.net>',
+          from: PORTAL_FROM,
           to: app.email,
-          subject: 'Welcome to Merritt Workspace — Next Steps',
-          html: `
-            <p>Hello ${app.first_name},</p>
-            <p>Your membership application has been approved! 🎉</p>
-            <p>To get started, sign in to your member portal:</p>
-            <p><a href="${baseUrl}/portal/login">${baseUrl}/portal/login</a></p>
-            <p>You should also receive a separate email from Supabase with a sign-in link.
-            From the portal you'll upload required documents, sign your member agreement and
-            terms, and set up auto-pay.</p>
-            <p>Welcome to the community!</p>
-            <p>— Merritt Workspace</p>
-          `,
+          subject: tpl.subject,
+          html: tpl.html,
         })
         .catch((e) => console.error('Resend error', e));
     }
