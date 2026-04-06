@@ -1,0 +1,306 @@
+"use client";
+
+import { useEffect, useState, use } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import type {
+  Member,
+  MemberApplication,
+  MemberDocument,
+  PaymentHistoryRow,
+} from '@/lib/portal/types';
+import { DESIGNATION_LABELS, DOC_TYPE_LABELS } from '@/lib/portal/types';
+
+type DocWithUrl = MemberDocument & { signed_url: string | null };
+
+interface Agreement {
+  id: string;
+  agreement_type: string;
+  signature_name: string;
+  signed_at: string;
+}
+
+interface Detail {
+  member: Member;
+  application: MemberApplication | null;
+  documents: DocWithUrl[];
+  payments: PaymentHistoryRow[];
+  agreements: Agreement[];
+}
+
+export default function AdminMemberDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const router = useRouter();
+  const [token, setToken] = useState<string | null>(null);
+  const [data, setData] = useState<Detail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load(authToken: string) {
+    const res = await fetch(`/api/admin/members/${id}`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setError(err.error || 'Failed to load member');
+      setLoading(false);
+      return;
+    }
+    const json = await res.json();
+    setData(json);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/admin');
+        return;
+      }
+      setToken(session.access_token);
+      await load(session.access_token);
+    })();
+  }, [id, router]);
+
+  async function reviewDoc(docId: string, status: 'approved' | 'rejected') {
+    if (!token) return;
+    const notes =
+      status === 'rejected' ? prompt('Rejection notes (optional):') || null : null;
+    const res = await fetch(`/api/admin/documents/${docId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status, notes }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Failed');
+      return;
+    }
+    const { document: updated } = await res.json();
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            documents: prev.documents.map((d) =>
+              d.id === updated.id ? { ...d, ...updated } : d
+            ),
+          }
+        : prev
+    );
+  }
+
+  async function patchMember(body: any) {
+    if (!token) return;
+    const res = await fetch(`/api/admin/members/${id}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Failed');
+      return;
+    }
+    const { member } = await res.json();
+    setData((prev) => (prev ? { ...prev, member } : prev));
+  }
+
+  if (loading) return <div className="text-gray-500">Loading…</div>;
+  if (error) return <div className="text-red-600">{error}</div>;
+  if (!data) return null;
+
+  const { member, application, documents, payments, agreements } = data;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <a href="/admin/members" className="text-sm text-gray-500 hover:text-gray-900">
+            ← All members
+          </a>
+          <h1 className="text-2xl font-semibold mt-1">
+            {member.first_name} {member.last_name}
+          </h1>
+          <p className="text-sm text-gray-600">{member.email}</p>
+        </div>
+        <div className="text-right text-sm text-gray-600">
+          <div>Status: <span className="capitalize font-medium">{member.status}</span></div>
+          {member.designation && <div>{DESIGNATION_LABELS[member.designation]}</div>}
+          {member.monthly_cost_cents != null && (
+            <div>${(member.monthly_cost_cents / 100).toFixed(2)}/mo</div>
+          )}
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <section className="bg-white border rounded p-4 flex flex-wrap gap-2">
+        <button
+          onClick={() =>
+            patchMember({ status: member.status === 'active' ? 'paused' : 'active' })
+          }
+          className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50"
+        >
+          {member.status === 'active' ? 'Pause' : 'Activate'}
+        </button>
+        <button
+          onClick={() => patchMember({ status: 'cancelled' })}
+          className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 text-red-600"
+        >
+          Cancel membership
+        </button>
+      </section>
+
+      {/* Application payload */}
+      <section className="bg-white border rounded p-6">
+        <h2 className="font-semibold mb-3">Application</h2>
+        {application ? (
+          <div className="space-y-2 text-sm">
+            <div className="text-gray-600">
+              Submitted {new Date(application.created_at).toLocaleString()} ·{' '}
+              <span className="capitalize">{application.status}</span>
+            </div>
+            {application.decision_note && (
+              <div className="text-gray-700">Note: {application.decision_note}</div>
+            )}
+            <details className="mt-2">
+              <summary className="cursor-pointer text-gray-700 hover:text-gray-900">
+                Full payload
+              </summary>
+              <pre className="mt-2 bg-gray-50 border rounded p-3 text-xs overflow-auto max-h-96">
+                {JSON.stringify(application.payload, null, 2)}
+              </pre>
+            </details>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">No application linked.</p>
+        )}
+      </section>
+
+      {/* Documents */}
+      <section className="bg-white border rounded p-6">
+        <h2 className="font-semibold mb-3">Uploaded documents</h2>
+        {documents.length === 0 ? (
+          <p className="text-sm text-gray-500">No documents uploaded.</p>
+        ) : (
+          <div className="space-y-2">
+            {documents.map((d) => (
+              <div
+                key={d.id}
+                className="flex items-center justify-between border rounded p-3"
+              >
+                <div className="text-sm">
+                  <div className="font-medium">{DOC_TYPE_LABELS[d.doc_type]}</div>
+                  <div className="text-xs text-gray-500">
+                    {d.file_name || d.file_path} ·{' '}
+                    <span className="capitalize">{d.status}</span>
+                    {d.notes && ` · ${d.notes}`}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {d.signed_url && (
+                    <a
+                      href={d.signed_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm border rounded px-3 py-1 hover:bg-gray-50"
+                    >
+                      View
+                    </a>
+                  )}
+                  <button
+                    onClick={() => reviewDoc(d.id, 'approved')}
+                    disabled={d.status === 'approved'}
+                    className="text-sm border rounded px-3 py-1 hover:bg-green-50 text-green-700 disabled:opacity-40"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => reviewDoc(d.id, 'rejected')}
+                    disabled={d.status === 'rejected'}
+                    className="text-sm border rounded px-3 py-1 hover:bg-red-50 text-red-700 disabled:opacity-40"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Agreements */}
+      <section className="bg-white border rounded p-6">
+        <h2 className="font-semibold mb-3">Signed agreements</h2>
+        {agreements.length === 0 ? (
+          <p className="text-sm text-gray-500">Nothing signed yet.</p>
+        ) : (
+          <ul className="space-y-1 text-sm">
+            {agreements.map((a) => (
+              <li key={a.id} className="flex justify-between border-b last:border-0 py-1.5">
+                <span>{a.agreement_type.replace(/_/g, ' ')} — {a.signature_name}</span>
+                <span className="text-gray-500">
+                  {new Date(a.signed_at).toLocaleDateString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Payments */}
+      <section className="bg-white border rounded p-6">
+        <h2 className="font-semibold mb-3">Payment history</h2>
+        {payments.length === 0 ? (
+          <p className="text-sm text-gray-500">No payments yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="text-left text-gray-500 border-b">
+              <tr>
+                <th className="py-2">Date</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {payments.map((p) => (
+                <tr key={p.id} className="border-b last:border-0">
+                  <td className="py-2">
+                    {(p.paid_at || p.created_at).slice(0, 10)}
+                  </td>
+                  <td>{p.description || '—'}</td>
+                  <td>${(p.amount_cents / 100).toFixed(2)}</td>
+                  <td className="capitalize">{p.status}</td>
+                  <td>
+                    {p.invoice_pdf_url && (
+                      <a
+                        href={p.invoice_pdf_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        Invoice
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+    </div>
+  );
+}

@@ -322,8 +322,30 @@ function DocumentsTab({
 // --- Payments tab ---
 function PaymentsTab({ member, payments }: { member: Member; payments: PaymentHistoryRow[] }) {
   const [loading, setLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
   const canSetUp =
     member.agreement_signed && member.monthly_cost_cents != null && !member.stripe_subscription_id;
+
+  async function openBillingPortal() {
+    setPortalLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await fetch('/api/portal/billing-portal-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to open billing portal');
+      }
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (e: any) {
+      alert(e.message);
+      setPortalLoading(false);
+    }
+  }
 
   async function startCheckout() {
     setLoading(true);
@@ -365,8 +387,17 @@ function PaymentsTab({ member, payments }: { member: Member; payments: PaymentHi
         )}
 
         {member.stripe_subscription_id ? (
-          <div className="mt-4 text-sm text-green-700">
-            ✓ Auto-pay is set up. Status: {member.subscription_status || 'active'}
+          <div className="mt-4 space-y-2">
+            <div className="text-sm text-green-700">
+              ✓ Auto-pay is set up. Status: {member.subscription_status || 'active'}
+            </div>
+            <button
+              onClick={openBillingPortal}
+              disabled={portalLoading}
+              className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
+            >
+              {portalLoading ? 'Opening…' : 'Manage payment method'}
+            </button>
           </div>
         ) : (
           <button

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { accessCodeRequestedAdminEmail, PORTAL_FROM } from '@/lib/portal/emails';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,15 +30,17 @@ export async function POST(req: NextRequest) {
     // Notify admin via email.
     if (process.env.RESEND_API_KEY) {
       const resend = new Resend(process.env.RESEND_API_KEY);
+      const tpl = accessCodeRequestedAdminEmail({
+        firstName: member.first_name,
+        lastName: member.last_name,
+        email: member.email,
+        adminUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/admin/access-codes`,
+      });
       await resend.emails.send({
-        from: 'Merritt Workspace Portal <portal@merrittworkspace.net>',
+        from: PORTAL_FROM,
         to: 'manager@merrittworkspace.net',
-        subject: `Access code requested — ${member.first_name} ${member.last_name}`,
-        html: `
-          <p><strong>${member.first_name} ${member.last_name}</strong> (${member.email}) has requested a 24/7 building access code.</p>
-          <p>Get a code from POPS, then assign it in the admin panel:</p>
-          <p><a href="${process.env.NEXT_PUBLIC_BASE_URL || ''}/admin/access-codes">Open admin panel</a></p>
-        `,
+        subject: tpl.subject,
+        html: tpl.html,
       }).catch((e) => console.error('Resend error', e));
     }
 

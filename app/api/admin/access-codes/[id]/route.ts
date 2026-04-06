@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { accessCodeIssuedEmail, PORTAL_FROM } from '@/lib/portal/emails';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const admin = await requireAdmin(req);
     const { access_code } = await req.json();
     if (!access_code || typeof access_code !== 'string') {
@@ -20,7 +22,7 @@ export async function POST(
     const { data: reqRow, error } = await sb
       .from('access_code_requests')
       .select('id, member_id, members(first_name,last_name,email)')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
     if (error || !reqRow) {
       return NextResponse.json({ error: 'Request not found' }, { status: 404 });
@@ -34,7 +36,7 @@ export async function POST(
         fulfilled_at: new Date().toISOString(),
         fulfilled_by: admin.id,
       })
-      .eq('id', params.id);
+      .eq('id', id);
 
     await sb
       .from('members')
@@ -47,20 +49,16 @@ export async function POST(
     const member: any = (reqRow as any).members;
     if (process.env.RESEND_API_KEY && member?.email) {
       const resend = new Resend(process.env.RESEND_API_KEY);
+      const tpl = accessCodeIssuedEmail({
+        firstName: member.first_name,
+        accessCode: access_code,
+      });
       await resend.emails
         .send({
-          from: 'Merritt Workspace <manager@merrittworkspace.net>',
+          from: PORTAL_FROM,
           to: member.email,
-          subject: 'Your Merritt Workspace Access Code',
-          html: `
-            <p>Hello ${member.first_name},</p>
-            <p>Your personal 24/7 building access code is:</p>
-            <p style="font-size:28px;font-weight:bold;letter-spacing:4px;font-family:monospace;">${access_code}</p>
-            <p>Use this code outside business hours (8 AM – 6 PM). During business hours the
-            main entrance is unlocked—just walk in.</p>
-            <p>Keep this code confidential. Contact us if you have any issues.</p>
-            <p>— Merritt Workspace</p>
-          `,
+          subject: tpl.subject,
+          html: tpl.html,
         })
         .catch((e) => console.error('Resend error', e));
     }
