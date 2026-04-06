@@ -177,6 +177,14 @@ export default function Navbar() {
               <span className="hidden lg:inline">(720) 357-9499</span>
             </a>
 
+            {/* Member Login Button */}
+            <Link
+              href="/portal/login"
+              className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-5 py-1.5 rounded-lg font-semibold hover:bg-burnt-orange-50 transition"
+            >
+              Member Login
+            </Link>
+
             {/* Apply Today Button */}
             <Link
               href="/membership/apply"
@@ -302,10 +310,19 @@ export default function Navbar() {
                 (720) 357-9499
               </a>
 
+              {/* Mobile Member Login Button */}
+              <Link
+                href="/portal/login"
+                className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-burnt-orange-50 transition text-center mt-4"
+                onClick={closeAllMenus}
+              >
+                Member Login
+              </Link>
+
               {/* Mobile Apply Today Button */}
               <Link
                 href="/membership/apply"
-                className="bg-burnt-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-burnt-orange-700 transition shadow-md text-center mt-4"
+                className="bg-burnt-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-burnt-orange-700 transition shadow-md text-center mt-2"
                 onClick={closeAllMenus}
               >
                 Apply Today
