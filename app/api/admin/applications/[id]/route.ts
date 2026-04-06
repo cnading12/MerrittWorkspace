@@ -67,10 +67,13 @@ export async function POST(
       userId = list.users.find((u) => u.email === app.email)?.id || null;
     }
 
-    // 2. Generate a one-time sign-in link without triggering Supabase's mailer.
-    //    `type: 'magiclink'` works for existing users and avoids the invite
-    //    email being sent by Supabase directly.
-    let actionLink: string | null = null;
+    // 2. Generate a one-time sign-in token without triggering Supabase's
+    //    mailer. We use the `hashed_token` directly and build our own
+    //    confirmation URL that points at /portal/auth/confirm. This avoids
+    //    Supabase's `/auth/v1/verify` redirect-allowlist behaviour, which
+    //    silently rewrites redirect_to → Site URL when the URL isn't on
+    //    the allowlist.
+    let confirmUrl: string | null = null;
     const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
       type: 'magiclink',
       email: app.email,
@@ -79,7 +82,15 @@ export async function POST(
     if (linkErr) {
       console.error('generateLink error', linkErr);
     } else {
-      actionLink = linkData?.properties?.action_link ?? null;
+      const hashedToken = linkData?.properties?.hashed_token;
+      if (hashedToken) {
+        const params = new URLSearchParams({
+          token_hash: hashedToken,
+          type: 'magiclink',
+          next: '/portal/set-password',
+        });
+        confirmUrl = `${baseUrl}/portal/auth/confirm?${params.toString()}`;
+      }
     }
 
     // 3. Create or update the member row.
@@ -120,7 +131,7 @@ export async function POST(
       const resend = new Resend(process.env.RESEND_API_KEY);
       const tpl = membershipApprovedEmail({
         firstName: app.first_name,
-        portalUrl: actionLink || `${baseUrl}/portal/login`,
+        portalUrl: confirmUrl || `${baseUrl}/portal/login`,
       });
       await resend.emails
         .send({
