@@ -81,9 +81,9 @@ export function membershipApprovedEmail(opts: {
           </ol>
         </div>
         <p style="text-align:center;">
-          <a href="${opts.portalUrl}" class="button">Open Member Portal</a>
+          <a href="${opts.portalUrl}" class="button">Sign in &amp; set your password</a>
         </p>
-        <p>You'll also receive a separate email from Supabase with a one-click invite link. Click it to sign in for the first time — you'll be taken to a page where you can <strong>choose your own password</strong> for future sign-ins.</p>
+        <p>The button above is your one-click sign-in link. Click it to sign in for the first time — you'll be taken to a page where you can <strong>choose your own password</strong> for future sign-ins. The link can only be used once, so don't share it.</p>
         <p>Welcome aboard,<br/>— The Merritt Workspace Team</p>
       `,
     }),
