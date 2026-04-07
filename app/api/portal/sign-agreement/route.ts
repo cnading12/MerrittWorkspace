@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { DOCUMENT_VERSION } from '@/lib/portal/legal';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
         signature_name,
         ip_address: req.headers.get('x-forwarded-for') || null,
         user_agent: req.headers.get('user-agent') || null,
-        document_version: 'v2-2026-04',
+        document_version: DOCUMENT_VERSION,
         metadata: metadata || null,
       },
       { onConflict: 'member_id,agreement_type' }
