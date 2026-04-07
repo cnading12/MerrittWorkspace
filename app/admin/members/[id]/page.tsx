@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import type {
   Member,
@@ -35,9 +36,9 @@ interface Detail {
 export default function AdminMemberDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = use(params);
+  const { id } = params;
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [data, setData] = useState<Detail | null>(null);
@@ -128,11 +129,21 @@ export default function AdminMemberDetailPage({
 
   return (
     <div className="space-y-6">
+      <nav className="flex items-center gap-2 text-xs text-gray-500">
+        <Link href="/admin/dashboard" className="hover:text-gray-900">
+          Dashboard
+        </Link>
+        <span>/</span>
+        <Link href="/admin/members" className="hover:text-gray-900">
+          Members
+        </Link>
+        <span>/</span>
+        <span className="text-gray-700">
+          {member.first_name} {member.last_name}
+        </span>
+      </nav>
       <div className="flex items-center justify-between">
         <div>
-          <a href="/admin/members" className="text-sm text-gray-500 hover:text-gray-900">
-            ← All members
-          </a>
           <h1 className="text-2xl font-semibold mt-1">
             {member.first_name} {member.last_name}
           </h1>
@@ -311,9 +322,32 @@ function AgreementCard({ agreement: a }: { agreement: Agreement }) {
   const usd = (cents: any) =>
     typeof cents === 'number' ? `$${(cents / 100).toFixed(2)}` : '—';
 
+  async function openSignedDocument() {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/admin/agreements/${a.id}/view`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Failed to load agreement');
+        return;
+      }
+      const html = await res.text();
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e: any) {
+      alert(e.message || 'Failed to open agreement');
+    }
+  }
+
   return (
     <div className="border rounded">
-      <div className="flex items-center justify-between p-3">
+      <div className="flex items-center justify-between p-3 gap-2">
         <div className="text-sm">
           <div className="font-medium capitalize">
             {a.agreement_type.replace(/_/g, ' ')}
@@ -323,13 +357,22 @@ function AgreementCard({ agreement: a }: { agreement: Agreement }) {
             {a.document_version && ` · ${a.document_version}`}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="text-sm border rounded px-3 py-1 hover:bg-gray-50"
-        >
-          {open ? 'Hide' : 'View'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={openSignedDocument}
+            className="text-sm bg-gray-900 text-white rounded px-3 py-1 hover:bg-gray-800"
+          >
+            View signed doc
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="text-sm border rounded px-3 py-1 hover:bg-gray-50"
+          >
+            {open ? 'Hide details' : 'Details'}
+          </button>
+        </div>
       </div>
       {open && (
         <div className="border-t bg-gray-50 p-4 text-xs space-y-3">
