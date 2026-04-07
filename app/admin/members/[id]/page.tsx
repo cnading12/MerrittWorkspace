@@ -18,6 +18,10 @@ interface Agreement {
   agreement_type: string;
   signature_name: string;
   signed_at: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  document_version: string | null;
+  metadata: Record<string, any> | null;
 }
 
 interface Detail {
@@ -245,16 +249,11 @@ export default function AdminMemberDetailPage({
         {agreements.length === 0 ? (
           <p className="text-sm text-gray-500">Nothing signed yet.</p>
         ) : (
-          <ul className="space-y-1 text-sm">
+          <div className="space-y-3">
             {agreements.map((a) => (
-              <li key={a.id} className="flex justify-between border-b last:border-0 py-1.5">
-                <span>{a.agreement_type.replace(/_/g, ' ')} — {a.signature_name}</span>
-                <span className="text-gray-500">
-                  {new Date(a.signed_at).toLocaleDateString()}
-                </span>
-              </li>
+              <AgreementCard key={a.id} agreement={a} />
             ))}
-          </ul>
+          </div>
         )}
       </section>
 
@@ -301,6 +300,110 @@ export default function AdminMemberDetailPage({
           </table>
         )}
       </section>
+    </div>
+  );
+}
+
+function AgreementCard({ agreement: a }: { agreement: Agreement }) {
+  const [open, setOpen] = useState(false);
+  const isFee = a.agreement_type === 'fee_agreement';
+  const meta = a.metadata || {};
+  const usd = (cents: any) =>
+    typeof cents === 'number' ? `$${(cents / 100).toFixed(2)}` : '—';
+
+  return (
+    <div className="border rounded">
+      <div className="flex items-center justify-between p-3">
+        <div className="text-sm">
+          <div className="font-medium capitalize">
+            {a.agreement_type.replace(/_/g, ' ')}
+          </div>
+          <div className="text-xs text-gray-500">
+            Signed by {a.signature_name} on {new Date(a.signed_at).toLocaleString()}
+            {a.document_version && ` · ${a.document_version}`}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="text-sm border rounded px-3 py-1 hover:bg-gray-50"
+        >
+          {open ? 'Hide' : 'View'}
+        </button>
+      </div>
+      {open && (
+        <div className="border-t bg-gray-50 p-4 text-xs space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-gray-700">
+            <div>Signed at: {new Date(a.signed_at).toLocaleString()}</div>
+            <div>IP: {a.ip_address || '—'}</div>
+            <div className="md:col-span-2 truncate">User agent: {a.user_agent || '—'}</div>
+          </div>
+
+          {isFee && (
+            <div className="bg-white border rounded p-3 space-y-2">
+              <div className="font-semibold text-gray-900 text-sm">
+                Fee Agreement snapshot
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-gray-700">
+                <div>Designation: {meta.designation_label || '—'}</div>
+                <div>Monthly cost: {usd(meta.monthly_cost_cents)}</div>
+                <div>Term start: {meta.term_start || '—'}</div>
+                <div>Term end: {meta.term_end || '—'}</div>
+                <div>Payment method: {meta.payment_method || '—'}</div>
+                <div>Member title: {meta.member_title || '—'}</div>
+                <div>Street: {meta.street || '—'}</div>
+                <div>City/State/ZIP: {meta.city_state_zip || '—'}</div>
+                <div>Phone: {meta.phone || '—'}</div>
+                <div>Email: {meta.email || '—'}</div>
+                <div>Federal ID: {meta.federal_id || '—'}</div>
+              </div>
+              <div className="border-t pt-2">
+                <div className="font-semibold text-gray-900">Totals</div>
+                <div className="flex justify-between">
+                  <span>First month</span>
+                  <span>{usd(meta.first_month_cents)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Last month</span>
+                  <span>{usd(meta.last_month_cents)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>3.5% credit card fee</span>
+                  <span>{usd(meta.cc_fee_cents)}</span>
+                </div>
+                <div className="flex justify-between font-semibold border-t mt-1 pt-1">
+                  <span>Grand total</span>
+                  <span>{usd(meta.grand_total_cents)}</span>
+                </div>
+              </div>
+              {meta.invoicing && (
+                <div className="border-t pt-2">
+                  <div className="font-semibold text-gray-900">Invoicing details</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-gray-700">
+                    <div>Company: {meta.invoicing.company_name || '—'}</div>
+                    <div>Contact: {meta.invoicing.contact_name || '—'}</div>
+                    <div>Street: {meta.invoicing.street || '—'}</div>
+                    <div>Phone: {meta.invoicing.phone || '—'}</div>
+                    <div>City/State/ZIP: {meta.invoicing.city_state_zip || '—'}</div>
+                    <div>Email: {meta.invoicing.email || '—'}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {a.metadata && (
+            <details>
+              <summary className="cursor-pointer text-gray-600 hover:text-gray-900">
+                Raw metadata
+              </summary>
+              <pre className="mt-2 bg-white border rounded p-2 overflow-auto max-h-64">
+                {JSON.stringify(a.metadata, null, 2)}
+              </pre>
+            </details>
+          )}
+        </div>
+      )}
     </div>
   );
 }
