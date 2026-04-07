@@ -6,6 +6,12 @@ export const dynamic = 'force-dynamic';
 
 // Returns a Stripe customer billing portal URL so the member can update
 // payment methods, view invoices, or cancel from inside their portal.
+//
+// NOTE: To allow members to add/swap ACH bank accounts (us_bank_account)
+// as their saved payment method from the billing portal, enable
+// "US bank account" under Settings → Billing → Customer portal →
+// Payment methods in the Stripe dashboard. This is a one-time,
+// environment-wide config — no code change required here.
 export async function POST(req: NextRequest) {
   try {
     const member = await requireMember(req);

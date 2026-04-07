@@ -16,6 +16,7 @@ type AgreementRow = {
   agreement_type: 'member_agreement' | 'terms_and_conditions' | 'fee_agreement';
   signed_at: string;
   signature_name: string;
+  metadata?: Record<string, unknown> | null;
 };
 
 type Tab = 'documents' | 'payments' | 'onboarding';
@@ -172,7 +173,7 @@ export default function PortalDashboard() {
       )}
 
       {tab === 'payments' && !paymentsLocked && (
-        <PaymentsTab member={member} payments={payments} />
+        <PaymentsTab member={member} payments={payments} agreements={agreements} />
       )}
       {tab === 'payments' && paymentsLocked && (
         <div className="bg-amber-50 border border-amber-300 rounded p-6 text-sm text-amber-900">
@@ -1040,11 +1041,35 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 // --- Payments tab ---
-function PaymentsTab({ member, payments }: { member: Member; payments: PaymentHistoryRow[] }) {
+function PaymentsTab({
+  member,
+  payments,
+  agreements,
+}: {
+  member: Member;
+  payments: PaymentHistoryRow[];
+  agreements: AgreementRow[];
+}) {
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const cancelPending = member.subscription_status === 'cancel_at_period_end';
+
+  // Read the payment method the member selected when they signed the fee
+  // agreement ("card" or "ach"). This drives the copy + button label below.
+  const feeAgreement = agreements.find((a) => a.agreement_type === 'fee_agreement');
+  const selectedMethod: 'card' | 'ach' =
+    (feeAgreement?.metadata as any)?.payment_method === 'ach' ? 'ach' : 'card';
+  const isAch = selectedMethod === 'ach';
+
+  // ACH subscriptions start in `incomplete` and move to `active` only after
+  // the first invoice settles (3–5 business days). Surface this so members
+  // know their setup is in flight, not broken.
+  const achProcessing =
+    isAch &&
+    !!member.stripe_subscription_id &&
+    (member.subscription_status === 'incomplete' ||
+      member.subscription_status === 'past_due');
 
   async function cancelMembership() {
     const ok = window.confirm(
@@ -1136,8 +1161,16 @@ function PaymentsTab({ member, payments }: { member: Member; payments: PaymentHi
         {member.stripe_subscription_id ? (
           <div className="mt-4 space-y-2">
             <div className="text-sm text-green-700">
-              ✓ Auto-pay is set up. Status: {member.subscription_status || 'active'}
+              ✓ Auto-pay is set up{isAch ? ' via ACH bank debit' : ''}. Status:{' '}
+              {member.subscription_status || 'active'}
             </div>
+            {achProcessing && (
+              <div className="bg-blue-50 border border-blue-300 text-blue-900 rounded p-3 text-xs">
+                Your ACH bank transfer is being verified. It can take 3–5 business
+                days for your first payment to clear. You don&apos;t need to do
+                anything — we&apos;ll email you once it settles.
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={openBillingPortal}
@@ -1163,13 +1196,46 @@ function PaymentsTab({ member, payments }: { member: Member; payments: PaymentHi
             )}
           </div>
         ) : (
-          <button
-            onClick={startCheckout}
-            disabled={!canSetUp || loading}
-            className="mt-4 bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
-          >
-            {loading ? 'Loading…' : 'Set up auto-pay'}
-          </button>
+          <>
+            {member.agreement_signed && (
+              <div
+                className={`mt-4 rounded border p-3 text-xs ${
+                  isAch
+                    ? 'bg-green-50 border-green-300 text-green-900'
+                    : 'bg-gray-50 border-gray-200 text-gray-700'
+                }`}
+              >
+                {isAch ? (
+                  <>
+                    <strong>ACH auto-debit selected.</strong> You chose to pay by
+                    bank debit in your signed Fee Agreement — no 3.5% card fee.
+                    On the next screen, connect your bank through Stripe&apos;s
+                    secure Financial Connections flow. Your monthly membership
+                    will auto-debit from that account on the 1st of each month.
+                    First payment may take 3–5 business days to clear.
+                  </>
+                ) : (
+                  <>
+                    <strong>Credit card auto-pay selected.</strong> Based on your
+                    signed Fee Agreement. A 3.5% processing fee applies. To
+                    switch to ACH bank debit (no fee), contact
+                    manager@merrittworkspace.net before completing checkout.
+                  </>
+                )}
+              </div>
+            )}
+            <button
+              onClick={startCheckout}
+              disabled={!canSetUp || loading}
+              className="mt-4 bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
+            >
+              {loading
+                ? 'Loading…'
+                : isAch
+                  ? 'Set up ACH auto-debit'
+                  : 'Set up auto-pay'}
+            </button>
+          </>
         )}
         {!member.agreement_signed && (
           <p className="mt-2 text-xs text-gray-500">
