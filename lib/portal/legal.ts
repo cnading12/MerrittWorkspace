@@ -1,12 +1,18 @@
-// Static legal copy used in the member portal. The terms & conditions are
-// the same for every member; the fee agreement is rendered with per-member
-// values (name, designation, monthly cost, start date) at sign time.
+// Static legal copy + fee agreement template used in the member portal.
+// The Terms & Conditions are the same for every member; the fee agreement
+// is rendered with per-member values (contact info, billing, designation,
+// monthly cost, totals) at sign time.
 //
-// NOTE: The text below is the canonical Merritt Workspace policy text and
-// should be reviewed by counsel before going live. Update DOCUMENT_VERSION
-// whenever the wording changes so the signature audit trail is meaningful.
+// NOTE: The T&C text below should be reviewed by counsel before going
+// live. Bump DOCUMENT_VERSION whenever the wording changes so the
+// signature audit trail is meaningful.
 
-export const DOCUMENT_VERSION = 'v1-2026-04';
+export const DOCUMENT_VERSION = 'v2-2026-04';
+
+export const MERRITT_SIGNATORY = {
+  name: 'Lance Nading',
+  title: 'Manager',
+};
 
 export const TERMS_AND_CONDITIONS_TEXT = `
 MERRITT WORKSPACE — TERMS & CONDITIONS
@@ -43,54 +49,108 @@ By signing electronically below, you acknowledge that you have read,
 understood, and agreed to these Terms & Conditions.
 `.trim();
 
+export interface FeeAgreementContact {
+  name: string;
+  street: string;
+  cityStateZip: string;
+  phone: string;
+  email: string;
+  federalId?: string | null;
+}
+
+export interface FeeAgreementInvoicing {
+  companyName: string;
+  street: string;
+  cityStateZip: string;
+  contactName: string;
+  phone: string;
+  email: string;
+}
+
 export interface FeeAgreementContext {
-  memberName: string;
-  companyName: string | null;
+  member: FeeAgreementContact;
+  invoicing: FeeAgreementInvoicing;
   designationLabel: string;
-  monthlyCostUsd: string; // formatted, e.g. "$500.00"
-  startDate: string; // ISO yyyy-mm-dd or human label
-  signedDate: string; // human label
+  monthlyCostCents: number;
+  termStart: string; // human label, e.g. "June 1, 2026"
+  termEnd: string;   // human label, e.g. "June 30, 2026"
+  paymentMethod: 'card' | 'ach'; // controls 3.5% CC fee
+  signedDate: string;
+  memberTitle?: string | null;
+}
+
+export interface FeeAgreementTotals {
+  firstMonthCents: number;
+  lastMonthCents: number;
+  subtotalCents: number;
+  ccFeeCents: number;
+  grandTotalCents: number;
+}
+
+export function calculateFeeAgreementTotals(
+  monthlyCostCents: number,
+  paymentMethod: 'card' | 'ach'
+): FeeAgreementTotals {
+  const firstMonthCents = monthlyCostCents;
+  const lastMonthCents = monthlyCostCents;
+  const subtotalCents = firstMonthCents + lastMonthCents;
+  const ccFeeCents =
+    paymentMethod === 'card' ? Math.round(subtotalCents * 0.035) : 0;
+  const grandTotalCents = subtotalCents + ccFeeCents;
+  return { firstMonthCents, lastMonthCents, subtotalCents, ccFeeCents, grandTotalCents };
+}
+
+function usd(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+function pad(label: string, value: string, width = 22): string {
+  return `${(label + ':').padEnd(width)} ${value}`;
 }
 
 export function renderFeeAgreementText(ctx: FeeAgreementContext): string {
+  const totals = calculateFeeAgreementTotals(ctx.monthlyCostCents, ctx.paymentMethod);
+  const { member: m, invoicing: inv } = ctx;
+
   return `
-MERRITT WORKSPACE — MEMBER FEE AGREEMENT
+MERRITT WORKSPACE FEE AGREEMENT
 
-This Fee Agreement (the "Agreement") is entered into between Merritt
-Workspace ("Merritt") and ${ctx.memberName}${ctx.companyName ? ` of ${ctx.companyName}` : ''}
-("Member") as of ${ctx.signedDate}.
+MEMBER INFORMATION
+${pad('Contact Name', m.name)}        ${pad('Company Federal ID#', m.federalId || '')}
+${pad('Street Address', m.street)}    ${pad('Telephone', m.phone)}
+${pad('City/State/ZIP', m.cityStateZip)}    ${pad('Email', m.email)}
 
-1. Membership Plan
-   Member has selected the following plan:
-     • Designation:    ${ctx.designationLabel}
-     • Monthly fee:    ${ctx.monthlyCostUsd}
-     • Start date:     ${ctx.startDate}
+INVOICING DETAILS
+${pad('Company Name', inv.companyName)}    ${pad('Contact Name', inv.contactName)}
+${pad('Street Address', inv.street)}    ${pad('Telephone', inv.phone)}
+${pad('City/State/ZIP', inv.cityStateZip)}    ${pad('Email', inv.email)}
 
-2. Billing
-   The monthly fee is billed on the 1st of each calendar month via the
-   payment method Member sets up in the portal. The first charge is
-   prorated from the start date to the end of the current month.
+DESCRIPTION OF SIGNATURE PAGE
+This page shall act as a binding agreement between Merritt WorKSpace and the
+Member, as named above. By signing this CoWork Space Agreement (CSA), the
+member fully acknowledges and hereby agrees to be bound by the financial
+terms and conditions as stated in this Agreement and the accompanying
+CoWork Space Terms and Conditions. *Please note* When the stated term
+(timeframe) of the Agreement has ended, the financial terms shall renwew
+automatically, less any discounts (if applicable).
 
-3. Term
-   This Agreement begins on the start date above and continues
-   month-to-month until cancelled by either party with 30 days notice
-   submitted through the member portal.
+MEMBERSHIP DESCRIPTION                                               TOTAL
+-----------------------------------------------------------------------------
+${ctx.designationLabel}
+First Months Membership Fee:        ${ctx.termStart} – ${ctx.termEnd}    ${usd(totals.firstMonthCents)}
+Last Months Membership Fee:                                            ${usd(totals.lastMonthCents)}
+${
+  ctx.paymentMethod === 'card'
+    ? `3.5% Credit Card Fee:                                                  ${usd(totals.ccFeeCents)}\n(Disregard if paying by ACH or EFT)`
+    : 'Paying by ACH or EFT — no credit card fee applied.'
+}
+-----------------------------------------------------------------------------
+GRAND TOTAL                                                            ${usd(totals.grandTotalCents)}
 
-4. Late Payment
-   Payments not received within 5 days of the due date may incur a $25
-   late fee and may result in suspension of building access.
-
-5. Refunds
-   Monthly fees are non-refundable once charged. Pro-rated refunds are
-   not provided for unused days within a billing period.
-
-6. Incorporation
-   This Agreement incorporates by reference the Merritt Workspace Terms
-   & Conditions which Member has separately acknowledged.
-
-By signing electronically below, Member agrees to pay the monthly fee
-above and to be bound by the terms of this Agreement.
-
-Member: ${ctx.memberName}
+MEMBER                                MERRITT WORKSPACE
+Name Printed:  ${m.name}              Name Printed:  ${MERRITT_SIGNATORY.name}
+Title Printed: ${ctx.memberTitle || ''}              Title Printed: ${MERRITT_SIGNATORY.title}
+Signature:     [electronically signed]   Signature:     [on file]
+Date:          ${ctx.signedDate}              Date:          ${ctx.signedDate}
 `.trim();
 }
