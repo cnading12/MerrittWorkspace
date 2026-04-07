@@ -51,7 +51,6 @@ interface MembershipApplication {
   credit_references: CreditReference[];
   prior_lease?: PriorLease;
   agrees_to_terms: boolean;
-  agrees_to_background_check: boolean;
   marketing_consent: boolean;
 }
 
@@ -180,7 +179,6 @@ export default function MembershipApplicationPage() {
       }
     ],
     agrees_to_terms: false,
-    agrees_to_background_check: false,
     marketing_consent: false
   });
 
@@ -266,11 +264,6 @@ export default function MembershipApplicationPage() {
 
     if (!application.agrees_to_terms) {
       setError('Please agree to the terms and conditions');
-      return;
-    }
-
-    if (!application.agrees_to_background_check) {
-      setError('Background check consent is required for membership');
       return;
     }
 
@@ -1007,18 +1000,6 @@ export default function MembershipApplicationPage() {
                 <label className="flex items-start">
                   <input
                     type="checkbox"
-                    checked={application.agrees_to_background_check}
-                    onChange={(e) => setApplication(prev => ({ ...prev, agrees_to_background_check: e.target.checked }))}
-                    className="mt-1 mr-3 h-4 w-4 text-orange-600 rounded focus:ring-orange-500"
-                  />
-                  <div className="text-sm text-gray-700">
-                    I consent to a background check as part of the membership approval process <span className="text-red-500">*</span>
-                  </div>
-                </label>
-
-                <label className="flex items-start">
-                  <input
-                    type="checkbox"
                     checked={application.marketing_consent}
                     onChange={(e) => setApplication(prev => ({ ...prev, marketing_consent: e.target.checked }))}
                     className="mt-1 mr-3 h-4 w-4 text-orange-600 rounded focus:ring-orange-500"
@@ -1034,7 +1015,7 @@ export default function MembershipApplicationPage() {
             <div className="pt-6">
               <button
                 type="submit"
-                disabled={submitting || !application.agrees_to_terms || !application.agrees_to_background_check}
+                disabled={submitting || !application.agrees_to_terms}
                 className="w-full bg-orange-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-lg"
               >
                 {submitting ? (
