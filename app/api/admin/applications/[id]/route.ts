@@ -3,6 +3,7 @@ import { Resend } from 'resend';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { membershipApprovedEmail, PORTAL_FROM } from '@/lib/portal/emails';
+import { planForMembershipType } from '@/lib/portal/pricing';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,7 +94,11 @@ export async function POST(
       }
     }
 
-    // 3. Create or update the member row.
+    // 3. Create or update the member row. Auto-assign the designation and
+    //    monthly cost from the applicant's selected plan so the fee agreement
+    //    and Stripe checkout can reference a real number without any manual
+    //    accountant step.
+    const plan = planForMembershipType(app.membership_type);
     const { data: member, error: memErr } = await sb
       .from('members')
       .upsert(
@@ -106,6 +111,8 @@ export async function POST(
           company_name: app.company_name,
           status: 'approved',
           application_id: app.id,
+          designation: plan?.designation ?? null,
+          monthly_cost_cents: plan?.monthly_cost_cents ?? null,
         },
         { onConflict: 'email' }
       )

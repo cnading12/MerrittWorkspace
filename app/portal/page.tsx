@@ -5,6 +5,17 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Member, MemberDocument, PaymentHistoryRow } from '@/lib/portal/types';
 import { DESIGNATION_LABELS } from '@/lib/portal/types';
+import {
+  TERMS_AND_CONDITIONS_TEXT,
+  renderFeeAgreementText,
+} from '@/lib/portal/legal';
+import { formatUsd } from '@/lib/portal/pricing';
+
+type AgreementRow = {
+  agreement_type: 'member_agreement' | 'terms_and_conditions' | 'fee_agreement';
+  signed_at: string;
+  signature_name: string;
+};
 
 type Tab = 'documents' | 'payments' | 'onboarding';
 
@@ -14,6 +25,7 @@ export default function PortalDashboard() {
   const [member, setMember] = useState<Member | null>(null);
   const [documents, setDocuments] = useState<MemberDocument[]>([]);
   const [payments, setPayments] = useState<PaymentHistoryRow[]>([]);
+  const [agreements, setAgreements] = useState<AgreementRow[]>([]);
   const [tab, setTab] = useState<Tab>('documents');
   const [accessRequestStatus, setAccessRequestStatus] = useState<string | null>(null);
 
@@ -34,6 +46,7 @@ export default function PortalDashboard() {
         setMember(data.member);
         setDocuments(data.documents);
         setPayments(data.payments);
+        setAgreements(data.agreements || []);
       } catch (e) {
         console.error(e);
       } finally {
@@ -109,6 +122,7 @@ export default function PortalDashboard() {
         <DocumentsTab
           member={member}
           documents={documents}
+          agreements={agreements}
           onChange={(d) => setDocuments(d)}
         />
       )}
@@ -188,15 +202,19 @@ import { REQUIRED_DOC_TYPES, DOC_TYPE_LABELS, DocType } from '@/lib/portal/types
 function DocumentsTab({
   member,
   documents,
+  agreements,
   onChange,
 }: {
   member: Member;
   documents: MemberDocument[];
+  agreements: AgreementRow[];
   onChange: (d: MemberDocument[]) => void;
 }) {
   const [uploading, setUploading] = useState<DocType | null>(null);
-  const [signing, setSigning] = useState(false);
+  const [signing, setSigning] = useState<string | null>(null);
   const [signatureName, setSignatureName] = useState(`${member.first_name} ${member.last_name}`);
+  const signedSet = new Set(agreements.map((a) => a.agreement_type));
+  const hasSigned = (t: AgreementRow['agreement_type']) => signedSet.has(t);
 
   async function uploadDoc(docType: DocType, file: File) {
     setUploading(docType);
@@ -226,8 +244,14 @@ function DocumentsTab({
     }
   }
 
-  async function signAgreement(type: 'member_agreement' | 'terms_and_conditions') {
-    setSigning(true);
+  async function signAgreement(
+    type: 'member_agreement' | 'terms_and_conditions' | 'fee_agreement'
+  ) {
+    if (!signatureName.trim()) {
+      alert('Type your full legal name to sign.');
+      return;
+    }
+    setSigning(type);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
@@ -247,11 +271,26 @@ function DocumentsTab({
     } catch (e: any) {
       alert(e.message);
     } finally {
-      setSigning(false);
+      setSigning(null);
     }
   }
 
   const hasDoc = (t: DocType) => documents.some((d) => d.doc_type === t);
+
+  const memberName = `${member.first_name} ${member.last_name}`;
+  const designationLabel = member.designation
+    ? DESIGNATION_LABELS[member.designation]
+    : '— not yet assigned —';
+  const monthlyCostUsd =
+    member.monthly_cost_cents != null ? formatUsd(member.monthly_cost_cents) : '— pending —';
+  const feeAgreementText = renderFeeAgreementText({
+    memberName,
+    companyName: member.company_name,
+    designationLabel,
+    monthlyCostUsd,
+    startDate: new Date().toISOString().slice(0, 10),
+    signedDate: new Date().toLocaleDateString(),
+  });
 
   return (
     <div className="space-y-6">
@@ -284,37 +323,122 @@ function DocumentsTab({
       </section>
 
       <section className="bg-white border rounded p-6">
-        <h2 className="font-semibold text-gray-900 mb-1">Member agreement & terms</h2>
+        <h2 className="font-semibold text-gray-900 mb-1">Agreements</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Available once your required documents are submitted.
+          Review and sign each document below. All three are required before you can set up
+          payment. Available once your required documents are submitted.
         </p>
-        <fieldset disabled={!member.required_docs_complete} className="space-y-3 disabled:opacity-50">
+
+        <fieldset
+          disabled={!member.required_docs_complete}
+          className="space-y-4 disabled:opacity-50"
+        >
           <div>
-            <label className="block text-xs text-gray-600">Type your full legal name to sign</label>
+            <label className="block text-xs text-gray-600">
+              Type your full legal name (used as your signature on all documents)
+            </label>
             <input
               value={signatureName}
               onChange={(e) => setSignatureName(e.target.value)}
               className="mt-1 w-full border rounded px-3 py-2"
             />
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => signAgreement('member_agreement')}
-              disabled={signing}
-              className="bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
-            >
-              Sign Member Agreement
-            </button>
-            <button
-              onClick={() => signAgreement('terms_and_conditions')}
-              disabled={signing}
-              className="border px-4 py-2 rounded hover:bg-gray-50 disabled:opacity-50"
-            >
-              Sign Terms & Conditions
-            </button>
-          </div>
+
+          <SignableDoc
+            title="Fee Agreement"
+            description="Auto-generated for your selected plan. Review the monthly fee carefully."
+            body={feeAgreementText}
+            signed={hasSigned('fee_agreement')}
+            signing={signing === 'fee_agreement'}
+            disabled={member.monthly_cost_cents == null}
+            disabledReason={
+              member.monthly_cost_cents == null
+                ? 'Your administrator hasn\u2019t assigned a monthly cost yet.'
+                : null
+            }
+            onSign={() => signAgreement('fee_agreement')}
+          />
+
+          <SignableDoc
+            title="Terms & Conditions"
+            description="The standard Merritt Workspace house rules and policies."
+            body={TERMS_AND_CONDITIONS_TEXT}
+            signed={hasSigned('terms_and_conditions')}
+            signing={signing === 'terms_and_conditions'}
+            onSign={() => signAgreement('terms_and_conditions')}
+          />
+
+          <SignableDoc
+            title="Member Agreement"
+            description="Acknowledges your status as a Merritt Workspace member."
+            body={`I, ${memberName}, agree to become a member of Merritt Workspace under the Fee Agreement and Terms & Conditions referenced above.`}
+            signed={hasSigned('member_agreement')}
+            signing={signing === 'member_agreement'}
+            onSign={() => signAgreement('member_agreement')}
+          />
         </fieldset>
       </section>
+    </div>
+  );
+}
+
+function SignableDoc({
+  title,
+  description,
+  body,
+  signed,
+  signing,
+  disabled,
+  disabledReason,
+  onSign,
+}: {
+  title: string;
+  description: string;
+  body: string;
+  signed: boolean;
+  signing: boolean;
+  disabled?: boolean;
+  disabledReason?: string | null;
+  onSign: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border rounded">
+      <div className="flex items-center justify-between p-3">
+        <div>
+          <div className="text-sm font-medium text-gray-900">
+            {title} {signed && <span className="text-green-700">✓ Signed</span>}
+          </div>
+          <div className="text-xs text-gray-500">{description}</div>
+          {disabledReason && (
+            <div className="text-xs text-amber-700 mt-1">{disabledReason}</div>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50"
+          >
+            {open ? 'Hide' : 'Review'}
+          </button>
+          {!signed && (
+            <button
+              type="button"
+              onClick={onSign}
+              disabled={signing || disabled}
+              className="text-sm bg-gray-900 text-white rounded px-3 py-1.5 hover:bg-gray-800 disabled:opacity-50"
+            >
+              {signing ? 'Signing\u2026' : 'Sign'}
+            </button>
+          )}
+        </div>
+      </div>
+      {open && (
+        <pre className="border-t bg-gray-50 p-4 text-xs text-gray-800 whitespace-pre-wrap font-sans max-h-80 overflow-auto">
+          {body}
+        </pre>
+      )}
     </div>
   );
 }

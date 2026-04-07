@@ -14,8 +14,18 @@ export async function POST(req: NextRequest) {
       );
     }
     const { agreement_type, signature_name } = await req.json();
-    if (!['member_agreement', 'terms_and_conditions'].includes(agreement_type)) {
+    if (
+      !['member_agreement', 'terms_and_conditions', 'fee_agreement'].includes(
+        agreement_type
+      )
+    ) {
       return NextResponse.json({ error: 'Invalid agreement_type' }, { status: 400 });
+    }
+    if (agreement_type === 'fee_agreement' && member.monthly_cost_cents == null) {
+      return NextResponse.json(
+        { error: 'No monthly cost assigned to your membership yet — contact the team.' },
+        { status: 400 }
+      );
     }
     if (!signature_name || typeof signature_name !== 'string') {
       return NextResponse.json({ error: 'signature_name required' }, { status: 400 });
@@ -40,7 +50,10 @@ export async function POST(req: NextRequest) {
       .select('agreement_type')
       .eq('member_id', member.id);
     const types = new Set((agreements || []).map((a: any) => a.agreement_type));
-    const fullySigned = types.has('member_agreement') && types.has('terms_and_conditions');
+    const fullySigned =
+      types.has('member_agreement') &&
+      types.has('terms_and_conditions') &&
+      types.has('fee_agreement');
     if (fullySigned !== member.agreement_signed) {
       await sb.from('members').update({ agreement_signed: fullySigned }).eq('id', member.id);
     }
