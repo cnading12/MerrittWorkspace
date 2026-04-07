@@ -996,9 +996,10 @@ export default function MembershipApplicationPage() {
                   />
                   <div className="text-sm">
                     <span className="text-gray-700">I agree to the </span>
-                    <a href="/terms" target="_blank" className="text-orange-600 underline">Terms of Service</a>
+                    <a href="/terms" target="_blank" className="text-orange-600 underline">Terms &amp; Conditions</a>
                     <span className="text-gray-700"> and </span>
                     <a href="/privacy" target="_blank" className="text-orange-600 underline">Privacy Policy</a>
+                    <span className="text-gray-700">. I understand that if my application is approved I will be required to sign the official Terms &amp; Conditions, Fee Agreement, and Member Agreement in the member portal before my membership begins.</span>
                     <span className="text-red-500"> *</span>
                   </div>
                 </label>
