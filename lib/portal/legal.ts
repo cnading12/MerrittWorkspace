@@ -7,7 +7,7 @@
 // live. Bump DOCUMENT_VERSION whenever the wording changes so the
 // signature audit trail is meaningful.
 
-export const DOCUMENT_VERSION = 'v2-2026-04';
+export const DOCUMENT_VERSION = 'v3-2026-04';
 
 export const MERRITT_SIGNATORY = {
   name: 'Lance Nading',
