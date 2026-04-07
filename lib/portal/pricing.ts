@@ -19,13 +19,18 @@ export interface MembershipPlan {
 export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
   dedicated_desk: {
     designation: 'dedicated_desk',
-    label: 'Dedicated Desk',
-    monthly_cost_cents: 30000,
+    label: 'Dedicated Desk (Promo — $100/mo for life)',
+    monthly_cost_cents: 10000,
   },
   private_office_single: {
     designation: 'private_office_single',
     label: 'Private Office — Single',
     monthly_cost_cents: 50000,
+  },
+  private_office_single_large: {
+    designation: 'private_office_single_large',
+    label: 'Private Office — Single (Large)',
+    monthly_cost_cents: 60000,
   },
   private_office_double: {
     designation: 'private_office_double',
