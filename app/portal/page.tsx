@@ -7,7 +7,8 @@ import type { Member, MemberDocument, PaymentHistoryRow } from '@/lib/portal/typ
 import { DESIGNATION_LABELS } from '@/lib/portal/types';
 import {
   TERMS_AND_CONDITIONS_TEXT,
-  renderFeeAgreementText,
+  calculateFeeAgreementTotals,
+  MERRITT_SIGNATORY,
 } from '@/lib/portal/legal';
 import { formatUsd } from '@/lib/portal/pricing';
 
@@ -245,7 +246,8 @@ function DocumentsTab({
   }
 
   async function signAgreement(
-    type: 'member_agreement' | 'terms_and_conditions' | 'fee_agreement'
+    type: 'member_agreement' | 'terms_and_conditions' | 'fee_agreement',
+    metadata?: Record<string, unknown>
   ) {
     if (!signatureName.trim()) {
       alert('Type your full legal name to sign.');
@@ -261,7 +263,11 @@ function DocumentsTab({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ agreement_type: type, signature_name: signatureName }),
+        body: JSON.stringify({
+          agreement_type: type,
+          signature_name: signatureName,
+          metadata,
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -281,16 +287,6 @@ function DocumentsTab({
   const designationLabel = member.designation
     ? DESIGNATION_LABELS[member.designation]
     : '— not yet assigned —';
-  const monthlyCostUsd =
-    member.monthly_cost_cents != null ? formatUsd(member.monthly_cost_cents) : '— pending —';
-  const feeAgreementText = renderFeeAgreementText({
-    memberName,
-    companyName: member.company_name,
-    designationLabel,
-    monthlyCostUsd,
-    startDate: new Date().toISOString().slice(0, 10),
-    signedDate: new Date().toLocaleDateString(),
-  });
 
   return (
     <div className="space-y-6">
@@ -344,19 +340,13 @@ function DocumentsTab({
             />
           </div>
 
-          <SignableDoc
-            title="Fee Agreement"
-            description="Auto-generated for your selected plan. Review the monthly fee carefully."
-            body={feeAgreementText}
+          <FeeAgreementSection
+            member={member}
+            memberName={memberName}
+            designationLabel={designationLabel}
             signed={hasSigned('fee_agreement')}
             signing={signing === 'fee_agreement'}
-            disabled={member.monthly_cost_cents == null}
-            disabledReason={
-              member.monthly_cost_cents == null
-                ? 'Your administrator hasn\u2019t assigned a monthly cost yet.'
-                : null
-            }
-            onSign={() => signAgreement('fee_agreement')}
+            onSign={(metadata) => signAgreement('fee_agreement', metadata)}
           />
 
           <SignableDoc
@@ -439,6 +429,351 @@ function SignableDoc({
           {body}
         </pre>
       )}
+    </div>
+  );
+}
+
+function FeeAgreementSection({
+  member,
+  memberName,
+  designationLabel,
+  signed,
+  signing,
+  onSign,
+}: {
+  member: Member;
+  memberName: string;
+  designationLabel: string;
+  signed: boolean;
+  signing: boolean;
+  onSign: (metadata: Record<string, unknown>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [memberTitle, setMemberTitle] = useState('');
+  const [street, setStreet] = useState('');
+  const [cityStateZip, setCityStateZip] = useState('');
+  const [phone, setPhone] = useState(member.phone || '');
+  const [email] = useState(member.email);
+  const [federalId, setFederalId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'ach'>('card');
+
+  // Invoicing details — default "same as member"
+  const [sameAsMember, setSameAsMember] = useState(true);
+  const [invCompany, setInvCompany] = useState(member.company_name || '');
+  const [invStreet, setInvStreet] = useState('');
+  const [invCityStateZip, setInvCityStateZip] = useState('');
+  const [invContact, setInvContact] = useState(memberName);
+  const [invPhone, setInvPhone] = useState(member.phone || '');
+  const [invEmail, setInvEmail] = useState(member.email);
+
+  const monthlyCostCents = member.monthly_cost_cents || 0;
+  const totals = calculateFeeAgreementTotals(monthlyCostCents, paymentMethod);
+
+  const today = new Date();
+  const termStart = today.toLocaleDateString(undefined, {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const termEnd = lastDay.toLocaleDateString(undefined, {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  const disabled = member.monthly_cost_cents == null;
+
+  function handleSign() {
+    if (!street.trim() || !cityStateZip.trim() || !phone.trim()) {
+      alert('Please fill in your street address, city/state/zip, and telephone.');
+      return;
+    }
+    const invoicing = sameAsMember
+      ? {
+          company_name: invCompany,
+          street,
+          city_state_zip: cityStateZip,
+          contact_name: memberName,
+          phone,
+          email,
+        }
+      : {
+          company_name: invCompany,
+          street: invStreet,
+          city_state_zip: invCityStateZip,
+          contact_name: invContact,
+          phone: invPhone,
+          email: invEmail,
+        };
+    const metadata = {
+      member_title: memberTitle,
+      street,
+      city_state_zip: cityStateZip,
+      phone,
+      email,
+      federal_id: federalId,
+      payment_method: paymentMethod,
+      term_start: termStart,
+      term_end: termEnd,
+      designation_label: designationLabel,
+      monthly_cost_cents: monthlyCostCents,
+      first_month_cents: totals.firstMonthCents,
+      last_month_cents: totals.lastMonthCents,
+      cc_fee_cents: totals.ccFeeCents,
+      grand_total_cents: totals.grandTotalCents,
+      invoicing,
+    };
+    onSign(metadata);
+  }
+
+  return (
+    <div className="border rounded">
+      <div className="flex items-center justify-between p-3">
+        <div>
+          <div className="text-sm font-medium text-gray-900">
+            Fee Agreement {signed && <span className="text-green-700">✓ Signed</span>}
+          </div>
+          <div className="text-xs text-gray-500">
+            Auto-generated for your selected plan. Includes first + last month and (if paying by
+            card) a 3.5% processing fee.
+          </div>
+          {disabled && (
+            <div className="text-xs text-amber-700 mt-1">
+              Your administrator hasn&rsquo;t assigned a monthly cost yet.
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50"
+        >
+          {open ? 'Hide' : signed ? 'Review' : 'Open'}
+        </button>
+      </div>
+
+      {open && (
+        <div className="border-t bg-gray-50 p-4 space-y-5">
+          {/* Document preview header */}
+          <div className="bg-gray-900 text-white text-center font-semibold py-2 rounded">
+            MERRITT WORKSPACE FEE AGREEMENT
+          </div>
+
+          {/* Member Information */}
+          <fieldset disabled={signed} className="space-y-3 disabled:opacity-70">
+            <legend className="text-sm font-semibold text-gray-900">Member Information</legend>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field label="Contact Name" value={memberName} readOnly />
+              <Field label="Company Federal ID #" value={federalId} onChange={setFederalId} placeholder="Optional" />
+              <Field label="Street Address" value={street} onChange={setStreet} required />
+              <Field label="Telephone" value={phone} onChange={setPhone} required />
+              <Field label="City / State / ZIP" value={cityStateZip} onChange={setCityStateZip} required />
+              <Field label="Email" value={email} readOnly />
+            </div>
+
+            {/* Invoicing Details */}
+            <div className="pt-2">
+              <div className="flex items-center justify-between">
+                <legend className="text-sm font-semibold text-gray-900">Invoicing Details</legend>
+                <label className="text-xs text-gray-600 flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={sameAsMember}
+                    onChange={(e) => setSameAsMember(e.target.checked)}
+                  />
+                  Same as member info
+                </label>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                <Field label="Company Name" value={invCompany} onChange={setInvCompany} />
+                <Field
+                  label="Contact Name"
+                  value={sameAsMember ? memberName : invContact}
+                  onChange={setInvContact}
+                  readOnly={sameAsMember}
+                />
+                <Field
+                  label="Street Address"
+                  value={sameAsMember ? street : invStreet}
+                  onChange={setInvStreet}
+                  readOnly={sameAsMember}
+                />
+                <Field
+                  label="Telephone"
+                  value={sameAsMember ? phone : invPhone}
+                  onChange={setInvPhone}
+                  readOnly={sameAsMember}
+                />
+                <Field
+                  label="City / State / ZIP"
+                  value={sameAsMember ? cityStateZip : invCityStateZip}
+                  onChange={setInvCityStateZip}
+                  readOnly={sameAsMember}
+                />
+                <Field
+                  label="Email"
+                  value={sameAsMember ? email : invEmail}
+                  onChange={setInvEmail}
+                  readOnly={sameAsMember}
+                />
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <label className="block text-xs text-gray-600 mb-1">Payment method</label>
+              <div className="flex gap-4 text-sm">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={paymentMethod === 'card'}
+                    onChange={() => setPaymentMethod('card')}
+                  />
+                  Credit card (3.5% processing fee applies)
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={paymentMethod === 'ach'}
+                    onChange={() => setPaymentMethod('ach')}
+                  />
+                  ACH / EFT (no fee)
+                </label>
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Description */}
+          <div className="text-xs text-gray-700 bg-white border rounded p-3">
+            <div className="font-semibold mb-1">DESCRIPTION OF SIGNATURE PAGE</div>
+            This page shall act as a binding agreement between Merritt WorKSpace and the
+            Member, as named above. By signing this CoWork Space Agreement (CSA), the member
+            fully acknowledges and hereby agrees to be bound by the financial terms and
+            conditions as stated in this Agreement and the accompanying CoWork Space Terms
+            and Conditions. <em>*Please note*</em> When the stated term (timeframe) of the
+            Agreement has ended, the financial terms shall renew automatically, less any
+            discounts (if applicable).
+          </div>
+
+          {/* Membership Description / Totals */}
+          <div className="bg-white border rounded overflow-hidden">
+            <div className="bg-blue-100 text-gray-900 font-semibold text-sm px-3 py-2 flex justify-between">
+              <span>MEMBERSHIP DESCRIPTION</span>
+              <span>TOTAL</span>
+            </div>
+            <div className="px-3 py-2 text-sm">
+              <div className="font-semibold text-gray-900">{designationLabel}</div>
+            </div>
+            <Row
+              label={`First Month's Membership Fee (${termStart} – ${termEnd})`}
+              value={formatUsd(totals.firstMonthCents)}
+            />
+            <Row label="Last Month's Membership Fee" value={formatUsd(totals.lastMonthCents)} />
+            {paymentMethod === 'card' ? (
+              <>
+                <Row label="3.5% Credit Card Fee" value={formatUsd(totals.ccFeeCents)} />
+                <div className="px-3 pb-2 text-xs text-amber-700 bg-yellow-50">
+                  (Disregard if paying by ACH or EFT)
+                </div>
+              </>
+            ) : (
+              <div className="px-3 py-2 text-xs text-gray-600">
+                Paying by ACH / EFT — no credit card fee.
+              </div>
+            )}
+            <div className="bg-gray-100 px-3 py-2 text-sm font-semibold flex justify-between border-t">
+              <span>GRAND TOTAL</span>
+              <span>{formatUsd(totals.grandTotalCents)}</span>
+            </div>
+          </div>
+
+          {/* Signature blocks */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white border rounded p-3 text-sm">
+              <div className="font-semibold mb-2">MEMBER</div>
+              <div className="space-y-1 text-xs text-gray-700">
+                <div>Name Printed: <span className="text-gray-900">{memberName}</span></div>
+                <div className="flex items-center gap-2">
+                  <span>Title:</span>
+                  <input
+                    disabled={signed}
+                    value={memberTitle}
+                    onChange={(e) => setMemberTitle(e.target.value)}
+                    placeholder="Optional"
+                    className="border rounded px-2 py-0.5 text-xs flex-1"
+                  />
+                </div>
+                <div>Signature: <em>typed name on the form above</em></div>
+                <div>Date: {today.toLocaleDateString()}</div>
+              </div>
+            </div>
+            <div className="bg-white border rounded p-3 text-sm">
+              <div className="font-semibold mb-2">MERRITT WORKSPACE</div>
+              <div className="space-y-1 text-xs text-gray-700">
+                <div>Name Printed: <span className="text-gray-900">{MERRITT_SIGNATORY.name}</span></div>
+                <div>Title: {MERRITT_SIGNATORY.title}</div>
+                <div>Signature: <em>on file</em></div>
+                <div>Date: {today.toLocaleDateString()}</div>
+              </div>
+            </div>
+          </div>
+
+          {!signed && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleSign}
+                disabled={signing || disabled}
+                className="text-sm bg-gray-900 text-white rounded px-4 py-2 hover:bg-gray-800 disabled:opacity-50"
+              >
+                {signing ? 'Signing\u2026' : 'Sign Fee Agreement'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  readOnly,
+  required,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange?: (v: string) => void;
+  readOnly?: boolean;
+  required?: boolean;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="block text-xs text-gray-600">
+        {label} {required && <span className="text-red-600">*</span>}
+      </span>
+      <input
+        value={value}
+        onChange={(e) => onChange?.(e.target.value)}
+        readOnly={readOnly}
+        placeholder={placeholder}
+        className={`mt-1 w-full border rounded px-2 py-1.5 text-sm ${
+          readOnly ? 'bg-gray-100 text-gray-700' : 'bg-white'
+        }`}
+      />
+    </label>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="px-3 py-1.5 text-sm flex justify-between border-t">
+      <span className="text-gray-700">{label}</span>
+      <span className="text-gray-900">{value}</span>
     </div>
   );
 }
