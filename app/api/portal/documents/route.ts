@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: upErr.message }, { status: 500 });
     }
 
-    await sb.from('member_documents').insert({
+    const { error: insertErr } = await sb.from('member_documents').insert({
       member_id: member.id,
       doc_type: docType,
       file_path: path,
@@ -49,6 +49,9 @@ export async function POST(req: NextRequest) {
       mime_type: file.type,
       size_bytes: file.size,
     });
+    if (insertErr) {
+      return NextResponse.json({ error: insertErr.message }, { status: 500 });
+    }
 
     // Recompute required_docs_complete.
     const { data: existing } = await sb
@@ -58,16 +61,25 @@ export async function POST(req: NextRequest) {
     const have = new Set((existing || []).map((d: any) => d.doc_type));
     const complete = REQUIRED_DOC_TYPES.every((t) => have.has(t));
     if (complete !== member.required_docs_complete) {
-      await sb.from('members').update({ required_docs_complete: complete }).eq('id', member.id);
+      await sb
+        .from('members')
+        .update({ required_docs_complete: complete })
+        .eq('id', member.id);
     }
 
-    const { data: documents } = await sb
-      .from('member_documents')
-      .select('*')
-      .eq('member_id', member.id)
-      .order('created_at', { ascending: false });
+    const [{ data: documents }, { data: updatedMember }] = await Promise.all([
+      sb
+        .from('member_documents')
+        .select('*')
+        .eq('member_id', member.id)
+        .order('created_at', { ascending: false }),
+      sb.from('members').select('*').eq('id', member.id).single(),
+    ]);
 
-    return NextResponse.json({ documents: documents || [] });
+    return NextResponse.json({
+      documents: documents || [],
+      member: updatedMember || member,
+    });
   } catch (e: any) {
     const status = e instanceof PortalError ? e.status : 500;
     return NextResponse.json({ error: e.message }, { status });

@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     const sb = getServiceSupabase();
-    await sb.from('member_agreements').upsert(
+    const { error: upsertErr } = await sb.from('member_agreements').upsert(
       {
         member_id: member.id,
         agreement_type,
@@ -55,21 +55,39 @@ export async function POST(req: NextRequest) {
       },
       { onConflict: 'member_id,agreement_type' }
     );
+    if (upsertErr) {
+      return NextResponse.json({ error: upsertErr.message }, { status: 500 });
+    }
 
-    // Mark agreement_signed if BOTH docs signed.
-    const { data: agreements } = await sb
+    // Mark agreement_signed if all three docs signed.
+    const { data: allAgreements } = await sb
       .from('member_agreements')
-      .select('agreement_type')
+      .select('agreement_type, signed_at, signature_name')
       .eq('member_id', member.id);
-    const types = new Set((agreements || []).map((a: any) => a.agreement_type));
+    const types = new Set((allAgreements || []).map((a: any) => a.agreement_type));
     const fullySigned =
       types.has('member_agreement') &&
       types.has('terms_and_conditions') &&
       types.has('fee_agreement');
     if (fullySigned !== member.agreement_signed) {
-      await sb.from('members').update({ agreement_signed: fullySigned }).eq('id', member.id);
+      await sb
+        .from('members')
+        .update({ agreement_signed: fullySigned })
+        .eq('id', member.id);
     }
-    return NextResponse.json({ ok: true, agreement_signed: fullySigned });
+
+    const { data: updatedMember } = await sb
+      .from('members')
+      .select('*')
+      .eq('id', member.id)
+      .single();
+
+    return NextResponse.json({
+      ok: true,
+      agreement_signed: fullySigned,
+      member: updatedMember || { ...member, agreement_signed: fullySigned },
+      agreements: allAgreements || [],
+    });
   } catch (e: any) {
     const status = e instanceof PortalError ? e.status : 500;
     return NextResponse.json({ error: e.message }, { status });
