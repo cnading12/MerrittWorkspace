@@ -521,7 +521,6 @@ function generateManagerEmailHTML(data: {
             <h3>Consents & Agreements</h3>
             <ul>
               <li>Terms & Conditions: ${app.agrees_to_terms ? '✅ Agreed' : '❌ Not Agreed'}</li>
-              <li>Background Check: ${app.agrees_to_background_check ? '✅ Consented' : '❌ Not Consented'}</li>
               <li>Marketing Communications: ${app.marketing_consent ? '✅ Opted In' : '❌ Opted Out'}</li>
             </ul>
           </div>
@@ -532,7 +531,6 @@ function generateManagerEmailHTML(data: {
               <li>Review the application details above</li>
               <li>Contact ${app.first_name} at ${app.email} or ${app.phone} to schedule a tour</li>
               <li>Arrange their free trial day</li>
-              <li>Process background check if required</li>
               <li>Verify credit references</li>
               <li>Send membership agreement for signature</li>
             </ol>
@@ -619,16 +617,14 @@ ${app.special_requirements}
 
 CONSENTS & AGREEMENTS
 - Terms & Conditions: ${app.agrees_to_terms ? 'Agreed' : 'Not Agreed'}
-- Background Check: ${app.agrees_to_background_check ? 'Consented' : 'Not Consented'}
 - Marketing Communications: ${app.marketing_consent ? 'Opted In' : 'Opted Out'}
 
 NEXT STEPS:
 1. Review the application details
 2. Contact ${app.first_name} at ${app.email} or ${app.phone} to schedule a tour
 3. Arrange their free trial day
-4. Process background check if required
-5. Verify credit references
-6. Send membership agreement for signature
+4. Verify credit references
+5. Send membership agreement for signature
 
 ACTION REQUIRED: Please follow up within 1-2 business days.
   `;

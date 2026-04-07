@@ -323,25 +323,43 @@ function AgreementCard({ agreement: a }: { agreement: Agreement }) {
     typeof cents === 'number' ? `$${(cents / 100).toFixed(2)}` : '—';
 
   async function openSignedDocument() {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return;
+    // Open the popup synchronously inside the click gesture so browsers
+    // don't block it — `window.open()` after `await` loses user activation.
+    const win = window.open('', '_blank');
+    if (!win) {
+      alert(
+        'Your browser blocked the popup. Please allow popups for this site, then try again.'
+      );
+      return;
+    }
+    win.document.write(
+      '<!doctype html><title>Loading…</title><body style="font-family:sans-serif;padding:32px;color:#6b7280">Loading signed document…</body>'
+    );
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        win.document.body.textContent = 'Not signed in.';
+        return;
+      }
       const res = await fetch(`/api/admin/agreements/${a.id}/view`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err.error || 'Failed to load agreement');
+        win.document.body.textContent = err.error || 'Failed to load agreement';
         return;
       }
       const html = await res.text();
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
     } catch (e: any) {
-      alert(e.message || 'Failed to open agreement');
+      try {
+        win.document.body.textContent = e.message || 'Failed to open agreement';
+      } catch {
+        /* popup may already be closed */
+      }
     }
   }
 

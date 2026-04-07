@@ -123,26 +123,33 @@ export default function AdminDocumentsPage() {
 
   async function openAgreement(agreementId: string) {
     if (!token) return;
-    // Fetch with auth header, then display in a new tab via a blob URL so the
-    // session token never needs to ride in a query parameter.
+    // Open the popup synchronously inside the click gesture so the browser
+    // doesn't block it — `window.open()` after an `await` loses the user
+    // activation and gets blocked. We then write the loading state and
+    // stream in the real document once the fetch resolves.
+    const win = window.open('', '_blank');
+    if (!win) {
+      alert(
+        'Your browser blocked the popup. Please allow popups for this site, then try again.'
+      );
+      return;
+    }
+    win.document.write(loadingHtml());
     try {
       const res = await fetch(`/api/admin/agreements/${agreementId}/view`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err.error || 'Failed to load agreement');
+        writeError(win, err.error || 'Failed to load agreement');
         return;
       }
       const html = await res.text();
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      // Release the blob URL after a short delay so the new tab has time to
-      // load its content.
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
     } catch (e: any) {
-      alert(e.message || 'Failed to open agreement');
+      writeError(win, e.message || 'Failed to open agreement');
     }
   }
 
@@ -351,4 +358,34 @@ function DocStatusBadge({ status }: { status: 'submitted' | 'approved' | 'reject
       {status}
     </span>
   );
+}
+
+// Helpers for the "view signed document" popup flow.
+function loadingHtml(): string {
+  return `<!doctype html><html><head><title>Loading signed document…</title>
+<style>body{font-family:ui-sans-serif,system-ui,sans-serif;color:#6b7280;padding:32px;background:#f9fafb}</style>
+</head><body><p>Loading signed document…</p></body></html>`;
+}
+
+function writeError(win: Window, message: string) {
+  try {
+    win.document.open();
+    win.document.write(
+      `<!doctype html><html><head><title>Error</title>
+<style>body{font-family:ui-sans-serif,system-ui,sans-serif;color:#991b1b;padding:32px;background:#fef2f2}</style>
+</head><body><p><strong>Error:</strong> ${escapeHtml(message)}</p></body></html>`
+    );
+    win.document.close();
+  } catch {
+    // The popup may have been closed before the error came back — ignore.
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }

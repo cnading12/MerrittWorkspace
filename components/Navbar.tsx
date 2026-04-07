@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Menu, X, ChevronDown, Phone, User, LogOut, LayoutDashboard } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { trackPhoneClick } from '@/lib/gtag';
 import { supabase } from '@/lib/supabase';
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(true);
@@ -96,6 +97,13 @@ export default function Navbar() {
     setIsMenuOpen(false);
     setIsDropdownOpen(null);
   };
+
+  // The public marketing navbar should never appear on authenticated
+  // surfaces (admin panel, member portal) — those pages have their own
+  // headers, and the public nav's fixed z-50 would otherwise overlay them.
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/portal')) {
+    return null;
+  }
 
   return (
     <nav className={`fixed top-0 left-0 right-0 bg-white shadow-md z-50 transition-transform duration-300 ${
