@@ -58,11 +58,11 @@ interface MembershipApplication {
 const membershipPlans = [
   {
     id: 'dedicated_desk',
-    name: 'Dedicated Desk',
-    price: 300,
-    description: 'Your own workspace in our collaborative environment',
+    name: 'Dedicated Desk — $100/mo Promo (for life)',
+    price: 100,
+    description: 'Limited-time promo: lock in $100/month for life on your own dedicated desk in our collaborative environment.',
     category: 'Shared Workspace',
-    features: ['24/7 access', 'High-speed WiFi', 'Printing access', 'Kitchen access', '2 meeting room hours/month']
+    features: ['$100/mo locked in for life', '24/7 access', 'High-speed WiFi', 'Printing access', 'Kitchen access', '2 meeting room hours/month']
   },
   {
     id: 'private_office_single',
@@ -71,6 +71,14 @@ const membershipPlans = [
     description: 'Private lockable office for individual professionals',
     category: 'Private Office',
     features: ['24/7 access', 'Lockable office', 'Window view', 'High-speed WiFi', '4 meeting room hours/month']
+  },
+  {
+    id: 'private_office_single_large',
+    name: 'Private Office - Single (Large)',
+    price: 600,
+    description: 'Larger private single office with extra room to spread out.',
+    category: 'Private Office',
+    features: ['24/7 access', 'Larger lockable office', 'Window view', 'High-speed WiFi', '4 meeting room hours/month']
   },
   {
     id: 'private_office_double',
