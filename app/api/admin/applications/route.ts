@@ -8,11 +8,18 @@ export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
     const sb = getServiceSupabase();
-    const { data, error } = await sb
+    const url = new URL(req.url);
+    const status = url.searchParams.get('status'); // pending | approved | declined | all
+    let query = sb
       .from('member_applications')
       .select('*')
-      .eq('status', 'pending')
       .order('created_at', { ascending: false });
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    } else if (!status) {
+      query = query.eq('status', 'pending');
+    }
+    const { data, error } = await query;
     if (error) throw new Error(error.message);
     return NextResponse.json({ applications: data || [] });
   } catch (e: any) {

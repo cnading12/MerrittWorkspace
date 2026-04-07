@@ -25,7 +25,7 @@ export default function AdminHome() {
       });
       if (res.ok) {
         setAuthed(true);
-        router.replace('/admin/applications');
+        router.replace('/admin/dashboard');
       }
       setChecking(false);
     })();

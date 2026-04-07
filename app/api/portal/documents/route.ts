@@ -61,13 +61,19 @@ export async function POST(req: NextRequest) {
       await sb.from('members').update({ required_docs_complete: complete }).eq('id', member.id);
     }
 
-    const { data: documents } = await sb
-      .from('member_documents')
-      .select('*')
-      .eq('member_id', member.id)
-      .order('created_at', { ascending: false });
+    const [{ data: documents }, { data: updatedMember }] = await Promise.all([
+      sb
+        .from('member_documents')
+        .select('*')
+        .eq('member_id', member.id)
+        .order('created_at', { ascending: false }),
+      sb.from('members').select('*').eq('id', member.id).single(),
+    ]);
 
-    return NextResponse.json({ documents: documents || [] });
+    return NextResponse.json({
+      documents: documents || [],
+      member: updatedMember || member,
+    });
   } catch (e: any) {
     const status = e instanceof PortalError ? e.status : 500;
     return NextResponse.json({ error: e.message }, { status });

@@ -56,10 +56,10 @@ export async function POST(req: NextRequest) {
       { onConflict: 'member_id,agreement_type' }
     );
 
-    // Mark agreement_signed if BOTH docs signed.
+    // Mark agreement_signed if ALL three docs signed.
     const { data: agreements } = await sb
       .from('member_agreements')
-      .select('agreement_type')
+      .select('agreement_type, signed_at, signature_name')
       .eq('member_id', member.id);
     const types = new Set((agreements || []).map((a: any) => a.agreement_type));
     const fullySigned =
@@ -69,7 +69,19 @@ export async function POST(req: NextRequest) {
     if (fullySigned !== member.agreement_signed) {
       await sb.from('members').update({ agreement_signed: fullySigned }).eq('id', member.id);
     }
-    return NextResponse.json({ ok: true, agreement_signed: fullySigned });
+
+    const { data: updatedMember } = await sb
+      .from('members')
+      .select('*')
+      .eq('id', member.id)
+      .single();
+
+    return NextResponse.json({
+      ok: true,
+      agreement_signed: fullySigned,
+      member: updatedMember || { ...member, agreement_signed: fullySigned },
+      agreements: agreements || [],
+    });
   } catch (e: any) {
     const status = e instanceof PortalError ? e.status : 500;
     return NextResponse.json({ error: e.message }, { status });
