@@ -29,6 +29,7 @@ export default function PortalDashboard() {
   const [agreements, setAgreements] = useState<AgreementRow[]>([]);
   const [tab, setTab] = useState<Tab>('documents');
   const [accessRequestStatus, setAccessRequestStatus] = useState<string | null>(null);
+  const [flashMessage, setFlashMessage] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -56,6 +57,28 @@ export default function PortalDashboard() {
     })();
   }, [router]);
 
+  // When the agreements become fully signed, jump the user straight to the
+  // Payments tab so the next step is obvious.
+  useEffect(() => {
+    if (member?.agreement_signed && tab === 'documents' && !member.stripe_subscription_id) {
+      setTab('payments');
+      setFlashMessage('All agreements signed. Set up auto-pay below to finish onboarding.');
+    }
+  }, [member?.agreement_signed, member?.stripe_subscription_id, tab]);
+
+  // When required docs become complete, show a confirmation toast.
+  useEffect(() => {
+    if (member?.required_docs_complete && !member.agreement_signed) {
+      setFlashMessage('Documents received. Now review and sign the three agreements below.');
+    }
+  }, [member?.required_docs_complete, member?.agreement_signed]);
+
+  useEffect(() => {
+    if (!flashMessage) return;
+    const t = setTimeout(() => setFlashMessage(null), 6000);
+    return () => clearTimeout(t);
+  }, [flashMessage]);
+
   async function signOut() {
     await supabase.auth.signOut();
     router.replace('/portal/login');
@@ -78,6 +101,7 @@ export default function PortalDashboard() {
   }
 
   const onboardingLocked = !member.onboarding_unlocked;
+  const paymentsLocked = !member.agreement_signed;
 
   return (
     <div className="space-y-6">
@@ -101,20 +125,37 @@ export default function PortalDashboard() {
 
       <ProgressBar member={member} />
 
+      {flashMessage && (
+        <div className="bg-green-50 border border-green-300 text-green-900 rounded p-3 text-sm flex items-center justify-between">
+          <span>{flashMessage}</span>
+          <button
+            onClick={() => setFlashMessage(null)}
+            className="text-green-700 hover:text-green-900 ml-4"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <div className="border-b">
         <nav className="flex gap-6">
           <TabButton active={tab === 'documents'} onClick={() => setTab('documents')}>
-            Documents
+            1. Documents & Agreements
           </TabButton>
-          <TabButton active={tab === 'payments'} onClick={() => setTab('payments')}>
-            Payments
+          <TabButton
+            active={tab === 'payments'}
+            onClick={() => setTab('payments')}
+            disabled={paymentsLocked}
+          >
+            2. Payment {paymentsLocked && '🔒'}
           </TabButton>
           <TabButton
             active={tab === 'onboarding'}
             onClick={() => setTab('onboarding')}
             disabled={onboardingLocked}
           >
-            Onboarding {onboardingLocked && '🔒'}
+            3. Onboarding {onboardingLocked && '🔒'}
           </TabButton>
         </nav>
       </div>
@@ -124,11 +165,27 @@ export default function PortalDashboard() {
           member={member}
           documents={documents}
           agreements={agreements}
-          onChange={(d) => setDocuments(d)}
+          onMemberChange={setMember}
+          onDocumentsChange={setDocuments}
+          onAgreementsChange={setAgreements}
         />
       )}
 
-      {tab === 'payments' && <PaymentsTab member={member} payments={payments} />}
+      {tab === 'payments' && !paymentsLocked && (
+        <PaymentsTab member={member} payments={payments} />
+      )}
+      {tab === 'payments' && paymentsLocked && (
+        <div className="bg-amber-50 border border-amber-300 rounded p-6 text-sm text-amber-900">
+          You must complete steps 1 (upload required documents and sign all three
+          agreements) before you can set up payment.
+          <button
+            onClick={() => setTab('documents')}
+            className="ml-2 underline font-medium hover:text-amber-700"
+          >
+            Go back to Documents & Agreements
+          </button>
+        </div>
+      )}
 
       {tab === 'onboarding' && !onboardingLocked && (
         <OnboardingTab
@@ -143,27 +200,51 @@ export default function PortalDashboard() {
 
 function ProgressBar({ member }: { member: Member }) {
   const steps = [
-    { label: 'Required documents', done: member.required_docs_complete },
-    { label: 'Agreement signed', done: member.agreement_signed },
-    { label: 'Payment set up', done: !!member.stripe_subscription_id },
+    { label: 'Upload ID & proof of address', done: member.required_docs_complete },
+    { label: 'Sign 3 agreements', done: member.agreement_signed },
+    { label: 'Set up auto-pay', done: !!member.stripe_subscription_id },
     { label: 'Onboarding unlocked', done: member.onboarding_unlocked },
   ];
+  const completed = steps.filter((s) => s.done).length;
+  const pct = Math.round((completed / steps.length) * 100);
   return (
-    <div className="bg-white border rounded p-4">
-      <div className="flex items-center gap-3 flex-wrap">
+    <div className="bg-white border rounded-lg p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-gray-900">Onboarding progress</h2>
+        <span className="text-xs text-gray-500">{completed} of {steps.length} steps complete</span>
+      </div>
+      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+        <div
+          className="bg-green-600 h-full transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {steps.map((s, i) => (
-          <div key={i} className="flex items-center gap-2">
+          <div
+            key={i}
+            className={`flex items-start gap-2 p-3 rounded border ${
+              s.done
+                ? 'bg-green-50 border-green-300'
+                : 'bg-gray-50 border-gray-200'
+            }`}
+          >
             <div
-              className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs ${
-                s.done ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 text-gray-400'
+              className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-semibold ${
+                s.done
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-500'
               }`}
             >
               {s.done ? '✓' : i + 1}
             </div>
-            <span className={`text-sm ${s.done ? 'text-gray-900' : 'text-gray-500'}`}>
+            <span
+              className={`text-xs leading-tight ${
+                s.done ? 'text-green-900 font-medium' : 'text-gray-600'
+              }`}
+            >
               {s.label}
             </span>
-            {i < steps.length - 1 && <span className="text-gray-300">→</span>}
           </div>
         ))}
       </div>
@@ -204,20 +285,29 @@ function DocumentsTab({
   member,
   documents,
   agreements,
-  onChange,
+  onMemberChange,
+  onDocumentsChange,
+  onAgreementsChange,
 }: {
   member: Member;
   documents: MemberDocument[];
   agreements: AgreementRow[];
-  onChange: (d: MemberDocument[]) => void;
+  onMemberChange: (m: Member) => void;
+  onDocumentsChange: (d: MemberDocument[]) => void;
+  onAgreementsChange: (a: AgreementRow[]) => void;
 }) {
   const [uploading, setUploading] = useState<DocType | null>(null);
   const [signing, setSigning] = useState<string | null>(null);
   const [signatureName, setSignatureName] = useState(`${member.first_name} ${member.last_name}`);
+  const [error, setError] = useState<string | null>(null);
   const signedSet = new Set(agreements.map((a) => a.agreement_type));
   const hasSigned = (t: AgreementRow['agreement_type']) => signedSet.has(t);
+  const signedCount = ['member_agreement', 'terms_and_conditions', 'fee_agreement'].filter(
+    (t) => signedSet.has(t as AgreementRow['agreement_type'])
+  ).length;
 
   async function uploadDoc(docType: DocType, file: File) {
+    setError(null);
     setUploading(docType);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -236,10 +326,11 @@ function DocumentsTab({
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Upload failed');
       }
-      const { documents: updated } = await res.json();
-      onChange(updated);
+      const { documents: updatedDocs, member: updatedMember } = await res.json();
+      onDocumentsChange(updatedDocs);
+      if (updatedMember) onMemberChange(updatedMember);
     } catch (e: any) {
-      alert(e.message);
+      setError(e.message);
     } finally {
       setUploading(null);
     }
@@ -249,8 +340,9 @@ function DocumentsTab({
     type: 'member_agreement' | 'terms_and_conditions' | 'fee_agreement',
     metadata?: Record<string, unknown>
   ) {
+    setError(null);
     if (!signatureName.trim()) {
-      alert('Type your full legal name to sign.');
+      setError('Type your full legal name above to sign.');
       return;
     }
     setSigning(type);
@@ -273,9 +365,11 @@ function DocumentsTab({
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to sign');
       }
-      window.location.reload();
+      const data = await res.json();
+      if (data.member) onMemberChange(data.member);
+      if (data.agreements) onAgreementsChange(data.agreements);
     } catch (e: any) {
-      alert(e.message);
+      setError(e.message);
     } finally {
       setSigning(null);
     }
@@ -288,42 +382,113 @@ function DocumentsTab({
     ? DESIGNATION_LABELS[member.designation]
     : '— not yet assigned —';
 
+  const requiredDocsCount = REQUIRED_DOC_TYPES.filter((t) => hasDoc(t)).length;
+  const totalRequiredDocs = REQUIRED_DOC_TYPES.length;
+
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-300 text-red-900 rounded p-3 text-sm flex items-center justify-between">
+          <span><strong>Error:</strong> {error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-700 hover:text-red-900 ml-4"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <section className="bg-white border rounded p-6">
-        <h2 className="font-semibold text-gray-900 mb-1">Required documents</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Upload these before you can sign your member agreement and set up payment.
-        </p>
+        <div className="flex items-start justify-between mb-1">
+          <div>
+            <h2 className="font-semibold text-gray-900">
+              Step 1 · Required documents
+              {member.required_docs_complete && (
+                <span className="ml-2 text-green-700 text-sm font-semibold">✓ Complete</span>
+              )}
+            </h2>
+            <p className="text-sm text-gray-500 mb-4 mt-1">
+              Upload a photo ID and proof of address. Both are required before you can
+              sign your agreements.
+            </p>
+          </div>
+          <div className="text-xs text-gray-500 whitespace-nowrap">
+            {requiredDocsCount} / {totalRequiredDocs} uploaded
+          </div>
+        </div>
         <div className="space-y-3">
-          {REQUIRED_DOC_TYPES.map((t) => (
-            <div key={t} className="flex items-center justify-between border rounded p-3">
-              <div>
-                <div className="text-sm font-medium text-gray-900">{DOC_TYPE_LABELS[t]}</div>
-                {hasDoc(t) && <div className="text-xs text-green-700">Submitted</div>}
+          {REQUIRED_DOC_TYPES.map((t) => {
+            const submitted = hasDoc(t);
+            return (
+              <div
+                key={t}
+                className={`flex items-center justify-between border rounded p-3 ${
+                  submitted ? 'border-green-300 bg-green-50' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+                      submitted
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 border border-gray-300 text-gray-500'
+                    }`}
+                  >
+                    {submitted ? '✓' : '•'}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">{DOC_TYPE_LABELS[t]}</div>
+                    {submitted && (
+                      <div className="text-xs text-green-700 font-medium">Submitted</div>
+                    )}
+                  </div>
+                </div>
+                <label className={`text-sm cursor-pointer rounded px-3 py-1.5 border ${
+                  submitted
+                    ? 'border-gray-300 text-gray-700 hover:bg-white'
+                    : 'border-gray-900 bg-gray-900 text-white hover:bg-gray-800'
+                }`}>
+                  {uploading === t ? 'Uploading…' : submitted ? 'Replace' : 'Upload'}
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadDoc(t, f);
+                    }}
+                  />
+                </label>
               </div>
-              <label className="text-sm cursor-pointer text-gray-700 hover:text-gray-900">
-                {uploading === t ? 'Uploading…' : hasDoc(t) ? 'Replace' : 'Upload'}
-                <input
-                  type="file"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) uploadDoc(t, f);
-                  }}
-                />
-              </label>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
       <section className="bg-white border rounded p-6">
-        <h2 className="font-semibold text-gray-900 mb-1">Agreements</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Review and sign each document below. All three are required before you can set up
-          payment. Available once your required documents are submitted.
-        </p>
+        <div className="flex items-start justify-between mb-1">
+          <div>
+            <h2 className="font-semibold text-gray-900">
+              Step 2 · Agreements
+              {member.agreement_signed && (
+                <span className="ml-2 text-green-700 text-sm font-semibold">✓ All signed</span>
+              )}
+            </h2>
+            <p className="text-sm text-gray-500 mb-4 mt-1">
+              Review and sign each document below. All three are required before you can set up
+              payment.{' '}
+              {!member.required_docs_complete && (
+                <span className="text-amber-700 font-medium">
+                  Upload your required documents above first.
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="text-xs text-gray-500 whitespace-nowrap">
+            {signedCount} / 3 signed
+          </div>
+        </div>
 
         <fieldset
           disabled={!member.required_docs_complete}
@@ -345,6 +510,8 @@ function DocumentsTab({
             memberName={memberName}
             designationLabel={designationLabel}
             signed={hasSigned('fee_agreement')}
+            signedAt={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signed_at || null}
+            signedBy={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signature_name || null}
             signing={signing === 'fee_agreement'}
             onSign={(metadata) => signAgreement('fee_agreement', metadata)}
           />
@@ -354,6 +521,8 @@ function DocumentsTab({
             description="The standard Merritt Workspace house rules and policies."
             body={TERMS_AND_CONDITIONS_TEXT}
             signed={hasSigned('terms_and_conditions')}
+            signedAt={agreements.find((a) => a.agreement_type === 'terms_and_conditions')?.signed_at || null}
+            signedBy={agreements.find((a) => a.agreement_type === 'terms_and_conditions')?.signature_name || null}
             signing={signing === 'terms_and_conditions'}
             onSign={() => signAgreement('terms_and_conditions')}
           />
@@ -363,10 +532,22 @@ function DocumentsTab({
             description="Acknowledges your status as a Merritt Workspace member."
             body={`I, ${memberName}, agree to become a member of Merritt Workspace under the Fee Agreement and Terms & Conditions referenced above.`}
             signed={hasSigned('member_agreement')}
+            signedAt={agreements.find((a) => a.agreement_type === 'member_agreement')?.signed_at || null}
+            signedBy={agreements.find((a) => a.agreement_type === 'member_agreement')?.signature_name || null}
             signing={signing === 'member_agreement'}
             onSign={() => signAgreement('member_agreement')}
           />
         </fieldset>
+
+        {member.agreement_signed && (
+          <div className="mt-6 bg-green-50 border-2 border-green-400 rounded-lg p-4 text-center">
+            <div className="text-2xl">✓</div>
+            <div className="font-semibold text-green-900 mt-1">All three agreements signed!</div>
+            <p className="text-sm text-green-800 mt-1">
+              You can now move on to setting up your monthly auto-pay.
+            </p>
+          </div>
+        )}
       </section>
     </div>
   );
@@ -377,6 +558,8 @@ function SignableDoc({
   description,
   body,
   signed,
+  signedAt,
+  signedBy,
   signing,
   disabled,
   disabledReason,
@@ -386,6 +569,8 @@ function SignableDoc({
   description: string;
   body: string;
   signed: boolean;
+  signedAt?: string | null;
+  signedBy?: string | null;
   signing: boolean;
   disabled?: boolean;
   disabledReason?: string | null;
@@ -393,31 +578,58 @@ function SignableDoc({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border rounded">
-      <div className="flex items-center justify-between p-3">
-        <div>
-          <div className="text-sm font-medium text-gray-900">
-            {title} {signed && <span className="text-green-700">✓ Signed</span>}
+    <div className={`border-2 rounded-lg ${signed ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}>
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-base font-bold flex-shrink-0 ${
+              signed ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-400 border border-gray-300'
+            }`}
+          >
+            {signed ? '✓' : '•'}
           </div>
-          <div className="text-xs text-gray-500">{description}</div>
-          {disabledReason && (
-            <div className="text-xs text-amber-700 mt-1">{disabledReason}</div>
-          )}
+          <div>
+            <div className="text-sm font-semibold text-gray-900">
+              {title}
+              {signed && (
+                <span className="ml-2 text-green-700 text-xs font-bold uppercase tracking-wider">
+                  Signed
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-gray-500">{description}</div>
+            {signed && signedBy && signedAt && (
+              <div className="text-xs text-green-800 mt-1 font-medium">
+                Signed by {signedBy} on {new Date(signedAt).toLocaleString()}
+              </div>
+            )}
+            {disabledReason && (
+              <div className="text-xs text-amber-700 mt-1">{disabledReason}</div>
+            )}
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
-            className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50"
+            className="text-sm border rounded px-3 py-1.5 hover:bg-white bg-white"
           >
             {open ? 'Hide' : 'Review'}
           </button>
-          {!signed && (
+          {signed ? (
+            <button
+              type="button"
+              disabled
+              className="text-sm bg-green-600 text-white rounded px-4 py-1.5 cursor-default font-semibold"
+            >
+              ✓ Signed
+            </button>
+          ) : (
             <button
               type="button"
               onClick={onSign}
               disabled={signing || disabled}
-              className="text-sm bg-gray-900 text-white rounded px-3 py-1.5 hover:bg-gray-800 disabled:opacity-50"
+              className="text-sm bg-gray-900 text-white rounded px-4 py-1.5 hover:bg-gray-800 disabled:opacity-50 font-semibold"
             >
               {signing ? 'Signing\u2026' : 'Sign'}
             </button>
@@ -425,7 +637,7 @@ function SignableDoc({
         </div>
       </div>
       {open && (
-        <pre className="border-t bg-gray-50 p-4 text-xs text-gray-800 whitespace-pre-wrap font-sans max-h-80 overflow-auto">
+        <pre className="border-t bg-white p-4 text-xs text-gray-800 whitespace-pre-wrap font-sans max-h-80 overflow-auto">
           {body}
         </pre>
       )}
@@ -438,6 +650,8 @@ function FeeAgreementSection({
   memberName,
   designationLabel,
   signed,
+  signedAt,
+  signedBy,
   signing,
   onSign,
 }: {
@@ -445,6 +659,8 @@ function FeeAgreementSection({
   memberName: string;
   designationLabel: string;
   signed: boolean;
+  signedAt: string | null;
+  signedBy: string | null;
   signing: boolean;
   onSign: (metadata: Record<string, unknown>) => void;
 }) {
@@ -456,6 +672,7 @@ function FeeAgreementSection({
   const [email] = useState(member.email);
   const [federalId, setFederalId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'ach'>('card');
+  const [localError, setLocalError] = useState<string | null>(null);
 
   // Invoicing details — default "same as member"
   const [sameAsMember, setSameAsMember] = useState(true);
@@ -485,8 +702,9 @@ function FeeAgreementSection({
   const disabled = member.monthly_cost_cents == null;
 
   function handleSign() {
+    setLocalError(null);
     if (!street.trim() || !cityStateZip.trim() || !phone.trim()) {
-      alert('Please fill in your street address, city/state/zip, and telephone.');
+      setLocalError('Please fill in your street address, city/state/zip, and telephone.');
       return;
     }
     const invoicing = sameAsMember
@@ -528,29 +746,59 @@ function FeeAgreementSection({
   }
 
   return (
-    <div className="border rounded">
-      <div className="flex items-center justify-between p-3">
-        <div>
-          <div className="text-sm font-medium text-gray-900">
-            Fee Agreement {signed && <span className="text-green-700">✓ Signed</span>}
+    <div className={`border-2 rounded-lg ${signed ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}>
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-base font-bold flex-shrink-0 ${
+              signed ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-400 border border-gray-300'
+            }`}
+          >
+            {signed ? '✓' : '•'}
           </div>
-          <div className="text-xs text-gray-500">
-            Auto-generated for your selected plan. Includes first + last month and (if paying by
-            card) a 3.5% processing fee.
-          </div>
-          {disabled && (
-            <div className="text-xs text-amber-700 mt-1">
-              Your administrator hasn&rsquo;t assigned a monthly cost yet.
+          <div>
+            <div className="text-sm font-semibold text-gray-900">
+              Fee Agreement
+              {signed && (
+                <span className="ml-2 text-green-700 text-xs font-bold uppercase tracking-wider">
+                  Signed
+                </span>
+              )}
             </div>
+            <div className="text-xs text-gray-500">
+              Auto-generated for your selected plan. Includes first + last month and (if paying by
+              card) a 3.5% processing fee.
+            </div>
+            {signed && signedBy && signedAt && (
+              <div className="text-xs text-green-800 mt-1 font-medium">
+                Signed by {signedBy} on {new Date(signedAt).toLocaleString()}
+              </div>
+            )}
+            {disabled && !signed && (
+              <div className="text-xs text-amber-700 mt-1">
+                Your administrator hasn&rsquo;t assigned a monthly cost yet.
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="text-sm border rounded px-3 py-1.5 hover:bg-white bg-white"
+          >
+            {open ? 'Hide' : signed ? 'Review' : 'Open & sign'}
+          </button>
+          {signed && (
+            <button
+              type="button"
+              disabled
+              className="text-sm bg-green-600 text-white rounded px-4 py-1.5 cursor-default font-semibold"
+            >
+              ✓ Signed
+            </button>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50"
-        >
-          {open ? 'Hide' : signed ? 'Review' : 'Open'}
-        </button>
       </div>
 
       {open && (
@@ -718,13 +966,26 @@ function FeeAgreementSection({
             </div>
           </div>
 
-          {!signed && (
+          {localError && (
+            <div className="bg-red-50 border border-red-300 text-red-900 rounded p-3 text-sm">
+              {localError}
+            </div>
+          )}
+
+          {signed ? (
+            <div className="bg-green-100 border border-green-400 rounded p-3 text-center">
+              <div className="text-2xl">✓</div>
+              <div className="text-sm font-semibold text-green-900">
+                Fee Agreement signed
+              </div>
+            </div>
+          ) : (
             <div className="flex justify-end">
               <button
                 type="button"
                 onClick={handleSign}
                 disabled={signing || disabled}
-                className="text-sm bg-gray-900 text-white rounded px-4 py-2 hover:bg-gray-800 disabled:opacity-50"
+                className="text-sm bg-gray-900 text-white rounded px-6 py-3 hover:bg-gray-800 disabled:opacity-50 font-semibold"
               >
                 {signing ? 'Signing\u2026' : 'Sign Fee Agreement'}
               </button>
