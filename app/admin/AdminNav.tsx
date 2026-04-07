@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 const NAV = [
-  { href: '/admin/dashboard', label: 'Dashboard' },
   { href: '/admin/applications', label: 'Applications' },
   { href: '/admin/members', label: 'Members' },
   { href: '/admin/documents', label: 'Documents' },
@@ -24,8 +23,22 @@ export default function AdminNav() {
     router.replace('/admin');
   }
 
+  const onDashboard = pathname === '/admin/dashboard';
+
   return (
-    <div className="flex items-center gap-6">
+    <div className="flex items-center gap-4">
+      <Link
+        href="/admin/dashboard"
+        className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md transition border ${
+          onDashboard
+            ? 'bg-gray-900 text-white border-gray-900'
+            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+        }`}
+        aria-label="Back to dashboard home"
+      >
+        <HomeIcon />
+        Home
+      </Link>
       <nav className="flex gap-1 text-sm">
         {NAV.map((item) => {
           const active = pathname.startsWith(item.href);
@@ -51,5 +64,24 @@ export default function AdminNav() {
         Sign out
       </button>
     </div>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-6h-2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import type {
   Member,
@@ -35,9 +36,9 @@ interface Detail {
 export default function AdminMemberDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = use(params);
+  const { id } = params;
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [data, setData] = useState<Detail | null>(null);
@@ -130,9 +131,15 @@ export default function AdminMemberDetailPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <a href="/admin/members" className="text-sm text-gray-500 hover:text-gray-900">
-            ← All members
-          </a>
+          <div className="flex items-center gap-3 text-sm text-gray-500">
+            <Link href="/admin/dashboard" className="hover:text-gray-900">
+              ← Dashboard
+            </Link>
+            <span className="text-gray-300">/</span>
+            <Link href="/admin/members" className="hover:text-gray-900">
+              All members
+            </Link>
+          </div>
           <h1 className="text-2xl font-semibold mt-1">
             {member.first_name} {member.last_name}
           </h1>
@@ -204,7 +211,9 @@ export default function AdminMemberDetailPage({
                 className="flex items-center justify-between border rounded p-3"
               >
                 <div className="text-sm">
-                  <div className="font-medium">{DOC_TYPE_LABELS[d.doc_type]}</div>
+                  <div className="font-medium">
+                    {DOC_TYPE_LABELS[d.doc_type] || d.doc_type}
+                  </div>
                   <div className="text-xs text-gray-500">
                     {d.file_name || d.file_path} ·{' '}
                     <span className="capitalize">{d.status}</span>
