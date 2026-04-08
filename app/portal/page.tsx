@@ -1343,24 +1343,68 @@ function OnboardingTab({
 
       {/* Management Team contact info */}
       <section className="bg-white border rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-3">Management Team</h3>
-        <ul className="text-sm text-gray-700 space-y-1">
-          <li>
-            <span className="font-medium">Phone:</span>{' '}
-            <a href="tel:+13033598337" className="text-orange-700 hover:underline">
-              303-359-8337
-            </a>
-          </li>
-          <li>
-            <span className="font-medium">Email:</span>{' '}
-            <a
-              href="mailto:manager@merrittworkspace.net"
-              className="text-orange-700 hover:underline"
-            >
-              manager@merrittworkspace.net
-            </a>
-          </li>
-          <li>
+        <h3 className="font-semibold text-gray-900 mb-2">Who to Contact</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Merritt Workspace has two dedicated contact channels — please use the right one so your
+          request gets to the right person quickly.
+        </p>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Manager */}
+          <div className="border border-burnt-orange-200 rounded-lg p-4 bg-orange-50">
+            <h4 className="font-semibold text-gray-900">Manager</h4>
+            <p className="text-xs text-gray-600 mt-1">
+              Best for: new member onboarding, tours, membership-level changes, building access
+              code setup, and high-level workspace matters.
+            </p>
+            <ul className="mt-3 text-sm text-gray-700 space-y-1">
+              <li>
+                <span className="font-medium">Phone:</span>{' '}
+                <a href="tel:+17203579499" className="text-orange-700 hover:underline">
+                  (720) 357-9499
+                </a>
+              </li>
+              <li>
+                <span className="font-medium">Email:</span>{' '}
+                <a
+                  href="mailto:manager@merrittworkspace.net"
+                  className="text-orange-700 hover:underline break-all"
+                >
+                  manager@merrittworkspace.net
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Member Services */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <h4 className="font-semibold text-gray-900">Member Services</h4>
+            <p className="text-xs text-gray-600 mt-1">
+              Best for: day-to-day member support, cubbies, mail, snack shop questions,
+              conference room help, and anything else you need as an existing member.
+            </p>
+            <ul className="mt-3 text-sm text-gray-700 space-y-1">
+              <li>
+                <span className="font-medium">Phone:</span>{' '}
+                <a href="tel:+13033598337" className="text-orange-700 hover:underline">
+                  (303) 359-8337
+                </a>
+              </li>
+              <li>
+                <span className="font-medium">Email:</span>{' '}
+                <a
+                  href="mailto:memberservices@merrittworkspace.net"
+                  className="text-orange-700 hover:underline break-all"
+                >
+                  memberservices@merrittworkspace.net
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-4 text-sm text-gray-700">
+          <p>
             <span className="font-medium">Website:</span>{' '}
             <a
               href="https://www.merrittworkspace.net"
@@ -1370,11 +1414,11 @@ function OnboardingTab({
             >
               www.merrittworkspace.net
             </a>
-          </li>
-          <li>
+          </p>
+          <p className="mt-1">
             <span className="font-medium">Address:</span> 2246 Irving St, Denver, CO 80211
-          </li>
-        </ul>
+          </p>
+        </div>
       </section>
 
       {/* Getting Started */}
@@ -1436,12 +1480,24 @@ function OnboardingTab({
             <h4 className="font-semibold text-gray-900">Cubbies &amp; Mail</h4>
             <ul className="mt-1 list-disc pl-5 space-y-0.5">
               <li>
-                <span className="font-medium">Want a cubby?</span> Ask the Merritt Management
-                team!
+                <span className="font-medium">Want a cubby?</span> Email{' '}
+                <a
+                  href="mailto:memberservices@merrittworkspace.net"
+                  className="text-orange-700 hover:underline"
+                >
+                  memberservices@merrittworkspace.net
+                </a>
+                .
               </li>
               <li>
-                <span className="font-medium">Send / Receive Mail?</span> Ask the Merritt
-                Management team!
+                <span className="font-medium">Send / Receive Mail?</span> Email{' '}
+                <a
+                  href="mailto:memberservices@merrittworkspace.net"
+                  className="text-orange-700 hover:underline"
+                >
+                  memberservices@merrittworkspace.net
+                </a>
+                .
               </li>
             </ul>
           </div>
