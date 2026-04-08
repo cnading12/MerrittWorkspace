@@ -1318,27 +1318,147 @@ function OnboardingTab({
 
   return (
     <div className="space-y-6">
-      <section className="bg-white border rounded p-6">
-        <h2 className="font-semibold text-gray-900 mb-2">Welcome to Merritt Workspace</h2>
+      {/* Welcome banner */}
+      <section className="bg-white border rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          Hello {member.first_name}, welcome to the Merritt Workspace community!
+        </h2>
         <p className="text-sm text-gray-700">
-          Now that your membership is complete, here&apos;s everything you need to get started.
+          We&apos;re thrilled to have you with us. Now that your membership is complete, we want to
+          make sure you have everything you need to get started. Below you&apos;ll find all the
+          essential information about your workspace.
         </p>
       </section>
 
-      <section className="bg-white border rounded p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">Building info</h3>
-        <ul className="text-sm text-gray-700 space-y-1 list-disc pl-5">
-          <li>WiFi network: <code>merrittcowork</code> &nbsp; Password: <code>Merritt23X</code></li>
-          <li>Building hours (open to public): 8:00 AM – 6:00 PM</li>
-          <li>Kitchen, snack shop, and conference rooms available to all members</li>
-          <li>Need a cubby? Just ask the management team.</li>
+      {/* About Merritt Workspace */}
+      <section className="bg-white border rounded-lg p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">About Merritt Workspace</h3>
+        <p className="text-sm text-gray-700">
+          Merritt comprises two historic buildings: the original 1905 Merritt Methodist Church and
+          the 1956 Auxiliary Building. Currently, the 1956 building is a modern CoWork facility
+          with state-of-the-art amenities, while the 1905 church is a multi-use spiritual
+          facility, potentially hosting community programs and private events in the future.
+        </p>
+      </section>
+
+      {/* Management Team contact info */}
+      <section className="bg-white border rounded-lg p-6">
+        <h3 className="font-semibold text-gray-900 mb-3">Management Team</h3>
+        <ul className="text-sm text-gray-700 space-y-1">
+          <li>
+            <span className="font-medium">Phone:</span>{' '}
+            <a href="tel:+13033598337" className="text-orange-700 hover:underline">
+              303-359-8337
+            </a>
+          </li>
+          <li>
+            <span className="font-medium">Email:</span>{' '}
+            <a
+              href="mailto:manager@merrittworkspace.net"
+              className="text-orange-700 hover:underline"
+            >
+              manager@merrittworkspace.net
+            </a>
+          </li>
+          <li>
+            <span className="font-medium">Website:</span>{' '}
+            <a
+              href="https://www.merrittworkspace.net"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-orange-700 hover:underline"
+            >
+              www.merrittworkspace.net
+            </a>
+          </li>
+          <li>
+            <span className="font-medium">Address:</span> 2246 Irving St, Denver, CO 80211
+          </li>
         </ul>
       </section>
 
-      <section className="bg-white border rounded p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">24/7 building access code</h3>
-        {member.access_code ? (
+      {/* Getting Started */}
+      <section className="bg-white border rounded-lg p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Getting Started</h3>
+
+        <div className="space-y-5 text-sm text-gray-700">
           <div>
+            <h4 className="font-semibold text-gray-900">WiFi</h4>
+            <p className="mt-1">Connect to WiFi using the following credentials:</p>
+            <ul className="mt-1 list-disc pl-5 space-y-0.5">
+              <li>
+                Username: <code className="bg-gray-100 px-1 rounded">merrittcowork</code>
+              </li>
+              <li>
+                Password: <code className="bg-gray-100 px-1 rounded">Merritt23X</code>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-gray-900">Kitchen &amp; Snack Shop</h4>
+            <p className="mt-1">How to use the kitchen:</p>
+            <ul className="mt-1 list-disc pl-5 space-y-0.5">
+              <li>
+                Go to our website and under &ldquo;Member Resources&rdquo; select &ldquo;SnackShop&rdquo;
+              </li>
+              <li>Put desired items in cart and checkout</li>
+            </ul>
+            <p className="mt-2">
+              Snack Shop:{' '}
+              <a
+                href="https://www.merrittworkspace.net/snackshop"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-orange-700 hover:underline"
+              >
+                www.merrittworkspace.net/snackshop
+              </a>
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-gray-900">Lock / Unlock Building</h4>
+            <p className="mt-1">
+              Getting in and out of the building <strong>outside of normal business hours
+              (8:00 AM – 6:00 PM)</strong>:
+            </p>
+            <ul className="mt-1 list-disc pl-5 space-y-0.5">
+              <li>Use the main entrance if between 8:00 AM – 6:00 PM.</li>
+              <li>
+                Outside normal hours — you will receive a YouTube tutorial along with your
+                security access code.
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-gray-900">Cubbies &amp; Mail</h4>
+            <ul className="mt-1 list-disc pl-5 space-y-0.5">
+              <li>
+                <span className="font-medium">Want a cubby?</span> Ask the Merritt Management
+                team!
+              </li>
+              <li>
+                <span className="font-medium">Send / Receive Mail?</span> Ask the Merritt
+                Management team!
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* 24/7 Building Access */}
+      <section className="bg-amber-50 border border-amber-300 rounded-lg p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">
+          🔐 24/7 Building Access {member.access_code ? '' : '(Action Required)'}
+        </h3>
+        <p className="text-sm text-gray-700">
+          Your membership includes a <strong>personal access code at no extra charge</strong> that
+          allows you to access the building outside of normal business hours (8:00 AM – 6:00 PM).
+        </p>
+        {member.access_code ? (
+          <div className="mt-4 bg-white border border-amber-300 rounded p-4">
             <p className="text-sm text-gray-700">Your personal access code:</p>
             <div className="mt-2 text-2xl font-mono font-bold tracking-widest text-gray-900">
               {member.access_code}
@@ -1348,10 +1468,17 @@ function OnboardingTab({
             </p>
           </div>
         ) : (
-          <div>
+          <div className="mt-3">
             <p className="text-sm text-gray-700">
-              Request a personal access code for entry outside business hours. Our team will set
-              it up and email it to you.
+              To request your personal access code, click the button below or send a separate
+              email to{' '}
+              <a
+                href="mailto:manager@merrittworkspace.net"
+                className="text-orange-700 hover:underline"
+              >
+                manager@merrittworkspace.net
+              </a>
+              . We&apos;ll set up your code and send you instructions right away.
             </p>
             <button
               onClick={requestAccessCode}
@@ -1367,11 +1494,89 @@ function OnboardingTab({
         )}
       </section>
 
-      <section className="bg-white border rounded p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">Member referral program</h3>
+      {/* Additional Resources */}
+      <section className="bg-white border rounded-lg p-6">
+        <h3 className="font-semibold text-gray-900 mb-3">📚 Additional Resources</h3>
+        <ul className="text-sm text-gray-700 space-y-2 list-disc pl-5">
+          <li>
+            <a
+              href="/member-resources"
+              className="text-orange-700 hover:underline font-medium"
+            >
+              FAQs Page
+            </a>{' '}
+            — Find answers to common questions
+          </li>
+          <li>
+            <span className="font-medium">Snack Shop</span> — Available at{' '}
+            <a
+              href="https://www.merrittworkspace.net/snackshop"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-orange-700 hover:underline"
+            >
+              www.merrittworkspace.net/snackshop
+            </a>
+          </li>
+          <li>
+            <span className="font-medium">Conference Room Booking</span> — Check availability on
+            our website
+          </li>
+          <li>
+            <span className="font-medium">Need a Cubby?</span> — Just ask the management team!
+          </li>
+          <li>
+            <span className="font-medium">Wellness Space Access – Availability Calendar:</span>{' '}
+            <a
+              href="https://www.merrittwellness.net/booking"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-orange-700 hover:underline"
+            >
+              www.merrittwellness.net/booking
+            </a>
+            <p className="mt-1 text-gray-700">
+              Based on availability, the Wellness Space may be reserved up to 14 days in advance
+              for approved uses and based on the existing terms and conditions. Maximum single use
+              reservation is 4 hours. Currently, Wellness Space reservations made by Workspace
+              Members for reservations between the hours of 8:00 AM and 4:00 PM may be reserved at
+              no cost; reservations made for after 4:00 PM may be reserved at the current
+              recurring client Wellness Space hourly rate. All future reservations, cost, and
+              approved uses and terms are subject to change based on the needs of the overall
+              membership, facilities, and management.
+            </p>
+          </li>
+        </ul>
+      </section>
+
+      {/* Events */}
+      <section className="bg-white border rounded-lg p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">🎉 Events</h3>
         <p className="text-sm text-gray-700">
-          Love your workspace? Refer a friend and save $200 on next month&apos;s fee when they sign up.
+          Get involved with our events next door:
         </p>
+        <ul className="mt-2 text-sm text-gray-700 list-disc pl-5 space-y-1">
+          <li>Weekly schedule from management</li>
+          <li>Discount on hosting and attending events</li>
+        </ul>
+      </section>
+
+      {/* Member Referral Program */}
+      <section className="bg-green-50 border border-green-300 rounded-lg p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">💰 Member Referral Program</h3>
+        <p className="text-sm text-gray-800">
+          Love your workspace? Refer a friend and{' '}
+          <strong>save $200 on your next month&apos;s membership fee</strong> when they sign up!
+        </p>
+      </section>
+
+      {/* Closing */}
+      <section className="bg-white border rounded-lg p-6">
+        <p className="text-sm text-gray-700">
+          If you have any questions or need assistance getting settled in, don&apos;t hesitate to
+          reach out. We&apos;re here to help make your experience at Merritt Workspace exceptional.
+        </p>
+        <p className="mt-3 text-sm text-gray-700 font-medium">See you soon!</p>
       </section>
     </div>
   );
