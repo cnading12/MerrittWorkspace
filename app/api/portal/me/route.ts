@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const [{ data: documents }, { data: payments }, { data: agreements }] = await Promise.all([
       sb.from('member_documents').select('*').eq('member_id', member.id).order('created_at', { ascending: false }),
       sb.from('payment_history').select('*').eq('member_id', member.id).order('created_at', { ascending: false }),
-      sb.from('member_agreements').select('agreement_type, signed_at, signature_name').eq('member_id', member.id),
+      sb.from('member_agreements').select('agreement_type, signed_at, signature_name, metadata').eq('member_id', member.id),
     ]);
     return NextResponse.json({
       member,

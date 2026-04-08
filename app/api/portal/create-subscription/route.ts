@@ -25,6 +25,21 @@ export async function POST(req: NextRequest) {
       apiVersion: '2025-08-27.basil' as any,
     });
 
+    const sb = getServiceSupabase();
+
+    // Read the payment method the member selected when they signed the Fee
+    // Agreement. Valid values are 'card' (default) or 'ach'. When 'ach', we
+    // configure Stripe Checkout to offer US bank account auto-debit via
+    // Financial Connections so the member can avoid the 3.5% card fee.
+    const { data: feeAgreement } = await sb
+      .from('member_agreements')
+      .select('metadata')
+      .eq('member_id', member.id)
+      .eq('agreement_type', 'fee_agreement')
+      .maybeSingle();
+    const selectedMethod =
+      (feeAgreement?.metadata as any)?.payment_method === 'ach' ? 'ach' : 'card';
+
     // Find or create the Stripe customer.
     let customerId = member.stripe_customer_id;
     if (!customerId) {
@@ -34,7 +49,7 @@ export async function POST(req: NextRequest) {
         metadata: { member_id: member.id },
       });
       customerId = customer.id;
-      await getServiceSupabase()
+      await sb
         .from('members')
         .update({ stripe_customer_id: customerId })
         .eq('id', member.id);
@@ -66,10 +81,35 @@ export async function POST(req: NextRequest) {
     // December → January rollover (month + 1 === 12 becomes Jan of year+1).
     const anchor = Math.floor(Date.UTC(year, month + 1, 1, 12, 0, 0) / 1000);
 
+    // Payment method configuration.
+    //   - ACH members: primary `us_bank_account` (no fee), with `card` as a
+    //     fallback in case Financial Connections can't verify their bank.
+    //     Financial Connections `instant` verification means no micro-deposit
+    //     delay; the member links their bank via Plaid-style flow inside
+    //     Stripe Checkout and the subscription auto-debits from it monthly.
+    //   - Card members: `card` + `link` (Stripe's one-click wallet).
+    // Checkout automatically saves the payment method used during the flow
+    // as the subscription's default_payment_method, so subsequent monthly
+    // invoices auto-charge it without any extra configuration.
+    const checkoutPaymentMethodTypes: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] =
+      selectedMethod === 'ach' ? ['us_bank_account', 'card'] : ['card', 'link'];
+
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
+      payment_method_types: checkoutPaymentMethodTypes,
+      payment_method_options:
+        selectedMethod === 'ach'
+          ? {
+              us_bank_account: {
+                financial_connections: {
+                  permissions: ['payment_method', 'balances'],
+                },
+                verification_method: 'instant',
+              },
+            }
+          : undefined,
       line_items: [
         {
           price_data: {
@@ -87,7 +127,11 @@ export async function POST(req: NextRequest) {
       subscription_data: {
         billing_cycle_anchor: anchor,
         proration_behavior: 'create_prorations',
-        metadata: { member_id: member.id, monthly_cost_cents: String(member.monthly_cost_cents) },
+        metadata: {
+          member_id: member.id,
+          monthly_cost_cents: String(member.monthly_cost_cents),
+          selected_payment_method: selectedMethod,
+        },
       },
       payment_method_collection: 'always',
       success_url: `${baseUrl}/portal?subscribed=1`,
@@ -96,6 +140,7 @@ export async function POST(req: NextRequest) {
         order_type: 'membership_subscription',
         member_id: member.id,
         prorated_first_charge_cents: String(proratedCents),
+        selected_payment_method: selectedMethod,
       },
     });
 

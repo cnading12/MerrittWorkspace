@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     // Mark agreement_signed if ALL three docs signed.
     const { data: agreements } = await sb
       .from('member_agreements')
-      .select('agreement_type, signed_at, signature_name')
+      .select('agreement_type, signed_at, signature_name, metadata')
       .eq('member_id', member.id);
     const types = new Set((agreements || []).map((a: any) => a.agreement_type));
     const fullySigned =
