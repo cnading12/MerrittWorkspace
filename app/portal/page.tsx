@@ -1354,8 +1354,8 @@ function OnboardingTab({
           <div className="border border-burnt-orange-200 rounded-lg p-4 bg-orange-50">
             <h4 className="font-semibold text-gray-900">Manager</h4>
             <p className="text-xs text-gray-600 mt-1">
-              Best for: new member onboarding, tours, membership-level changes, building access
-              code setup, and high-level workspace matters.
+              Best for: new member onboarding, tours, membership-level changes, and
+              high-level workspace matters.
             </p>
             <ul className="mt-3 text-sm text-gray-700 space-y-1">
               <li>
@@ -1380,8 +1380,9 @@ function OnboardingTab({
           <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
             <h4 className="font-semibold text-gray-900">Member Services</h4>
             <p className="text-xs text-gray-600 mt-1">
-              Best for: day-to-day member support, cubbies, mail, snack shop questions,
-              conference room help, and anything else you need as an existing member.
+              Best for: day-to-day member support, building access code setup, cubbies,
+              mail, snack shop questions, conference room help, and anything else you
+              need as an existing member.
             </p>
             <ul className="mt-3 text-sm text-gray-700 space-y-1">
               <li>
@@ -1529,10 +1530,10 @@ function OnboardingTab({
               To request your personal access code, click the button below or send a separate
               email to{' '}
               <a
-                href="mailto:manager@merrittworkspace.net"
+                href="mailto:memberservices@merrittworkspace.net"
                 className="text-orange-700 hover:underline"
               >
-                manager@merrittworkspace.net
+                memberservices@merrittworkspace.net
               </a>
               . We&apos;ll set up your code and send you instructions right away.
             </p>

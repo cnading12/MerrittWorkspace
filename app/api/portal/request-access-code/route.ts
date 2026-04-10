@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       });
       await resend.emails.send({
         from: PORTAL_FROM,
-        to: 'manager@merrittworkspace.net',
+        to: 'memberservices@merrittworkspace.net',
         subject: tpl.subject,
         html: tpl.html,
       }).catch((e) => console.error('Resend error', e));
