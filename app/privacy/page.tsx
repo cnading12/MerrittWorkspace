@@ -268,8 +268,8 @@ export default function PrivacyPolicyPage() {
 
                 <p className="text-gray-700 mt-4 text-sm">
                   To exercise any of these rights, please contact us at{' '}
-                  <a href="mailto:privacy@merrittworkspace.net" className="text-blue-600 hover:underline font-medium">
-                    privacy@merrittworkspace.net
+                  <a href="mailto:memberservices@merrittworkspace.net" className="text-blue-600 hover:underline font-medium">
+                    memberservices@merrittworkspace.net
                   </a>
                 </p>
               </div>
@@ -353,8 +353,8 @@ export default function PrivacyPolicyPage() {
                   <p>Denver, CO 80211</p>
                   <p className="mt-4">
                     <strong>Email:</strong>{' '}
-                    <a href="mailto:privacy@merrittworkspace.net" className="text-blue-600 hover:underline">
-                      privacy@merrittworkspace.net
+                    <a href="mailto:memberservices@merrittworkspace.net" className="text-blue-600 hover:underline">
+                      memberservices@merrittworkspace.net
                     </a>
                   </p>
                   <p>

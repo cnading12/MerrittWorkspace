@@ -93,7 +93,7 @@ function OrderConfirmationContent() {
                                 Try Again
                             </Link>
                             <a
-                                href="mailto:snackshop@merrittworkspace.net"
+                                href="mailto:memberservices@merrittworkspace.net"
                                 className="inline-flex items-center px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition"
                             >
                                 <Mail className="w-5 h-5 mr-2" />

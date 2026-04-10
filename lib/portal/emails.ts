@@ -7,7 +7,7 @@ const FOOTER = `
   <div class="footer">
     <p><strong>Merritt Workspace</strong></p>
     <p>2246 Irving Street, Denver, CO 80211</p>
-    <p>manager@merrittworkspace.net</p>
+    <p>memberservices@merrittworkspace.net</p>
   </div>
 `;
 

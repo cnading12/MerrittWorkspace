@@ -14,7 +14,7 @@ export default function LocalBusinessSchema() {
       "https://merrittworkspace.net/images/private-offices/single.png"
     ],
     "telephone": "+1-720-357-9499",
-    "email": "manager@merrittworkspace.net",
+    "email": "memberservices@merrittworkspace.net",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "2246 Irving Street",

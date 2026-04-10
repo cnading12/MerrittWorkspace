@@ -344,8 +344,8 @@ export default function FAQPage() {
               <div className="space-y-2 text-burnt-orange-700">
                 <div className="flex items-center">
                   <Mail className="w-4 h-4 mr-2" />
-                  <a href="mailto:manager@merrittworkspace.net" className="hover:underline">
-                    manager@merrittworkspace.net
+                  <a href="mailto:memberservices@merrittworkspace.net" className="hover:underline">
+                    memberservices@merrittworkspace.net
                   </a>
                 </div>
                 <div className="flex items-center">
@@ -393,7 +393,7 @@ export default function FAQPage() {
               Can't find what you're looking for? We're here to help!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="mailto:manager@merrittworkspace.net" className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition">
+              <a href="mailto:memberservices@merrittworkspace.net" className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition">
                 Email Us
               </a>
               <a href="tel:720-357-9499" className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition">
@@ -489,7 +489,7 @@ export default function FAQPage() {
               <h3 className="text-lg font-semibold mb-2">Email Support</h3>
               <p className="text-gray-600 mb-4">Get detailed answers to your questions</p>
               <a
-                href="mailto:manager@merrittworkspace.net"
+                href="mailto:memberservices@merrittworkspace.net"
                 className="bg-burnt-orange-600 text-white px-6 py-2 rounded-lg hover:bg-burnt-orange-700 transition inline-block"
               >
                 Send Email

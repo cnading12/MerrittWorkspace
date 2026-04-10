@@ -427,7 +427,7 @@ function MemberBookingSuccessContent() {
             </p>
             <p className="text-gray-600">
               Call us at <a href="tel:(720)357-9499" className="text-orange-600 hover:underline font-bold">(720) 357-9499</a> or
-              email <a href="mailto:support@merritthouse.net" className="text-orange-600 hover:underline font-bold">support@merritthouse.net</a>
+              email <a href="mailto:memberservices@merrittworkspace.net" className="text-orange-600 hover:underline font-bold">memberservices@merrittworkspace.net</a>
             </p>
             <p className="text-sm text-gray-500 mt-2">We're here to help make your meeting successful!</p>
           </div>

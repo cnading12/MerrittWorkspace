@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
       console.log('📧 Sending applicant confirmation email...');
       
       const applicantEmail = await resend.emails.send({
-        from: 'Merritt Workspace Membership <membership@merrittworkspace.net>',
+        from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
         to: applicationData.email,
         subject: 'Membership Application Received | Merritt Workspace',
         html: generateApplicantEmailHTML({
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
       console.log('📧 Sending manager notification email...');
       
       const managerEmail = await resend.emails.send({
-        from: 'Merritt Workspace Membership <membership@merrittworkspace.net>',
+        from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
         to: MANAGER_EMAIL,
         subject: `🆕 New Membership Application - ${applicationData.first_name} ${applicationData.last_name} (${membershipTypeDisplay})`,
         html: generateManagerEmailHTML({
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
       console.log('📧 Sending member services notification email...');
 
       const memberServicesEmail = await resend.emails.send({
-        from: 'Merritt Workspace Membership <membership@merrittworkspace.net>',
+        from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
         to: MEMBER_SERVICES_EMAIL,
         subject: `🆕 New Membership Application - ${applicationData.first_name} ${applicationData.last_name} (${membershipTypeDisplay})`,
         html: generateManagerEmailHTML({
@@ -330,14 +330,14 @@ function generateApplicantEmailHTML(data: {
 
             <p>We'll be in touch soon to move forward with your membership. Thank you for choosing Merritt Workspace!</p>
             
-            <a href="mailto:membership@merrittworkspace.net" class="button">Questions? Contact Us</a>
+            <a href="mailto:manager@merrittworkspace.net" class="button">Questions? Contact Us</a>
           </div>
-          
+
           <div class="footer">
             <p><strong>Merritt Workspace</strong></p>
             <p>Where Work Meets Community</p>
             <p>2246 Irving Street, Denver, CO 80211</p>
-            <p>Email: membership@merrittworkspace.net | Phone: (123) 456-7890</p>
+            <p>Email: manager@merrittworkspace.net | Phone: (123) 456-7890</p>
           </div>
         </div>
       </body>
@@ -383,7 +383,7 @@ Our Amenities:
 
 We'll be in touch soon to move forward with your membership.
 
-Questions? Contact us at membership@merrittworkspace.net or (123) 456-7890
+Questions? Contact us at manager@merrittworkspace.net or (123) 456-7890
 
 Welcome to the community!
 

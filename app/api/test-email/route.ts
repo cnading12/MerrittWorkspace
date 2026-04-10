@@ -30,13 +30,13 @@ export async function GET(request: NextRequest) {
 
     await delay(1000);
 
-    // Test 2: from membership@ to memberservices@ (this is what applications use)
+    // Test 2: from manager@ with Membership display name (applications use this)
     try {
         const r = await resend.emails.send({
-            from: 'Merritt Workspace Membership <membership@merrittworkspace.net>',
+            from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
             to: 'memberservices@merrittworkspace.net',
-            subject: 'Test 2: FROM membership@ TO memberservices@',
-            text: 'This email was sent FROM membership@merrittworkspace.net. If you receive this, the from=membership address works.',
+            subject: 'Test 2: FROM manager@ (Membership) TO memberservices@',
+            text: 'This email was sent FROM manager@merrittworkspace.net with the Membership display name. If you receive this, the address works.',
         });
         results.test2_from_membership = { data: r.data, error: r.error };
     } catch (e: any) {
@@ -45,13 +45,13 @@ export async function GET(request: NextRequest) {
 
     await delay(1000);
 
-    // Test 3: from snackshop@ to memberservices@ (this is what snackshop orders use)
+    // Test 3: from memberservices@ with Snackshop display name (snackshop orders use this)
     try {
         const r = await resend.emails.send({
-            from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
+            from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
             to: 'memberservices@merrittworkspace.net',
-            subject: 'Test 3: FROM snackshop@ TO memberservices@',
-            text: 'This email was sent FROM snackshop@merrittworkspace.net. If you receive this, the from=snackshop address works.',
+            subject: 'Test 3: FROM memberservices@ (Snackshop) TO memberservices@',
+            text: 'This email was sent FROM memberservices@merrittworkspace.net with the Snackshop display name. If you receive this, the address works.',
         });
         results.test3_from_snackshop = { data: r.data, error: r.error };
     } catch (e: any) {
@@ -60,13 +60,13 @@ export async function GET(request: NextRequest) {
 
     await delay(1000);
 
-    // Test 4: from meetings@ to memberservices@ (this is what booking confirmations use)
+    // Test 4: from memberservices@ with Meetings display name (booking confirmations use this)
     try {
         const r = await resend.emails.send({
-            from: 'Merritt Workspace Meetings <meetings@merrittworkspace.net>',
+            from: 'Merritt Workspace Meetings <memberservices@merrittworkspace.net>',
             to: 'memberservices@merrittworkspace.net',
-            subject: 'Test 4: FROM meetings@ TO memberservices@',
-            text: 'This email was sent FROM meetings@merrittworkspace.net. If you receive this, the from=meetings address works.',
+            subject: 'Test 4: FROM memberservices@ (Meetings) TO memberservices@',
+            text: 'This email was sent FROM memberservices@merrittworkspace.net with the Meetings display name. If you receive this, the address works.',
         });
         results.test4_from_meetings = { data: r.data, error: r.error };
     } catch (e: any) {
