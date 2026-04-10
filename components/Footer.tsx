@@ -33,8 +33,8 @@ export default function Footer() {
                 </a>
               </p>
               <p>
-                <a href="mailto:manager@merrittworkspace.net" onClick={trackEmailClick} className="hover:text-white transition">
-                  manager@merrittworkspace.net
+                <a href="mailto:memberservices@merrittworkspace.net" onClick={trackEmailClick} className="hover:text-white transition">
+                  memberservices@merrittworkspace.net
                 </a>
               </p>
             </div>

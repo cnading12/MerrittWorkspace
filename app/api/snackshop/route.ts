@@ -170,7 +170,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
     if (customerEmail && process.env.RESEND_API_KEY) {
       try {
         await resend.emails.send({
-          from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
+          from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
           to: customerEmail,
           subject: `Payment Failed - Order ${orderId}`,
           html: `
@@ -272,7 +272,7 @@ async function sendSnackshopConfirmationEmails(paymentDetails: any) {
   // Send customer confirmation email
   try {
     await resend.emails.send({
-      from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
+      from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
       to: customer_email,
       subject: `Payment Confirmed - Order ${order_id} | Merritt Workspace`,
       html: `
@@ -373,7 +373,7 @@ Merritt Workspace Team
   // Send member services notification
   try {
     await resend.emails.send({
-      from: 'Merritt Workspace Snackshop <snackshop@merrittworkspace.net>',
+      from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
       to: MEMBER_SERVICES_EMAIL,
       subject: `💳 Paid Order Complete - $${total.toFixed(2)} - ${order_id}`,
       html: `

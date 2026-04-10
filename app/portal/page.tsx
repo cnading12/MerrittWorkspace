@@ -1219,7 +1219,7 @@ function PaymentsTab({
                     <strong>Credit card auto-pay selected.</strong> Based on your
                     signed Fee Agreement. A 3.5% processing fee applies. To
                     switch to ACH bank debit (no fee), contact
-                    manager@merrittworkspace.net before completing checkout.
+                    memberservices@merrittworkspace.net before completing checkout.
                   </>
                 )}
               </div>

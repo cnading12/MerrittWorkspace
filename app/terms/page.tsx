@@ -54,10 +54,10 @@ export default function TermsOfServicePage() {
               <p className="mt-3">
                 <strong>Email:</strong>{' '}
                 <a
-                  href="mailto:manager@merrittworkspace.net"
+                  href="mailto:memberservices@merrittworkspace.net"
                   className="text-orange-600 hover:underline"
                 >
-                  manager@merrittworkspace.net
+                  memberservices@merrittworkspace.net
                 </a>
               </p>
               <p>

@@ -38,7 +38,7 @@ Effective 1/1/2024
    efficient operations and the safety and security of all its Members.
 
 4. Membership may be terminated at the end of the agreed upon term by
-   sending an email to manager@merrittworkspace.net or via letter sent
+   sending an email to memberservices@merrittworkspace.net or via letter sent
    directly to Merritt Workspace, 2246 Irving St., Denver, CO 80211, with at
    least a 30 day notice.
 
