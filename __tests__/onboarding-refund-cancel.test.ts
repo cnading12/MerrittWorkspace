@@ -32,6 +32,7 @@ const state = {
   lastPaymentUpdate: null as any,
   lastPaymentUpsert: null as any,
   feeAgreement: { metadata: { payment_method: 'card' } } as any,
+  isAdmin: true,
 };
 
 function resetState() {
@@ -62,6 +63,7 @@ function resetState() {
   state.lastPaymentUpdate = null;
   state.lastPaymentUpsert = null;
   state.feeAgreement = { metadata: { payment_method: 'card' } };
+  state.isAdmin = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,6 +129,18 @@ vi.mock('@/lib/portal/supabaseAdmin', () => ({
             state.lastPaymentUpsert = row;
             return Promise.resolve({ data: null, error: null });
           },
+        };
+      }
+      if (table === 'admin_users') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () =>
+                Promise.resolve({
+                  data: state.isAdmin ? { user_id: 'u-1' } : null,
+                }),
+            }),
+          }),
         };
       }
       return {
@@ -211,7 +225,7 @@ function makeWebhookReq(body: string) {
 // ---------------------------------------------------------------------------
 import { POST as createSubscription } from '@/app/api/portal/create-subscription/route';
 import { POST as cancelSubscription } from '@/app/api/portal/cancel-subscription/route';
-import { POST as refundPayment } from '@/app/api/portal/refund/route';
+import { POST as refundPayment } from '@/app/api/admin/members/[id]/refund/route';
 import { POST as webhookHandler } from '@/app/api/webhooks/subscriptions/route';
 
 // ---------------------------------------------------------------------------
@@ -545,12 +559,26 @@ describe('webhook – subscription events', () => {
 });
 
 // ===========================================================================
-// 5) REFUND
+// 5) REFUND (admin-only)
 // ===========================================================================
-describe('refund', () => {
+const refundParams = { params: Promise.resolve({ id: 'm-1' }) };
+
+describe('refund (admin-only)', () => {
+  it('returns 403 for non-admin callers', async () => {
+    state.isAdmin = false;
+    const res = await refundPayment(
+      makeAuthReq('http://localhost/api/admin/members/m-1/refund'),
+      refundParams
+    );
+    expect(res.status).toBe(403);
+  });
+
   it('returns 404 when no succeeded payment exists', async () => {
     state.payment = null;
-    const res = await refundPayment(makeAuthReq('http://localhost/api/portal/refund'));
+    const res = await refundPayment(
+      makeAuthReq('http://localhost/api/admin/members/m-1/refund'),
+      refundParams
+    );
     expect(res.status).toBe(404);
     const json = await res.json();
     expect(json.error).toMatch(/no refundable payment/i);
@@ -564,7 +592,10 @@ describe('refund', () => {
       amount_cents: 50000,
       status: 'succeeded',
     };
-    const res = await refundPayment(makeAuthReq('http://localhost/api/portal/refund'));
+    const res = await refundPayment(
+      makeAuthReq('http://localhost/api/admin/members/m-1/refund'),
+      refundParams
+    );
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error).toMatch(/payment intent/i);
@@ -579,7 +610,10 @@ describe('refund', () => {
       status: 'succeeded',
     };
 
-    const res = await refundPayment(makeAuthReq('http://localhost/api/portal/refund'));
+    const res = await refundPayment(
+      makeAuthReq('http://localhost/api/admin/members/m-1/refund'),
+      refundParams
+    );
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.ok).toBe(true);
@@ -597,11 +631,10 @@ describe('refund', () => {
   });
 
   it('returns 401 for unauthenticated requests', async () => {
-    // Override the mock for this test to simulate no auth
-    const { requireMember } = await import('@/lib/portal/auth');
-    // The unauthenticated request will have no Bearer token, so requireMember
-    // will throw a PortalError. We test this by calling the route with no auth.
-    const res = await refundPayment(makeUnauthReq('http://localhost/api/portal/refund'));
+    const res = await refundPayment(
+      makeUnauthReq('http://localhost/api/admin/members/m-1/refund'),
+      refundParams
+    );
     expect(res.status).toBe(401);
   });
 });
@@ -713,7 +746,7 @@ describe('full flow: subscribe → onboarding → refund → cancel', () => {
       })
     );
 
-    // Step 4: Immediately refund
+    // Step 4: Admin issues immediate refund
     state.payment = {
       id: 'ph-1',
       member_id: 'm-1',
@@ -721,7 +754,10 @@ describe('full flow: subscribe → onboarding → refund → cancel', () => {
       amount_cents: 50000,
       status: 'succeeded',
     };
-    const refundRes = await refundPayment(makeAuthReq('http://localhost/api/portal/refund'));
+    const refundRes = await refundPayment(
+      makeAuthReq('http://localhost/api/admin/members/m-1/refund'),
+      { params: Promise.resolve({ id: 'm-1' }) }
+    );
     expect(refundRes.status).toBe(200);
     const refundJson = await refundRes.json();
     expect(refundJson.ok).toBe(true);

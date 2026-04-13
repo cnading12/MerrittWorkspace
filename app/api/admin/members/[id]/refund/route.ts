@@ -1,24 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { requireMember, PortalError } from '@/lib/portal/auth';
+import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
 
-// Member self-service: refund the most recent succeeded payment.
-// This issues a full refund via Stripe and updates the local payment_history
+// Admin-only: refund the most recent succeeded payment for a member.
+// Issues a full refund via Stripe and updates the local payment_history
 // row to 'refunded'. Only the latest succeeded payment is eligible — if no
 // succeeded payment exists, a 404 is returned.
-export async function POST(req: NextRequest) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const member = await requireMember(req);
+    await requireAdmin(req);
+    const { id: memberId } = await params;
     const sb = getServiceSupabase();
+
+    // Verify the member exists.
+    const { data: member, error: memberError } = await sb
+      .from('members')
+      .select('id')
+      .eq('id', memberId)
+      .single();
+
+    if (memberError || !member) {
+      return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+    }
 
     // Find the most recent succeeded payment for this member.
     const { data: payment, error: paymentError } = await sb
       .from('payment_history')
       .select('*')
-      .eq('member_id', member.id)
+      .eq('member_id', memberId)
       .eq('status', 'succeeded')
       .order('paid_at', { ascending: false })
       .limit(1)
