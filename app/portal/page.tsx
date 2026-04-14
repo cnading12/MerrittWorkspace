@@ -1308,7 +1308,7 @@ function OnboardingTab({
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Request failed');
       }
-      setAccessRequestStatus('Requested! We&apos;ll email your code shortly.');
+      setAccessRequestStatus("Requested! We'll email your code shortly.");
     } catch (e: any) {
       alert(e.message);
     } finally {
@@ -1333,12 +1333,24 @@ function OnboardingTab({
       {/* About Merritt Workspace */}
       <section className="bg-white border rounded-lg p-6">
         <h3 className="font-semibold text-gray-900 mb-2">About Merritt Workspace</h3>
-        <p className="text-sm text-gray-700">
-          Merritt comprises two historic buildings: the original 1905 Merritt Methodist Church and
-          the 1956 Auxiliary Building. Currently, the 1956 building is a modern CoWork facility
-          with state-of-the-art amenities, while the 1905 church is a multi-use spiritual
-          facility, potentially hosting community programs and private events in the future.
-        </p>
+        <div className="text-sm text-gray-700 space-y-3">
+          <p>
+            Merritt Workspace is made up of two historic buildings in the heart of Sloan&apos;s
+            Lake: the original 1905 Merritt Methodist Church and the adjacent 1956 Auxiliary
+            Building. After the church closed its doors following more than a century of serving
+            the neighborhood, founder Lance Nading carefully transformed both buildings into
+            Denver&apos;s most distinctive coworking environment — preserving the soaring
+            ceilings, original wood floors, stained glass, and remarkable acoustics that make this
+            space one-of-a-kind.
+          </p>
+          <p>
+            Today, the 1956 building is a modern coworking facility with 14 thoughtfully designed
+            private offices and state-of-the-art amenities, welcoming everyone from solo
+            freelancers to growing teams. The 1905 church sanctuary serves as our event and flex
+            space, hosting a variety of wellness and community events throughout the week —
+            including yoga, fitness classes, workshops, and member gatherings.
+          </p>
+        </div>
       </section>
 
       {/* Management Team contact info */}
@@ -1501,6 +1513,72 @@ function OnboardingTab({
                 .
               </li>
             </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-gray-900">Booking the Flex Space</h4>
+            <p className="mt-1">
+              The Flex Space (our historic 1905 church sanctuary next door) is available for
+              members to reserve for focused work, small gatherings, or personal use. A few ground
+              rules:
+            </p>
+            <ul className="mt-1 list-disc pl-5 space-y-0.5">
+              <li>Reservations may be made up to <strong>14 days in advance</strong>.</li>
+              <li>Maximum single reservation is <strong>4 hours</strong>.</li>
+              <li>
+                Member reservations between <strong>8:00 AM and 4:00 PM</strong> on weekdays are
+                free.
+              </li>
+              <li>
+                For bookings <strong>after 4:00 PM or on weekends</strong>, workspace members
+                automatically qualify for our <strong>partnership discount — 20% off</strong> the
+                standard Wellness Space hourly rate.
+              </li>
+              <li>Bookings are subject to availability and existing terms and conditions.</li>
+            </ul>
+            <p className="mt-2">
+              To book during <strong>free member hours (weekdays 8:00 AM – 4:00 PM)</strong>,
+              email{' '}
+              <a
+                href="mailto:memberservices@merrittworkspace.net"
+                className="text-orange-700 hover:underline"
+              >
+                memberservices@merrittworkspace.net
+              </a>{' '}
+              to request a <strong>100% discount code</strong>, then reserve your time on the
+              Merritt Wellness booking page:{' '}
+              <a
+                href="https://www.merrittwellness.net/booking"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-orange-700 hover:underline"
+              >
+                www.merrittwellness.net/booking
+              </a>
+              . For after-hours or weekend bookings, email member services to receive your{' '}
+              <strong>20% partnership discount code</strong> before booking.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-gray-900">Community &amp; Wellness Events</h4>
+            <p className="mt-1">
+              Throughout the week, the church/flex space next door hosts a variety of community
+              and wellness events — yoga, fitness classes, workshops, and member gatherings. As a
+              Merritt Workspace member, you&apos;re welcome to join.
+            </p>
+            <p className="mt-2">
+              Browse the schedule and sign up for classes at{' '}
+              <a
+                href="https://www.merrittwellness.net/events"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-orange-700 hover:underline"
+              >
+                www.merrittwellness.net/events
+              </a>
+              .
+            </p>
           </div>
         </div>
       </section>
