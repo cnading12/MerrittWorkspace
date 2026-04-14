@@ -1526,13 +1526,19 @@ function OnboardingTab({
               <li>Reservations may be made up to <strong>14 days in advance</strong>.</li>
               <li>Maximum single reservation is <strong>4 hours</strong>.</li>
               <li>
-                Member reservations between <strong>8:00 AM and 4:00 PM</strong> are free;
-                reservations after 4:00 PM are billed at the standard Wellness Space hourly rate.
+                Member reservations between <strong>8:00 AM and 4:00 PM</strong> on weekdays are
+                free.
+              </li>
+              <li>
+                For bookings <strong>after 4:00 PM or on weekends</strong>, workspace members
+                automatically qualify for our <strong>partnership discount — 20% off</strong> the
+                standard Wellness Space hourly rate.
               </li>
               <li>Bookings are subject to availability and existing terms and conditions.</li>
             </ul>
             <p className="mt-2">
-              To book, email{' '}
+              To book during <strong>free member hours (weekdays 8:00 AM – 4:00 PM)</strong>,
+              email{' '}
               <a
                 href="mailto:memberservices@merrittworkspace.net"
                 className="text-orange-700 hover:underline"
@@ -1549,7 +1555,8 @@ function OnboardingTab({
               >
                 www.merrittwellness.net/booking
               </a>
-              .
+              . For after-hours or weekend bookings, email member services to receive your{' '}
+              <strong>20% partnership discount code</strong> before booking.
             </p>
           </div>
 
