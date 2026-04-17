@@ -7,12 +7,15 @@ export const dynamic = 'force-dynamic';
 // List everything the admin might need to reference for a member's paper trail:
 //   - Uploaded files (member_documents): ID, proof of address, etc.
 //   - Signed agreements (member_agreements): member agreement, T&C, fee agreement.
-// Both kinds come back under `documents`/`agreements` in the response with a
-// unified `view_url` field so the admin Documents page can render them side
-// by side.
+//   - Submitted applications (member_applications): the original membership
+//     application form so reference info (housing, gym, emergency contact) can
+//     be pulled up months later.
+// All three kinds come back with a unified `view_url` field so the admin
+// Documents page can render them side by side.
 //
 // ?status=submitted|approved|rejected|all — applies to uploaded files only.
-// Agreements are always included unless ?include_agreements=0.
+// Agreements and applications are always included unless their respective
+// ?include_agreements=0 / ?include_applications=0 flag is set.
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
@@ -20,6 +23,7 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const status = url.searchParams.get('status') || 'submitted';
     const includeAgreements = url.searchParams.get('include_agreements') !== '0';
+    const includeApplications = url.searchParams.get('include_applications') !== '0';
 
     // Uploaded files
     let query = sb
@@ -61,7 +65,41 @@ export async function GET(req: NextRequest) {
       }));
     }
 
-    return NextResponse.json({ documents, agreements });
+    // Submitted applications. member_applications isn't joined to members
+    // directly (the link goes the other way, via members.application_id set on
+    // approval), so we fetch the applications and then hydrate member info for
+    // any that have been approved.
+    let applications: any[] = [];
+    if (includeApplications) {
+      const { data: appData, error: appErr } = await sb
+        .from('member_applications')
+        .select(
+          'id, email, first_name, last_name, phone, company_name, membership_type, start_date, status, created_at, decided_at'
+        )
+        .order('created_at', { ascending: false });
+      if (appErr) throw new Error(appErr.message);
+
+      const rawApps = appData || [];
+      const emails = Array.from(new Set(rawApps.map((a: any) => a.email).filter(Boolean)));
+      let membersByEmail = new Map<string, any>();
+      if (emails.length > 0) {
+        const { data: memberRows } = await sb
+          .from('members')
+          .select('id, first_name, last_name, email')
+          .in('email', emails);
+        for (const m of memberRows || []) {
+          membersByEmail.set(m.email, m);
+        }
+      }
+
+      applications = rawApps.map((a: any) => ({
+        ...a,
+        view_url: `/api/admin/applications/${a.id}/view`,
+        member: membersByEmail.get(a.email) || null,
+      }));
+    }
+
+    return NextResponse.json({ documents, agreements, applications });
   } catch (e: any) {
     const status = e instanceof PortalError ? e.status : 500;
     return NextResponse.json({ error: e.message }, { status });
