@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
-import { accessCodeRequestedAdminEmail, PORTAL_FROM } from '@/lib/portal/emails';
+import {
+  accessCodeRequestedAdminEmail,
+  PORTAL_FROM,
+  PORTAL_REPLY_TO,
+} from '@/lib/portal/emails';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,8 +43,10 @@ export async function POST(req: NextRequest) {
       await resend.emails.send({
         from: PORTAL_FROM,
         to: ['memberservices@merrittworkspace.net', 'manager@merrittworkspace.net'],
+        replyTo: PORTAL_REPLY_TO,
         subject: tpl.subject,
         html: tpl.html,
+        text: tpl.text,
       }).catch((e) => console.error('Resend error', e));
     }
 

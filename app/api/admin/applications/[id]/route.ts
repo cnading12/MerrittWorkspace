@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
-import { membershipApprovedEmail, PORTAL_FROM } from '@/lib/portal/emails';
+import {
+  membershipApprovedEmail,
+  PORTAL_ONBOARDING_FROM,
+  PORTAL_REPLY_TO,
+} from '@/lib/portal/emails';
 import { planForMembershipType } from '@/lib/portal/pricing';
 
 export const dynamic = 'force-dynamic';
@@ -142,10 +146,12 @@ export async function POST(
       });
       await resend.emails
         .send({
-          from: PORTAL_FROM,
+          from: PORTAL_ONBOARDING_FROM,
           to: app.email,
+          replyTo: PORTAL_REPLY_TO,
           subject: tpl.subject,
           html: tpl.html,
+          text: tpl.text,
         })
         .catch((e) => console.error('Resend error', e));
     }

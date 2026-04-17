@@ -64,10 +64,10 @@ export function membershipApprovedEmail(opts: {
   portalUrl: string;
 }) {
   return {
-    subject: 'Welcome to Merritt Workspace — Next Steps',
+    subject: 'Your Merritt Workspace Membership is Approved - Next Steps',
     html: shell({
       title: 'Welcome to Merritt Workspace',
-      tagline: 'Your application has been approved 🎉',
+      tagline: 'Your application has been approved',
       body: `
         <p>Hi ${opts.firstName},</p>
         <p>Great news — your membership application has been <strong>approved</strong>! We're excited to have you join the Merritt Workspace community.</p>
@@ -84,9 +84,34 @@ export function membershipApprovedEmail(opts: {
           <a href="${opts.portalUrl}" class="button">Sign in &amp; set your password</a>
         </p>
         <p>The button above is your one-click sign-in link. Click it to sign in for the first time — you'll be taken to a page where you can <strong>choose your own password</strong> for future sign-ins. The link can only be used once, so don't share it.</p>
+        <p>If the button doesn't work, copy and paste this link into your browser:<br/><span style="word-break:break-all;color:#555;">${opts.portalUrl}</span></p>
         <p>Welcome aboard,<br/>— The Merritt Workspace Team</p>
       `,
     }),
+    text: [
+      `Hi ${opts.firstName},`,
+      '',
+      'Great news — your membership application has been approved! We are excited to have you join the Merritt Workspace community.',
+      '',
+      'Next steps:',
+      '  1. Sign in to your member portal',
+      '  2. Upload your photo ID and proof of address',
+      '  3. Sign your Member Agreement and Terms & Conditions',
+      '  4. Set up auto-pay',
+      '',
+      'Sign in and set your password using this one-time link:',
+      opts.portalUrl,
+      '',
+      'This link can only be used once, so please do not share it. After your first sign-in you will be prompted to choose your own password for future visits.',
+      '',
+      'Welcome aboard,',
+      'The Merritt Workspace Team',
+      '',
+      '--',
+      'Merritt Workspace',
+      '2246 Irving Street, Denver, CO 80211',
+      'memberservices@merrittworkspace.net',
+    ].join('\n'),
   };
 }
 
@@ -112,6 +137,24 @@ export function accessCodeIssuedEmail(opts: {
         <p>— The Merritt Workspace Team</p>
       `,
     }),
+    text: [
+      `Hi ${opts.firstName},`,
+      '',
+      'Here is your personal 24/7 building access code:',
+      '',
+      `    ${opts.accessCode}`,
+      '',
+      'Building hours: The main entrance is unlocked from 8 AM - 6 PM Monday through Friday. Use this code outside those hours to enter the building.',
+      '',
+      'Please keep this code confidential — it is tied to your member account. If you ever suspect it has been shared, let us know and we will issue a new one.',
+      '',
+      '— The Merritt Workspace Team',
+      '',
+      '--',
+      'Merritt Workspace',
+      '2246 Irving Street, Denver, CO 80211',
+      'memberservices@merrittworkspace.net',
+    ].join('\n'),
   };
 }
 
@@ -122,7 +165,7 @@ export function accessCodeRequestedAdminEmail(opts: {
   adminUrl: string;
 }) {
   return {
-    subject: `Access code requested — ${opts.firstName} ${opts.lastName}`,
+    subject: `Access code requested - ${opts.firstName} ${opts.lastName}`,
     html: shell({
       title: 'Access Code Requested',
       tagline: 'A member needs a building code',
@@ -136,7 +179,28 @@ export function accessCodeRequestedAdminEmail(opts: {
         </p>
       `,
     }),
+    text: [
+      `${opts.firstName} ${opts.lastName} (${opts.email}) has requested a 24/7 building access code.`,
+      '',
+      'Get a code from POPS, then assign it in the admin panel:',
+      opts.adminUrl,
+    ].join('\n'),
   };
 }
 
-export const PORTAL_FROM = 'Merritt Workspace <manager@merrittworkspace.net>';
+// Sender used for portal/member-services emails (access codes, general
+// notifications). Uses a descriptive display name — generic "From" names
+// score worse with Gmail/Outlook spam filters.
+export const PORTAL_FROM =
+  'Merritt Workspace Member Services <memberservices@merrittworkspace.net>';
+
+// Sender used specifically for onboarding (approval + first-time sign-in
+// link). Uses a distinct, descriptive name mirroring the application
+// confirmation email, which reliably lands in the inbox.
+export const PORTAL_ONBOARDING_FROM =
+  'Merritt Workspace Membership <manager@merrittworkspace.net>';
+
+// Monitored mailbox applicants/members can reply to. Including an explicit
+// Reply-To header improves deliverability and gives recipients a clear
+// path to respond.
+export const PORTAL_REPLY_TO = 'manager@merrittworkspace.net';
