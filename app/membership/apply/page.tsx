@@ -1,31 +1,32 @@
 "use client";
 
 import { useState } from 'react';
-import { CheckCircle, AlertCircle, Loader2, User, Briefcase, Calendar, Phone, Mail, Shield, CreditCard, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, User, Briefcase, Calendar, Phone, Shield, CreditCard, Home, Dumbbell } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
 
-interface CreditReference {
-  id: string;
-  institution_name: string;
-  account_type: string;
+type HousingReferenceType = '' | 'mortgage' | 'landlord';
+type MembershipReferenceType = '' | 'gym' | 'workspace';
+
+interface HousingReference {
+  type: HousingReferenceType;
+  company_name: string;
   contact_name: string;
   contact_phone: string;
   contact_email: string;
-  relationship: string;
+  property_address: string;
+  start_date: string;
+  end_date: string;
 }
 
-interface PriorLease {
-  type: 'residential' | 'commercial';
-  property_name: string;
-  address: string;
-  landlord_name: string;
-  landlord_phone: string;
-  landlord_email: string;
-  lease_start_date: string;
-  lease_end_date: string;
-  monthly_rent: string;
-  reason_for_leaving?: string;
+interface MembershipReference {
+  type: MembershipReferenceType;
+  facility_name: string;
+  contact_name: string;
+  contact_phone: string;
+  contact_email: string;
+  start_date: string;
+  end_date: string;
 }
 
 interface MembershipApplication {
@@ -48,8 +49,8 @@ interface MembershipApplication {
   emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
-  credit_references: CreditReference[];
-  prior_lease?: PriorLease;
+  housing_reference: HousingReference;
+  membership_reference: MembershipReference;
   agrees_to_terms: boolean;
   marketing_consent: boolean;
 }
@@ -132,16 +133,6 @@ const referralSources = [
   'Other'
 ];
 
-const accountTypes = [
-  'Checking Account',
-  'Savings Account',
-  'Credit Card',
-  'Auto Loan',
-  'Mortgage',
-  'Business Account',
-  'Other'
-];
-
 export default function MembershipApplicationPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -167,17 +158,25 @@ export default function MembershipApplicationPage() {
     emergency_contact_name: '',
     emergency_contact_phone: '',
     emergency_contact_relationship: '',
-    credit_references: [
-      {
-        id: '1',
-        institution_name: '',
-        account_type: '',
-        contact_name: '',
-        contact_phone: '',
-        contact_email: '',
-        relationship: ''
-      }
-    ],
+    housing_reference: {
+      type: '',
+      company_name: '',
+      contact_name: '',
+      contact_phone: '',
+      contact_email: '',
+      property_address: '',
+      start_date: '',
+      end_date: ''
+    },
+    membership_reference: {
+      type: '',
+      facility_name: '',
+      contact_name: '',
+      contact_phone: '',
+      contact_email: '',
+      start_date: '',
+      end_date: ''
+    },
     agrees_to_terms: false,
     marketing_consent: false
   });
@@ -191,72 +190,18 @@ export default function MembershipApplicationPage() {
     }));
   };
 
-  const addCreditReference = () => {
-    const newRef: CreditReference = {
-      id: Date.now().toString(),
-      institution_name: '',
-      account_type: '',
-      contact_name: '',
-      contact_phone: '',
-      contact_email: '',
-      relationship: ''
-    };
+  const updateHousingReference = <K extends keyof HousingReference>(field: K, value: HousingReference[K]) => {
     setApplication(prev => ({
       ...prev,
-      credit_references: [...prev.credit_references, newRef]
+      housing_reference: { ...prev.housing_reference, [field]: value }
     }));
   };
 
-  const removeCreditReference = (id: string) => {
-    if (application.credit_references.length > 1) {
-      setApplication(prev => ({
-        ...prev,
-        credit_references: prev.credit_references.filter(ref => ref.id !== id)
-      }));
-    }
-  };
-
-  const updateCreditReference = (id: string, field: keyof CreditReference, value: string) => {
+  const updateMembershipReference = <K extends keyof MembershipReference>(field: K, value: MembershipReference[K]) => {
     setApplication(prev => ({
       ...prev,
-      credit_references: prev.credit_references.map(ref =>
-        ref.id === id ? { ...ref, [field]: value } : ref
-      )
+      membership_reference: { ...prev.membership_reference, [field]: value }
     }));
-  };
-
-  const togglePriorLease = (enabled: boolean) => {
-    if (enabled) {
-      setApplication(prev => ({
-        ...prev,
-        prior_lease: {
-          type: 'residential',
-          property_name: '',
-          address: '',
-          landlord_name: '',
-          landlord_phone: '',
-          landlord_email: '',
-          lease_start_date: '',
-          lease_end_date: '',
-          monthly_rent: '',
-          reason_for_leaving: ''
-        }
-      }));
-    } else {
-      setApplication(prev => ({
-        ...prev,
-        prior_lease: undefined
-      }));
-    }
-  };
-
-  const updatePriorLease = (field: keyof PriorLease, value: string) => {
-    if (application.prior_lease) {
-      setApplication(prev => ({
-        ...prev,
-        prior_lease: prev.prior_lease ? { ...prev.prior_lease, [field]: value } : undefined
-      }));
-    }
   };
 
   const handleSubmitApplication = async (e: React.FormEvent) => {
@@ -267,13 +212,15 @@ export default function MembershipApplicationPage() {
       return;
     }
 
-    // Validate credit references
-    const incompleteReferences = application.credit_references.filter(ref =>
-      !ref.institution_name || !ref.account_type || !ref.contact_name || !ref.contact_phone
-    );
+    const h = application.housing_reference;
+    if (!h.type || !h.company_name || !h.contact_name || !h.contact_phone || !h.contact_email) {
+      setError('Please complete your housing reference (mortgage company or landlord).');
+      return;
+    }
 
-    if (incompleteReferences.length > 0) {
-      setError('Please complete all required fields for credit references');
+    const m = application.membership_reference;
+    if (!m.type || !m.facility_name || !m.contact_name || !m.contact_phone || !m.contact_email) {
+      setError('Please complete your membership reference (gym or other workspace).');
       return;
     }
 
@@ -652,258 +599,245 @@ export default function MembershipApplicationPage() {
               </div>
             </div>
 
-            {/* Credit References */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <CreditCard className="w-6 h-6 text-orange-600" />
-                <h3 className="text-xl font-semibold text-gray-900">Credit References</h3>
-                <span className="text-sm text-gray-600">(At least one required)</span>
-              </div>
-
-              {application.credit_references.map((reference, index) => (
-                <div key={reference.id} className="border border-gray-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-medium text-gray-900">Credit Reference {index + 1}</h4>
-                    {application.credit_references.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeCreditReference(reference.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Institution Name *</label>
-                      <input
-                        type="text"
-                        required
-                        value={reference.institution_name}
-                        onChange={(e) => updateCreditReference(reference.id, 'institution_name', e.target.value)}
-                        placeholder="e.g., Chase Bank, Wells Fargo"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Account Type *</label>
-                      <select
-                        required
-                        value={reference.account_type}
-                        onChange={(e) => updateCreditReference(reference.id, 'account_type', e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      >
-                        <option value="">Select account type</option>
-                        {accountTypes.map(type => (
-                          <option key={type} value={type}>{type}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name *</label>
-                      <input
-                        type="text"
-                        required
-                        value={reference.contact_name}
-                        onChange={(e) => updateCreditReference(reference.id, 'contact_name', e.target.value)}
-                        placeholder="Contact person at institution"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Contact Phone *</label>
-                      <input
-                        type="tel"
-                        required
-                        value={reference.contact_phone}
-                        onChange={(e) => updateCreditReference(reference.id, 'contact_phone', e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
-                      <input
-                        type="email"
-                        value={reference.contact_email}
-                        onChange={(e) => updateCreditReference(reference.id, 'contact_email', e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Relationship</label>
-                      <input
-                        type="text"
-                        value={reference.relationship}
-                        onChange={(e) => updateCreditReference(reference.id, 'relationship', e.target.value)}
-                        placeholder="e.g., Account holder, Authorized user"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <button
-                type="button"
-                onClick={addCreditReference}
-                className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                Add Another Credit Reference
-              </button>
+            {/* References Intro */}
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">References</h3>
+              <p className="text-sm text-gray-700">
+                We ask every applicant for two references so we can verify your background. The form below lists <strong>four options across two categories</strong> — you only need to complete <strong>one option per category</strong> (two references total). Everything else can stay blank.
+              </p>
+              <ul className="text-sm text-gray-700 mt-3 space-y-1 list-disc pl-5">
+                <li><strong>Housing:</strong> your current or most recent mortgage company <em>or</em> landlord.</li>
+                <li><strong>Membership:</strong> a gym <em>or</em> another workspace where you are or have been a member.</li>
+              </ul>
             </div>
 
-            {/* Prior Lease Information */}
+            {/* Housing Reference */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <Mail className="w-6 h-6 text-orange-600" />
-                <h3 className="text-xl font-semibold text-gray-900">Prior Lease Information</h3>
-                <span className="text-sm text-gray-600">(Optional)</span>
+              <div className="flex items-center gap-3 mb-2">
+                <Home className="w-6 h-6 text-orange-600" />
+                <h3 className="text-xl font-semibold text-gray-900">Housing Reference</h3>
+                <span className="text-sm text-red-500">*</span>
               </div>
+              <p className="text-sm text-gray-600 mb-6">
+                Choose <strong>one</strong>: your current or most recent <strong>mortgage company</strong> or <strong>landlord</strong>. You do not need to provide both.
+              </p>
 
               <div className="mb-4">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={!!application.prior_lease}
-                    onChange={(e) => togglePriorLease(e.target.checked)}
-                    className="mr-3 h-4 w-4 text-orange-600 rounded focus:ring-orange-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">I have prior lease experience to share</span>
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Reference Type *</label>
+                <div className="flex flex-wrap gap-6">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="housing_type"
+                      value="mortgage"
+                      checked={application.housing_reference.type === 'mortgage'}
+                      onChange={() => updateHousingReference('type', 'mortgage')}
+                      className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500"
+                    />
+                    <span className="text-sm text-gray-700">Mortgage Company</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="housing_type"
+                      value="landlord"
+                      checked={application.housing_reference.type === 'landlord'}
+                      onChange={() => updateHousingReference('type', 'landlord')}
+                      className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500"
+                    />
+                    <span className="text-sm text-gray-700">Landlord</span>
+                  </label>
+                </div>
               </div>
 
-              {application.prior_lease && (
-                <div className="space-y-4">
+              {application.housing_reference.type && (
+                <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Lease Type</label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="lease_type"
-                          value="residential"
-                          checked={application.prior_lease.type === 'residential'}
-                          onChange={(e) => updatePriorLease('type', e.target.value as 'residential' | 'commercial')}
-                          className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500"
-                        />
-                        <span className="text-sm text-gray-700">Residential</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="lease_type"
-                          value="commercial"
-                          checked={application.prior_lease.type === 'commercial'}
-                          onChange={(e) => updatePriorLease('type', e.target.value as 'residential' | 'commercial')}
-                          className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500"
-                        />
-                        <span className="text-sm text-gray-700">Commercial/Office</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {application.prior_lease.type === 'residential' ? 'Property/Complex Name' : 'Office Building/Space Name'}
-                      </label>
-                      <input
-                        type="text"
-                        value={application.prior_lease.property_name}
-                        onChange={(e) => updatePriorLease('property_name', e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                      <input
-                        type="text"
-                        value={application.prior_lease.address}
-                        onChange={(e) => updatePriorLease('address', e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {application.prior_lease.type === 'residential' ? 'Landlord/Property Manager Name' : 'Landlord/Leasing Agent Name'}
-                      </label>
-                      <input
-                        type="text"
-                        value={application.prior_lease.landlord_name}
-                        onChange={(e) => updatePriorLease('landlord_name', e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Landlord Phone</label>
-                      <input
-                        type="tel"
-                        value={application.prior_lease.landlord_phone}
-                        onChange={(e) => updatePriorLease('landlord_phone', e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Landlord Email</label>
-                      <input
-                        type="email"
-                        value={application.prior_lease.landlord_email}
-                        onChange={(e) => updatePriorLease('landlord_email', e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Rent/Payment</label>
-                      <input
-                        type="text"
-                        value={application.prior_lease.monthly_rent}
-                        onChange={(e) => updatePriorLease('monthly_rent', e.target.value)}
-                        placeholder="$0,000"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Lease Start Date</label>
-                      <input
-                        type="date"
-                        value={application.prior_lease.lease_start_date}
-                        onChange={(e) => updatePriorLease('lease_start_date', e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Lease End Date</label>
-                      <input
-                        type="date"
-                        value={application.prior_lease.lease_end_date}
-                        onChange={(e) => updatePriorLease('lease_end_date', e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {application.housing_reference.type === 'mortgage' ? 'Mortgage Company *' : 'Landlord / Property Manager *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={application.housing_reference.company_name}
+                      onChange={(e) => updateHousingReference('company_name', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Reason for Leaving (Optional)</label>
-                    <textarea
-                      value={application.prior_lease.reason_for_leaving || ''}
-                      onChange={(e) => updatePriorLease('reason_for_leaving', e.target.value)}
-                      rows={2}
-                      placeholder="e.g., Relocation, lease expired, found better option..."
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {application.housing_reference.type === 'mortgage' ? 'Loan Officer / Contact Name *' : 'Landlord Contact Name *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={application.housing_reference.contact_name}
+                      onChange={(e) => updateHousingReference('contact_name', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Phone *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={application.housing_reference.contact_phone}
+                      onChange={(e) => updateHousingReference('contact_phone', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email *</label>
+                    <input
+                      type="email"
+                      required
+                      value={application.housing_reference.contact_email}
+                      onChange={(e) => updateHousingReference('contact_email', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Property Address</label>
+                    <input
+                      type="text"
+                      value={application.housing_reference.property_address}
+                      onChange={(e) => updateHousingReference('property_address', e.target.value)}
+                      placeholder="Street, City, State"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <input
+                      type="date"
+                      value={application.housing_reference.start_date}
+                      onChange={(e) => updateHousingReference('start_date', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">End Date <span className="text-gray-500 font-normal">(leave blank if current)</span></label>
+                    <input
+                      type="date"
+                      value={application.housing_reference.end_date}
+                      onChange={(e) => updateHousingReference('end_date', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Membership Reference */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <Dumbbell className="w-6 h-6 text-orange-600" />
+                <h3 className="text-xl font-semibold text-gray-900">Membership Reference</h3>
+                <span className="text-sm text-red-500">*</span>
+              </div>
+              <p className="text-sm text-gray-600 mb-6">
+                Choose <strong>one</strong>: a <strong>gym</strong> or <strong>other workspace</strong> where you are or have been a member. You do not need to provide both.
+              </p>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Reference Type *</label>
+                <div className="flex flex-wrap gap-6">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="membership_type_ref"
+                      value="gym"
+                      checked={application.membership_reference.type === 'gym'}
+                      onChange={() => updateMembershipReference('type', 'gym')}
+                      className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500"
+                    />
+                    <span className="text-sm text-gray-700">Gym</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="membership_type_ref"
+                      value="workspace"
+                      checked={application.membership_reference.type === 'workspace'}
+                      onChange={() => updateMembershipReference('type', 'workspace')}
+                      className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500"
+                    />
+                    <span className="text-sm text-gray-700">Other Workspace</span>
+                  </label>
+                </div>
+              </div>
+
+              {application.membership_reference.type && (
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {application.membership_reference.type === 'gym' ? 'Gym Name *' : 'Workspace Name *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={application.membership_reference.facility_name}
+                      onChange={(e) => updateMembershipReference('facility_name', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={application.membership_reference.contact_name}
+                      onChange={(e) => updateMembershipReference('contact_name', e.target.value)}
+                      placeholder="Manager, membership rep, etc."
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Phone *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={application.membership_reference.contact_phone}
+                      onChange={(e) => updateMembershipReference('contact_phone', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email *</label>
+                    <input
+                      type="email"
+                      required
+                      value={application.membership_reference.contact_email}
+                      onChange={(e) => updateMembershipReference('contact_email', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Member Since</label>
+                    <input
+                      type="date"
+                      value={application.membership_reference.start_date}
+                      onChange={(e) => updateMembershipReference('start_date', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">End Date <span className="text-gray-500 font-normal">(leave blank if current)</span></label>
+                    <input
+                      type="date"
+                      value={application.membership_reference.end_date}
+                      onChange={(e) => updateMembershipReference('end_date', e.target.value)}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
