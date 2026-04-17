@@ -27,11 +27,6 @@ export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
     label: 'Private Office — Single',
     monthly_cost_cents: 50000,
   },
-  private_office_single_large: {
-    designation: 'private_office_single_large',
-    label: 'Private Office — Single (Large)',
-    monthly_cost_cents: 60000,
-  },
   private_office_double: {
     designation: 'private_office_double',
     label: 'Private Office — Double',

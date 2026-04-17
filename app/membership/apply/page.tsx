@@ -72,14 +72,6 @@ const membershipPlans = [
     features: ['24/7 access', 'Lockable office', 'Window view', 'High-speed WiFi', '4 meeting room hours/month']
   },
   {
-    id: 'private_office_single_large',
-    name: 'Private Office - Single (Large)',
-    price: 600,
-    description: 'Larger private single office with extra room to spread out.',
-    category: 'Private Office',
-    features: ['24/7 access', 'Larger lockable office', 'Window view', 'High-speed WiFi', '4 meeting room hours/month']
-  },
-  {
     id: 'private_office_double',
     name: 'Private Office - Double',
     price: 700,
