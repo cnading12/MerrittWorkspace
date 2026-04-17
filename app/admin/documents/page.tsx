@@ -41,9 +41,33 @@ interface SignedAgreement {
   member: MemberRef | null;
 }
 
-type Row = UploadedDoc | SignedAgreement;
+interface Application {
+  kind: 'application';
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string | null;
+  company_name: string | null;
+  membership_type: string | null;
+  start_date: string | null;
+  status: 'pending' | 'approved' | 'declined';
+  created_at: string;
+  decided_at: string | null;
+  view_url: string;
+  member: MemberRef | null;
+}
 
-type Filter = 'all' | 'uploads' | 'agreements' | 'submitted' | 'approved' | 'rejected';
+type Row = UploadedDoc | SignedAgreement | Application;
+
+type Filter =
+  | 'all'
+  | 'uploads'
+  | 'agreements'
+  | 'applications'
+  | 'submitted'
+  | 'approved'
+  | 'rejected';
 
 const AGREEMENT_LABELS: Record<SignedAgreement['agreement_type'], string> = {
   member_agreement: 'Member Agreement',
@@ -55,6 +79,7 @@ export default function AdminDocumentsPage() {
   const router = useRouter();
   const [uploads, setUploads] = useState<UploadedDoc[]>([]);
   const [agreements, setAgreements] = useState<SignedAgreement[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
@@ -80,6 +105,9 @@ export default function AdminDocumentsPage() {
       );
       setAgreements(
         (data.agreements || []).map((a: any) => ({ ...a, kind: 'agreement' as const }))
+      );
+      setApplications(
+        (data.applications || []).map((a: any) => ({ ...a, kind: 'application' as const }))
       );
       setLoading(false);
     },
@@ -121,7 +149,7 @@ export default function AdminDocumentsPage() {
     );
   }
 
-  async function openAgreement(agreementId: string) {
+  async function openInPopup(url: string, label: string) {
     if (!token) return;
     // Open the popup synchronously inside the click gesture so the browser
     // doesn't block it — `window.open()` after an `await` loses the user
@@ -136,12 +164,12 @@ export default function AdminDocumentsPage() {
     }
     win.document.write(loadingHtml());
     try {
-      const res = await fetch(`/api/admin/agreements/${agreementId}/view`, {
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        writeError(win, err.error || 'Failed to load agreement');
+        writeError(win, err.error || `Failed to load ${label}`);
         return;
       }
       const html = await res.text();
@@ -149,20 +177,31 @@ export default function AdminDocumentsPage() {
       win.document.write(html);
       win.document.close();
     } catch (e: any) {
-      writeError(win, e.message || 'Failed to open agreement');
+      writeError(win, e.message || `Failed to open ${label}`);
     }
   }
 
   const rows: Row[] = [
     ...uploads.filter((u) => {
       if (filter === 'all' || filter === 'uploads') return true;
-      if (filter === 'agreements') return false;
+      if (filter === 'agreements' || filter === 'applications') return false;
       return u.status === filter;
     }),
     ...agreements.filter(() => filter === 'all' || filter === 'agreements'),
+    ...applications.filter(() => filter === 'all' || filter === 'applications'),
   ].sort((a, b) => {
-    const aDate = a.kind === 'upload' ? a.created_at : a.signed_at;
-    const bDate = b.kind === 'upload' ? b.created_at : b.signed_at;
+    const aDate =
+      a.kind === 'upload'
+        ? a.created_at
+        : a.kind === 'agreement'
+        ? a.signed_at
+        : a.created_at;
+    const bDate =
+      b.kind === 'upload'
+        ? b.created_at
+        : b.kind === 'agreement'
+        ? b.signed_at
+        : b.created_at;
     return bDate.localeCompare(aDate);
   });
 
@@ -180,11 +219,11 @@ export default function AdminDocumentsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Member documents</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Uploaded files and signed agreements for every member. Click View to preview.
+            Applications, uploaded files, and signed agreements for every member. Click View to preview.
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {(['all', 'uploads', 'agreements', 'submitted', 'approved', 'rejected'] as Filter[]).map(
+          {(['all', 'uploads', 'agreements', 'applications', 'submitted', 'approved', 'rejected'] as Filter[]).map(
             (s) => (
               <button
                 key={s}
@@ -210,17 +249,39 @@ export default function AdminDocumentsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {rows.map((row) =>
-            row.kind === 'upload' ? (
-              <UploadCard key={`u-${row.id}`} doc={row} onReview={review} />
-            ) : (
-              <AgreementCard
-                key={`a-${row.id}`}
-                agreement={row}
-                onView={() => openAgreement(row.id)}
+          {rows.map((row) => {
+            if (row.kind === 'upload') {
+              return (
+                <UploadCard key={`u-${row.id}`} doc={row} onReview={review} />
+              );
+            }
+            if (row.kind === 'agreement') {
+              return (
+                <AgreementCard
+                  key={`a-${row.id}`}
+                  agreement={row}
+                  onView={() =>
+                    openInPopup(
+                      `/api/admin/agreements/${row.id}/view`,
+                      'agreement'
+                    )
+                  }
+                />
+              );
+            }
+            return (
+              <ApplicationCard
+                key={`app-${row.id}`}
+                application={row}
+                onView={() =>
+                  openInPopup(
+                    `/api/admin/applications/${row.id}/view`,
+                    'application'
+                  )
+                }
               />
-            )
-          )}
+            );
+          })}
         </div>
       )}
     </div>
@@ -338,6 +399,71 @@ function AgreementCard({
             className="text-sm bg-gray-900 text-white rounded px-3 py-1.5 hover:bg-gray-800"
           >
             View signed document
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ApplicationCard({
+  application,
+  onView,
+}: {
+  application: Application;
+  onView: () => void;
+}) {
+  const typeLabel = application.membership_type
+    ? application.membership_type
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+    : '—';
+  const statusClass =
+    application.status === 'approved'
+      ? 'bg-green-100 text-green-800'
+      : application.status === 'declined'
+      ? 'bg-red-100 text-red-800'
+      : 'bg-amber-100 text-amber-800';
+  return (
+    <div className="bg-white border-2 border-orange-200 rounded-lg p-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-orange-100 text-orange-800 uppercase tracking-wide">
+              Application
+            </span>
+            <span className="font-medium text-gray-900">{typeLabel}</span>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${statusClass}`}
+            >
+              {application.status}
+            </span>
+          </div>
+          {application.member ? (
+            <Link
+              href={`/admin/members/${application.member.id}`}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              {application.first_name} {application.last_name} (
+              {application.email})
+            </Link>
+          ) : (
+            <div className="text-sm text-gray-700">
+              {application.first_name} {application.last_name} ({application.email})
+            </div>
+          )}
+          <div className="text-xs text-gray-500 mt-1">
+            Submitted {new Date(application.created_at).toLocaleString()}
+            {application.company_name && ` · ${application.company_name}`}
+            {application.start_date && ` · Start ${application.start_date}`}
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
+          <button
+            onClick={onView}
+            className="text-sm bg-gray-900 text-white rounded px-3 py-1.5 hover:bg-gray-800"
+          >
+            View application
           </button>
         </div>
       </div>

@@ -102,6 +102,47 @@ export default function AdminMemberDetailPage({
     );
   }
 
+  async function openApplication(applicationId: string) {
+    // Open the popup synchronously inside the click gesture so browsers
+    // don't block it — `window.open()` after an `await` loses user activation.
+    const win = window.open('', '_blank');
+    if (!win) {
+      alert(
+        'Your browser blocked the popup. Please allow popups for this site, then try again.'
+      );
+      return;
+    }
+    win.document.write(
+      '<!doctype html><title>Loading…</title><body style="font-family:sans-serif;padding:32px;color:#6b7280">Loading application…</body>'
+    );
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token;
+      if (!authToken) {
+        win.document.body.textContent = 'Not signed in.';
+        return;
+      }
+      const res = await fetch(`/api/admin/applications/${applicationId}/view`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        win.document.body.textContent = err.error || 'Failed to load application';
+        return;
+      }
+      const html = await res.text();
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+    } catch (e: any) {
+      try {
+        win.document.body.textContent = e.message || 'Failed to open application';
+      } catch {
+        /* popup may already be closed */
+      }
+    }
+  }
+
   async function patchMember(body: any) {
     if (!token) return;
     const res = await fetch(`/api/admin/members/${id}`, {
@@ -178,7 +219,18 @@ export default function AdminMemberDetailPage({
 
       {/* Application payload */}
       <section className="bg-white border rounded p-6">
-        <h2 className="font-semibold mb-3">Application</h2>
+        <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
+          <h2 className="font-semibold">Application</h2>
+          {application && (
+            <button
+              type="button"
+              onClick={() => openApplication(application.id)}
+              className="text-sm bg-gray-900 text-white rounded px-3 py-1 hover:bg-gray-800"
+            >
+              View application
+            </button>
+          )}
+        </div>
         {application ? (
           <div className="space-y-2 text-sm">
             <div className="text-gray-600">
