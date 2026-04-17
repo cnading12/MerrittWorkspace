@@ -53,9 +53,9 @@ export async function POST(request: NextRequest) {
     const submittedAt = new Date();
 
     // Persist to member_applications so the admin panel can review it.
-    // Core fields land in dedicated columns; everything else (credit
-    // references, prior lease, emergency contact, etc.) goes into the
-    // `payload` JSON catch-all so the admin detail view can still see it.
+    // Core fields land in dedicated columns; everything else (housing
+    // reference, membership reference, emergency contact, etc.) goes into
+    // the `payload` JSON catch-all so the admin detail view can still see it.
     try {
       const { getServiceSupabase } = await import('@/lib/portal/supabaseAdmin');
       const {
@@ -465,38 +465,31 @@ function generateManagerEmailHTML(data: {
             </table>
           </div>
 
-          ${app.credit_references && app.credit_references.length > 0 ? `
+          ${app.housing_reference && app.housing_reference.type ? `
           <div class="section">
-            <h3>Credit References</h3>
-            ${app.credit_references.map((ref: any, index: number) => `
-              <div class="reference-box">
-                <h4>Reference ${index + 1}</h4>
-                <table>
-                  <tr><td>Institution</td><td>${ref.institution_name}</td></tr>
-                  <tr><td>Account Type</td><td>${ref.account_type}</td></tr>
-                  <tr><td>Contact Name</td><td>${ref.contact_name}</td></tr>
-                  <tr><td>Contact Phone</td><td>${ref.contact_phone}</td></tr>
-                  ${ref.contact_email ? `<tr><td>Contact Email</td><td>${ref.contact_email}</td></tr>` : ''}
-                  ${ref.relationship ? `<tr><td>Relationship</td><td>${ref.relationship}</td></tr>` : ''}
-                </table>
-              </div>
-            `).join('')}
+            <h3>Housing Reference</h3>
+            <table>
+              <tr><td>Type</td><td>${app.housing_reference.type === 'mortgage' ? 'Mortgage Company' : 'Landlord'}</td></tr>
+              <tr><td>${app.housing_reference.type === 'mortgage' ? 'Mortgage Company' : 'Landlord / Property Manager'}</td><td>${app.housing_reference.company_name || ''}</td></tr>
+              <tr><td>Contact Name</td><td>${app.housing_reference.contact_name || ''}</td></tr>
+              <tr><td>Contact Phone</td><td>${app.housing_reference.contact_phone || ''}</td></tr>
+              <tr><td>Contact Email</td><td>${app.housing_reference.contact_email || ''}</td></tr>
+              ${app.housing_reference.property_address ? `<tr><td>Property Address</td><td>${app.housing_reference.property_address}</td></tr>` : ''}
+              ${app.housing_reference.start_date || app.housing_reference.end_date ? `<tr><td>Dates</td><td>${app.housing_reference.start_date || 'N/A'} to ${app.housing_reference.end_date || 'Present'}</td></tr>` : ''}
+            </table>
           </div>
           ` : ''}
 
-          ${app.prior_lease ? `
+          ${app.membership_reference && app.membership_reference.type ? `
           <div class="section">
-            <h3>Prior Lease Information</h3>
+            <h3>Membership Reference</h3>
             <table>
-              <tr><td>Type</td><td>${app.prior_lease.type === 'residential' ? 'Residential' : 'Commercial/Office'}</td></tr>
-              <tr><td>Property Name</td><td>${app.prior_lease.property_name}</td></tr>
-              <tr><td>Address</td><td>${app.prior_lease.address}</td></tr>
-              <tr><td>Landlord Name</td><td>${app.prior_lease.landlord_name}</td></tr>
-              <tr><td>Landlord Phone</td><td>${app.prior_lease.landlord_phone}</td></tr>
-              <tr><td>Landlord Email</td><td>${app.prior_lease.landlord_email}</td></tr>
-              <tr><td>Monthly Rent</td><td>${app.prior_lease.monthly_rent}</td></tr>
-              <tr><td>Lease Period</td><td>${app.prior_lease.lease_start_date} to ${app.prior_lease.lease_end_date}</td></tr>
-              ${app.prior_lease.reason_for_leaving ? `<tr><td>Reason for Leaving</td><td>${app.prior_lease.reason_for_leaving}</td></tr>` : ''}
+              <tr><td>Type</td><td>${app.membership_reference.type === 'gym' ? 'Gym' : 'Other Workspace'}</td></tr>
+              <tr><td>${app.membership_reference.type === 'gym' ? 'Gym Name' : 'Workspace Name'}</td><td>${app.membership_reference.facility_name || ''}</td></tr>
+              <tr><td>Contact Name</td><td>${app.membership_reference.contact_name || ''}</td></tr>
+              <tr><td>Contact Phone</td><td>${app.membership_reference.contact_phone || ''}</td></tr>
+              <tr><td>Contact Email</td><td>${app.membership_reference.contact_email || ''}</td></tr>
+              ${app.membership_reference.start_date || app.membership_reference.end_date ? `<tr><td>Dates</td><td>${app.membership_reference.start_date || 'N/A'} to ${app.membership_reference.end_date || 'Present'}</td></tr>` : ''}
             </table>
           </div>
           ` : ''}
@@ -531,7 +524,7 @@ function generateManagerEmailHTML(data: {
               <li>Review the application details above</li>
               <li>Contact ${app.first_name} at ${app.email} or ${app.phone} to schedule a tour</li>
               <li>Arrange their free trial day</li>
-              <li>Verify credit references</li>
+              <li>Verify housing and membership references</li>
               <li>Send membership agreement for signature</li>
             </ol>
             <p><strong>⏰ Action Required:</strong> Please follow up within 1-2 business days as promised to the applicant.</p>
@@ -579,30 +572,25 @@ Work Style: ${app.work_style?.join(', ') || 'Not specified'}
 Meeting Frequency: ${app.meeting_frequency}
 Referral Source: ${app.referral_source}
 
-${app.credit_references && app.credit_references.length > 0 ? `
-CREDIT REFERENCES
-${app.credit_references.map((ref: any, index: number) => `
-Reference ${index + 1}:
-- Institution: ${ref.institution_name}
-- Account Type: ${ref.account_type}
-- Contact: ${ref.contact_name}
-- Phone: ${ref.contact_phone}
-${ref.contact_email ? `- Email: ${ref.contact_email}` : ''}
-${ref.relationship ? `- Relationship: ${ref.relationship}` : ''}
-`).join('\n')}
+${app.housing_reference && app.housing_reference.type ? `
+HOUSING REFERENCE
+Type: ${app.housing_reference.type === 'mortgage' ? 'Mortgage Company' : 'Landlord'}
+${app.housing_reference.type === 'mortgage' ? 'Mortgage Company' : 'Landlord / Property Manager'}: ${app.housing_reference.company_name || ''}
+Contact: ${app.housing_reference.contact_name || ''}
+Phone: ${app.housing_reference.contact_phone || ''}
+Email: ${app.housing_reference.contact_email || ''}
+${app.housing_reference.property_address ? `Property Address: ${app.housing_reference.property_address}` : ''}
+${app.housing_reference.start_date || app.housing_reference.end_date ? `Dates: ${app.housing_reference.start_date || 'N/A'} to ${app.housing_reference.end_date || 'Present'}` : ''}
 ` : ''}
 
-${app.prior_lease ? `
-PRIOR LEASE INFORMATION
-Type: ${app.prior_lease.type === 'residential' ? 'Residential' : 'Commercial/Office'}
-Property: ${app.prior_lease.property_name}
-Address: ${app.prior_lease.address}
-Landlord: ${app.prior_lease.landlord_name}
-Landlord Phone: ${app.prior_lease.landlord_phone}
-Landlord Email: ${app.prior_lease.landlord_email}
-Monthly Rent: ${app.prior_lease.monthly_rent}
-Lease Period: ${app.prior_lease.lease_start_date} to ${app.prior_lease.lease_end_date}
-${app.prior_lease.reason_for_leaving ? `Reason for Leaving: ${app.prior_lease.reason_for_leaving}` : ''}
+${app.membership_reference && app.membership_reference.type ? `
+MEMBERSHIP REFERENCE
+Type: ${app.membership_reference.type === 'gym' ? 'Gym' : 'Other Workspace'}
+${app.membership_reference.type === 'gym' ? 'Gym Name' : 'Workspace Name'}: ${app.membership_reference.facility_name || ''}
+Contact: ${app.membership_reference.contact_name || ''}
+Phone: ${app.membership_reference.contact_phone || ''}
+Email: ${app.membership_reference.contact_email || ''}
+${app.membership_reference.start_date || app.membership_reference.end_date ? `Dates: ${app.membership_reference.start_date || 'N/A'} to ${app.membership_reference.end_date || 'Present'}` : ''}
 ` : ''}
 
 EMERGENCY CONTACT
@@ -623,7 +611,7 @@ NEXT STEPS:
 1. Review the application details
 2. Contact ${app.first_name} at ${app.email} or ${app.phone} to schedule a tour
 3. Arrange their free trial day
-4. Verify credit references
+4. Verify housing and membership references
 5. Send membership agreement for signature
 
 ACTION REQUIRED: Please follow up within 1-2 business days.
