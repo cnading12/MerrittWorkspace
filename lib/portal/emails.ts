@@ -115,6 +115,83 @@ export function membershipApprovedEmail(opts: {
   };
 }
 
+export function subscriptionPaymentReceiptEmail(opts: {
+  firstName: string;
+  amount: string;
+  paidOn: string;
+  description: string;
+  invoiceNumber: string | null;
+  invoicePdfUrl: string | null;
+  isFirstPayment: boolean;
+}) {
+  const subjectPrefix = opts.isFirstPayment
+    ? 'Welcome & Payment Confirmed'
+    : 'Payment Received';
+  const introLine = opts.isFirstPayment
+    ? 'Thanks for joining Merritt Workspace — your first membership payment has been processed successfully.'
+    : 'Your monthly Merritt Workspace membership payment has been processed successfully.';
+  const invoiceRow = opts.invoiceNumber
+    ? `<p><strong>Invoice:</strong> ${opts.invoiceNumber}</p>`
+    : '';
+  const invoiceLink = opts.invoicePdfUrl
+    ? `<p style="text-align:center;">
+          <a href="${opts.invoicePdfUrl}" class="button">Download Invoice (PDF)</a>
+        </p>`
+    : '';
+  const invoiceTextLine = opts.invoicePdfUrl
+    ? `\nDownload your invoice: ${opts.invoicePdfUrl}\n`
+    : '';
+
+  return {
+    subject: `${subjectPrefix} - $${opts.amount} | Merritt Workspace Membership`,
+    html: shell({
+      title: 'Payment Confirmed',
+      tagline: opts.isFirstPayment
+        ? 'Welcome to Merritt Workspace'
+        : 'Thanks for your continued membership',
+      body: `
+        <p>Hi ${opts.firstName},</p>
+        <p>${introLine}</p>
+        <div class="info-card">
+          <h3 style="margin-top:0;">Payment Details</h3>
+          <p><strong>Amount:</strong> $${opts.amount}</p>
+          <p><strong>Paid on:</strong> ${opts.paidOn}</p>
+          <p><strong>Description:</strong> ${opts.description}</p>
+          ${invoiceRow}
+        </div>
+        ${invoiceLink}
+        <p>Your next membership charge will run automatically on the 1st of next month. You can review your full payment history any time from your member portal.</p>
+        <p>Questions about your bill? Reply to this email or reach us at memberservices@merrittworkspace.net.</p>
+        <p>— The Merritt Workspace Team</p>
+      `,
+    }),
+    text: [
+      `Hi ${opts.firstName},`,
+      '',
+      introLine,
+      '',
+      'Payment Details:',
+      `  Amount: $${opts.amount}`,
+      `  Paid on: ${opts.paidOn}`,
+      `  Description: ${opts.description}`,
+      opts.invoiceNumber ? `  Invoice: ${opts.invoiceNumber}` : '',
+      invoiceTextLine,
+      'Your next membership charge will run automatically on the 1st of next month. You can review your full payment history any time from your member portal.',
+      '',
+      'Questions about your bill? Reply to this email or reach us at memberservices@merrittworkspace.net.',
+      '',
+      '— The Merritt Workspace Team',
+      '',
+      '--',
+      'Merritt Workspace',
+      '2246 Irving Street, Denver, CO 80211',
+      'memberservices@merrittworkspace.net',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  };
+}
+
 export function accessCodeIssuedEmail(opts: {
   firstName: string;
   accessCode: string;
