@@ -39,7 +39,7 @@ interface MembershipApplication {
   industry: string;
   linkedin_url?: string;
   website_url?: string;
-  membership_type: 'dedicated_desk' | 'private_office_single' | 'private_office_double' | 'private_office_large';
+  membership_type: 'dedicated_desk' | 'one_day_dedicated_desk' | 'private_office_single' | 'private_office_double' | 'private_office_large';
   start_date: string;
   referral_source: string;
   work_style: string[];
@@ -63,6 +63,14 @@ const membershipPlans = [
     description: 'Limited-time promo: lock in $100/month for life on your own dedicated desk in our collaborative environment.',
     category: 'Shared Workspace',
     features: ['$100/mo locked in for life', '24/7 access', 'High-speed WiFi', 'Printing access', 'Kitchen access', '2 meeting room hours/month']
+  },
+  {
+    id: 'one_day_dedicated_desk',
+    name: 'One Day Dedicated Desk',
+    price: 30,
+    description: 'Single-day dedicated desk pass. A one-time $30 charge — no recurring subscription.',
+    category: 'Day Pass',
+    features: ['One-time $30 charge', 'Full day of access', 'High-speed WiFi', 'Kitchen access', 'Printing access']
   },
   {
     id: 'private_office_single',
@@ -368,6 +376,11 @@ export default function MembershipApplicationPage() {
                             <p className="text-2xl font-bold text-green-600">$100</p>
                             <p className="text-xs text-gray-500">/month for life</p>
                           </>
+                        ) : plan.id === 'one_day_dedicated_desk' ? (
+                          <>
+                            <p className="text-2xl font-bold text-orange-600">${plan.price}</p>
+                            <p className="text-xs text-gray-500">one-time / day</p>
+                          </>
                         ) : (
                           <>
                             <p className="text-2xl font-bold text-orange-600">${plan.price}</p>
@@ -401,6 +414,8 @@ export default function MembershipApplicationPage() {
                         <span className="text-sm text-gray-400 line-through mr-2">${selectedPlanDetails.price}/mo</span>
                         <span className="text-xl font-bold text-green-600">$100/month for life</span>
                       </div>
+                    ) : selectedPlanDetails.id === 'one_day_dedicated_desk' ? (
+                      <span className="text-xl font-bold text-orange-600">${selectedPlanDetails.price} one-time</span>
                     ) : (
                       <span className="text-xl font-bold text-orange-600">${selectedPlanDetails.price}/month</span>
                     )}
@@ -424,10 +439,16 @@ export default function MembershipApplicationPage() {
                 <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-amber-900">
                   <p className="font-semibold mb-1">Billing Notice</p>
-                  <p>
-                    Your first billing period will include both your <span className="font-semibold">first month</span> (prorated from your start date)
-                    and your <span className="font-semibold">last month</span> of membership, paid up front. This applies to all membership tiers.
-                  </p>
+                  {application.membership_type === 'one_day_dedicated_desk' ? (
+                    <p>
+                      The One Day Dedicated Desk is a <span className="font-semibold">one-time $30 charge</span> for a single day of access. No recurring subscription, no first/last month billing.
+                    </p>
+                  ) : (
+                    <p>
+                      Your first billing period will include both your <span className="font-semibold">first month</span> (prorated from your start date)
+                      and your <span className="font-semibold">last month</span> of membership, paid up front. This applies to all recurring membership tiers.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

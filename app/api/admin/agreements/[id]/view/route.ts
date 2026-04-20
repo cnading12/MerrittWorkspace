@@ -116,6 +116,7 @@ function buildDocumentBody(
       paymentMethod: meta.payment_method === 'ach' ? 'ach' : 'card',
       signedDate,
       memberTitle: meta.member_title || null,
+      oneTime: Boolean(meta.one_time),
     };
     return escapeHtml(renderFeeAgreementText(ctx));
   }

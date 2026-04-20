@@ -442,6 +442,9 @@ export interface FeeAgreementContext {
   paymentMethod: 'card' | 'ach'; // controls 3.5% CC fee
   signedDate: string;
   memberTitle?: string | null;
+  // When true, the member is on a single-day pass and the fee is billed
+  // as one upfront charge — no first/last month, no recurring renewal.
+  oneTime?: boolean;
 }
 
 export interface FeeAgreementTotals {
@@ -454,10 +457,11 @@ export interface FeeAgreementTotals {
 
 export function calculateFeeAgreementTotals(
   monthlyCostCents: number,
-  paymentMethod: 'card' | 'ach'
+  paymentMethod: 'card' | 'ach',
+  oneTime = false
 ): FeeAgreementTotals {
   const firstMonthCents = monthlyCostCents;
-  const lastMonthCents = monthlyCostCents;
+  const lastMonthCents = oneTime ? 0 : monthlyCostCents;
   const subtotalCents = firstMonthCents + lastMonthCents;
   const ccFeeCents =
     paymentMethod === 'card' ? Math.round(subtotalCents * 0.035) : 0;
@@ -474,8 +478,32 @@ function pad(label: string, value: string, width = 22): string {
 }
 
 export function renderFeeAgreementText(ctx: FeeAgreementContext): string {
-  const totals = calculateFeeAgreementTotals(ctx.monthlyCostCents, ctx.paymentMethod);
+  const totals = calculateFeeAgreementTotals(
+    ctx.monthlyCostCents,
+    ctx.paymentMethod,
+    ctx.oneTime
+  );
   const { member: m, invoicing: inv } = ctx;
+
+  const descriptionBlurb = ctx.oneTime
+    ? `This page shall act as a binding agreement between Merritt Workspace and the
+Member, as named above. By signing this CoWork Space Agreement (CSA), the
+Member fully acknowledges and hereby agrees to be bound by the financial
+terms and conditions as stated in this Agreement and the accompanying
+CoWork Space Terms and Conditions. *Please note* This is a one-time, single-day
+day pass. It does not renew and is not a recurring membership.`
+    : `This page shall act as a binding agreement between Merritt Workspace and the
+Member, as named above. By signing this CoWork Space Agreement (CSA), the
+Member fully acknowledges and hereby agrees to be bound by the financial
+terms and conditions as stated in this Agreement and the accompanying
+CoWork Space Terms and Conditions. *Please note* When the stated term
+(timeframe) of the Agreement has ended, the financial terms shall renew
+automatically, less any discounts (if applicable).`;
+
+  const feeLines = ctx.oneTime
+    ? `One Day Membership Fee:              ${ctx.termStart}                ${usd(totals.firstMonthCents)}`
+    : `First Months Membership Fee:        ${ctx.termStart} – ${ctx.termEnd}    ${usd(totals.firstMonthCents)}
+Last Months Membership Fee:                                            ${usd(totals.lastMonthCents)}`;
 
   return `
 MERRITT WORKSPACE FEE AGREEMENT
@@ -491,19 +519,12 @@ ${pad('Street Address', inv.street)}    ${pad('Telephone', inv.phone)}
 ${pad('City/State/ZIP', inv.cityStateZip)}    ${pad('Email', inv.email)}
 
 DESCRIPTION OF SIGNATURE PAGE
-This page shall act as a binding agreement between Merritt Workspace and the
-Member, as named above. By signing this CoWork Space Agreement (CSA), the
-Member fully acknowledges and hereby agrees to be bound by the financial
-terms and conditions as stated in this Agreement and the accompanying
-CoWork Space Terms and Conditions. *Please note* When the stated term
-(timeframe) of the Agreement has ended, the financial terms shall renew
-automatically, less any discounts (if applicable).
+${descriptionBlurb}
 
 MEMBERSHIP DESCRIPTION                                               TOTAL
 -----------------------------------------------------------------------------
 ${ctx.designationLabel}
-First Months Membership Fee:        ${ctx.termStart} – ${ctx.termEnd}    ${usd(totals.firstMonthCents)}
-Last Months Membership Fee:                                            ${usd(totals.lastMonthCents)}
+${feeLines}
 ${
   ctx.paymentMethod === 'card'
     ? `3.5% Credit Card Fee:                                                  ${usd(totals.ccFeeCents)}\n(Disregard if paying by ACH or EFT)`

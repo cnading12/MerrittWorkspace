@@ -10,6 +10,7 @@ export type MemberStatus =
 
 export type MemberDesignation =
   | 'dedicated_desk'
+  | 'one_day_dedicated_desk'
   | 'private_office_single'
   | 'private_office_double'
   | 'private_office_large'
@@ -121,6 +122,7 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
 
 export const DESIGNATION_LABELS: Record<MemberDesignation, string> = {
   dedicated_desk: 'Dedicated Desk',
+  one_day_dedicated_desk: 'One Day Dedicated Desk',
   private_office_single: 'Private Office — Single',
   private_office_double: 'Private Office — Double',
   private_office_large: 'Private Office — Large',

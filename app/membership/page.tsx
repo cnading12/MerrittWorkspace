@@ -35,6 +35,29 @@ const membershipPlans = [
     link: '/membership/dedicated-desk'
   },
   {
+    id: 'one_day_dedicated_desk',
+    name: 'One Day Dedicated Desk',
+    price: 30,
+    description: 'A single day at a dedicated desk — perfect for trying us out or a one-off workday.',
+    capacity: '1 person',
+    privacy: 'Shared Space',
+    image: '/images/hero/dedicated-desk.webp',
+    blurDataURL: 'data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAACwAQCdASoKAA0ABUB8JZACdADYt8AAAOD9JmNTjrhhjajRJ8jDWLTrgAA=',
+    color: 'burnt-orange',
+    badge: 'Day Pass',
+    features: [
+      'One-time $30 charge',
+      'Full day of access',
+      'High-speed WiFi',
+      'Full kitchen with coffee',
+      'Printing access',
+      'Phone booths on availability'
+    ],
+    ideal_for: 'Travelers, drop-ins, and anyone wanting to try the space',
+    category: 'shared',
+    link: '/membership/apply'
+  },
+  {
     id: 'private_office_single',
     name: 'Single Desk Office',
     price: 500,
@@ -267,6 +290,11 @@ export default function MembershipPage() {
                         <span className="text-lg text-gray-500">/month</span>
                       </div>
                       <p className="text-xs text-green-700 font-medium mt-1">First 10 members — locked in for life</p>
+                    </div>
+                  ) : plan.id === 'one_day_dedicated_desk' ? (
+                    <div className="flex items-baseline gap-2 mb-4">
+                      <span className="text-4xl font-bold text-burnt-orange-600">${plan.price}</span>
+                      <span className="text-lg text-gray-500">one-time / day</span>
                     </div>
                   ) : (
                     <div className="flex items-baseline gap-2 mb-4">

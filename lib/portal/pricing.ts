@@ -13,7 +13,12 @@ import type { MemberDesignation } from './types';
 export interface MembershipPlan {
   designation: MemberDesignation;
   label: string;
+  // For recurring plans this is the monthly fee; for one-time plans
+  // (e.g. one_day_dedicated_desk) it is the single upfront charge.
   monthly_cost_cents: number;
+  // When true, members on this plan pay a single one-time charge instead
+  // of a recurring monthly subscription.
+  one_time?: boolean;
 }
 
 export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
@@ -21,6 +26,12 @@ export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
     designation: 'dedicated_desk',
     label: 'Dedicated Desk (Promo — $100/mo for life)',
     monthly_cost_cents: 10000,
+  },
+  one_day_dedicated_desk: {
+    designation: 'one_day_dedicated_desk',
+    label: 'One Day Dedicated Desk',
+    monthly_cost_cents: 3000,
+    one_time: true,
   },
   private_office_single: {
     designation: 'private_office_single',
@@ -38,6 +49,14 @@ export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
     monthly_cost_cents: 120000,
   },
 };
+
+export function isOneTimeDesignation(
+  designation: MemberDesignation | null | undefined
+): boolean {
+  if (!designation) return false;
+  const plan = MEMBERSHIP_PLANS[designation];
+  return Boolean(plan?.one_time);
+}
 
 export function planForMembershipType(
   membership_type: string | null | undefined
