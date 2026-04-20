@@ -406,6 +406,17 @@ export default function MembershipApplicationPage() {
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                 />
               </div>
+
+              <div className="mt-4 p-4 rounded-lg border border-amber-300 bg-amber-50 flex gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-900">
+                  <p className="font-semibold mb-1">Billing Notice</p>
+                  <p>
+                    Your first billing period will include both your <span className="font-semibold">first month</span> (prorated from your start date)
+                    and your <span className="font-semibold">last month</span> of membership, paid up front. This applies to all membership tiers.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Personal Information */}
