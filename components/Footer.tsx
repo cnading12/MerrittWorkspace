@@ -13,12 +13,18 @@ export default function Footer() {
               Merritt Workspace
             </Link>
             <p className="text-gray-400 mb-4">
-              Premium workspace in the heart of Sloan's Lake, Denver. 
+              Premium workspace in the heart of Sloan's Lake, Denver.
               Where work meets community in a beautifully restored space.
             </p>
-            <p className="text-gray-400">
+            <p className="text-gray-400 mb-4">
               Experience our distinctive burnt orange floors and collaborative atmosphere.
             </p>
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 bg-burnt-orange-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-burnt-orange-700 transition"
+            >
+              Book Your Free Trial Day
+            </Link>
           </div>
           
           <div>

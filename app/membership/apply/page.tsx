@@ -318,6 +318,19 @@ export default function MembershipApplicationPage() {
       {/* Application Form */}
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Trial Day Callout */}
+          <div className="mb-8 bg-green-50 border border-green-200 rounded-xl p-5 flex items-start gap-4">
+            <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-gray-900 mb-1">
+                Every application includes a free trial day
+              </p>
+              <p className="text-sm text-gray-700">
+                Before your membership starts, spend a full workday with us on the house — experience the desks, flex space, coffee, and community. No commitment required.
+              </p>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmitApplication} className="space-y-8">
 
             {/* Membership Selection */}

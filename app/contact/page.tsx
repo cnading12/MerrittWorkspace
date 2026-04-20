@@ -63,12 +63,16 @@ export default function ContactPage() {
       <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-bold mb-6">
+              <Calendar className="w-4 h-4" />
+              Book a Free Trial Day — Every New Member Qualifies
+            </div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Get in Touch
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
               Ready to join our community or have questions about our workspace?
-              We're here to help you find the perfect solution for your business needs.
+              Ask about our <strong>free trial day</strong> — spend a full workday with us before you commit to a membership.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a href="tel:720-357-9499" onClick={trackPhoneClick} className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition inline-flex items-center justify-center gap-2">
@@ -175,12 +179,12 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-4">
-                <Calendar className="w-6 h-6 text-burnt-orange-600 mt-1" />
+              <div className="flex items-start gap-4 p-6 bg-green-50 border border-green-200 rounded-xl">
+                <Calendar className="w-6 h-6 text-green-700 mt-1" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Schedule a Tour</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">Schedule Your Free Trial Day</h3>
                   <p className="text-gray-700 mb-3">
-                    Experience our workspace with a complimentary tour and free trial day.
+                    Every potential new member gets a <strong>free trial day</strong> — work the space for a full day, on us, before committing to a membership. Includes a complimentary tour.
                   </p>
                   <a href="tel:720-357-9499" onClick={trackPhoneClick} className="bg-burnt-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-burnt-orange-700 transition inline-block">
                     Call to Schedule
@@ -248,6 +252,7 @@ export default function ContactPage() {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
                     >
                       <option value="general">General Information</option>
+                      <option value="trial_day">Book a Free Trial Day</option>
                       <option value="tour">Schedule a Tour</option>
                       <option value="membership">Membership Inquiry</option>
                       <option value="meeting_room">Meeting Room Booking</option>

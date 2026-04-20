@@ -75,6 +75,11 @@ export default function ImprovedHomePage() {
                 Dedicated Desks $100/Month for Life — First 10 Members Only
               </div>
 
+              <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold mb-4 ml-0 sm:ml-2">
+                <CheckCircle className="w-4 h-4" />
+                Try Us Free — Every New Member Gets a Free Trial Day
+              </div>
+
               <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
                 <MapPin className="w-4 h-4" />
                 Sloan's Lake, Denver • 3 Min to I-25
@@ -107,11 +112,15 @@ export default function ImprovedHomePage() {
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <span className="text-gray-700">All-You-Can-Drink Coffee</span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <span className="text-gray-700">Free Trial Day for New Members</span>
+                </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <Link href="/membership/dedicated-desk" className="inline-flex items-center justify-center bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg hover:shadow-xl">
-                  Claim Your Free Month
+                <Link href="/contact" className="inline-flex items-center justify-center bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg hover:shadow-xl">
+                  Book Your Free Trial Day
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
                 <a href="#pricing" className="inline-flex items-center justify-center border-2 border-gray-900 text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-gray-900 hover:text-white transition">
@@ -445,9 +454,13 @@ export default function ImprovedHomePage() {
 
           {/* Internal Links */}
           <div className="text-center mt-12">
+            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold mb-4">
+              <CheckCircle className="w-4 h-4" />
+              Not sure yet? Every plan includes a free trial day — work the space before you commit.
+            </div>
             <p className="text-gray-600 mb-4">
               <Link href="/membership" className="text-orange-600 hover:underline font-semibold">Compare all membership options</Link> or
-              <Link href="/contact" className="text-orange-600 hover:underline font-semibold ml-1">schedule a tour</Link> of our Sloan's Lake workspace
+              <Link href="/contact" className="text-orange-600 hover:underline font-semibold ml-1">book your free trial day</Link> at our Sloan's Lake workspace
             </p>
           </div>
         </div>
@@ -541,23 +554,23 @@ export default function ImprovedHomePage() {
       <section className="py-20 bg-gray-900 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-6">
-            First Month Free on Dedicated Desks
+            Free Trial Day for Every New Member
           </div>
-          <h2 className="text-4xl font-bold mb-6">Ready to Find Your Workspace?</h2>
+          <h2 className="text-4xl font-bold mb-6">Try Before You Join — Free for a Full Day</h2>
           <p className="text-xl text-gray-300 mb-4">
-            Get your dedicated desk or private office—plus free access to our beautiful flex space
+            Spend a full workday with us, on the house. Experience the flex space, coffee, and community before choosing a membership.
           </p>
           <p className="text-lg text-gray-400 mb-8">
             <Phone className="w-4 h-4 inline mr-2" />
             Call or text: <a href="tel:7203579499" className="text-orange-400 hover:text-orange-300">(720) 357-9499</a>
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/membership/dedicated-desk" className="inline-flex items-center justify-center bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg">
-              Claim Your Free Month
+            <Link href="/contact" className="inline-flex items-center justify-center bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg">
+              Book Your Free Trial Day
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
             <Link href="/membership" className="inline-flex items-center justify-center bg-white text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition">
-              Book Your Free Tour
+              See All Membership Options
             </Link>
           </div>
         </div>
