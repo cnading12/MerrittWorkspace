@@ -1,8 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { Resend } from 'resend';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import {
+  subscriptionPaymentReceiptEmail,
+  PORTAL_FROM,
+  PORTAL_REPLY_TO,
+} from '@/lib/portal/emails';
 
 export const dynamic = 'force-dynamic';
+
+const MANAGER_EMAIL = 'manager@merrittworkspace.net';
+const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
+
+let resendClient: Resend | null = null;
+function getResend(): Resend | null {
+  if (!process.env.RESEND_API_KEY) return null;
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resendClient;
+}
 
 // Stripe webhook for membership subscription events.
 // Configure in Stripe to send:
@@ -94,7 +112,7 @@ export async function POST(req: NextRequest) {
         const customerId = invoice.customer as string;
         const { data: member } = await sb
           .from('members')
-          .select('id')
+          .select('id, email, first_name, last_name')
           .eq('stripe_customer_id', customerId)
           .maybeSingle();
         // ACH payments can sit in a processing state for 3–5 business days
@@ -124,6 +142,63 @@ export async function POST(req: NextRequest) {
           },
           { onConflict: 'stripe_invoice_id' }
         );
+
+        // Send a receipt on successful payment. Stripe fires `invoice.paid`
+        // for both the initial subscription charge (billing_reason =
+        // subscription_create) and each recurring monthly cycle
+        // (billing_reason = subscription_cycle), so this one branch covers
+        // both the first-payment confirmation and the ~1st-of-month
+        // recurring confirmation. Member is the primary recipient;
+        // manager + member services are BCC'd so they receive a copy
+        // without exposing internal mailboxes to the member.
+        if (event.type === 'invoice.paid' && member?.email) {
+          const resend = getResend();
+          if (!resend) {
+            console.warn(
+              'Skipping subscription receipt email: RESEND_API_KEY not set'
+            );
+          } else {
+            const isFirstPayment =
+              (invoice as any).billing_reason === 'subscription_create';
+            const amountCents =
+              invoice.amount_paid || invoice.amount_due || 0;
+            const amount = (amountCents / 100).toFixed(2);
+            const paidAtSec = invoice.status_transitions?.paid_at;
+            const paidOn = new Date(
+              paidAtSec ? paidAtSec * 1000 : Date.now()
+            ).toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            });
+            const email = subscriptionPaymentReceiptEmail({
+              firstName: member.first_name || 'there',
+              amount,
+              paidOn,
+              description: invoice.description || 'Monthly membership',
+              invoiceNumber: invoice.number || null,
+              invoicePdfUrl: invoice.invoice_pdf || null,
+              isFirstPayment,
+            });
+            try {
+              await resend.emails.send({
+                from: PORTAL_FROM,
+                to: member.email,
+                bcc: [MANAGER_EMAIL, MEMBER_SERVICES_EMAIL],
+                replyTo: PORTAL_REPLY_TO,
+                subject: email.subject,
+                html: email.html,
+                text: email.text,
+              });
+            } catch (err) {
+              // Do not fail the webhook if email delivery fails —
+              // payment_history is already recorded and Stripe will retry
+              // the webhook on a non-2xx, which would double-record.
+              console.error('Failed to send subscription receipt email', err);
+            }
+          }
+        }
         break;
       }
     }
