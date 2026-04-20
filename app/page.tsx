@@ -111,7 +111,7 @@ export default function ImprovedHomePage() {
 
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <Link href="/membership/dedicated-desk" className="inline-flex items-center justify-center bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg hover:shadow-xl">
-                  Claim Your Free Month
+                  Get Started
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
                 <a href="#pricing" className="inline-flex items-center justify-center border-2 border-gray-900 text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-gray-900 hover:text-white transition">
@@ -540,9 +540,6 @@ export default function ImprovedHomePage() {
       {/* CTA */}
       <section className="py-20 bg-gray-900 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-6">
-            First Month Free on Dedicated Desks
-          </div>
           <h2 className="text-4xl font-bold mb-6">Ready to Find Your Workspace?</h2>
           <p className="text-xl text-gray-300 mb-4">
             Get your dedicated desk or private office—plus free access to our beautiful flex space
@@ -553,7 +550,7 @@ export default function ImprovedHomePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/membership/dedicated-desk" className="inline-flex items-center justify-center bg-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-700 transition shadow-lg">
-              Claim Your Free Month
+              Get Started
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
             <Link href="/membership" className="inline-flex items-center justify-center bg-white text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition">
