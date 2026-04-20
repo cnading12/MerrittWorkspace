@@ -10,7 +10,7 @@ import {
   calculateFeeAgreementTotals,
   MERRITT_SIGNATORY,
 } from '@/lib/portal/legal';
-import { formatUsd } from '@/lib/portal/pricing';
+import { formatUsd, isOneTimeDesignation } from '@/lib/portal/pricing';
 
 type AgreementRow = {
   agreement_type: 'member_agreement' | 'terms_and_conditions' | 'fee_agreement';
@@ -685,7 +685,8 @@ function FeeAgreementSection({
   const [invEmail, setInvEmail] = useState(member.email);
 
   const monthlyCostCents = member.monthly_cost_cents || 0;
-  const totals = calculateFeeAgreementTotals(monthlyCostCents, paymentMethod);
+  const oneTime = isOneTimeDesignation(member.designation);
+  const totals = calculateFeeAgreementTotals(monthlyCostCents, paymentMethod, oneTime);
 
   const today = new Date();
   const termStart = today.toLocaleDateString(undefined, {
@@ -737,6 +738,7 @@ function FeeAgreementSection({
       term_end: termEnd,
       designation_label: designationLabel,
       monthly_cost_cents: monthlyCostCents,
+      one_time: oneTime,
       first_month_cents: totals.firstMonthCents,
       last_month_cents: totals.lastMonthCents,
       cc_fee_cents: totals.ccFeeCents,
@@ -767,8 +769,9 @@ function FeeAgreementSection({
               )}
             </div>
             <div className="text-xs text-gray-500">
-              Auto-generated for your selected plan. Includes first + last month and (if paying by
-              card) a 3.5% processing fee.
+              {oneTime
+                ? 'Auto-generated for your one-day pass. One-time charge (plus a 3.5% fee if paying by card).'
+                : 'Auto-generated for your selected plan. Includes first + last month and (if paying by card) a 3.5% processing fee.'}
             </div>
             {signed && signedBy && signedAt && (
               <div className="text-xs text-green-800 mt-1 font-medium">
@@ -895,13 +898,23 @@ function FeeAgreementSection({
           {/* Description */}
           <div className="text-xs text-gray-700 bg-white border rounded p-3">
             <div className="font-semibold mb-1">DESCRIPTION OF SIGNATURE PAGE</div>
-            This page shall act as a binding agreement between Merritt WorKSpace and the
+            This page shall act as a binding agreement between Merritt Workspace and the
             Member, as named above. By signing this CoWork Space Agreement (CSA), the member
             fully acknowledges and hereby agrees to be bound by the financial terms and
             conditions as stated in this Agreement and the accompanying CoWork Space Terms
-            and Conditions. <em>*Please note*</em> When the stated term (timeframe) of the
-            Agreement has ended, the financial terms shall renew automatically, less any
-            discounts (if applicable).
+            and Conditions.{' '}
+            {oneTime ? (
+              <>
+                <em>*Please note*</em> This is a one-time, single-day day pass. It does not
+                renew and is not a recurring membership.
+              </>
+            ) : (
+              <>
+                <em>*Please note*</em> When the stated term (timeframe) of the Agreement has
+                ended, the financial terms shall renew automatically, less any discounts (if
+                applicable).
+              </>
+            )}
           </div>
 
           {/* Membership Description / Totals */}
@@ -913,11 +926,20 @@ function FeeAgreementSection({
             <div className="px-3 py-2 text-sm">
               <div className="font-semibold text-gray-900">{designationLabel}</div>
             </div>
-            <Row
-              label={`First Month's Membership Fee (${termStart} – ${termEnd})`}
-              value={formatUsd(totals.firstMonthCents)}
-            />
-            <Row label="Last Month's Membership Fee" value={formatUsd(totals.lastMonthCents)} />
+            {oneTime ? (
+              <Row
+                label={`One Day Membership Fee (${termStart})`}
+                value={formatUsd(totals.firstMonthCents)}
+              />
+            ) : (
+              <>
+                <Row
+                  label={`First Month's Membership Fee (${termStart} – ${termEnd})`}
+                  value={formatUsd(totals.firstMonthCents)}
+                />
+                <Row label="Last Month's Membership Fee" value={formatUsd(totals.lastMonthCents)} />
+              </>
+            )}
             {paymentMethod === 'card' ? (
               <>
                 <Row label="3.5% Credit Card Fee" value={formatUsd(totals.ccFeeCents)} />

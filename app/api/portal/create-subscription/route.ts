@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { isOneTimeDesignation } from '@/lib/portal/pricing';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +56,64 @@ export async function POST(req: NextRequest) {
         .eq('id', member.id);
     }
 
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+    // One-time day-pass flow (e.g. One Day Dedicated Desk at $30).
+    // These members pay a single upfront charge instead of a recurring
+    // monthly subscription, so we use Stripe Checkout in `payment` mode.
+    if (isOneTimeDesignation(member.designation)) {
+      const checkoutPaymentMethodTypes: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] =
+        selectedMethod === 'ach' ? ['us_bank_account', 'card'] : ['card', 'link'];
+
+      const ccFeeCents =
+        selectedMethod === 'card'
+          ? Math.round(member.monthly_cost_cents * 0.035)
+          : 0;
+      const totalCents = member.monthly_cost_cents + ccFeeCents;
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        customer: customerId,
+        payment_method_types: checkoutPaymentMethodTypes,
+        payment_method_options:
+          selectedMethod === 'ach'
+            ? {
+                us_bank_account: {
+                  financial_connections: {
+                    permissions: ['payment_method'],
+                  },
+                  verification_method: 'instant',
+                },
+              }
+            : undefined,
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              unit_amount: totalCents,
+              product_data: {
+                name: 'Merritt Workspace — One Day Dedicated Desk',
+                description: `${member.first_name} ${member.last_name} — single day pass`,
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        success_url: `${baseUrl}/portal?subscribed=1`,
+        cancel_url: `${baseUrl}/portal?canceled=1`,
+        metadata: {
+          order_type: 'membership_subscription',
+          member_id: member.id,
+          one_time: '1',
+          base_cents: String(member.monthly_cost_cents),
+          cc_fee_cents: String(ccFeeCents),
+          selected_payment_method: selectedMethod,
+        },
+      });
+
+      return NextResponse.json({ url: session.url, id: session.id });
+    }
+
     // Billing logic:
     //   - We anchor the monthly cycle to the 1st of next month at 12:00 UTC
     //     (subscription_data.billing_cycle_anchor below).
@@ -94,7 +153,6 @@ export async function POST(req: NextRequest) {
     const checkoutPaymentMethodTypes: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] =
       selectedMethod === 'ach' ? ['us_bank_account', 'card'] : ['card', 'link'];
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
