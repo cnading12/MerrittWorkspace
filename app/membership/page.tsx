@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from 'react';
 import { MapPin, Wifi, Shield, Phone, Coffee, Users, Calendar, CheckCircle, Building2, Clock, Mail, Heart, ArrowRight, Zap, TrendingUp } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
@@ -200,11 +199,105 @@ const processSteps = [
 ];
 
 export default function MembershipPage() {
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'shared' | 'private'>('all');
+  const sharedPlans = membershipPlans.filter(plan => plan.category === 'shared');
+  const privatePlans = membershipPlans.filter(plan => plan.category === 'private');
 
-  const filteredPlans = selectedCategory === 'all' 
-    ? membershipPlans 
-    : membershipPlans.filter(plan => plan.category === selectedCategory);
+  const renderPlanCard = (plan: typeof membershipPlans[number]) => (
+    <div
+      key={plan.id}
+      className={`bg-white rounded-xl shadow-lg border-2 overflow-hidden hover:shadow-2xl transition group flex flex-col ${plan.id === 'dedicated_desk' ? 'border-green-400' : 'border-gray-200'}`}
+    >
+      {/* Image */}
+      <div className="relative h-48 overflow-hidden">
+        <Image
+          src={plan.image}
+          alt={plan.name}
+          fill
+          placeholder="blur"
+          blurDataURL={plan.blurDataURL}
+          className="object-cover group-hover:scale-105 transition duration-300"
+        />
+        {plan.id === 'dedicated_desk' ? (
+          <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+            $100/MO FOR LIFE
+          </div>
+        ) : plan.badge ? (
+          <div className="absolute top-4 right-4 bg-burnt-orange-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+            {plan.badge}
+          </div>
+        ) : null}
+      </div>
+
+      {/* Content */}
+      <div className="p-6 flex flex-col flex-grow">
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+
+        {plan.id === 'dedicated_desk' ? (
+          <div className="mb-4">
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl text-gray-400 line-through">${plan.price}</span>
+              <span className="text-4xl font-bold text-green-600">$100</span>
+              <span className="text-lg text-gray-500">/month</span>
+            </div>
+            <p className="text-xs text-green-700 font-medium mt-1">First 10 members — locked in for life</p>
+          </div>
+        ) : plan.id === 'one_day_dedicated_desk' ? (
+          <div className="flex items-baseline gap-2 mb-4">
+            <span className="text-4xl font-bold text-burnt-orange-600">${plan.price}</span>
+            <span className="text-lg text-gray-500">one-time / day</span>
+          </div>
+        ) : (
+          <div className="flex items-baseline gap-2 mb-4">
+            <span className="text-4xl font-bold text-burnt-orange-600">${plan.price}</span>
+            <span className="text-lg text-gray-500">/month</span>
+          </div>
+        )}
+
+        <p className="text-gray-600 mb-4">{plan.description}</p>
+
+        <div className="space-y-2 mb-4 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-burnt-orange-600" />
+            <span>{plan.capacity}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-burnt-orange-600" />
+            <span>{plan.privacy}</span>
+          </div>
+        </div>
+
+        <div className="mb-6 flex-grow">
+          <p className="text-sm font-semibold text-gray-700 mb-3">Key Features:</p>
+          <ul className="space-y-2">
+            {plan.features.slice(0, 5).map((feature, index) => (
+              <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
+          {plan.features.length > 5 && (
+            <p className="text-xs text-gray-500 mt-2">+ {plan.features.length - 5} more features</p>
+          )}
+        </div>
+
+        <div className="space-y-3 mt-auto">
+          <Link
+            href={plan.link}
+            className="w-full bg-burnt-orange-600 hover:bg-burnt-orange-700 text-white py-3 px-4 rounded-lg font-semibold transition text-center block"
+          >
+            Learn More
+          </Link>
+          <Link
+            href="/membership/apply"
+            className="w-full border-2 border-burnt-orange-600 text-burnt-orange-600 hover:bg-burnt-orange-600 hover:text-white py-3 px-4 rounded-lg font-semibold transition text-center block"
+          >
+            Apply Now
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <main className="min-h-screen bg-gray-50 pt-16">
@@ -251,103 +344,32 @@ export default function MembershipPage() {
             <p className="text-xl text-gray-600">Find the perfect workspace solution for your needs</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {filteredPlans.map((plan) => (
-              <div
-                key={plan.id}
-                className={`bg-white rounded-xl shadow-lg border-2 overflow-hidden hover:shadow-2xl transition group flex flex-col ${plan.id === 'dedicated_desk' ? 'border-green-400' : 'border-gray-200'}`}
-              >
-                {/* Image */}
-                <div className="relative h-48 overflow-hidden">
-                  <Image
-                    src={plan.image}
-                    alt={plan.name}
-                    fill
-                    placeholder="blur"
-                    blurDataURL={plan.blurDataURL}
-                    className="object-cover group-hover:scale-105 transition duration-300"
-                  />
-                  {plan.id === 'dedicated_desk' ? (
-                    <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
-                      $100/MO FOR LIFE
-                    </div>
-                  ) : plan.badge ? (
-                    <div className="absolute top-4 right-4 bg-burnt-orange-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                      {plan.badge}
-                    </div>
-                  ) : null}
-                </div>
-
-                {/* Content */}
-                <div className="p-6 flex flex-col flex-grow">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-
-                  {plan.id === 'dedicated_desk' ? (
-                    <div className="mb-4">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-xl text-gray-400 line-through">${plan.price}</span>
-                        <span className="text-4xl font-bold text-green-600">$100</span>
-                        <span className="text-lg text-gray-500">/month</span>
-                      </div>
-                      <p className="text-xs text-green-700 font-medium mt-1">First 10 members — locked in for life</p>
-                    </div>
-                  ) : plan.id === 'one_day_dedicated_desk' ? (
-                    <div className="flex items-baseline gap-2 mb-4">
-                      <span className="text-4xl font-bold text-burnt-orange-600">${plan.price}</span>
-                      <span className="text-lg text-gray-500">one-time / day</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-baseline gap-2 mb-4">
-                      <span className="text-4xl font-bold text-burnt-orange-600">${plan.price}</span>
-                      <span className="text-lg text-gray-500">/month</span>
-                    </div>
-                  )}
-
-                  <p className="text-gray-600 mb-4">{plan.description}</p>
-
-                  <div className="space-y-2 mb-4 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-burnt-orange-600" />
-                      <span>{plan.capacity}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-burnt-orange-600" />
-                      <span>{plan.privacy}</span>
-                    </div>
-                  </div>
-
-                  <div className="mb-6 flex-grow">
-                    <p className="text-sm font-semibold text-gray-700 mb-3">Key Features:</p>
-                    <ul className="space-y-2">
-                      {plan.features.slice(0, 5).map((feature, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
-                          <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    {plan.features.length > 5 && (
-                      <p className="text-xs text-gray-500 mt-2">+ {plan.features.length - 5} more features</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-3 mt-auto">
-                    <Link
-                      href={plan.link}
-                      className="w-full bg-burnt-orange-600 hover:bg-burnt-orange-700 text-white py-3 px-4 rounded-lg font-semibold transition text-center block"
-                    >
-                      Learn More
-                    </Link>
-                    <Link
-                      href="/membership/apply"
-                      className="w-full border-2 border-burnt-orange-600 text-burnt-orange-600 hover:bg-burnt-orange-600 hover:text-white py-3 px-4 rounded-lg font-semibold transition text-center block"
-                    >
-                      Apply Now
-                    </Link>
-                  </div>
-                </div>
+          {/* Shared Workspace */}
+          <div className="mb-16">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-burnt-orange-100 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-burnt-orange-600" />
               </div>
-            ))}
+              <h3 className="text-2xl font-bold text-gray-900">Shared Workspace</h3>
+            </div>
+            <p className="text-gray-600 mb-8">Flexible desks in our open community space — ideal for solo professionals.</p>
+            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+              {sharedPlans.map(renderPlanCard)}
+            </div>
+          </div>
+
+          {/* Private Offices */}
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-burnt-orange-100 rounded-lg flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-burnt-orange-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Private Offices</h3>
+            </div>
+            <p className="text-gray-600 mb-8">Lockable private offices for individuals, partnerships, and teams.</p>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {privatePlans.map(renderPlanCard)}
+            </div>
           </div>
 
           <div className="text-center mt-12">
