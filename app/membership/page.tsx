@@ -167,7 +167,7 @@ const processSteps = [
   {
     number: 3,
     title: 'Free Trial Day',
-    description: 'Experience our workspace with a full complimentary trial day'
+    description: 'Every potential new member gets a full complimentary day to work the space before committing'
   },
   {
     number: 4,
@@ -189,27 +189,31 @@ export default function MembershipPage() {
       <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-bold mb-6">
+              <CheckCircle className="w-4 h-4" />
+              Every New Member Gets a Free Trial Day
+            </div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Find Your Perfect
               <span className="text-burnt-orange-600 block">Workspace</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
               Experience premium coworking in the heart of Sloan's Lake. Choose from dedicated desks to private offices,
-              all with our distinctive character and collaborative atmosphere.
+              all with our distinctive character and collaborative atmosphere. Try any plan with a <strong>free trial day</strong>—no commitment required.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link 
-                href="/membership/apply" 
+              <Link
+                href="/contact"
                 className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition inline-flex items-center justify-center gap-2"
               >
-                Apply for Membership
+                Book Your Free Trial Day
                 <ArrowRight className="w-5 h-5" />
               </Link>
-              <Link 
-                href="/contact" 
+              <Link
+                href="/membership/apply"
                 className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition"
               >
-                Schedule a Tour
+                Apply for Membership
               </Link>
             </div>
           </div>
@@ -319,7 +323,10 @@ export default function MembershipPage() {
           </div>
 
           <div className="text-center mt-12">
-            <p className="text-gray-600 mb-2">All memberships include a <strong>free trial day</strong> to experience the space.</p>
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-5 py-3 rounded-full text-base font-bold mb-3">
+              <CheckCircle className="w-5 h-5" />
+              All memberships include a FREE TRIAL DAY — experience the space before you commit
+            </div>
             <p className="text-sm text-gray-500">No long-term contracts • Month-to-month flexibility</p>
           </div>
         </div>
@@ -490,25 +497,29 @@ export default function MembershipPage() {
       {/* Final CTA */}
       <section className="py-16 bg-gradient-to-r from-burnt-orange-500 to-burnt-orange-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 bg-white text-burnt-orange-700 px-4 py-2 rounded-full text-sm font-bold mb-6">
+            <CheckCircle className="w-4 h-4" />
+            Free Trial Day for Every New Member
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Ready to Join Our Community?
           </h2>
           <p className="text-xl text-burnt-orange-100 mb-8">
-            Experience the difference of a truly collaborative workspace at Sloan's Lake
+            Spend a free day working with us before you decide. Experience Sloan's Lake's most collaborative workspace on the house.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/membership/apply"
+              href="/contact"
               className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
             >
-              Apply for Membership
+              Book Your Free Trial Day
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
-              href="/contact"
+              href="/membership/apply"
               className="bg-burnt-orange-700 text-white py-4 px-8 rounded-lg font-semibold hover:bg-burnt-orange-800 transition inline-flex items-center justify-center border-2 border-white"
             >
-              Schedule a Tour
+              Apply for Membership
             </Link>
           </div>
         </div>

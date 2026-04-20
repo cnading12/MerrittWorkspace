@@ -23,6 +23,7 @@ const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
 const INQUIRY_LABELS: Record<string, string> = {
     general: 'General Information',
+    trial_day: 'Book a Free Trial Day',
     tour: 'Schedule a Tour',
     membership: 'Membership Inquiry',
     meeting_room: 'Meeting Room Booking',

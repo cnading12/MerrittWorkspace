@@ -51,6 +51,11 @@ export default function DedicatedDeskPage() {
       icon: MapPin,
       title: 'FREE Flex Space Next Door',
       description: 'Use our beautiful flex space in the adjacent building for meetings and events—free until 4:30 PM daily'
+    },
+    {
+      icon: Calendar,
+      title: 'FREE Trial Day',
+      description: 'Try the space for a full day, on the house, before you commit to a membership'
     }
   ];
 
@@ -114,6 +119,10 @@ export default function DedicatedDeskPage() {
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
               Our standard rate is $300/month. For a limited time, the first 10 members lock in $100/month for life. Once those spots are claimed, this rate is gone forever.
             </p>
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-bold mb-6">
+              <Check className="w-4 h-4" />
+              Every New Member Gets a Free Trial Day — No Commitment
+            </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
               <Link
                 href="/membership/apply"
@@ -122,13 +131,19 @@ export default function DedicatedDeskPage() {
                 Claim Your Spot — $100/Month
                 <ArrowRight className="w-5 h-5" />
               </Link>
-              <a
-                href="tel:7203579499"
+              <Link
+                href="/contact"
                 className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center border-2 border-burnt-orange-600"
               >
-                Call or Text: (720) 357-9499
-              </a>
+                Book Your Free Trial Day
+              </Link>
             </div>
+            <a
+              href="tel:7203579499"
+              className="inline-flex items-center justify-center text-burnt-orange-700 font-semibold hover:text-burnt-orange-800 transition"
+            >
+              Or call/text: (720) 357-9499
+            </a>
           </div>
 
           {/* Main Content Card */}
@@ -191,6 +206,10 @@ export default function DedicatedDeskPage() {
                       <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                       <span className="text-gray-700">Pet-friendly workspace</span>
                     </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700"><strong>FREE trial day</strong> to experience the space before you sign up</span>
+                    </li>
                   </ul>
                 </div>
 
@@ -199,6 +218,12 @@ export default function DedicatedDeskPage() {
                   className="w-full bg-burnt-orange-600 hover:bg-burnt-orange-700 text-white py-4 px-6 rounded-lg font-semibold transition text-center block"
                 >
                   Claim Your Spot — $100/Month
+                </Link>
+                <Link
+                  href="/contact"
+                  className="w-full mt-3 border-2 border-burnt-orange-600 text-burnt-orange-600 hover:bg-burnt-orange-50 py-4 px-6 rounded-lg font-semibold transition text-center block"
+                >
+                  Try It Free — Book a Trial Day
                 </Link>
               </div>
 
@@ -401,19 +426,31 @@ export default function DedicatedDeskPage() {
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-burnt-orange-500 to-burnt-orange-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 bg-white text-burnt-orange-700 px-4 py-2 rounded-full text-sm font-bold mb-6">
+            <Check className="w-4 h-4" />
+            Free Trial Day Included — Try Before You Commit
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Reserve Your Desk at $100/Month
           </h2>
           <p className="text-xl text-burnt-orange-100 mb-8">
-            Only 10 spots at this rate — locked in for life. Standard rate is $300/month.
+            Only 10 spots at this rate — locked in for life. Standard rate is $300/month. Every potential new member gets a free trial day first.
           </p>
-          <Link
-            href="/membership/apply"
-            className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
-          >
-            Apply Now — $100/Month Deal
-            <ArrowRight className="w-5 h-5" />
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/membership/apply"
+              className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
+            >
+              Apply Now — $100/Month Deal
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link
+              href="/contact"
+              className="bg-burnt-orange-700 text-white py-4 px-8 rounded-lg font-semibold hover:bg-burnt-orange-800 transition inline-flex items-center justify-center border-2 border-white"
+            >
+              Book Your Free Trial Day
+            </Link>
+          </div>
           <p className="text-burnt-orange-200 mt-6">
             Questions? Call or text <a href="tel:7203579499" className="text-white hover:underline font-semibold">(720) 357-9499</a>
           </p>

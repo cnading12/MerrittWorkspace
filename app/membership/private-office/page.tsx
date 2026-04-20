@@ -30,7 +30,8 @@ export default function PrivateOfficePage() {
         'Mail handling service',
         'Pet-friendly (dogs welcome)',
         'Personal storage solutions',
-        'Dedicated phone line option'
+        'Dedicated phone line option',
+        'Free trial day before you commit'
       ]
     },
     {
@@ -54,7 +55,8 @@ export default function PrivateOfficePage() {
         'Pet-friendly team space',
         'Multiple storage solutions',
         'Team collaboration area',
-        'Priority event space access'
+        'Priority event space access',
+        'Free trial day before you commit'
       ]
     },
     {
@@ -79,7 +81,8 @@ export default function PrivateOfficePage() {
         'Team collaboration areas',
         'Priority event space booking',
         'Monthly snackshop credits',
-        'Extensive storage solutions'
+        'Extensive storage solutions',
+        'Free trial day before you commit'
       ]
     }
   ];
@@ -134,6 +137,11 @@ export default function PrivateOfficePage() {
       icon: Shield,
       title: 'Premium Storage',
       description: 'Multiple storage options including filing cabinets and shelving'
+    },
+    {
+      icon: Calendar,
+      title: 'Free Trial Day',
+      description: 'Spend a full workday in our space before you sign up — every potential new member qualifies'
     }
   ];
 
@@ -175,9 +183,13 @@ export default function PrivateOfficePage() {
               Private Office Rental
               <span className="text-blue-600 block">in Sloan's Lake, Denver</span>
             </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 mb-6 max-w-3xl mx-auto">
               Lockable private offices in Denver's Sloan's Lake neighborhood, just 3 minutes from I-25. Choose from single ($500/mo), double ($700/mo), or team offices ($1,200/mo). All include 24/7 access, professional business address, and meeting room credits.
             </p>
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-bold mb-2">
+              <Check className="w-4 h-4" />
+              Every Potential New Member Gets a Free Trial Day
+            </div>
           </div>
 
           {/* Plan Selector */}
@@ -372,25 +384,29 @@ export default function PrivateOfficePage() {
       {/* CTA Section */}
       <section className="py-16 bg-blue-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-full text-sm font-bold mb-6">
+            <Check className="w-4 h-4" />
+            Free Trial Day Included for New Members
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Ready to Claim Your Private Office in Sloan's Lake?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join Denver's premier coworking community—just 3 minutes from I-25
+            Join Denver's premier coworking community—just 3 minutes from I-25. Try it free for a day before you commit.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/membership/apply"
+              href="/contact"
               className="bg-white text-blue-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
             >
-              Apply for Membership
+              Book Your Free Trial Day
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
-              href="/contact"
+              href="/membership/apply"
               className="bg-blue-700 text-white py-4 px-8 rounded-lg font-semibold hover:bg-blue-800 transition inline-flex items-center justify-center border-2 border-white"
             >
-              Schedule a Tour
+              Apply for Membership
             </Link>
           </div>
         </div>
