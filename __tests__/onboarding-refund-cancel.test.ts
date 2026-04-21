@@ -346,37 +346,20 @@ describe('create-subscription', () => {
     expect(call.metadata.member_id).toBe('m-1');
   });
 
-  it('creates a pending last-month deposit invoice item on the customer', async () => {
+  it('adds a non-recurring last-month deposit as a second line item', async () => {
     await createSubscription(makeAuthReq());
-    expect(mockStripeInvoiceItemsCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        customer: 'cus_test123',
-        amount: 50000,
-        currency: 'usd',
-        metadata: expect.objectContaining({
-          purpose: 'last_month_deposit',
-          member_id: 'm-1',
-        }),
-      })
-    );
     const call = mockStripeCheckoutCreate.mock.calls[0][0];
+    expect(call.line_items).toHaveLength(2);
+    // First line item: recurring monthly membership.
+    expect(call.line_items[0].price_data.recurring).toEqual({ interval: 'month' });
+    expect(call.line_items[0].price_data.unit_amount).toBe(50000);
+    // Second line item: one-off last-month deposit (no recurring field).
+    expect(call.line_items[1].price_data.recurring).toBeUndefined();
+    expect(call.line_items[1].price_data.unit_amount).toBe(50000);
+    // Metadata reflects the expected initial charge.
     expect(call.metadata.last_month_deposit_cents).toBe('50000');
-    expect(call.metadata.last_month_deposit_item_id).toBe('ii_deposit_test');
-    // initial charge = prorated first month + full last-month deposit
     const prorated = Number(call.metadata.prorated_first_charge_cents);
     expect(Number(call.metadata.initial_total_cents)).toBe(prorated + 50000);
-  });
-
-  it('deletes stale pending deposit items from prior abandoned checkouts', async () => {
-    mockStripeInvoiceItemsList.mockResolvedValueOnce({
-      data: [
-        { id: 'ii_stale', metadata: { purpose: 'last_month_deposit' } },
-        { id: 'ii_other', metadata: { purpose: 'something_else' } },
-      ],
-    });
-    await createSubscription(makeAuthReq());
-    expect(mockStripeInvoiceItemsDel).toHaveBeenCalledWith('ii_stale');
-    expect(mockStripeInvoiceItemsDel).not.toHaveBeenCalledWith('ii_other');
   });
 
   it('anchors billing cycle to 1st of next month', async () => {
