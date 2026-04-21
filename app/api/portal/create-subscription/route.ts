@@ -119,13 +119,16 @@ export async function POST(req: NextRequest) {
     //     (subscription_data.billing_cycle_anchor below).
     //   - Because the anchor is in the FUTURE relative to subscription
     //     creation and we set `proration_behavior: 'create_prorations'`,
-    //     Stripe will charge a prorated amount immediately covering the
-    //     period from today through (1st of next month - 1 day), then
-    //     charge the full monthly amount on the 1st of each subsequent
-    //     month. This matches "charged on first of month (prorated)".
-    //   - We also compute the prorated cents locally so we can stash it
-    //     in session metadata for our own bookkeeping/email receipts.
-    //     Stripe is the source of truth for the actual charge amount.
+    //     Stripe charges a prorated amount on the first invoice covering
+    //     today through (1st of next month - 1 day), then the full monthly
+    //     amount on the 1st of each subsequent month.
+    //   - Per the signed Fee Agreement, the member also pays the last
+    //     month's fee as a deposit up front. We attach that as a one-time
+    //     invoice item on the first invoice via `add_invoice_items`, so
+    //     the first charge = prorated first month + full last month.
+    //   - We compute the prorated cents locally to stash in metadata for
+    //     bookkeeping/receipts; Stripe is the source of truth for the
+    //     actual charged amount.
     const now = new Date();
     const year = now.getUTCFullYear();
     const month = now.getUTCMonth();
@@ -135,6 +138,7 @@ export async function POST(req: NextRequest) {
     const proratedCents = Math.round(
       (member.monthly_cost_cents * remaining) / daysInMonth
     );
+    const lastMonthDepositCents = member.monthly_cost_cents;
 
     // Anchor billing to the 1st of next month (UTC). Date.UTC handles
     // December → January rollover (month + 1 === 12 becomes Jan of year+1).
@@ -185,9 +189,26 @@ export async function POST(req: NextRequest) {
       subscription_data: {
         billing_cycle_anchor: anchor,
         proration_behavior: 'create_prorations',
+        // One-time last-month deposit added to the first invoice. Combined
+        // with the prorated first-month charge from the recurring line
+        // item above, the member's initial charge equals
+        // (prorated first month) + (full last month).
+        add_invoice_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              unit_amount: lastMonthDepositCents,
+              product_data: {
+                name: "Merritt Workspace — Last Month's Deposit",
+              },
+            },
+            quantity: 1,
+          },
+        ],
         metadata: {
           member_id: member.id,
           monthly_cost_cents: String(member.monthly_cost_cents),
+          last_month_deposit_cents: String(lastMonthDepositCents),
           selected_payment_method: selectedMethod,
         },
       },
@@ -198,6 +219,8 @@ export async function POST(req: NextRequest) {
         order_type: 'membership_subscription',
         member_id: member.id,
         prorated_first_charge_cents: String(proratedCents),
+        last_month_deposit_cents: String(lastMonthDepositCents),
+        initial_total_cents: String(proratedCents + lastMonthDepositCents),
         selected_payment_method: selectedMethod,
       },
     });

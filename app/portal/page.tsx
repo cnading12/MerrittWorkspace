@@ -8,6 +8,7 @@ import { DESIGNATION_LABELS } from '@/lib/portal/types';
 import {
   TERMS_AND_CONDITIONS_TEXT,
   calculateFeeAgreementTotals,
+  calculateProratedFirstMonthCents,
   MERRITT_SIGNATORY,
 } from '@/lib/portal/legal';
 import { formatUsd, isOneTimeDesignation } from '@/lib/portal/pricing';
@@ -686,7 +687,18 @@ function FeeAgreementSection({
 
   const monthlyCostCents = member.monthly_cost_cents || 0;
   const oneTime = isOneTimeDesignation(member.designation);
-  const totals = calculateFeeAgreementTotals(monthlyCostCents, paymentMethod, oneTime);
+  // For recurring memberships, the first month is prorated to the days
+  // remaining in the current month. The last month is billed in full as a
+  // deposit up front. Day passes are billed as a single full-price charge.
+  const proratedFirstMonthCents = oneTime
+    ? monthlyCostCents
+    : calculateProratedFirstMonthCents(monthlyCostCents);
+  const totals = calculateFeeAgreementTotals(
+    monthlyCostCents,
+    paymentMethod,
+    oneTime,
+    proratedFirstMonthCents
+  );
 
   const today = new Date();
   const termStart = today.toLocaleDateString(undefined, {
@@ -934,7 +946,7 @@ function FeeAgreementSection({
             ) : (
               <>
                 <Row
-                  label={`First Month's Membership Fee (${termStart} – ${termEnd})`}
+                  label={`First Month's Membership Fee — prorated (${termStart} – ${termEnd})`}
                   value={formatUsd(totals.firstMonthCents)}
                 />
                 <Row label="Last Month's Membership Fee" value={formatUsd(totals.lastMonthCents)} />
