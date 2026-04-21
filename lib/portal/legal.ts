@@ -455,12 +455,33 @@ export interface FeeAgreementTotals {
   grandTotalCents: number;
 }
 
+// Prorate a full monthly cost down to the portion of the current month that
+// remains, counting today as a billable day. `reference` defaults to "now"
+// but is overridable so callers and tests can compute proration for a
+// specific date. The server-side Stripe subscription route uses the same
+// formula (see app/api/portal/create-subscription/route.ts) so the amount
+// shown on the Fee Agreement matches what we actually charge.
+export function calculateProratedFirstMonthCents(
+  monthlyCostCents: number,
+  reference: Date = new Date()
+): number {
+  const year = reference.getUTCFullYear();
+  const month = reference.getUTCMonth();
+  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const day = reference.getUTCDate();
+  const remaining = daysInMonth - day + 1;
+  return Math.round((monthlyCostCents * remaining) / daysInMonth);
+}
+
 export function calculateFeeAgreementTotals(
   monthlyCostCents: number,
   paymentMethod: 'card' | 'ach',
-  oneTime = false
+  oneTime = false,
+  proratedFirstMonthCents?: number
 ): FeeAgreementTotals {
-  const firstMonthCents = monthlyCostCents;
+  const firstMonthCents = oneTime
+    ? monthlyCostCents
+    : proratedFirstMonthCents ?? calculateProratedFirstMonthCents(monthlyCostCents);
   const lastMonthCents = oneTime ? 0 : monthlyCostCents;
   const subtotalCents = firstMonthCents + lastMonthCents;
   const ccFeeCents =
@@ -483,6 +504,9 @@ export function renderFeeAgreementText(ctx: FeeAgreementContext): string {
     ctx.paymentMethod,
     ctx.oneTime
   );
+  const firstMonthLabel = ctx.oneTime
+    ? 'One Day Membership Fee'
+    : "First Months Membership Fee (prorated)";
   const { member: m, invoicing: inv } = ctx;
 
   const descriptionBlurb = ctx.oneTime
@@ -501,8 +525,8 @@ CoWork Space Terms and Conditions. *Please note* When the stated term
 automatically, less any discounts (if applicable).`;
 
   const feeLines = ctx.oneTime
-    ? `One Day Membership Fee:              ${ctx.termStart}                ${usd(totals.firstMonthCents)}`
-    : `First Months Membership Fee:        ${ctx.termStart} – ${ctx.termEnd}    ${usd(totals.firstMonthCents)}
+    ? `${firstMonthLabel}:              ${ctx.termStart}                ${usd(totals.firstMonthCents)}`
+    : `${firstMonthLabel}: ${ctx.termStart} – ${ctx.termEnd}    ${usd(totals.firstMonthCents)}
 Last Months Membership Fee:                                            ${usd(totals.lastMonthCents)}`;
 
   return `

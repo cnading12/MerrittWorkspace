@@ -119,13 +119,19 @@ export async function POST(req: NextRequest) {
     //     (subscription_data.billing_cycle_anchor below).
     //   - Because the anchor is in the FUTURE relative to subscription
     //     creation and we set `proration_behavior: 'create_prorations'`,
-    //     Stripe will charge a prorated amount immediately covering the
-    //     period from today through (1st of next month - 1 day), then
-    //     charge the full monthly amount on the 1st of each subsequent
-    //     month. This matches "charged on first of month (prorated)".
-    //   - We also compute the prorated cents locally so we can stash it
-    //     in session metadata for our own bookkeeping/email receipts.
-    //     Stripe is the source of truth for the actual charge amount.
+    //     Stripe charges a prorated amount on the first invoice covering
+    //     today through (1st of next month - 1 day), then the full monthly
+    //     amount on the 1st of each subsequent month.
+    //   - Per the signed Fee Agreement, the member also pays the last
+    //     month's fee as a deposit up front. Stripe Checkout's
+    //     `subscription_data` doesn't support inline one-off items, so we
+    //     pre-create a pending invoice item on the customer. Stripe
+    //     automatically sweeps pending items into the first invoice it
+    //     generates for the subscription, so the first charge becomes
+    //     (prorated first month) + (full last month deposit).
+    //   - We compute the prorated cents locally to stash in metadata for
+    //     bookkeeping/receipts; Stripe is the source of truth for the
+    //     actual charged amount.
     const now = new Date();
     const year = now.getUTCFullYear();
     const month = now.getUTCMonth();
@@ -135,6 +141,32 @@ export async function POST(req: NextRequest) {
     const proratedCents = Math.round(
       (member.monthly_cost_cents * remaining) / daysInMonth
     );
+    const lastMonthDepositCents = member.monthly_cost_cents;
+
+    // Clean up any previous pending last-month-deposit items for this
+    // customer (e.g. from an abandoned prior checkout attempt) so we
+    // don't double-bill the deposit on the upcoming first invoice.
+    const existing = await stripe.invoiceItems.list({
+      customer: customerId,
+      pending: true,
+      limit: 100,
+    });
+    await Promise.all(
+      existing.data
+        .filter((it) => it.metadata?.purpose === 'last_month_deposit')
+        .map((it) => stripe.invoiceItems.del(it.id))
+    );
+
+    const depositItem = await stripe.invoiceItems.create({
+      customer: customerId,
+      amount: lastMonthDepositCents,
+      currency: 'usd',
+      description: "Merritt Workspace — Last Month's Deposit",
+      metadata: {
+        member_id: member.id,
+        purpose: 'last_month_deposit',
+      },
+    });
 
     // Anchor billing to the 1st of next month (UTC). Date.UTC handles
     // December → January rollover (month + 1 === 12 becomes Jan of year+1).
@@ -188,6 +220,7 @@ export async function POST(req: NextRequest) {
         metadata: {
           member_id: member.id,
           monthly_cost_cents: String(member.monthly_cost_cents),
+          last_month_deposit_cents: String(lastMonthDepositCents),
           selected_payment_method: selectedMethod,
         },
       },
@@ -198,6 +231,9 @@ export async function POST(req: NextRequest) {
         order_type: 'membership_subscription',
         member_id: member.id,
         prorated_first_charge_cents: String(proratedCents),
+        last_month_deposit_cents: String(lastMonthDepositCents),
+        last_month_deposit_item_id: depositItem.id,
+        initial_total_cents: String(proratedCents + lastMonthDepositCents),
         selected_payment_method: selectedMethod,
       },
     });
