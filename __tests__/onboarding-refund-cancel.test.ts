@@ -173,6 +173,11 @@ const mockStripeRefundCreate = vi.fn().mockResolvedValue({
   amount: 50000,
   status: 'succeeded',
 });
+const mockStripeInvoiceItemsList = vi.fn().mockResolvedValue({ data: [] });
+const mockStripeInvoiceItemsCreate = vi
+  .fn()
+  .mockResolvedValue({ id: 'ii_deposit_test' });
+const mockStripeInvoiceItemsDel = vi.fn().mockResolvedValue({ deleted: true });
 const mockStripeWebhookConstruct = vi.fn();
 
 vi.mock('stripe', () => {
@@ -185,6 +190,11 @@ vi.mock('stripe', () => {
         retrieve: mockStripeSubscriptionRetrieve,
       };
       refunds = { create: mockStripeRefundCreate };
+      invoiceItems = {
+        list: mockStripeInvoiceItemsList,
+        create: mockStripeInvoiceItemsCreate,
+        del: mockStripeInvoiceItemsDel,
+      };
       webhooks = { constructEvent: mockStripeWebhookConstruct };
     },
   };
@@ -238,6 +248,12 @@ beforeEach(() => {
   mockStripeSubscriptionUpdate.mockClear();
   mockStripeSubscriptionRetrieve.mockClear();
   mockStripeRefundCreate.mockClear();
+  mockStripeInvoiceItemsList.mockClear();
+  mockStripeInvoiceItemsList.mockResolvedValue({ data: [] });
+  mockStripeInvoiceItemsCreate.mockClear();
+  mockStripeInvoiceItemsCreate.mockResolvedValue({ id: 'ii_deposit_test' });
+  mockStripeInvoiceItemsDel.mockClear();
+  mockStripeInvoiceItemsDel.mockResolvedValue({ deleted: true });
   mockStripeWebhookConstruct.mockClear();
   process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
   process.env.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET = 'whsec_test';
@@ -328,6 +344,39 @@ describe('create-subscription', () => {
     expect(Number(call.metadata.prorated_first_charge_cents)).toBeGreaterThan(0);
     expect(call.metadata.order_type).toBe('membership_subscription');
     expect(call.metadata.member_id).toBe('m-1');
+  });
+
+  it('creates a pending last-month deposit invoice item on the customer', async () => {
+    await createSubscription(makeAuthReq());
+    expect(mockStripeInvoiceItemsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customer: 'cus_test123',
+        amount: 50000,
+        currency: 'usd',
+        metadata: expect.objectContaining({
+          purpose: 'last_month_deposit',
+          member_id: 'm-1',
+        }),
+      })
+    );
+    const call = mockStripeCheckoutCreate.mock.calls[0][0];
+    expect(call.metadata.last_month_deposit_cents).toBe('50000');
+    expect(call.metadata.last_month_deposit_item_id).toBe('ii_deposit_test');
+    // initial charge = prorated first month + full last-month deposit
+    const prorated = Number(call.metadata.prorated_first_charge_cents);
+    expect(Number(call.metadata.initial_total_cents)).toBe(prorated + 50000);
+  });
+
+  it('deletes stale pending deposit items from prior abandoned checkouts', async () => {
+    mockStripeInvoiceItemsList.mockResolvedValueOnce({
+      data: [
+        { id: 'ii_stale', metadata: { purpose: 'last_month_deposit' } },
+        { id: 'ii_other', metadata: { purpose: 'something_else' } },
+      ],
+    });
+    await createSubscription(makeAuthReq());
+    expect(mockStripeInvoiceItemsDel).toHaveBeenCalledWith('ii_stale');
+    expect(mockStripeInvoiceItemsDel).not.toHaveBeenCalledWith('ii_other');
   });
 
   it('anchors billing cycle to 1st of next month', async () => {
