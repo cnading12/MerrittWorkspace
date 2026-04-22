@@ -39,6 +39,7 @@ const PRODUCTS = [
     { id: '13', name: 'Instant Oatmeal', price: 2.75, category: 'meals', image: '/images/snackshop/soup/oatmeal.avif' },
     { id: '14', name: 'Quaker Instant Meal', price: 3.00, category: 'meals', image: '/images/snackshop/soup/quaker.avif' },
     { id: '15', name: 'Instant Ramen', price: 2.25, category: 'meals', image: '/images/snackshop/soup/ramen.avif' },
+    { id: '16', name: 'Kraft Mac n Cheese Bowl', price: 2.50, category: 'meals', image: '/images/snackshop/soup/Mac n cheese.jpeg' },
 ];
 
 const CATEGORIES = [
