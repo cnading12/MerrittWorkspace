@@ -66,6 +66,8 @@ export async function POST(request: NextRequest) {
         company_name,
         membership_type,
         start_date,
+        wants_trial_day,
+        trial_date,
         ...extraPayload
       } = applicationData;
       await getServiceSupabase().from('member_applications').insert({
@@ -76,6 +78,8 @@ export async function POST(request: NextRequest) {
         company_name,
         membership_type,
         start_date,
+        wants_trial_day: !!wants_trial_day,
+        trial_date: trial_date || null,
         payload: extraPayload,
       });
     } catch (e) {
@@ -95,9 +99,11 @@ export async function POST(request: NextRequest) {
 
     let emailResults = {
       applicant_sent: false,
+      trial_info_sent: false,
       manager_sent: false,
       member_services_sent: false,
       applicant_error: null as string | null,
+      trial_info_error: null as string | null,
       manager_error: null as string | null,
       member_services_error: null as string | null
     };
@@ -148,14 +154,43 @@ export async function POST(request: NextRequest) {
     // Wait to avoid Resend rate limit
     await delay(1000);
 
+    // If the applicant wants a trial day, send them practical trial-day info
+    // immediately so they can show up and work without waiting on application
+    // review. They still receive the standard onboarding flow.
+    if (applicationData.wants_trial_day) {
+      try {
+        console.log('📧 Sending trial-day info email...');
+        const trialEmail = await resend.emails.send({
+          from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
+          to: applicationData.email,
+          subject: 'Your Trial Day at Merritt Workspace | What to Expect',
+          html: generateTrialDayEmailHTML({
+            firstName: applicationData.first_name,
+            trialDate: applicationData.trial_date,
+          }),
+          text: generateTrialDayEmailText({
+            firstName: applicationData.first_name,
+            trialDate: applicationData.trial_date,
+          }),
+        });
+        emailResults.trial_info_sent = true;
+        console.log('✅ Trial-day info email sent:', trialEmail.data?.id);
+      } catch (error: any) {
+        console.error('❌ Trial-day info email failed:', error);
+        emailResults.trial_info_error = error.message;
+      }
+      await delay(1000);
+    }
+
     // Send notification to manager with full application details
     try {
       console.log('📧 Sending manager notification email...');
       
+      const subjectPrefix = applicationData.wants_trial_day ? '🟧 TRIAL DAY' : '🆕';
       const managerEmail = await resend.emails.send({
         from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
         to: MANAGER_EMAIL,
-        subject: `🆕 New Membership Application - ${applicationData.first_name} ${applicationData.last_name} (${membershipTypeDisplay})`,
+        subject: `${subjectPrefix} New Membership Application - ${applicationData.first_name} ${applicationData.last_name} (${membershipTypeDisplay})`,
         html: generateManagerEmailHTML({
           applicationData,
           membershipTypeDisplay,
@@ -184,10 +219,11 @@ export async function POST(request: NextRequest) {
     try {
       console.log('📧 Sending member services notification email...');
 
+      const memberServicesSubjectPrefix = applicationData.wants_trial_day ? '🟧 TRIAL DAY' : '🆕';
       const memberServicesEmail = await resend.emails.send({
         from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
         to: MEMBER_SERVICES_EMAIL,
-        subject: `🆕 New Membership Application - ${applicationData.first_name} ${applicationData.last_name} (${membershipTypeDisplay})`,
+        subject: `${memberServicesSubjectPrefix} New Membership Application - ${applicationData.first_name} ${applicationData.last_name} (${membershipTypeDisplay})`,
         html: generateManagerEmailHTML({
           applicationData,
           membershipTypeDisplay,
@@ -424,6 +460,14 @@ function generateManagerEmailHTML(data: {
             <p style="margin: 5px 0 0 0;">Action Required: Follow up within 1-2 business days</p>
           </div>
           
+          ${app.wants_trial_day ? `
+          <div style="background: #fff4e5; border: 2px solid #ed7611; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="margin: 0 0 6px 0; color: #ad4a00;">🟧 Trial Day Requested</h3>
+            <p style="margin: 0;"><strong>Trial date:</strong> ${app.trial_date ? new Date(app.trial_date).toLocaleDateString() : 'not specified'}</p>
+            <p style="margin: 6px 0 0 0; font-size: 13px;">A trial-day info email has already been sent directly to the applicant. They may show up on the date above before the application has been reviewed.</p>
+          </div>
+          ` : ''}
+
           <div class="alert">
             <h3 style="margin-top: 0;">Application Summary</h3>
             <p><strong>Applicant:</strong> ${app.first_name} ${app.last_name}</p>
@@ -431,6 +475,7 @@ function generateManagerEmailHTML(data: {
             <p><strong>Phone:</strong> ${app.phone}</p>
             <p><strong>Membership Type:</strong> ${data.membershipTypeDisplay}</p>
             <p><strong>Preferred Start Date:</strong> ${new Date(app.start_date).toLocaleDateString()}</p>
+            ${app.wants_trial_day ? `<p><strong>Trial Day Date:</strong> ${app.trial_date ? new Date(app.trial_date).toLocaleDateString() : 'not specified'}</p>` : ''}
             <p><strong>Application ID:</strong> ${data.applicationId}</p>
             <p><strong>Submitted:</strong> ${data.submittedAt.toLocaleString()}</p>
           </div>
@@ -546,12 +591,16 @@ function generateManagerEmailText(data: {
   return `
 NEW MEMBERSHIP APPLICATION
 
-Applicant: ${app.first_name} ${app.last_name}
+${app.wants_trial_day ? `*** TRIAL DAY REQUESTED ***
+Trial date: ${app.trial_date ? new Date(app.trial_date).toLocaleDateString() : 'not specified'}
+A trial-day info email has been sent to the applicant directly.
+
+` : ''}Applicant: ${app.first_name} ${app.last_name}
 Email: ${app.email}
 Phone: ${app.phone}
 Membership Type: ${data.membershipTypeDisplay}
 Preferred Start Date: ${new Date(app.start_date).toLocaleDateString()}
-Application ID: ${data.applicationId}
+${app.wants_trial_day ? `Trial Day Date: ${app.trial_date ? new Date(app.trial_date).toLocaleDateString() : 'not specified'}\n` : ''}Application ID: ${data.applicationId}
 Submitted: ${data.submittedAt.toLocaleString()}
 
 PERSONAL INFORMATION
@@ -615,5 +664,159 @@ NEXT STEPS:
 5. Send membership agreement for signature
 
 ACTION REQUIRED: Please follow up within 1-2 business days.
+  `;
+}
+
+function generateTrialDayEmailHTML(data: { firstName: string; trialDate: string }) {
+  const trialDateDisplay = data.trialDate
+    ? new Date(data.trialDate).toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      })
+    : 'the date you selected';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Your Trial Day at Merritt Workspace</title>
+        <style>
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .header h1 { margin: 0; font-size: 24px; }
+          .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
+          .info-block { background: #fff8e1; padding: 18px; border-radius: 8px; border-left: 4px solid #ed7611; margin: 18px 0; }
+          .info-block h3 { margin-top: 0; color: #ad4a00; }
+          .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; border-radius: 0 0 8px 8px; font-size: 13px; }
+          ul { padding-left: 20px; }
+          li { margin: 4px 0; }
+          .kv td { padding: 6px 4px; border-bottom: 1px solid #eee; }
+          .kv td:first-child { font-weight: 600; width: 140px; color: #555; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>You're Set for Your Trial Day</h1>
+            <p style="margin: 8px 0 0 0;">Everything you need to show up and get to work</p>
+          </div>
+
+          <div class="content">
+            <p>Hi ${data.firstName},</p>
+
+            <p>Thanks for signing up for a trial day at Merritt Workspace. We're looking forward to having you in for <strong>${trialDateDisplay}</strong>. This email has everything you need to walk in the door and get to work — no review or follow-up required.</p>
+
+            <div class="info-block">
+              <h3>Where to find us</h3>
+              <table class="kv">
+                <tr><td>Address</td><td>2246 Irving Street, Denver, CO 80211</td></tr>
+                <tr><td>Neighborhood</td><td>Sloan's Lake — 3 minutes to I-25</td></tr>
+                <tr><td>Hours</td><td>Front desk staffed Mon–Fri, 9 AM – 5 PM</td></tr>
+                <tr><td>Parking</td><td>Free street parking on Irving and the surrounding blocks</td></tr>
+              </table>
+            </div>
+
+            <div class="info-block">
+              <h3>When you arrive</h3>
+              <ul>
+                <li>Stop by the front desk and let us know you're here for your trial day — we'll have your name on the list.</li>
+                <li>We'll show you around: desks, flex space, meeting rooms, kitchen, snackshop, and bathrooms.</li>
+                <li>Pick any open desk in the dedicated-desk or flex area and settle in.</li>
+              </ul>
+            </div>
+
+            <div class="info-block">
+              <h3>What to bring</h3>
+              <ul>
+                <li>Your laptop, charger, and headphones</li>
+                <li>A water bottle (filtered water on tap)</li>
+                <li>That's it — coffee, tea, snackshop, and printing are all on us for the day</li>
+              </ul>
+            </div>
+
+            <div class="info-block">
+              <h3>WiFi & basics</h3>
+              <ul>
+                <li>WiFi network and password are posted at the front desk and in the kitchen</li>
+                <li>Printers are by the kitchen — front desk will help you connect</li>
+                <li>Phone calls and video calls: please use a phone booth or empty meeting room</li>
+                <li>Snackshop is honor-system; tap-to-pay or Venmo on the QR code</li>
+              </ul>
+            </div>
+
+            <div class="info-block">
+              <h3>Who to ask for</h3>
+              <p style="margin: 0;">If anyone is not at the front desk when you arrive, text or call <strong>(123) 456-7890</strong> or email <a href="mailto:manager@merrittworkspace.net">manager@merrittworkspace.net</a> and someone will come down to meet you.</p>
+            </div>
+
+            <p style="margin-top: 24px;">Your full membership application is being reviewed in parallel. You'll hear from us within 1–2 business days about next steps regardless of how the trial day goes — no pressure to decide on the spot.</p>
+
+            <p>See you soon!</p>
+            <p style="margin: 0;">— The Merritt Workspace team</p>
+          </div>
+
+          <div class="footer">
+            <p style="margin: 0;"><strong>Merritt Workspace</strong> · 2246 Irving Street, Denver, CO 80211</p>
+            <p style="margin: 4px 0 0 0;">manager@merrittworkspace.net · (123) 456-7890</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+function generateTrialDayEmailText(data: { firstName: string; trialDate: string }) {
+  const trialDateDisplay = data.trialDate
+    ? new Date(data.trialDate).toLocaleDateString()
+    : 'the date you selected';
+
+  return `
+YOUR TRIAL DAY AT MERRITT WORKSPACE
+
+Hi ${data.firstName},
+
+Thanks for signing up for a trial day. We're looking forward to having you in
+for ${trialDateDisplay}. Everything below is what you need to walk in and
+get to work — no review or follow-up required.
+
+WHERE TO FIND US
+Address: 2246 Irving Street, Denver, CO 80211
+Neighborhood: Sloan's Lake — 3 minutes to I-25
+Hours: Front desk staffed Mon–Fri, 9 AM – 5 PM
+Parking: Free street parking on Irving and surrounding blocks
+
+WHEN YOU ARRIVE
+- Stop by the front desk and let us know you're here for your trial day —
+  we'll have your name on the list.
+- We'll show you around: desks, flex space, meeting rooms, kitchen, snackshop,
+  bathrooms.
+- Pick any open desk in the dedicated-desk or flex area and settle in.
+
+WHAT TO BRING
+- Laptop, charger, headphones
+- Water bottle (filtered water on tap)
+- That's it — coffee, tea, snackshop, and printing are on us
+
+WIFI & BASICS
+- WiFi network/password posted at the front desk and in the kitchen
+- Printers are by the kitchen — front desk can help connect
+- Phone/video calls: please use a phone booth or empty meeting room
+- Snackshop is honor-system; tap-to-pay or Venmo via QR code
+
+WHO TO ASK FOR
+If no one is at the front desk, text or call (123) 456-7890 or email
+manager@merrittworkspace.net — someone will come meet you.
+
+Your full membership application is being reviewed in parallel. You'll hear
+from us within 1–2 business days about next steps regardless of how the
+trial day goes.
+
+See you soon!
+— The Merritt Workspace team
+
+Merritt Workspace · 2246 Irving Street, Denver, CO 80211
+manager@merrittworkspace.net · (123) 456-7890
   `;
 }

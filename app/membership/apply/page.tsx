@@ -41,6 +41,8 @@ interface MembershipApplication {
   website_url?: string;
   membership_type: 'dedicated_desk' | 'one_day_dedicated_desk' | 'private_office_single' | 'private_office_double' | 'private_office_large';
   start_date: string;
+  wants_trial_day: boolean;
+  trial_date: string;
   referral_source: string;
   work_style: string[];
   meeting_frequency: 'rarely' | 'monthly' | 'weekly' | 'daily';
@@ -150,6 +152,8 @@ export default function MembershipApplicationPage() {
     website_url: '',
     membership_type: 'dedicated_desk',
     start_date: '',
+    wants_trial_day: false,
+    trial_date: '',
     referral_source: '',
     work_style: [],
     meeting_frequency: 'monthly',
@@ -209,6 +213,11 @@ export default function MembershipApplicationPage() {
 
     if (!application.agrees_to_terms) {
       setError('Please agree to the terms and conditions');
+      return;
+    }
+
+    if (application.wants_trial_day && !application.trial_date) {
+      setError('Please pick a date for your trial day, or uncheck the trial day option.');
       return;
     }
 
@@ -327,7 +336,7 @@ export default function MembershipApplicationPage() {
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Trial Day Callout */}
-          <div className="mb-8 bg-green-50 border border-green-200 rounded-xl p-5 flex items-start gap-4">
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-5 flex items-start gap-4">
             <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-gray-900 mb-1">
@@ -337,6 +346,49 @@ export default function MembershipApplicationPage() {
                 Before your membership starts, spend a full workday with us on the house — experience the desks, flex space, coffee, and community. No commitment required.
               </p>
             </div>
+          </div>
+
+          {/* Trial Day Opt-In */}
+          <div className="mb-8 bg-orange-50 border-2 border-orange-300 rounded-xl p-5">
+            <label className="flex items-start cursor-pointer">
+              <input
+                type="checkbox"
+                checked={application.wants_trial_day}
+                onChange={(e) => setApplication(prev => ({
+                  ...prev,
+                  wants_trial_day: e.target.checked,
+                  trial_date: e.target.checked ? prev.trial_date : '',
+                }))}
+                className="mt-1 mr-3 h-5 w-5 text-orange-600 rounded focus:ring-orange-500"
+              />
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">
+                  I'd like to come in for my trial day before deciding on membership
+                </p>
+                <p className="text-sm text-gray-700">
+                  Check this box if you want to experience the workspace first. We'll email you everything you need (address, hours, parking, wifi, what to bring) immediately so you can show up and get to work — no waiting on the application review.
+                </p>
+              </div>
+            </label>
+
+            {application.wants_trial_day && (
+              <div className="mt-4 pl-8">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Trial Day Date *
+                </label>
+                <input
+                  type="date"
+                  required={application.wants_trial_day}
+                  value={application.trial_date}
+                  onChange={(e) => setApplication(prev => ({ ...prev, trial_date: e.target.value }))}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full max-w-xs p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                />
+                <p className="text-xs text-gray-600 mt-2">
+                  Pick the day you'd like to come in. Your preferred membership start date below can be different.
+                </p>
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmitApplication} className="space-y-8">
