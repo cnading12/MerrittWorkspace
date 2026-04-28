@@ -46,10 +46,17 @@ export default function ConfirmAuthPage() {
     <div className="max-w-md mx-auto bg-white rounded-lg shadow p-8">
       <h1 className="text-2xl font-semibold text-gray-900 mb-2">Signing you in…</h1>
       {error ? (
-        <div className="text-sm text-red-600">
-          <p>{error}</p>
-          <p className="mt-2">
-            <a href="/portal/login" className="underline">
+        <div className="space-y-4">
+          <div className="text-sm text-red-600">
+            <p>{error}</p>
+            <p className="mt-2 text-gray-700">
+              Sign-in links expire after 24 hours. Enter your email below and we'll
+              send you a fresh one.
+            </p>
+          </div>
+          <ResendLinkForm />
+          <p className="text-sm">
+            <a href="/portal/login" className="underline text-gray-700">
               Return to sign in
             </a>
           </p>
@@ -60,5 +67,53 @@ export default function ConfirmAuthPage() {
         </p>
       )}
     </div>
+  );
+}
+
+function ResendLinkForm() {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    await fetch('/api/portal/resend-signin-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    }).catch(() => null);
+    setLoading(false);
+    setDone(true);
+  }
+
+  if (done) {
+    return (
+      <p className="text-sm text-green-700">
+        If <strong>{email}</strong> matches a member account, we just emailed a fresh
+        sign-in link. Check your inbox (and spam folder).
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">Your email</label>
+      <input
+        type="email"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="w-full border rounded px-3 py-2 text-sm"
+        placeholder="you@example.com"
+      />
+      <button
+        type="submit"
+        disabled={loading || !email}
+        className="w-full bg-gray-900 text-white py-2 rounded hover:bg-gray-800 disabled:opacity-50 text-sm"
+      >
+        {loading ? 'Sending…' : 'Email me a new link'}
+      </button>
+    </form>
   );
 }

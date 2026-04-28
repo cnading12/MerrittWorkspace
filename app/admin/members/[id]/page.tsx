@@ -143,6 +143,21 @@ export default function AdminMemberDetailPage({
     }
   }
 
+  async function resendInvitation() {
+    if (!token) return;
+    if (!confirm('Send a fresh sign-in link to this member?')) return;
+    const res = await fetch(`/api/admin/members/${id}/resend-invitation`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Failed to resend invitation');
+      return;
+    }
+    alert('Invitation email sent.');
+  }
+
   async function patchMember(body: any) {
     if (!token) return;
     const res = await fetch(`/api/admin/members/${id}`, {
@@ -208,6 +223,13 @@ export default function AdminMemberDetailPage({
           className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50"
         >
           {member.status === 'active' ? 'Pause' : 'Activate'}
+        </button>
+        <button
+          onClick={resendInvitation}
+          className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50"
+          title="Send a fresh sign-in / set-password link to this member's email"
+        >
+          Resend sign-in link
         </button>
         <button
           onClick={() => patchMember({ status: 'cancelled' })}
