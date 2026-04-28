@@ -346,23 +346,29 @@ describe('create-subscription', () => {
     expect(call.metadata.member_id).toBe('m-1');
   });
 
-  it('adds a non-recurring last-month deposit as a second line item', async () => {
+  it('adds non-recurring prorated-first-month and last-month-deposit line items', async () => {
     await createSubscription(makeAuthReq());
     const call = mockStripeCheckoutCreate.mock.calls[0][0];
-    expect(call.line_items).toHaveLength(2);
+    expect(call.line_items).toHaveLength(3);
     // First line item: recurring monthly membership.
     expect(call.line_items[0].price_data.recurring).toEqual({ interval: 'month' });
     expect(call.line_items[0].price_data.unit_amount).toBe(50000);
-    // Second line item: one-off last-month deposit (no recurring field).
+    // Second line item: one-off prorated first partial month.
     expect(call.line_items[1].price_data.recurring).toBeUndefined();
-    expect(call.line_items[1].price_data.unit_amount).toBe(50000);
+    const prorated = Number(call.metadata.prorated_first_charge_cents);
+    expect(call.line_items[1].price_data.unit_amount).toBe(prorated);
+    // Third line item: one-off last-month deposit (no recurring field).
+    expect(call.line_items[2].price_data.recurring).toBeUndefined();
+    expect(call.line_items[2].price_data.unit_amount).toBe(50000);
+    // Recurring item should not be auto-prorated — we charge proration as
+    // an explicit line item above instead.
+    expect(call.subscription_data.proration_behavior).toBe('none');
     // Metadata reflects the expected initial charge.
     expect(call.metadata.last_month_deposit_cents).toBe('50000');
-    const prorated = Number(call.metadata.prorated_first_charge_cents);
     expect(Number(call.metadata.initial_total_cents)).toBe(prorated + 50000);
   });
 
-  it('anchors billing cycle to 1st of next month', async () => {
+  it('anchors billing cycle to 1st of the month after the start month', async () => {
     await createSubscription(makeAuthReq());
     const call = mockStripeCheckoutCreate.mock.calls[0][0];
     const anchorDate = new Date(call.subscription_data.billing_cycle_anchor * 1000);

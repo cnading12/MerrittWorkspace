@@ -9,6 +9,9 @@ import {
   TERMS_AND_CONDITIONS_TEXT,
   calculateFeeAgreementTotals,
   calculateProratedFirstMonthCents,
+  parseStartDate,
+  startDateBounds,
+  toIsoDate,
   MERRITT_SIGNATORY,
 } from '@/lib/portal/legal';
 import { formatUsd, isOneTimeDesignation } from '@/lib/portal/pricing';
@@ -29,6 +32,7 @@ export default function PortalDashboard() {
   const [documents, setDocuments] = useState<MemberDocument[]>([]);
   const [payments, setPayments] = useState<PaymentHistoryRow[]>([]);
   const [agreements, setAgreements] = useState<AgreementRow[]>([]);
+  const [applicationStartDate, setApplicationStartDate] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('documents');
   const [accessRequestStatus, setAccessRequestStatus] = useState<string | null>(null);
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
@@ -51,6 +55,7 @@ export default function PortalDashboard() {
         setDocuments(data.documents);
         setPayments(data.payments);
         setAgreements(data.agreements || []);
+        setApplicationStartDate(data.application_start_date || null);
       } catch (e) {
         console.error(e);
       } finally {
@@ -167,6 +172,7 @@ export default function PortalDashboard() {
           member={member}
           documents={documents}
           agreements={agreements}
+          applicationStartDate={applicationStartDate}
           onMemberChange={setMember}
           onDocumentsChange={setDocuments}
           onAgreementsChange={setAgreements}
@@ -287,6 +293,7 @@ function DocumentsTab({
   member,
   documents,
   agreements,
+  applicationStartDate,
   onMemberChange,
   onDocumentsChange,
   onAgreementsChange,
@@ -294,6 +301,7 @@ function DocumentsTab({
   member: Member;
   documents: MemberDocument[];
   agreements: AgreementRow[];
+  applicationStartDate: string | null;
   onMemberChange: (m: Member) => void;
   onDocumentsChange: (d: MemberDocument[]) => void;
   onAgreementsChange: (a: AgreementRow[]) => void;
@@ -511,6 +519,7 @@ function DocumentsTab({
             member={member}
             memberName={memberName}
             designationLabel={designationLabel}
+            applicationStartDate={applicationStartDate}
             signed={hasSigned('fee_agreement')}
             signedAt={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signed_at || null}
             signedBy={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signature_name || null}
@@ -651,6 +660,7 @@ function FeeAgreementSection({
   member,
   memberName,
   designationLabel,
+  applicationStartDate,
   signed,
   signedAt,
   signedBy,
@@ -660,6 +670,7 @@ function FeeAgreementSection({
   member: Member;
   memberName: string;
   designationLabel: string;
+  applicationStartDate: string | null;
   signed: boolean;
   signedAt: string | null;
   signedBy: string | null;
@@ -687,12 +698,37 @@ function FeeAgreementSection({
 
   const monthlyCostCents = member.monthly_cost_cents || 0;
   const oneTime = isOneTimeDesignation(member.designation);
-  // For recurring memberships, the first month is prorated to the days
-  // remaining in the current month. The last month is billed in full as a
-  // deposit up front. Day passes are billed as a single full-price charge.
+
+  const today = new Date();
+  const { minIso, maxIso } = startDateBounds(today);
+  // Default to the start date the member chose on their application, but
+  // clamp to the allowed window. Day passes don't have a recurring start
+  // date and stay locked to today.
+  const defaultStartIso = (() => {
+    if (oneTime) return minIso;
+    const candidate = applicationStartDate || minIso;
+    if (candidate < minIso) return minIso;
+    if (candidate > maxIso) return maxIso;
+    return candidate;
+  })();
+  const [startDateIso, setStartDateIso] = useState(defaultStartIso);
+
+  // Parse the picked start date into a UTC Date for proration math. Falls
+  // back to today if the user clears the field.
+  const startDate = (() => {
+    try {
+      return parseStartDate(startDateIso);
+    } catch {
+      return parseStartDate(minIso);
+    }
+  })();
+
+  // Recurring memberships prorate from the chosen start date through the
+  // end of that month, plus a one-month deposit. Day passes are a single
+  // full-price charge.
   const proratedFirstMonthCents = oneTime
     ? monthlyCostCents
-    : calculateProratedFirstMonthCents(monthlyCostCents);
+    : calculateProratedFirstMonthCents(monthlyCostCents, startDate);
   const totals = calculateFeeAgreementTotals(
     monthlyCostCents,
     paymentMethod,
@@ -700,18 +736,26 @@ function FeeAgreementSection({
     proratedFirstMonthCents
   );
 
-  const today = new Date();
-  const termStart = today.toLocaleDateString(undefined, {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  const termEnd = lastDay.toLocaleDateString(undefined, {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const formatLong = (d: Date) =>
+    d.toLocaleDateString(undefined, {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+  const termStart = formatLong(startDate);
+  const lastDayOfStartMonth = new Date(Date.UTC(
+    startDate.getUTCFullYear(),
+    startDate.getUTCMonth() + 1,
+    0,
+  ));
+  const termEnd = formatLong(lastDayOfStartMonth);
+  const firstFullChargeDate = new Date(Date.UTC(
+    startDate.getUTCFullYear(),
+    startDate.getUTCMonth() + 1,
+    1,
+  ));
+  const firstFullChargeLabel = formatLong(firstFullChargeDate);
 
   const disabled = member.monthly_cost_cents == null;
 
@@ -720,6 +764,12 @@ function FeeAgreementSection({
     if (!street.trim() || !cityStateZip.trim() || !phone.trim()) {
       setLocalError('Please fill in your street address, city/state/zip, and telephone.');
       return;
+    }
+    if (!oneTime) {
+      if (!startDateIso || startDateIso < minIso || startDateIso > maxIso) {
+        setLocalError('Pick a start date between today and 30 days from today.');
+        return;
+      }
     }
     const invoicing = sameAsMember
       ? {
@@ -746,6 +796,7 @@ function FeeAgreementSection({
       email,
       federal_id: federalId,
       payment_method: paymentMethod,
+      start_date: oneTime ? toIsoDate(today) : startDateIso,
       term_start: termStart,
       term_end: termEnd,
       designation_label: designationLabel,
@@ -905,6 +956,67 @@ function FeeAgreementSection({
                 </label>
               </div>
             </div>
+
+            {!oneTime && (
+              <div className="pt-2">
+                <label
+                  htmlFor="fee-agreement-start-date"
+                  className="block text-sm font-semibold text-gray-900"
+                >
+                  Membership Start Date
+                </label>
+                <p className="text-xs text-gray-600 mt-1">
+                  Pick the day you want your membership to begin. Today through 30 days
+                  from today are available.
+                </p>
+                <input
+                  id="fee-agreement-start-date"
+                  type="date"
+                  value={startDateIso}
+                  min={minIso}
+                  max={maxIso}
+                  onChange={(e) => setStartDateIso(e.target.value)}
+                  disabled={signed}
+                  className="mt-2 border rounded px-3 py-2 text-sm"
+                />
+
+                <div className="mt-3 bg-amber-50 border-2 border-amber-400 rounded p-3 text-sm text-amber-900 space-y-2">
+                  <div className="font-semibold uppercase tracking-wide text-xs text-amber-900">
+                    Important — please read before signing
+                  </div>
+                  <p>
+                    By signing today, you authorize Merritt Workspace to charge{' '}
+                    <span className="font-semibold">{formatUsd(totals.grandTotalCents)}</span>{' '}
+                    to your selected payment method <em>immediately</em>. This charge
+                    covers a <span className="font-semibold">prorated first month</span>{' '}
+                    ({formatUsd(totals.firstMonthCents)} for{' '}
+                    {termStart} – {termEnd}) plus a{' '}
+                    <span className="font-semibold">one-month deposit</span>{' '}
+                    ({formatUsd(totals.lastMonthCents)})
+                    {paymentMethod === 'card' && (
+                      <> plus a 3.5% card processing fee ({formatUsd(totals.ccFeeCents)})</>
+                    )}
+                    .
+                  </p>
+                  <p>
+                    Your <span className="font-semibold">first full-month charge</span>{' '}
+                    of {formatUsd(monthlyCostCents)} will hit on{' '}
+                    <span className="font-semibold">{firstFullChargeLabel}</span>, and
+                    every 1st of the month thereafter.
+                  </p>
+                  <p className="font-semibold">
+                    You will NOT have access to the workspace until {termStart}.
+                    Building access codes, door entry, and on-site amenities only
+                    activate on your selected start date.
+                  </p>
+                  <p className="text-xs text-amber-800">
+                    Need to change your start date after signing? You'll need to
+                    contact Merritt Workspace staff — members can't change it
+                    themselves once the agreement is signed.
+                  </p>
+                </div>
+              </div>
+            )}
           </fieldset>
 
           {/* Description */}
