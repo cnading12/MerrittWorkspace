@@ -455,12 +455,12 @@ export interface FeeAgreementTotals {
   grandTotalCents: number;
 }
 
-// Prorate a full monthly cost down to the portion of the current month that
-// remains, counting today as a billable day. `reference` defaults to "now"
-// but is overridable so callers and tests can compute proration for a
-// specific date. The server-side Stripe subscription route uses the same
-// formula (see app/api/portal/create-subscription/route.ts) so the amount
-// shown on the Fee Agreement matches what we actually charge.
+// Prorate a full monthly cost down to the portion of the reference month
+// that remains, counting the reference day as a billable day. `reference`
+// defaults to "now" but is overridable so callers and tests can compute
+// proration for a specific start date. The server-side Stripe subscription
+// route uses the same formula (see app/api/portal/create-subscription/route.ts)
+// so the amount shown on the Fee Agreement matches what we actually charge.
 export function calculateProratedFirstMonthCents(
   monthlyCostCents: number,
   reference: Date = new Date()
@@ -471,6 +471,48 @@ export function calculateProratedFirstMonthCents(
   const day = reference.getUTCDate();
   const remaining = daysInMonth - day + 1;
   return Math.round((monthlyCostCents * remaining) / daysInMonth);
+}
+
+// Parse a YYYY-MM-DD start date string into a UTC Date. Throws if invalid.
+// Used by both the portal UI and the create-subscription route so proration
+// math is identical on both sides.
+export function parseStartDate(iso: string): Date {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) throw new Error(`Invalid start_date: ${iso}`);
+  const [, y, mo, d] = m;
+  const date = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d)));
+  if (Number.isNaN(date.getTime())) throw new Error(`Invalid start_date: ${iso}`);
+  return date;
+}
+
+// Earliest = today (UTC), latest = today + 30 days (UTC). Returns ISO date
+// strings (YYYY-MM-DD) suitable for an <input type="date"> min/max.
+export function startDateBounds(today: Date = new Date()): { minIso: string; maxIso: string } {
+  const startOfToday = new Date(Date.UTC(
+    today.getUTCFullYear(),
+    today.getUTCMonth(),
+    today.getUTCDate(),
+  ));
+  const max = new Date(startOfToday);
+  max.setUTCDate(max.getUTCDate() + 30);
+  return { minIso: toIsoDate(startOfToday), maxIso: toIsoDate(max) };
+}
+
+export function toIsoDate(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// Returns a unix timestamp (seconds) for noon UTC on the 1st of the month
+// following the given start date. Used as Stripe's billing_cycle_anchor:
+// after the first (prorated) invoice, monthly invoices will land on the
+// 1st of every month following the member's start month.
+export function billingCycleAnchorAfter(start: Date): number {
+  const year = start.getUTCFullYear();
+  const month = start.getUTCMonth();
+  return Math.floor(Date.UTC(year, month + 1, 1, 12, 0, 0) / 1000);
 }
 
 export function calculateFeeAgreementTotals(

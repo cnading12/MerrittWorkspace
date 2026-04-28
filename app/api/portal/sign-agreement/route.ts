@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
-import { DOCUMENT_VERSION } from '@/lib/portal/legal';
+import { DOCUMENT_VERSION, parseStartDate, startDateBounds } from '@/lib/portal/legal';
+import { isOneTimeDesignation } from '@/lib/portal/pricing';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,33 @@ export async function POST(req: NextRequest) {
           { error: `Missing fee agreement fields: ${missing.join(', ')}` },
           { status: 400 }
         );
+      }
+      // Recurring memberships must include a start_date in the YYYY-MM-DD
+      // range [today, today + 30 days]. Day passes are anchored to today and
+      // skip this check.
+      if (!isOneTimeDesignation(member.designation)) {
+        const startDateRaw = metadata?.start_date;
+        if (typeof startDateRaw !== 'string' || !startDateRaw) {
+          return NextResponse.json(
+            { error: 'Missing fee agreement fields: start_date' },
+            { status: 400 }
+          );
+        }
+        try {
+          parseStartDate(startDateRaw);
+        } catch {
+          return NextResponse.json(
+            { error: 'Invalid start_date — must be YYYY-MM-DD.' },
+            { status: 400 }
+          );
+        }
+        const { minIso, maxIso } = startDateBounds();
+        if (startDateRaw < minIso || startDateRaw > maxIso) {
+          return NextResponse.json(
+            { error: `start_date must be between ${minIso} and ${maxIso}.` },
+            { status: 400 }
+          );
+        }
       }
     }
     if (!signature_name || typeof signature_name !== 'string') {

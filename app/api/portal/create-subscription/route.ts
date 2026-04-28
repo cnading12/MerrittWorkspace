@@ -3,6 +3,11 @@ import Stripe from 'stripe';
 import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { isOneTimeDesignation } from '@/lib/portal/pricing';
+import {
+  billingCycleAnchorAfter,
+  calculateProratedFirstMonthCents,
+  parseStartDate,
+} from '@/lib/portal/legal';
 
 export const dynamic = 'force-dynamic';
 
@@ -115,36 +120,39 @@ export async function POST(req: NextRequest) {
     }
 
     // Billing logic:
-    //   - We anchor the monthly cycle to the 1st of next month at 12:00 UTC
-    //     (subscription_data.billing_cycle_anchor below).
-    //   - Because the anchor is in the FUTURE relative to subscription
-    //     creation and we set `proration_behavior: 'create_prorations'`,
-    //     Stripe charges a prorated amount on the first invoice covering
-    //     today through (1st of next month - 1 day), then the full monthly
-    //     amount on the 1st of each subsequent month.
-    //   - Per the signed Fee Agreement, the member also pays the last
-    //     month's fee as a deposit up front. We add it as a second,
-    //     non-recurring line item below. Stripe Checkout puts one-off
-    //     line items on the initial invoice only, so the first charge is
-    //     (prorated first month) + (full last month deposit) and the
-    //     deposit appears in the Stripe Checkout UI.
-    //   - We compute the prorated cents locally to stash in metadata for
-    //     bookkeeping/receipts; Stripe is the source of truth for the
-    //     actual charged amount.
-    const now = new Date();
-    const year = now.getUTCFullYear();
-    const month = now.getUTCMonth();
-    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-    const day = now.getUTCDate();
-    const remaining = daysInMonth - day + 1;
-    const proratedCents = Math.round(
-      (member.monthly_cost_cents * remaining) / daysInMonth
+    //   - The member chose a membership start_date when signing the Fee
+    //     Agreement (today through today + 30 days).
+    //   - The first invoice fires at signup (today) and bundles two
+    //     non-recurring line items: the prorated first partial month
+    //     (start_date → end of start_date's month) and a one-month
+    //     deposit. We pass these as one-off line items so the amounts
+    //     match the signed Fee Agreement exactly.
+    //   - The recurring monthly membership has proration_behavior='none'
+    //     and a future billing_cycle_anchor (1st of the month AFTER the
+    //     start month), so Stripe doesn't auto-prorate anything and the
+    //     first full-month charge fires on the anchor date, then every
+    //     1st of the month thereafter.
+    const startDateRaw = (feeAgreement?.metadata as any)?.start_date;
+    let startDate: Date;
+    try {
+      startDate =
+        typeof startDateRaw === 'string' && startDateRaw
+          ? parseStartDate(startDateRaw)
+          : new Date();
+    } catch {
+      return NextResponse.json(
+        { error: 'Fee Agreement is missing a valid start_date — please re-sign.' },
+        { status: 400 }
+      );
+    }
+    const proratedCents = calculateProratedFirstMonthCents(
+      member.monthly_cost_cents,
+      startDate
     );
     const lastMonthDepositCents = member.monthly_cost_cents;
 
-    // Anchor billing to the 1st of next month (UTC). Date.UTC handles
-    // December → January rollover (month + 1 === 12 becomes Jan of year+1).
-    const anchor = Math.floor(Date.UTC(year, month + 1, 1, 12, 0, 0) / 1000);
+    // Anchor billing to the 1st of the month after the chosen start month.
+    const anchor = billingCycleAnchorAfter(startDate);
 
     // Payment method configuration.
     //   - ACH members: primary `us_bank_account` (no fee), with `card` as a
@@ -188,6 +196,20 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         },
         {
+          // One-off prorated first partial month (start_date → end of
+          // start month). We charge it explicitly as a one-time item so
+          // the amount matches the signed Fee Agreement regardless of
+          // when the member actually completes Stripe Checkout.
+          price_data: {
+            currency: 'usd',
+            unit_amount: proratedCents,
+            product_data: {
+              name: "First Month's Membership Fee (prorated)",
+            },
+          },
+          quantity: 1,
+        },
+        {
           // One-off last-month deposit. No `recurring` key -> Stripe treats
           // this as a one-time item and places it on the first invoice only.
           price_data: {
@@ -202,12 +224,18 @@ export async function POST(req: NextRequest) {
       ],
       subscription_data: {
         billing_cycle_anchor: anchor,
-        proration_behavior: 'create_prorations',
+        // We've already added the prorated first partial month as an
+        // explicit line item above, so Stripe should NOT auto-prorate the
+        // recurring charge between sub creation and the anchor. With
+        // proration_behavior='none' the recurring item first fires on the
+        // anchor date.
+        proration_behavior: 'none',
         metadata: {
           member_id: member.id,
           monthly_cost_cents: String(member.monthly_cost_cents),
           last_month_deposit_cents: String(lastMonthDepositCents),
           selected_payment_method: selectedMethod,
+          start_date: typeof startDateRaw === 'string' ? startDateRaw : '',
         },
       },
       payment_method_collection: 'always',
@@ -220,6 +248,7 @@ export async function POST(req: NextRequest) {
         last_month_deposit_cents: String(lastMonthDepositCents),
         initial_total_cents: String(proratedCents + lastMonthDepositCents),
         selected_payment_method: selectedMethod,
+        start_date: typeof startDateRaw === 'string' ? startDateRaw : '',
       },
     });
 
