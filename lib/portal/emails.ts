@@ -239,6 +239,62 @@ export function accessCodeIssuedEmail(opts: {
   };
 }
 
+export function flexBookingConfirmedEmail(opts: {
+  firstName: string;
+  startLocal: string;
+  endLocal: string;
+  durationMinutes: number;
+  weeklyMinutesUsed: number;
+  weeklyMinutesAllowed: number;
+  cancelUrl: string;
+}) {
+  const fmtHours = (m: number) => {
+    const hrs = m / 60;
+    return Number.isInteger(hrs) ? `${hrs}` : hrs.toFixed(1);
+  };
+  const used = fmtHours(opts.weeklyMinutesUsed);
+  const allowed = fmtHours(opts.weeklyMinutesAllowed);
+  const dur = fmtHours(opts.durationMinutes);
+
+  return {
+    subject: `Flex Space booked - ${opts.startLocal}`,
+    html: shell({
+      title: 'Flex Space Booking Confirmed',
+      tagline: 'Your reservation is on the calendar',
+      body: `
+        <p>Hi ${opts.firstName},</p>
+        <p>Your flex space (church building) reservation is confirmed.</p>
+        <div class="info-card">
+          <h3 style="margin-top:0;">Reservation</h3>
+          <p><strong>Starts:</strong> ${opts.startLocal}</p>
+          <p><strong>Ends:</strong> ${opts.endLocal}</p>
+          <p><strong>Duration:</strong> ${dur} hour${dur === '1' ? '' : 's'}</p>
+        </div>
+        <div class="highlight">
+          <p style="margin:0;"><strong>This week:</strong> ${used} of ${allowed} hours used.</p>
+        </div>
+        <p>Need to cancel? <a href="${opts.cancelUrl}">Manage your flex bookings</a> in the member portal.</p>
+        <p>— The Merritt Workspace Team</p>
+      `,
+    }),
+    text: [
+      `Hi ${opts.firstName},`,
+      '',
+      'Your flex space (church building) reservation is confirmed.',
+      '',
+      `Starts:   ${opts.startLocal}`,
+      `Ends:     ${opts.endLocal}`,
+      `Duration: ${dur} hour${dur === '1' ? '' : 's'}`,
+      '',
+      `This week: ${used} of ${allowed} hours used.`,
+      '',
+      `Manage or cancel: ${opts.cancelUrl}`,
+      '',
+      '— The Merritt Workspace Team',
+    ].join('\n'),
+  };
+}
+
 export function accessCodeRequestedAdminEmail(opts: {
   firstName: string;
   lastName: string;
