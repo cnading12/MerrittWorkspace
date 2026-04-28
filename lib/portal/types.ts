@@ -52,6 +52,8 @@ export interface MemberApplication {
   company_name: string | null;
   membership_type: string | null;
   start_date: string | null;
+  wants_trial_day: boolean;
+  trial_date: string | null;
   payload: Record<string, unknown>;
   status: 'pending' | 'approved' | 'declined';
   decision_note: string | null;
