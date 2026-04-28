@@ -62,6 +62,7 @@ function shell({
 export function membershipApprovedEmail(opts: {
   firstName: string;
   portalUrl: string;
+  loginUrl: string;
 }) {
   return {
     subject: 'Your Merritt Workspace Membership is Approved - Next Steps',
@@ -85,6 +86,7 @@ export function membershipApprovedEmail(opts: {
         </p>
         <p>The button above is your one-click sign-in link. Click it to sign in for the first time — you'll be taken to a page where you can <strong>choose your own password</strong> for future sign-ins. The link can only be used once, so don't share it.</p>
         <p>If the button doesn't work, copy and paste this link into your browser:<br/><span style="word-break:break-all;color:#555;">${opts.portalUrl}</span></p>
+        <p style="font-size:13px;color:#666;"><strong>This link expires in 24 hours.</strong> If it expires before you use it, you can request a new one any time at <a href="${opts.loginUrl}">${opts.loginUrl}</a> using the "Forgot password? Email me a reset link" option.</p>
         <p>Welcome aboard,<br/>— The Merritt Workspace Team</p>
       `,
     }),
@@ -103,6 +105,8 @@ export function membershipApprovedEmail(opts: {
       opts.portalUrl,
       '',
       'This link can only be used once, so please do not share it. After your first sign-in you will be prompted to choose your own password for future visits.',
+      '',
+      `This link expires in 24 hours. If it expires before you use it, request a new one any time at ${opts.loginUrl} using the "Forgot password? Email me a reset link" option.`,
       '',
       'Welcome aboard,',
       'The Merritt Workspace Team',

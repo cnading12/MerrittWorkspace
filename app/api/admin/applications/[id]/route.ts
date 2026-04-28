@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
-import {
-  membershipApprovedEmail,
-  PORTAL_ONBOARDING_FROM,
-  PORTAL_REPLY_TO,
-} from '@/lib/portal/emails';
+import { sendOnboardingMagicLink } from '@/lib/portal/magicLink';
 import { planForMembershipType } from '@/lib/portal/pricing';
 
 export const dynamic = 'force-dynamic';
@@ -54,9 +49,6 @@ export async function POST(
     //    (instead of inviteUserByEmail) so Supabase's built-in SMTP — which
     //    is rate-limited to a handful of messages per hour — is never used.
     //    We send the invite ourselves below via Resend.
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const redirectTo = `${baseUrl}/portal/set-password`;
-
     let userId: string | null = null;
     const { data: created, error: createErr } = await sb.auth.admin.createUser({
       email: app.email,
@@ -72,33 +64,7 @@ export async function POST(
       userId = list.users.find((u) => u.email === app.email)?.id || null;
     }
 
-    // 2. Generate a one-time sign-in token without triggering Supabase's
-    //    mailer. We use the `hashed_token` directly and build our own
-    //    confirmation URL that points at /portal/auth/confirm. This avoids
-    //    Supabase's `/auth/v1/verify` redirect-allowlist behaviour, which
-    //    silently rewrites redirect_to → Site URL when the URL isn't on
-    //    the allowlist.
-    let confirmUrl: string | null = null;
-    const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
-      type: 'magiclink',
-      email: app.email,
-      options: { redirectTo },
-    });
-    if (linkErr) {
-      console.error('generateLink error', linkErr);
-    } else {
-      const hashedToken = linkData?.properties?.hashed_token;
-      if (hashedToken) {
-        const params = new URLSearchParams({
-          token_hash: hashedToken,
-          type: 'magiclink',
-          next: '/portal/set-password',
-        });
-        confirmUrl = `${baseUrl}/portal/auth/confirm?${params.toString()}`;
-      }
-    }
-
-    // 3. Create or update the member row. Auto-assign the designation and
+    // 2. Create or update the member row. Auto-assign the designation and
     //    monthly cost from the applicant's selected plan so the fee agreement
     //    and Stripe checkout can reference a real number without any manual
     //    accountant step.
@@ -126,7 +92,7 @@ export async function POST(
       return NextResponse.json({ error: memErr.message }, { status: 500 });
     }
 
-    // 4. Mark application approved.
+    // 3. Mark application approved.
     await sb
       .from('member_applications')
       .update({
@@ -137,24 +103,11 @@ export async function POST(
       })
       .eq('id', id);
 
-    // 5. Send "next steps" email.
-    if (process.env.RESEND_API_KEY) {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const tpl = membershipApprovedEmail({
-        firstName: app.first_name,
-        portalUrl: confirmUrl || `${baseUrl}/portal/login`,
-      });
-      await resend.emails
-        .send({
-          from: PORTAL_ONBOARDING_FROM,
-          to: app.email,
-          replyTo: PORTAL_REPLY_TO,
-          subject: tpl.subject,
-          html: tpl.html,
-          text: tpl.text,
-        })
-        .catch((e) => console.error('Resend error', e));
-    }
+    // 4. Generate a one-time sign-in link and send the welcome email.
+    await sendOnboardingMagicLink({
+      email: app.email,
+      firstName: app.first_name,
+    });
 
     return NextResponse.json({ ok: true, member });
   } catch (e: any) {

@@ -31,16 +31,23 @@ export default function PortalLoginPage() {
     setLoading(true);
     setError(null);
     setInfo(null);
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/portal/set-password` },
+    // Routes through our own Resend-backed endpoint rather than
+    // supabase.auth.signInWithOtp, which would trigger Supabase's
+    // built-in SMTP (heavily rate-limited and not configured here).
+    const res = await fetch('/api/portal/resend-signin-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
     });
     setLoading(false);
-    if (error) {
-      setError(error.message);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setError(err.error || 'Could not send reset link.');
       return;
     }
-    setInfo('Check your email for a password reset link.');
+    setInfo(
+      "If that email matches a member account, we just sent a fresh sign-in link. Check your inbox (and spam folder)."
+    );
   }
 
   return (

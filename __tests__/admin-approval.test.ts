@@ -20,10 +20,14 @@ vi.mock('@/lib/portal/supabaseAdmin', () => ({
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'admin-1' } }, error: null }),
       admin: {
-        inviteUserByEmail: vi
+        createUser: vi
           .fn()
           .mockResolvedValue({ data: { user: { id: 'invited-1' } }, error: null }),
         listUsers: vi.fn().mockResolvedValue({ data: { users: [] } }),
+        generateLink: vi.fn().mockResolvedValue({
+          data: { properties: { hashed_token: 'tok-abc' } },
+          error: null,
+        }),
       },
     },
     from: (table: string) => {
