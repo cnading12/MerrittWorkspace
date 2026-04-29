@@ -734,49 +734,75 @@ function generateTrialDayEmailHTML(data: { firstName: string; trialDate: string 
           <div class="content">
             <p>Hi ${data.firstName},</p>
 
-            <p>Thanks for signing up for a trial day at Merritt Workspace. We're looking forward to having you in for <strong>${trialDateDisplay}</strong>. This email has everything you need to walk in the door and get to work — no review or follow-up required.</p>
+            <p>Thanks for signing up for a trial day at Merritt Workspace. We're looking forward to having you in for <strong>${trialDateDisplay}</strong>. Everything below is what you need to walk in and get to work.</p>
 
             <div class="info-block">
               <h3>Where to find us</h3>
               <table class="kv">
                 <tr><td>Address</td><td>2246 Irving Street, Denver, CO 80211</td></tr>
                 <tr><td>Neighborhood</td><td>Sloan's Lake — 3 minutes to I-25</td></tr>
-                <tr><td>Hours</td><td>Front desk staffed Mon–Fri, 9 AM – 5 PM</td></tr>
-                <tr><td>Parking</td><td>Free street parking on Irving and the surrounding blocks</td></tr>
+                <tr><td>Hours</td><td>Building open Mon–Fri, 8:00 AM – 6:00 PM</td></tr>
+                <tr><td>Parking</td><td>Onsite parking available</td></tr>
               </table>
             </div>
 
             <div class="info-block">
               <h3>When you arrive</h3>
               <ul>
-                <li>Stop by the front desk and let us know you're here for your trial day — we'll have your name on the list.</li>
-                <li>We'll show you around: desks, flex space, meeting rooms, kitchen, snackshop, and bathrooms.</li>
+                <li>No front desk — just let yourself in through the main entrance during building hours (8:00 AM – 6:00 PM).</li>
                 <li>Pick any open desk in the dedicated-desk or flex area and settle in.</li>
+                <li>Feel free to explore: kitchen, snack shop, meeting rooms, phone booths, and bathrooms are all available for your use.</li>
               </ul>
+            </div>
+
+            <div class="info-block">
+              <h3>WiFi</h3>
+              <table class="kv">
+                <tr><td>Network</td><td><code>merrittcowork</code></td></tr>
+                <tr><td>Password</td><td><code>Merritt23X</code></td></tr>
+              </table>
             </div>
 
             <div class="info-block">
               <h3>What to bring</h3>
               <ul>
-                <li>Your laptop, charger, and headphones</li>
+                <li>Laptop, charger, and headphones</li>
                 <li>A water bottle (filtered water on tap)</li>
-                <li>That's it — coffee, tea, snackshop, and printing are all on us for the day</li>
               </ul>
             </div>
 
             <div class="info-block">
-              <h3>WiFi & basics</h3>
+              <h3>What's on us</h3>
               <ul>
-                <li>WiFi network and password are posted at the front desk and in the kitchen</li>
-                <li>Printers are by the kitchen — front desk will help you connect</li>
-                <li>Phone calls and video calls: please use a phone booth or empty meeting room</li>
-                <li>Snackshop is honor-system; tap-to-pay or Venmo on the QR code</li>
+                <li>Coffee, tea, and beer — help yourself in the kitchen</li>
               </ul>
             </div>
 
             <div class="info-block">
-              <h3>Who to ask for</h3>
-              <p style="margin: 0;">If anyone is not at the front desk when you arrive, text or call <strong>(123) 456-7890</strong> or email <a href="mailto:manager@merrittworkspace.net">manager@merrittworkspace.net</a> and someone will come down to meet you.</p>
+              <h3>Snacks &amp; other beverages (available for purchase)</h3>
+              <ul>
+                <li>Snacks and other drinks in the kitchen are not included in your trial.</li>
+                <li>Scan the QR code posted in the kitchen — it takes you to our website where you can check out and pay.</li>
+                <li>Snack shop: <a href="https://www.merrittworkspace.net/snackshop">www.merrittworkspace.net/snackshop</a></li>
+              </ul>
+            </div>
+
+            <div class="info-block">
+              <h3>A few house notes</h3>
+              <ul>
+                <li>Phone calls and video calls: please use a phone booth or empty meeting room out of courtesy to other members.</li>
+                <li>Printers are by the kitchen.</li>
+              </ul>
+            </div>
+
+            <div class="info-block">
+              <h3>Thinking about membership?</h3>
+              <p style="margin: 0;">Members get <strong>24/7 building access with a personal access code</strong> to our security system — in addition to everything you'll experience today.</p>
+            </div>
+
+            <div class="info-block">
+              <h3>Questions or need anything day-of?</h3>
+              <p style="margin: 0;">Text or call Member Services at <strong>(303) 359-8337</strong> or email <a href="mailto:memberservices@merrittworkspace.net">memberservices@merrittworkspace.net</a> and we'll get back to you quickly.</p>
             </div>
 
             <p style="margin-top: 24px;">Your full membership application is being reviewed in parallel. You'll hear from us within 1–2 business days about next steps regardless of how the trial day goes — no pressure to decide on the spot.</p>
@@ -787,7 +813,7 @@ function generateTrialDayEmailHTML(data: { firstName: string; trialDate: string 
 
           <div class="footer">
             <p style="margin: 0;"><strong>Merritt Workspace</strong> · 2246 Irving Street, Denver, CO 80211</p>
-            <p style="margin: 4px 0 0 0;">manager@merrittworkspace.net · (123) 456-7890</p>
+            <p style="margin: 4px 0 0 0;">memberservices@merrittworkspace.net · (303) 359-8337</p>
           </div>
         </div>
       </body>
@@ -801,50 +827,65 @@ function generateTrialDayEmailText(data: { firstName: string; trialDate: string 
     : 'the date you selected';
 
   return `
-YOUR TRIAL DAY AT MERRITT WORKSPACE
+YOU'RE SET FOR YOUR TRIAL DAY AT MERRITT WORKSPACE
 
 Hi ${data.firstName},
 
-Thanks for signing up for a trial day. We're looking forward to having you in
-for ${trialDateDisplay}. Everything below is what you need to walk in and
-get to work — no review or follow-up required.
+Thanks for signing up for a trial day at Merritt Workspace. We're looking
+forward to having you in for ${trialDateDisplay}. Everything below is what
+you need to walk in and get to work.
 
 WHERE TO FIND US
-Address: 2246 Irving Street, Denver, CO 80211
+Address:      2246 Irving Street, Denver, CO 80211
 Neighborhood: Sloan's Lake — 3 minutes to I-25
-Hours: Front desk staffed Mon–Fri, 9 AM – 5 PM
-Parking: Free street parking on Irving and surrounding blocks
+Hours:        Building open Mon–Fri, 8:00 AM – 6:00 PM
+Parking:      Onsite parking available
 
 WHEN YOU ARRIVE
-- Stop by the front desk and let us know you're here for your trial day —
-  we'll have your name on the list.
-- We'll show you around: desks, flex space, meeting rooms, kitchen, snackshop,
-  bathrooms.
+- No front desk — just let yourself in through the main entrance during
+  building hours (8:00 AM – 6:00 PM).
 - Pick any open desk in the dedicated-desk or flex area and settle in.
+- Feel free to explore: kitchen, snack shop, meeting rooms, phone booths,
+  and bathrooms are all available for your use.
+
+WIFI
+- Network:  merrittcowork
+- Password: Merritt23X
 
 WHAT TO BRING
-- Laptop, charger, headphones
-- Water bottle (filtered water on tap)
-- That's it — coffee, tea, snackshop, and printing are on us
+- Laptop, charger, and headphones
+- A water bottle (filtered water on tap)
 
-WIFI & BASICS
-- WiFi network/password posted at the front desk and in the kitchen
-- Printers are by the kitchen — front desk can help connect
-- Phone/video calls: please use a phone booth or empty meeting room
-- Snackshop is honor-system; tap-to-pay or Venmo via QR code
+WHAT'S ON US
+- Coffee, tea, and beer — help yourself in the kitchen
 
-WHO TO ASK FOR
-If no one is at the front desk, text or call (123) 456-7890 or email
-manager@merrittworkspace.net — someone will come meet you.
+SNACKS & OTHER BEVERAGES (available for purchase)
+- Snacks and other drinks in the kitchen are not included in your trial.
+- Scan the QR code posted in the kitchen — it takes you to our website
+  where you can check out and pay.
+- Snack shop: www.merrittworkspace.net/snackshop
+
+A FEW HOUSE NOTES
+- Phone calls and video calls: please use a phone booth or empty meeting
+  room out of courtesy to other members.
+- Printers are by the kitchen.
+
+THINKING ABOUT MEMBERSHIP?
+Members get 24/7 building access with a personal access code to our
+security system — in addition to everything you'll experience today.
+
+QUESTIONS OR NEED ANYTHING DAY-OF?
+Text or call Member Services at (303) 359-8337 or email
+memberservices@merrittworkspace.net and we'll get back to you quickly.
 
 Your full membership application is being reviewed in parallel. You'll hear
 from us within 1–2 business days about next steps regardless of how the
-trial day goes.
+trial day goes — no pressure to decide on the spot.
 
 See you soon!
 — The Merritt Workspace team
 
 Merritt Workspace · 2246 Irving Street, Denver, CO 80211
-manager@merrittworkspace.net · (123) 456-7890
+memberservices@merrittworkspace.net · (303) 359-8337
   `;
 }
