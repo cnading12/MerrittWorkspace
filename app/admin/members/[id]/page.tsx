@@ -11,6 +11,7 @@ import type {
   PaymentHistoryRow,
 } from '@/lib/portal/types';
 import { DESIGNATION_LABELS, DOC_TYPE_LABELS } from '@/lib/portal/types';
+import { readTrialFlag, readTrialDate } from '@/lib/portal/trial';
 
 type DocWithUrl = MemberDocument & { signed_url: string | null };
 
@@ -200,9 +201,17 @@ export default function AdminMemberDetailPage({
       </nav>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold mt-1">
-            {member.first_name} {member.last_name}
-          </h1>
+          <div className="flex items-center gap-2 flex-wrap mt-1">
+            <h1 className="text-2xl font-semibold">
+              {member.first_name} {member.last_name}
+            </h1>
+            {readTrialFlag(application) && !member.onboarding_unlocked && (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold tracking-wider bg-orange-600 text-white">
+                TRIAL DAY
+                {readTrialDate(application) && ` · ${readTrialDate(application)}`}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-gray-600">{member.email}</p>
         </div>
         <div className="text-right text-sm text-gray-600">
