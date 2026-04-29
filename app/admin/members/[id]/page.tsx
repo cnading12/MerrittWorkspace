@@ -159,6 +159,26 @@ export default function AdminMemberDetailPage({
     alert('Invitation email sent.');
   }
 
+  async function pingMember() {
+    if (!token) return;
+    if (
+      !confirm(
+        'Send a portal-completion reminder email with a checklist of remaining steps?'
+      )
+    )
+      return;
+    const res = await fetch(`/api/admin/members/${id}/ping`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Failed to send reminder');
+      return;
+    }
+    alert('Reminder email sent.');
+  }
+
   async function patchMember(body: any) {
     if (!token) return;
     const res = await fetch(`/api/admin/members/${id}`, {
@@ -240,6 +260,15 @@ export default function AdminMemberDetailPage({
         >
           Resend sign-in link
         </button>
+        {!member.onboarding_unlocked && (
+          <button
+            onClick={pingMember}
+            className="text-sm border border-amber-300 text-amber-700 rounded px-3 py-1.5 hover:bg-amber-50"
+            title="Email a reminder with the remaining onboarding steps and a fresh sign-in link"
+          >
+            Ping to finish portal
+          </button>
+        )}
         <button
           onClick={() => patchMember({ status: 'cancelled' })}
           className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 text-red-600"
@@ -268,6 +297,12 @@ export default function AdminMemberDetailPage({
               Submitted {new Date(application.created_at).toLocaleString()} ·{' '}
               <span className="capitalize">{application.status}</span>
             </div>
+            {application.start_date && (
+              <div className="text-gray-700">
+                Intended start date:{' '}
+                <span className="font-medium">{application.start_date}</span>
+              </div>
+            )}
             {application.decision_note && (
               <div className="text-gray-700">Note: {application.decision_note}</div>
             )}

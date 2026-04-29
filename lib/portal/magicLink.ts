@@ -13,6 +13,7 @@
 import { Resend } from 'resend';
 import {
   membershipApprovedEmail,
+  portalCompletionReminderEmail,
   PORTAL_ONBOARDING_FROM,
   PORTAL_REPLY_TO,
 } from './emails';
@@ -59,6 +60,44 @@ export async function sendOnboardingMagicLink(opts: {
     firstName: opts.firstName,
     portalUrl: confirmUrl,
     loginUrl: `${baseUrl}/portal/login`,
+  });
+  try {
+    await resend.emails.send({
+      from: PORTAL_ONBOARDING_FROM,
+      to: opts.email,
+      replyTo: PORTAL_REPLY_TO,
+      subject: tpl.subject,
+      html: tpl.html,
+      text: tpl.text,
+    });
+    return true;
+  } catch (e) {
+    console.error('Resend error', e);
+    return false;
+  }
+}
+
+// Generate a fresh magic link and send a portal-completion reminder. Used by
+// the admin "ping" action for members who haven't finished setting up their
+// portal. Returns true if the email was dispatched.
+export async function sendPortalCompletionReminder(opts: {
+  email: string;
+  firstName: string;
+  missingSteps: string[];
+  startDateLabel?: string | null;
+}): Promise<boolean> {
+  const confirmUrl = await generateMagicLinkUrl(opts.email);
+  if (!confirmUrl) return false;
+  if (!process.env.RESEND_API_KEY) return false;
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const tpl = portalCompletionReminderEmail({
+    firstName: opts.firstName,
+    portalUrl: confirmUrl,
+    loginUrl: `${baseUrl}/portal/login`,
+    missingSteps: opts.missingSteps,
+    startDateLabel: opts.startDateLabel ?? null,
   });
   try {
     await resend.emails.send({

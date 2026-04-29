@@ -119,6 +119,75 @@ export function membershipApprovedEmail(opts: {
   };
 }
 
+export function portalCompletionReminderEmail(opts: {
+  firstName: string;
+  portalUrl: string;
+  loginUrl: string;
+  missingSteps: string[];
+  startDateLabel?: string | null;
+}) {
+  const stepsHtml = opts.missingSteps.length
+    ? `<div class="info-card">
+          <h3 style="margin-top:0;">What's left to do</h3>
+          <ul style="margin:0; padding-left:18px;">
+            ${opts.missingSteps.map((s) => `<li>${s}</li>`).join('')}
+          </ul>
+        </div>`
+    : '';
+  const startDateHtml = opts.startDateLabel
+    ? `<div class="highlight">
+          <p style="margin:0;"><strong>Your intended start date:</strong> ${opts.startDateLabel}. Finishing your portal now keeps everything on track.</p>
+        </div>`
+    : '';
+  const stepsText = opts.missingSteps.length
+    ? `What's left to do:\n${opts.missingSteps.map((s) => `  - ${s}`).join('\n')}\n\n`
+    : '';
+  const startDateText = opts.startDateLabel
+    ? `Your intended start date: ${opts.startDateLabel}. Finishing your portal now keeps everything on track.\n\n`
+    : '';
+
+  return {
+    subject: 'Reminder: Finish setting up your Merritt Workspace membership',
+    html: shell({
+      title: 'A few steps left',
+      tagline: 'Finish your member portal setup',
+      body: `
+        <p>Hi ${opts.firstName},</p>
+        <p>Just a friendly nudge — we noticed you haven't finished setting up your Merritt Workspace member portal yet. Once it's complete, you'll be all set to use the space.</p>
+        ${stepsHtml}
+        ${startDateHtml}
+        <p style="text-align:center;">
+          <a href="${opts.portalUrl}" class="button">Finish setting up my portal</a>
+        </p>
+        <p>The button above is a fresh one-click sign-in link. If your previous link expired, this one will get you back in. It can only be used once, so don't share it.</p>
+        <p>If the button doesn't work, copy and paste this link into your browser:<br/><span style="word-break:break-all;color:#555;">${opts.portalUrl}</span></p>
+        <p style="font-size:13px;color:#666;"><strong>This link expires in 24 hours.</strong> If it expires, request another any time at <a href="${opts.loginUrl}">${opts.loginUrl}</a>.</p>
+        <p>Questions? Just reply to this email — we're happy to help.</p>
+        <p>— The Merritt Workspace Team</p>
+      `,
+    }),
+    text: [
+      `Hi ${opts.firstName},`,
+      '',
+      "Just a friendly nudge — we noticed you haven't finished setting up your Merritt Workspace member portal yet. Once it's complete, you'll be all set to use the space.",
+      '',
+      stepsText + startDateText + 'Finish setting up your portal here:',
+      opts.portalUrl,
+      '',
+      `This link can only be used once and expires in 24 hours. If it expires, request another at ${opts.loginUrl}.`,
+      '',
+      "Questions? Just reply to this email — we're happy to help.",
+      '',
+      '— The Merritt Workspace Team',
+      '',
+      '--',
+      'Merritt Workspace',
+      '2246 Irving Street, Denver, CO 80211',
+      'memberservices@merrittworkspace.net',
+    ].join('\n'),
+  };
+}
+
 export function subscriptionPaymentReceiptEmail(opts: {
   firstName: string;
   amount: string;
