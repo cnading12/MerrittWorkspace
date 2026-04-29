@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { MemberApplication } from '@/lib/portal/types';
+import { readTrialFlag, readTrialDate } from '@/lib/portal/trial';
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
@@ -14,20 +15,6 @@ function formatDate(value: string | null | undefined): string {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
   });
-}
-
-// Trial info is mirrored into `payload` so we can display it even on
-// databases where the trial-day migration hasn't been applied yet.
-function readTrialFlag(a: MemberApplication): boolean {
-  if (typeof a.wants_trial_day === 'boolean') return a.wants_trial_day;
-  const fromPayload = (a.payload as { wants_trial_day?: unknown } | null)?.wants_trial_day;
-  return !!fromPayload;
-}
-
-function readTrialDate(a: MemberApplication): string | null {
-  if (a.trial_date) return a.trial_date;
-  const fromPayload = (a.payload as { trial_date?: unknown } | null)?.trial_date;
-  return typeof fromPayload === 'string' ? fromPayload : null;
 }
 
 function byStartDateAsc(a: MemberApplication, b: MemberApplication) {

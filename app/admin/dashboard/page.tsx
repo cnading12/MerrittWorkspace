@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { DESIGNATION_LABELS } from '@/lib/portal/types';
+import { shouldShowTrialBadge } from '@/lib/portal/trial';
 
 interface Counts {
   pendingApplications: number;
@@ -28,6 +29,8 @@ interface RecentMember {
   stripe_subscription_id: string | null;
   subscription_status: string | null;
   onboarding_unlocked: boolean;
+  was_trial_applicant?: boolean;
+  trial_date?: string | null;
   created_at: string;
 }
 
@@ -143,11 +146,23 @@ export default function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {recentMembers.map((m) => (
-                  <tr key={m.id} className="border-b last:border-0">
+                {recentMembers.map((m) => {
+                  const showTrial = shouldShowTrialBadge(m);
+                  return (
+                  <tr
+                    key={m.id}
+                    className={`border-b last:border-0 ${showTrial ? 'bg-orange-50' : ''}`}
+                  >
                     <td className="py-3 pr-3">
-                      <div className="font-medium text-gray-900">
-                        {m.first_name} {m.last_name}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-gray-900">
+                          {m.first_name} {m.last_name}
+                        </span>
+                        {showTrial && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider bg-orange-600 text-white">
+                            TRIAL
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-gray-500">{m.email}</div>
                     </td>
@@ -172,7 +187,8 @@ export default function AdminDashboardPage() {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

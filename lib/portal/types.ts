@@ -40,6 +40,10 @@ export interface Member {
   access_code_issued_at: string | null;
   created_at: string;
   updated_at: string;
+  // Read-time annotations populated by admin APIs from the linked
+  // member_applications row. Not stored on the members table itself.
+  was_trial_applicant?: boolean;
+  trial_date?: string | null;
 }
 
 export interface MemberApplication {

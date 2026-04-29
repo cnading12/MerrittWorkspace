@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { readTrialFlag, readTrialDate } from '@/lib/portal/trial';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,11 +45,37 @@ export async function GET(req: NextRequest) {
       sb
         .from('members')
         .select(
-          'id, first_name, last_name, email, status, designation, monthly_cost_cents, required_docs_complete, agreement_signed, stripe_subscription_id, subscription_status, onboarding_unlocked, created_at'
+          'id, application_id, first_name, last_name, email, status, designation, monthly_cost_cents, required_docs_complete, agreement_signed, stripe_subscription_id, subscription_status, onboarding_unlocked, created_at'
         )
         .order('created_at', { ascending: false })
         .limit(10),
     ]);
+
+    // Annotate recent members with trial-applicant info from their linked
+    // applications so the dashboard can flag trial-origin members until
+    // they're fully onboarded.
+    const recent = recentMembers.data || [];
+    const appIds = Array.from(
+      new Set(
+        recent.map((m: any) => m.application_id).filter((id: any): id is string => !!id)
+      )
+    );
+    let appsById = new Map<string, any>();
+    if (appIds.length > 0) {
+      const { data: apps } = await sb
+        .from('member_applications')
+        .select('id, wants_trial_day, trial_date, payload')
+        .in('id', appIds);
+      if (apps) appsById = new Map(apps.map((a: any) => [a.id, a]));
+    }
+    const annotatedRecent = recent.map((m: any) => {
+      const app = m.application_id ? appsById.get(m.application_id) : null;
+      return {
+        ...m,
+        was_trial_applicant: readTrialFlag(app),
+        trial_date: readTrialDate(app),
+      };
+    });
 
     return NextResponse.json({
       counts: {
@@ -59,7 +86,7 @@ export async function GET(req: NextRequest) {
         pendingAccessCodes: pendingAccessCodes.count || 0,
         awaitingAgreements: awaitingAgreements.count || 0,
       },
-      recentMembers: recentMembers.data || [],
+      recentMembers: annotatedRecent,
     });
   } catch (e: any) {
     const status = e instanceof PortalError ? e.status : 500;
