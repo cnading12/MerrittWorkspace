@@ -7,8 +7,14 @@ import { supabase } from '@/lib/supabase';
 import type { Member } from '@/lib/portal/types';
 import { DESIGNATION_LABELS } from '@/lib/portal/types';
 import { shouldShowTrialBadge } from '@/lib/portal/trial';
+import {
+  compareMembersByPriority,
+  formatAppliedAgo,
+  formatStartDateRelative,
+} from '@/lib/portal/memberPriority';
 
 type StatusFilter = 'all' | Member['status'];
+type SortMode = 'priority' | 'newest';
 
 export default function AdminMembersPage() {
   const router = useRouter();
@@ -17,6 +23,8 @@ export default function AdminMembersPage() {
   const [token, setToken] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [sortMode, setSortMode] = useState<SortMode>('priority');
+  const [pinging, setPinging] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -52,11 +60,36 @@ export default function AdminMembersPage() {
       return;
     }
     const { member } = await res.json();
-    setMembers((prev) => prev.map((m) => (m.id === id ? member : m)));
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...member } : m)));
+  }
+
+  async function pingMember(m: Member) {
+    if (!token) return;
+    if (
+      !confirm(
+        `Send a portal-completion reminder email to ${m.first_name} ${m.last_name}?`
+      )
+    )
+      return;
+    setPinging(m.id);
+    try {
+      const res = await fetch(`/api/admin/members/${m.id}/ping`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Failed to send reminder');
+        return;
+      }
+      alert('Reminder email sent.');
+    } finally {
+      setPinging(null);
+    }
   }
 
   const filtered = useMemo(() => {
-    return members.filter((m) => {
+    const list = members.filter((m) => {
       if (statusFilter !== 'all' && m.status !== statusFilter) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -65,7 +98,11 @@ export default function AdminMembersPage() {
       }
       return true;
     });
-  }, [members, search, statusFilter]);
+    if (sortMode === 'priority') {
+      return [...list].sort(compareMembersByPriority);
+    }
+    return list;
+  }, [members, search, statusFilter, sortMode]);
 
   const statuses: StatusFilter[] = ['all', 'pending', 'approved', 'active', 'paused', 'cancelled', 'declined'];
 
@@ -100,6 +137,15 @@ export default function AdminMembersPage() {
               </option>
             ))}
           </select>
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as SortMode)}
+            className="border rounded px-3 py-1.5 text-sm"
+            title="Sort order"
+          >
+            <option value="priority">Sort: Priority</option>
+            <option value="newest">Sort: Newest</option>
+          </select>
         </div>
       </div>
 
@@ -111,6 +157,9 @@ export default function AdminMembersPage() {
         <div className="space-y-3">
           {filtered.map((m) => {
             const showTrial = shouldShowTrialBadge(m);
+            const appliedAgo = formatAppliedAgo(m.applied_at);
+            const startRel = formatStartDateRelative(m.intended_start_date);
+            const canPing = !m.onboarding_unlocked && m.status !== 'cancelled' && m.status !== 'declined';
             return (
             <div
               key={m.id}
@@ -135,6 +184,25 @@ export default function AdminMembersPage() {
                     )}
                   </div>
                   <div className="text-sm text-gray-600">{m.email}</div>
+                  {(appliedAgo || m.intended_start_date) && (
+                    <div className="flex items-center gap-3 text-xs text-gray-600 mt-1.5 flex-wrap">
+                      {appliedAgo && (
+                        <span>
+                          <span className="text-gray-500">Applied</span>{' '}
+                          <span className="font-medium">{appliedAgo}</span>
+                        </span>
+                      )}
+                      {m.intended_start_date && (
+                        <span>
+                          <span className="text-gray-500">Start</span>{' '}
+                          <span className="font-medium">
+                            {m.intended_start_date}
+                            {startRel && ` (${startRel})`}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 text-xs text-gray-500 mt-2 flex-wrap">
                     <ProgressDot done={m.required_docs_complete} label="Documents" />
                     <ProgressDot done={m.agreement_signed} label="Agreements" />
@@ -176,9 +244,21 @@ export default function AdminMembersPage() {
                   >
                     {m.status === 'active' ? 'Pause' : 'Activate'}
                   </button>
+                  <button
+                    onClick={() => pingMember(m)}
+                    disabled={!canPing || pinging === m.id}
+                    className="text-sm border rounded px-2 py-1 hover:bg-amber-50 text-amber-700 border-amber-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                    title={
+                      canPing
+                        ? 'Email a portal-completion reminder with a fresh sign-in link'
+                        : 'Member has finished onboarding'
+                    }
+                  >
+                    {pinging === m.id ? 'Pinging…' : 'Ping'}
+                  </button>
                   <Link
                     href={`/admin/members/${m.id}`}
-                    className="text-sm border border-gray-900 bg-gray-900 text-white rounded px-2 py-1 hover:bg-gray-800 text-center font-medium"
+                    className="text-sm border border-gray-900 bg-gray-900 text-white rounded px-2 py-1 hover:bg-gray-800 text-center font-medium col-span-2"
                   >
                     View details
                   </Link>

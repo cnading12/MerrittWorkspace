@@ -6,6 +6,11 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { DESIGNATION_LABELS } from '@/lib/portal/types';
 import { shouldShowTrialBadge } from '@/lib/portal/trial';
+import {
+  compareMembersByPriority,
+  formatAppliedAgo,
+  formatStartDateRelative,
+} from '@/lib/portal/memberPriority';
 
 interface Counts {
   pendingApplications: number;
@@ -31,6 +36,8 @@ interface RecentMember {
   onboarding_unlocked: boolean;
   was_trial_applicant?: boolean;
   trial_date?: string | null;
+  applied_at?: string | null;
+  intended_start_date?: string | null;
   created_at: string;
 }
 
@@ -44,6 +51,8 @@ export default function AdminDashboardPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [pinging, setPinging] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -52,6 +61,7 @@ export default function AdminDashboardPage() {
         router.replace('/admin');
         return;
       }
+      setToken(session.access_token);
       const res = await fetch('/api/admin/summary', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -71,11 +81,37 @@ export default function AdminDashboardPage() {
     })();
   }, [router]);
 
+  async function pingMember(m: RecentMember) {
+    if (!token) return;
+    if (
+      !confirm(
+        `Send a portal-completion reminder email to ${m.first_name} ${m.last_name}?`
+      )
+    )
+      return;
+    setPinging(m.id);
+    try {
+      const res = await fetch(`/api/admin/members/${m.id}/ping`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Failed to send reminder');
+        return;
+      }
+      alert('Reminder email sent.');
+    } finally {
+      setPinging(null);
+    }
+  }
+
   if (loading) return <div className="text-gray-500">Loading dashboard…</div>;
   if (error) return <div className="text-red-600">{error}</div>;
   if (!summary) return null;
 
   const { counts, recentMembers } = summary;
+  const sortedMembers = [...recentMembers].sort(compareMembersByPriority).slice(0, 10);
 
   return (
     <div className="space-y-8">
@@ -122,15 +158,18 @@ export default function AdminDashboardPage() {
         <Stat label="Pending applications" value={counts.pendingApplications} />
       </div>
 
-      {/* Recent members */}
+      {/* Members needing attention */}
       <section className="bg-white border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900">Recent members</h2>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="font-semibold text-gray-900">Members by priority</h2>
           <Link href="/admin/members" className="text-sm text-blue-600 hover:underline">
             View all members →
           </Link>
         </div>
-        {recentMembers.length === 0 ? (
+        <p className="text-xs text-gray-500 mb-4">
+          Applicants who haven't finished onboarding, sorted by intended start date soonest. Use Ping to email a reminder with a fresh sign-in link.
+        </p>
+        {sortedMembers.length === 0 ? (
           <p className="text-sm text-gray-500">No members yet.</p>
         ) : (
           <div className="overflow-x-auto">
@@ -138,16 +177,20 @@ export default function AdminDashboardPage() {
               <thead className="text-left text-xs uppercase tracking-wider text-gray-500 border-b">
                 <tr>
                   <th className="py-2 pr-3">Member</th>
-                  <th className="pr-3">Designation</th>
-                  <th className="pr-3">Monthly</th>
+                  <th className="pr-3">Applied</th>
+                  <th className="pr-3">Start date</th>
                   <th className="pr-3">Status</th>
                   <th className="pr-3">Onboarding</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {recentMembers.map((m) => {
+                {sortedMembers.map((m) => {
                   const showTrial = shouldShowTrialBadge(m);
+                  const appliedAgo = formatAppliedAgo(m.applied_at);
+                  const startRel = formatStartDateRelative(m.intended_start_date);
+                  const canPing =
+                    !m.onboarding_unlocked && m.status !== 'cancelled' && m.status !== 'declined';
                   return (
                   <tr
                     key={m.id}
@@ -165,12 +208,28 @@ export default function AdminDashboardPage() {
                         )}
                       </div>
                       <div className="text-xs text-gray-500">{m.email}</div>
+                      <div className="text-xs text-gray-500">
+                        {m.designation
+                          ? DESIGNATION_LABELS[m.designation as keyof typeof DESIGNATION_LABELS]
+                          : '—'}
+                        {m.monthly_cost_cents != null &&
+                          ` · $${(m.monthly_cost_cents / 100).toFixed(2)}/mo`}
+                      </div>
                     </td>
-                    <td className="pr-3 text-gray-700">
-                      {m.designation ? DESIGNATION_LABELS[m.designation as keyof typeof DESIGNATION_LABELS] : '—'}
+                    <td className="pr-3 text-gray-700 whitespace-nowrap">
+                      {appliedAgo || '—'}
                     </td>
-                    <td className="pr-3 text-gray-700">
-                      {m.monthly_cost_cents != null ? `$${(m.monthly_cost_cents / 100).toFixed(2)}` : '—'}
+                    <td className="pr-3 text-gray-700 whitespace-nowrap">
+                      {m.intended_start_date ? (
+                        <>
+                          <div>{m.intended_start_date}</div>
+                          {startRel && (
+                            <div className="text-xs text-gray-500">{startRel}</div>
+                          )}
+                        </>
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td className="pr-3">
                       <StatusBadge status={m.status} />
@@ -179,12 +238,26 @@ export default function AdminDashboardPage() {
                       <OnboardingProgress member={m} />
                     </td>
                     <td className="pr-3">
-                      <Link
-                        href={`/admin/members/${m.id}`}
-                        className="text-blue-600 hover:underline text-xs"
-                      >
-                        Details →
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => pingMember(m)}
+                          disabled={!canPing || pinging === m.id}
+                          className="text-xs border rounded px-2 py-1 hover:bg-amber-50 text-amber-700 border-amber-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title={
+                            canPing
+                              ? 'Email a portal-completion reminder with a fresh sign-in link'
+                              : 'Member has finished onboarding'
+                          }
+                        >
+                          {pinging === m.id ? '…' : 'Ping'}
+                        </button>
+                        <Link
+                          href={`/admin/members/${m.id}`}
+                          className="text-blue-600 hover:underline text-xs"
+                        >
+                          Details →
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                   );

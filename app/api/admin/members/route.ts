@@ -40,7 +40,7 @@ async function annotateWithTrialInfo(
 
   const { data: apps, error } = await sb
     .from('member_applications')
-    .select('id, wants_trial_day, trial_date, payload')
+    .select('id, wants_trial_day, trial_date, start_date, created_at, payload')
     .in('id', appIds);
   if (error || !apps) return members;
 
@@ -51,6 +51,8 @@ async function annotateWithTrialInfo(
       ...m,
       was_trial_applicant: readTrialFlag(app),
       trial_date: readTrialDate(app),
+      applied_at: app?.created_at ?? null,
+      intended_start_date: app?.start_date ?? null,
     };
   });
 }

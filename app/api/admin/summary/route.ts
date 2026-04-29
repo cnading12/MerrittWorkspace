@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
           'id, application_id, first_name, last_name, email, status, designation, monthly_cost_cents, required_docs_complete, agreement_signed, stripe_subscription_id, subscription_status, onboarding_unlocked, created_at'
         )
         .order('created_at', { ascending: false })
-        .limit(10),
+        .limit(25),
     ]);
 
     // Annotate recent members with trial-applicant info from their linked
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
     if (appIds.length > 0) {
       const { data: apps } = await sb
         .from('member_applications')
-        .select('id, wants_trial_day, trial_date, payload')
+        .select('id, wants_trial_day, trial_date, start_date, created_at, payload')
         .in('id', appIds);
       if (apps) appsById = new Map(apps.map((a: any) => [a.id, a]));
     }
@@ -74,6 +74,8 @@ export async function GET(req: NextRequest) {
         ...m,
         was_trial_applicant: readTrialFlag(app),
         trial_date: readTrialDate(app),
+        applied_at: app?.created_at ?? null,
+        intended_start_date: app?.start_date ?? null,
       };
     });
 

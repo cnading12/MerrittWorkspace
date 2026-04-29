@@ -44,6 +44,8 @@ export interface Member {
   // member_applications row. Not stored on the members table itself.
   was_trial_applicant?: boolean;
   trial_date?: string | null;
+  applied_at?: string | null;
+  intended_start_date?: string | null;
 }
 
 export interface MemberApplication {
