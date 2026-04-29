@@ -52,8 +52,11 @@ export interface MemberApplication {
   company_name: string | null;
   membership_type: string | null;
   start_date: string | null;
-  wants_trial_day: boolean;
-  trial_date: string | null;
+  // Set by the trial-day migration; may be undefined on rows from databases
+  // where the migration hasn't been applied. Trial info is also mirrored
+  // into `payload` as a fallback.
+  wants_trial_day?: boolean | null;
+  trial_date?: string | null;
   payload: Record<string, unknown>;
   status: 'pending' | 'approved' | 'declined';
   decision_note: string | null;
