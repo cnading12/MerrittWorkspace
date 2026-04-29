@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { MemberApplication } from '@/lib/portal/types';
 
-function formatDate(value: string | null): string {
+function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
   // start_date / trial_date are stored as DATE; format as a calendar day in
   // local time without letting toLocaleDateString shift across timezones.
@@ -14,6 +14,20 @@ function formatDate(value: string | null): string {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
   });
+}
+
+// Trial info is mirrored into `payload` so we can display it even on
+// databases where the trial-day migration hasn't been applied yet.
+function readTrialFlag(a: MemberApplication): boolean {
+  if (typeof readTrialFlag(a) === 'boolean') return readTrialFlag(a);
+  const fromPayload = (a.payload as { wants_trial_day?: unknown } | null)?.wants_trial_day;
+  return !!fromPayload;
+}
+
+function readTrialDate(a: MemberApplication): string | null {
+  if (a.trial_date) return a.trial_date;
+  const fromPayload = (a.payload as { trial_date?: unknown } | null)?.trial_date;
+  return typeof fromPayload === 'string' ? fromPayload : null;
 }
 
 export default function AdminApplicationsPage() {
@@ -65,8 +79,8 @@ export default function AdminApplicationsPage() {
   // (soonest first) so admins know who to chase about finishing.
   const sortedApps = useMemo(() => {
     return [...apps].sort((a, b) => {
-      if (a.wants_trial_day !== b.wants_trial_day) {
-        return a.wants_trial_day ? -1 : 1;
+      if (readTrialFlag(a) !== b.wants_trial_day) {
+        return readTrialFlag(a) ? -1 : 1;
       }
       const aDate = a.start_date || '9999-12-31';
       const bDate = b.start_date || '9999-12-31';
@@ -74,7 +88,7 @@ export default function AdminApplicationsPage() {
     });
   }, [apps]);
 
-  const trialCount = apps.filter((a) => a.wants_trial_day).length;
+  const trialCount = apps.filter((a) => readTrialFlag(a)).length;
   const regularCount = apps.length - trialCount;
 
   if (loading) return <div className="text-gray-500">Loading…</div>;
@@ -100,7 +114,7 @@ export default function AdminApplicationsPage() {
           <div
             key={a.id}
             className={`bg-white border rounded p-4 ${
-              a.wants_trial_day ? 'border-orange-400 border-2 shadow-sm' : ''
+              readTrialFlag(a) ? 'border-orange-400 border-2 shadow-sm' : ''
             }`}
           >
             <div className="flex items-start justify-between gap-4">
@@ -109,7 +123,7 @@ export default function AdminApplicationsPage() {
                   <div className="font-semibold text-gray-900">
                     {a.first_name} {a.last_name}
                   </div>
-                  {a.wants_trial_day && (
+                  {readTrialFlag(a) && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-orange-600 text-white">
                       TRIAL DAY
                     </span>
@@ -130,13 +144,13 @@ export default function AdminApplicationsPage() {
                       {formatDate(a.start_date)}
                     </div>
                   </div>
-                  {a.wants_trial_day && (
+                  {readTrialFlag(a) && (
                     <div>
                       <div className="text-xs uppercase tracking-wide text-orange-700">
                         Trial Day
                       </div>
                       <div className="text-base font-semibold text-orange-700">
-                        {formatDate(a.trial_date)}
+                        {formatDate(readTrialDate(a))}
                       </div>
                     </div>
                   )}

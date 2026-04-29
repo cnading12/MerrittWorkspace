@@ -56,8 +56,13 @@ export async function POST(request: NextRequest) {
     // Core fields land in dedicated columns; everything else (housing
     // reference, membership reference, emergency contact, etc.) goes into
     // the `payload` JSON catch-all so the admin detail view can still see it.
+    //
+    // Trial info is stored in BOTH the new dedicated columns AND inside
+    // `payload`, so the admin panel still sees the trial flag even on
+    // databases where the trial-day migration has not been applied yet.
     try {
       const { getServiceSupabase } = await import('@/lib/portal/supabaseAdmin');
+      const sb = getServiceSupabase();
       const {
         email,
         first_name,
@@ -68,9 +73,13 @@ export async function POST(request: NextRequest) {
         start_date,
         wants_trial_day,
         trial_date,
-        ...extraPayload
+        ...rest
       } = applicationData;
-      await getServiceSupabase().from('member_applications').insert({
+
+      const wantsTrial = !!wants_trial_day;
+      const trialDate = trial_date || null;
+
+      const baseRow = {
         email,
         first_name,
         last_name,
@@ -78,12 +87,31 @@ export async function POST(request: NextRequest) {
         company_name,
         membership_type,
         start_date,
-        wants_trial_day: !!wants_trial_day,
-        trial_date: trial_date || null,
-        payload: extraPayload,
+        // Mirror trial fields into payload so the admin UI can fall back to
+        // them if the DB hasn't been migrated yet.
+        payload: { ...rest, wants_trial_day: wantsTrial, trial_date: trialDate },
+      };
+
+      // First attempt: include the new dedicated trial columns.
+      let { error } = await sb.from('member_applications').insert({
+        ...baseRow,
+        wants_trial_day: wantsTrial,
+        trial_date: trialDate,
       });
+
+      // If the trial columns don't exist yet (migration not applied), retry
+      // without them — the trial info is still preserved in `payload`.
+      if (error && /column .* does not exist|wants_trial_day|trial_date/i.test(error.message || '')) {
+        console.warn('⚠️ Trial-day columns missing; persisting trial info to payload only. Apply migration 20260428_trial_day_applicants.sql to enable column-level filtering.');
+        const retry = await sb.from('member_applications').insert(baseRow);
+        error = retry.error;
+      }
+
+      if (error) {
+        console.error('❌ Failed to persist application to member_applications:', error);
+      }
     } catch (e) {
-      console.error('Failed to persist application:', e);
+      console.error('❌ Unexpected error persisting application:', e);
       // Non-fatal — emails still go out below.
     }
 
