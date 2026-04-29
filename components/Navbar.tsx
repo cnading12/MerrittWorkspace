@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, ChevronDown, Phone, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { Menu, X, ChevronDown, Phone, User, LogOut, LayoutDashboard, CalendarClock } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { trackPhoneClick } from '@/lib/gtag';
 import { supabase } from '@/lib/supabase';
@@ -240,6 +240,14 @@ export default function Navbar() {
                       <LayoutDashboard className="w-4 h-4" />
                       Dashboard
                     </Link>
+                    <Link
+                      href="/portal/flex-space"
+                      className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-burnt-orange-50 hover:text-burnt-orange-600 transition"
+                      onClick={closeAllMenus}
+                    >
+                      <CalendarClock className="w-4 h-4" />
+                      Flex Space
+                    </Link>
                     <button
                       onClick={handleSignOut}
                       className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-burnt-orange-50 hover:text-burnt-orange-600 transition"
@@ -397,6 +405,14 @@ export default function Navbar() {
                   >
                     <LayoutDashboard className="w-4 h-4" />
                     My Portal
+                  </Link>
+                  <Link
+                    href="/portal/flex-space"
+                    className="flex items-center justify-center gap-2 border-2 border-burnt-orange-600 text-burnt-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-burnt-orange-50 transition text-center mt-2"
+                    onClick={closeAllMenus}
+                  >
+                    <CalendarClock className="w-4 h-4" />
+                    Flex Space
                   </Link>
                   <button
                     onClick={handleSignOut}
