@@ -19,7 +19,7 @@ function formatDate(value: string | null | undefined): string {
 // Trial info is mirrored into `payload` so we can display it even on
 // databases where the trial-day migration hasn't been applied yet.
 function readTrialFlag(a: MemberApplication): boolean {
-  if (typeof readTrialFlag(a) === 'boolean') return readTrialFlag(a);
+  if (typeof a.wants_trial_day === 'boolean') return a.wants_trial_day;
   const fromPayload = (a.payload as { wants_trial_day?: unknown } | null)?.wants_trial_day;
   return !!fromPayload;
 }
@@ -79,8 +79,10 @@ export default function AdminApplicationsPage() {
   // (soonest first) so admins know who to chase about finishing.
   const sortedApps = useMemo(() => {
     return [...apps].sort((a, b) => {
-      if (readTrialFlag(a) !== b.wants_trial_day) {
-        return readTrialFlag(a) ? -1 : 1;
+      const aTrial = readTrialFlag(a);
+      const bTrial = readTrialFlag(b);
+      if (aTrial !== bTrial) {
+        return aTrial ? -1 : 1;
       }
       const aDate = a.start_date || '9999-12-31';
       const bDate = b.start_date || '9999-12-31';
