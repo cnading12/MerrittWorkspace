@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Member, MemberDocument, PaymentHistoryRow } from '@/lib/portal/types';
@@ -36,6 +36,10 @@ export default function PortalDashboard() {
   const [tab, setTab] = useState<Tab>('documents');
   const [accessRequestStatus, setAccessRequestStatus] = useState<string | null>(null);
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
+  // When set, the Documents tab opens the signed Fee Agreement in editable
+  // "revise" mode so the member can change the start date and re-sign. Used
+  // by the back-button on the Payments tab.
+  const [reviseFeeAgreementRequest, setReviseFeeAgreementRequest] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -65,9 +69,18 @@ export default function PortalDashboard() {
   }, [router]);
 
   // When the agreements become fully signed, jump the user straight to the
-  // Payments tab so the next step is obvious.
+  // Payments tab so the next step is obvious. Track whether we've already
+  // auto-jumped so a subsequent revise-flow (member returns to Documents to
+  // re-sign the Fee Agreement) doesn't get yanked back to Payments.
+  const autoJumpedToPayments = useRef(false);
   useEffect(() => {
-    if (member?.agreement_signed && tab === 'documents' && !member.stripe_subscription_id) {
+    if (
+      !autoJumpedToPayments.current &&
+      member?.agreement_signed &&
+      tab === 'documents' &&
+      !member.stripe_subscription_id
+    ) {
+      autoJumpedToPayments.current = true;
       setTab('payments');
       setFlashMessage('All agreements signed. Set up auto-pay below to finish onboarding.');
     }
@@ -176,11 +189,21 @@ export default function PortalDashboard() {
           onMemberChange={setMember}
           onDocumentsChange={setDocuments}
           onAgreementsChange={setAgreements}
+          reviseFeeAgreementRequest={reviseFeeAgreementRequest}
+          onReviseFeeAgreementHandled={() => setReviseFeeAgreementRequest(false)}
         />
       )}
 
       {tab === 'payments' && !paymentsLocked && (
-        <PaymentsTab member={member} payments={payments} agreements={agreements} />
+        <PaymentsTab
+          member={member}
+          payments={payments}
+          agreements={agreements}
+          onReviseFeeAgreement={() => {
+            setReviseFeeAgreementRequest(true);
+            setTab('documents');
+          }}
+        />
       )}
       {tab === 'payments' && paymentsLocked && (
         <div className="bg-amber-50 border border-amber-300 rounded p-6 text-sm text-amber-900">
@@ -297,6 +320,8 @@ function DocumentsTab({
   onMemberChange,
   onDocumentsChange,
   onAgreementsChange,
+  reviseFeeAgreementRequest,
+  onReviseFeeAgreementHandled,
 }: {
   member: Member;
   documents: MemberDocument[];
@@ -305,6 +330,8 @@ function DocumentsTab({
   onMemberChange: (m: Member) => void;
   onDocumentsChange: (d: MemberDocument[]) => void;
   onAgreementsChange: (a: AgreementRow[]) => void;
+  reviseFeeAgreementRequest: boolean;
+  onReviseFeeAgreementHandled: () => void;
 }) {
   const [uploading, setUploading] = useState<DocType | null>(null);
   const [signing, setSigning] = useState<string | null>(null);
@@ -349,11 +376,11 @@ function DocumentsTab({
   async function signAgreement(
     type: 'member_agreement' | 'terms_and_conditions' | 'fee_agreement',
     metadata?: Record<string, unknown>
-  ) {
+  ): Promise<boolean> {
     setError(null);
     if (!signatureName.trim()) {
       setError('Type your full legal name above to sign.');
-      return;
+      return false;
     }
     setSigning(type);
     try {
@@ -378,8 +405,10 @@ function DocumentsTab({
       const data = await res.json();
       if (data.member) onMemberChange(data.member);
       if (data.agreements) onAgreementsChange(data.agreements);
+      return true;
     } catch (e: any) {
       setError(e.message);
+      return false;
     } finally {
       setSigning(null);
     }
@@ -525,6 +554,8 @@ function DocumentsTab({
             signedBy={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signature_name || null}
             signing={signing === 'fee_agreement'}
             onSign={(metadata) => signAgreement('fee_agreement', metadata)}
+            reviseRequested={reviseFeeAgreementRequest}
+            onReviseHandled={onReviseFeeAgreementHandled}
           />
 
           <SignableDoc
@@ -666,6 +697,8 @@ function FeeAgreementSection({
   signedBy,
   signing,
   onSign,
+  reviseRequested,
+  onReviseHandled,
 }: {
   member: Member;
   memberName: string;
@@ -675,9 +708,32 @@ function FeeAgreementSection({
   signedAt: string | null;
   signedBy: string | null;
   signing: boolean;
-  onSign: (metadata: Record<string, unknown>) => void;
+  onSign: (metadata: Record<string, unknown>) => Promise<boolean>;
+  reviseRequested?: boolean;
+  onReviseHandled?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  // When `revising` is true, a previously-signed agreement is opened for
+  // editing so the member can change details (e.g. start date) and re-sign.
+  // The backend upserts on (member_id, agreement_type), so re-signing
+  // overwrites the prior record.
+  const [revising, setRevising] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const editable = !signed || revising;
+
+  // The Payments tab can request that this agreement be opened in revise
+  // mode (used by the "change start date" back-button). Honor the request
+  // by opening + scrolling, then notify the parent so it doesn't fire again.
+  useEffect(() => {
+    if (reviseRequested && signed) {
+      setRevising(true);
+      setOpen(true);
+      onReviseHandled?.();
+      setTimeout(() => {
+        sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
+  }, [reviseRequested, signed, onReviseHandled]);
   const [memberTitle, setMemberTitle] = useState('');
   const [street, setStreet] = useState('');
   const [cityStateZip, setCityStateZip] = useState('');
@@ -759,7 +815,7 @@ function FeeAgreementSection({
 
   const disabled = member.monthly_cost_cents == null;
 
-  function handleSign() {
+  async function handleSign() {
     setLocalError(null);
     if (!street.trim() || !cityStateZip.trim() || !phone.trim()) {
       setLocalError('Please fill in your street address, city/state/zip, and telephone.');
@@ -808,11 +864,21 @@ function FeeAgreementSection({
       grand_total_cents: totals.grandTotalCents,
       invoicing,
     };
-    onSign(metadata);
+    const ok = await onSign(metadata);
+    if (ok) setRevising(false);
   }
 
   return (
-    <div className={`border-2 rounded-lg ${signed ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}>
+    <div
+      ref={sectionRef}
+      className={`border-2 rounded-lg ${
+        revising
+          ? 'border-amber-400 bg-amber-50'
+          : signed
+            ? 'border-green-400 bg-green-50'
+            : 'border-gray-200'
+      }`}
+    >
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
           <div
@@ -825,9 +891,14 @@ function FeeAgreementSection({
           <div>
             <div className="text-sm font-semibold text-gray-900">
               Fee Agreement
-              {signed && (
+              {signed && !revising && (
                 <span className="ml-2 text-green-700 text-xs font-bold uppercase tracking-wider">
                   Signed
+                </span>
+              )}
+              {revising && (
+                <span className="ml-2 text-amber-700 text-xs font-bold uppercase tracking-wider">
+                  Revising — re-sign required
                 </span>
               )}
             </div>
@@ -856,7 +927,28 @@ function FeeAgreementSection({
           >
             {open ? 'Hide' : signed ? 'Review' : 'Open & sign'}
           </button>
-          {signed && (
+          {signed && !revising && (
+            <button
+              type="button"
+              onClick={() => {
+                setRevising(true);
+                setOpen(true);
+              }}
+              className="text-sm border border-amber-500 text-amber-800 bg-white rounded px-3 py-1.5 hover:bg-amber-50 font-semibold"
+            >
+              Revise &amp; re-sign
+            </button>
+          )}
+          {revising && (
+            <button
+              type="button"
+              onClick={() => setRevising(false)}
+              className="text-sm border rounded px-3 py-1.5 hover:bg-white bg-white"
+            >
+              Cancel revision
+            </button>
+          )}
+          {signed && !revising && (
             <button
               type="button"
               disabled
@@ -875,8 +967,17 @@ function FeeAgreementSection({
             MERRITT WORKSPACE FEE AGREEMENT
           </div>
 
+          {revising && (
+            <div className="bg-amber-100 border border-amber-400 rounded p-3 text-xs text-amber-900">
+              <strong>Revising your Fee Agreement.</strong> Update any details
+              (most often the start date) and click <em>Re-sign Fee Agreement</em>{' '}
+              to record a new signature with today&apos;s date. Your previous
+              signature will be replaced.
+            </div>
+          )}
+
           {/* Member Information */}
-          <fieldset disabled={signed} className="space-y-3 disabled:opacity-70">
+          <fieldset disabled={!editable} className="space-y-3 disabled:opacity-70">
             <legend className="text-sm font-semibold text-gray-900">Member Information</legend>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label="Contact Name" value={memberName} readOnly />
@@ -976,7 +1077,7 @@ function FeeAgreementSection({
                   min={minIso}
                   max={maxIso}
                   onChange={(e) => setStartDateIso(e.target.value)}
-                  disabled={signed}
+                  disabled={!editable}
                   className="mt-2 border rounded px-3 py-2 text-sm"
                 />
 
@@ -1091,7 +1192,7 @@ function FeeAgreementSection({
                 <div className="flex items-center gap-2">
                   <span>Title:</span>
                   <input
-                    disabled={signed}
+                    disabled={!editable}
                     value={memberTitle}
                     onChange={(e) => setMemberTitle(e.target.value)}
                     placeholder="Optional"
@@ -1119,7 +1220,7 @@ function FeeAgreementSection({
             </div>
           )}
 
-          {signed ? (
+          {signed && !revising ? (
             <div className="bg-green-100 border border-green-400 rounded p-3 text-center">
               <div className="text-2xl">✓</div>
               <div className="text-sm font-semibold text-green-900">
@@ -1127,14 +1228,28 @@ function FeeAgreementSection({
               </div>
             </div>
           ) : (
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              {revising && (
+                <button
+                  type="button"
+                  onClick={() => setRevising(false)}
+                  disabled={signing}
+                  className="text-sm border rounded px-4 py-3 bg-white hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleSign}
                 disabled={signing || disabled}
                 className="text-sm bg-gray-900 text-white rounded px-6 py-3 hover:bg-gray-800 disabled:opacity-50 font-semibold"
               >
-                {signing ? 'Signing\u2026' : 'Sign Fee Agreement'}
+                {signing
+                  ? 'Signing\u2026'
+                  : revising
+                    ? 'Re-sign Fee Agreement'
+                    : 'Sign Fee Agreement'}
               </button>
             </div>
           )}
@@ -1191,10 +1306,12 @@ function PaymentsTab({
   member,
   payments,
   agreements,
+  onReviseFeeAgreement,
 }: {
   member: Member;
   payments: PaymentHistoryRow[];
   agreements: AgreementRow[];
+  onReviseFeeAgreement: () => void;
 }) {
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -1286,8 +1403,30 @@ function PaymentsTab({
     }
   }
 
+  // Members can step back to the agreements step to revise their Fee
+  // Agreement (typically to update the start date if time has passed since
+  // they originally signed). Hidden once auto-pay is set up — at that point
+  // start-date changes need to go through the team.
+  const canReviseFeeAgreement = !member.stripe_subscription_id;
+
   return (
     <div className="space-y-6">
+      {canReviseFeeAgreement && (
+        <div className="bg-white border rounded p-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm text-gray-700">
+            Need to change your start date or other Fee Agreement details before
+            paying? You can go back and re-sign with new information.
+          </div>
+          <button
+            type="button"
+            onClick={onReviseFeeAgreement}
+            className="text-sm border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50 font-medium"
+          >
+            ← Back &amp; revise Fee Agreement
+          </button>
+        </div>
+      )}
+
       <section className="bg-white border rounded p-6">
         <h2 className="font-semibold text-gray-900 mb-2">Monthly membership</h2>
         {member.monthly_cost_cents != null ? (
