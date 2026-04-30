@@ -58,27 +58,111 @@ export async function POST(req: NextRequest) {
         if (session.metadata?.order_type !== 'membership_subscription') break;
         const memberId = session.metadata.member_id;
         if (!memberId) break;
-        // Retrieve the subscription so we persist its real Stripe status.
-        // ACH subscriptions start in `incomplete` until the first payment
-        // settles (3–5 business days); card subscriptions are `active`
-        // immediately. Either way we unlock onboarding — the member has
-        // authorized payment and done everything they need to do.
+        const customerId = session.customer as string;
+
+        // Recurring members come through Checkout in `payment` mode that
+        // charges the prorated first month + last-month deposit and saves
+        // the card/bank off-session. Now we create the subscription via
+        // the API with `billing_cycle_anchor` + `proration_behavior:
+        // 'none'` (which Checkout itself disallows when one-time prices
+        // are present) so the first full-month charge fires on the 1st of
+        // the month after the start month.
+        let subscriptionId: string | null =
+          (session.subscription as string) || null;
         let subscriptionStatus: string | null = null;
-        if (session.subscription) {
+
+        if (
+          !subscriptionId &&
+          session.mode === 'payment' &&
+          session.metadata?.create_subscription === '1'
+        ) {
+          const monthlyCostCents = Number(
+            session.metadata.monthly_cost_cents || 0
+          );
+          const anchor = Number(session.metadata.billing_cycle_anchor || 0);
+
+          // Pull the saved payment method off the PaymentIntent and pin
+          // it as the customer's invoice default so subsequent monthly
+          // invoices auto-charge it without further action.
+          let paymentMethodId: string | null = null;
+          if (session.payment_intent) {
+            try {
+              const pi = await stripe.paymentIntents.retrieve(
+                session.payment_intent as string
+              );
+              paymentMethodId = (pi.payment_method as string) || null;
+            } catch (err) {
+              console.error(
+                'Failed to retrieve PaymentIntent on checkout.session.completed',
+                err
+              );
+            }
+          }
+          if (paymentMethodId) {
+            await stripe.customers.update(customerId, {
+              invoice_settings: { default_payment_method: paymentMethodId },
+            });
+          }
+
+          if (monthlyCostCents > 0 && anchor > 0) {
+            try {
+              const sub = await stripe.subscriptions.create({
+                customer: customerId,
+                items: [
+                  {
+                    price_data: {
+                      currency: 'usd',
+                      recurring: { interval: 'month' },
+                      unit_amount: monthlyCostCents,
+                      product_data: {
+                        name: 'Merritt Workspace Membership',
+                      },
+                    },
+                    quantity: 1,
+                  },
+                ],
+                billing_cycle_anchor: anchor,
+                proration_behavior: 'none',
+                default_payment_method: paymentMethodId || undefined,
+                collection_method: 'charge_automatically',
+                metadata: {
+                  member_id: memberId,
+                  monthly_cost_cents: String(monthlyCostCents),
+                  last_month_deposit_cents:
+                    session.metadata.last_month_deposit_cents || '',
+                  selected_payment_method:
+                    session.metadata.selected_payment_method || '',
+                  start_date: session.metadata.start_date || '',
+                },
+              } as any);
+              subscriptionId = sub.id;
+              subscriptionStatus = sub.status;
+            } catch (err) {
+              console.error(
+                'Failed to create subscription after checkout',
+                err
+              );
+            }
+          }
+        } else if (subscriptionId) {
+          // Day-pass / one-time members don't have a subscription; this
+          // branch handles any legacy `subscription`-mode sessions.
           try {
-            const sub = await stripe.subscriptions.retrieve(
-              session.subscription as string
-            );
+            const sub = await stripe.subscriptions.retrieve(subscriptionId);
             subscriptionStatus = sub.status;
           } catch (err) {
-            console.error('Failed to retrieve subscription on checkout.session.completed', err);
+            console.error(
+              'Failed to retrieve subscription on checkout.session.completed',
+              err
+            );
           }
         }
+
         await sb
           .from('members')
           .update({
-            stripe_customer_id: session.customer as string,
-            stripe_subscription_id: session.subscription as string,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
             subscription_status: subscriptionStatus,
             onboarding_unlocked: true,
             status: 'active',
