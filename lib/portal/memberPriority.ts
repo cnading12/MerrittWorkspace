@@ -69,15 +69,30 @@ export function formatAppliedAgo(value: string | null | undefined): string | nul
 }
 
 // Returns a short "in X days" / "X days ago" label for a future or past date.
+// Compares calendar days in local time so a SQL date like "2026-05-01" isn't
+// pulled back to the previous day by UTC parsing.
 export function formatStartDateRelative(value: string | null | undefined): string | null {
   if (!value) return null;
-  const t = new Date(value).getTime();
-  if (isNaN(t)) return null;
-  const diffMs = t - Date.now();
-  const days = Math.round(diffMs / 86400000);
+  const startMidnight = parseDateLocalMidnight(value);
+  if (startMidnight === null) return null;
+  const now = new Date();
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const days = Math.round((startMidnight - todayMidnight) / 86400000);
   if (days === 0) return 'today';
   if (days === 1) return 'tomorrow';
   if (days === -1) return 'yesterday';
   if (days > 0) return `in ${days} days`;
   return `${-days} days ago`;
+}
+
+function parseDateLocalMidnight(value: string): number | null {
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (dateOnly) {
+    const [, y, m, d] = dateOnly;
+    return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
+  }
+  const parsed = new Date(value);
+  const t = parsed.getTime();
+  if (isNaN(t)) return null;
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()).getTime();
 }
