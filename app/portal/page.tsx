@@ -1321,9 +1321,66 @@ function PaymentsTab({
   // Read the payment method the member selected when they signed the fee
   // agreement ("card" or "ach"). This drives the copy + button label below.
   const feeAgreement = agreements.find((a) => a.agreement_type === 'fee_agreement');
+  const feeMeta = (feeAgreement?.metadata as Record<string, unknown> | null | undefined) || {};
   const selectedMethod: 'card' | 'ach' =
-    (feeAgreement?.metadata as any)?.payment_method === 'ach' ? 'ach' : 'card';
+    (feeMeta as any)?.payment_method === 'ach' ? 'ach' : 'card';
   const isAch = selectedMethod === 'ach';
+
+  // Pull the exact upfront amounts the member signed off on so the payment
+  // tab mirrors the Fee Agreement Grand Total to the cent. If the agreement
+  // is missing those fields (e.g. an old signature pre-migration), fall back
+  // to recomputing them from the start_date + monthly cost. The Stripe
+  // checkout route runs the same fallback so the charged amount and the
+  // amount shown here always match.
+  const oneTime = isOneTimeDesignation(member.designation);
+  const monthlyCostCents = member.monthly_cost_cents || 0;
+  const startDateIso = typeof (feeMeta as any)?.start_date === 'string'
+    ? ((feeMeta as any).start_date as string)
+    : null;
+  const startDate = (() => {
+    if (!startDateIso) return new Date();
+    try {
+      return parseStartDate(startDateIso);
+    } catch {
+      return new Date();
+    }
+  })();
+  const fallbackProratedCents = oneTime
+    ? monthlyCostCents
+    : calculateProratedFirstMonthCents(monthlyCostCents, startDate);
+  const fallbackTotals = calculateFeeAgreementTotals(
+    monthlyCostCents,
+    selectedMethod,
+    oneTime,
+    fallbackProratedCents,
+  );
+  const firstMonthCents = Number(
+    (feeMeta as any)?.first_month_cents ?? fallbackTotals.firstMonthCents,
+  );
+  const lastMonthCents = Number(
+    (feeMeta as any)?.last_month_cents ?? fallbackTotals.lastMonthCents,
+  );
+  const ccFeeCents = Number(
+    (feeMeta as any)?.cc_fee_cents ?? fallbackTotals.ccFeeCents,
+  );
+  const grandTotalCents = Number(
+    (feeMeta as any)?.grand_total_cents ?? fallbackTotals.grandTotalCents,
+  );
+
+  // First recurring charge fires on the 1st of the month after the chosen
+  // start date. Format that date for the next-charge note. Day passes don't
+  // recur, so this isn't shown.
+  const firstRecurringCharge = new Date(Date.UTC(
+    startDate.getUTCFullYear(),
+    startDate.getUTCMonth() + 1,
+    1,
+  ));
+  const firstRecurringChargeLabel = firstRecurringCharge.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 
   // ACH subscriptions start in `incomplete` and move to `active` only after
   // the first invoice settles (3–5 business days). Surface this so members
@@ -1429,17 +1486,86 @@ function PaymentsTab({
 
       <section className="bg-white border rounded p-6">
         <h2 className="font-semibold text-gray-900 mb-2">Monthly membership</h2>
-        {member.monthly_cost_cents != null ? (
-          <p className="text-sm text-gray-700">
-            Your monthly cost is{' '}
-            <span className="font-semibold">
-              ${(member.monthly_cost_cents / 100).toFixed(2)}
-            </span>
-            , billed on the 1st of each month (first charge prorated).
-          </p>
-        ) : (
+        {member.monthly_cost_cents == null ? (
           <p className="text-sm text-gray-500">
             Your administrator hasn&apos;t assigned a monthly cost yet.
+          </p>
+        ) : !member.stripe_subscription_id ? (
+          <>
+            <p className="text-sm text-gray-700">
+              Your monthly cost is{' '}
+              <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>
+              {oneTime
+                ? ' (one-time charge — day pass).'
+                : ', billed on the 1st of each month (first charge prorated).'}
+            </p>
+
+            <div className="mt-4 border rounded bg-gray-50 p-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
+                Due today — matches your signed Fee Agreement
+              </div>
+              <dl className="space-y-1.5 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-gray-700">
+                    {oneTime
+                      ? 'One Day Membership Fee'
+                      : 'First Month Membership Fee (prorated)'}
+                  </dt>
+                  <dd className="font-medium text-gray-900">
+                    {formatUsd(firstMonthCents)}
+                  </dd>
+                </div>
+                {!oneTime && (
+                  <div className="flex justify-between">
+                    <dt className="text-gray-700">
+                      Last Month&apos;s Membership Fee (deposit)
+                    </dt>
+                    <dd className="font-medium text-gray-900">
+                      {formatUsd(lastMonthCents)}
+                    </dd>
+                  </div>
+                )}
+                {selectedMethod === 'card' && (
+                  <div className="flex justify-between">
+                    <dt className="text-gray-700">
+                      Credit Card Processing Fee (3.5%)
+                    </dt>
+                    <dd className="font-medium text-gray-900">
+                      {formatUsd(ccFeeCents)}
+                    </dd>
+                  </div>
+                )}
+                {isAch && (
+                  <div className="flex justify-between text-xs text-green-800">
+                    <dt>Paying by ACH / EFT — no processing fee.</dt>
+                    <dd>—</dd>
+                  </div>
+                )}
+                <div className="border-t pt-2 mt-2 flex justify-between text-base">
+                  <dt className="font-semibold text-gray-900">Total due today</dt>
+                  <dd className="font-bold text-gray-900">
+                    {formatUsd(grandTotalCents)}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            {!oneTime && (
+              <div className="mt-3 bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-900">
+                <strong>What happens next:</strong> After this initial payment,
+                you&apos;ll be charged{' '}
+                <span className="font-semibold">{formatUsd(monthlyCostCents)}/month</span>{' '}
+                automatically on the 1st of every month, starting{' '}
+                <span className="font-semibold">{firstRecurringChargeLabel}</span>.
+                {selectedMethod === 'card' && ' (No card processing fee on recurring charges.)'}
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-gray-700">
+            Your monthly cost is{' '}
+            <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>
+            , billed on the 1st of each month.
           </p>
         )}
 
