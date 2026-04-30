@@ -219,6 +219,23 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         },
       ],
+      // Stripe only renders "Then $X per month" copy in subscription-mode
+      // Checkout, but subscription-mode + one-time prices triggers the
+      // proration_behavior conflict (and any workaround leaks trial UI).
+      // Spell out the recurring charge ourselves next to the submit button
+      // so the member sees what's coming after this upfront payment.
+      custom_text: {
+        submit: {
+          message: `Then $${(member.monthly_cost_cents / 100).toFixed(2)} per month, billed on the 1st starting ${new Date(
+            anchor * 1000
+          ).toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+            timeZone: 'UTC',
+          })}.`,
+        },
+      },
       success_url: `${baseUrl}/portal?subscribed=1`,
       cancel_url: `${baseUrl}/portal?canceled=1`,
       metadata: {
