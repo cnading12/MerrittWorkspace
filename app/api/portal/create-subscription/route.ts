@@ -203,7 +203,18 @@ export async function POST(req: NextRequest) {
             unit_amount: proratedCents,
             product_data: {
               name: "First Month's Membership Fee (prorated)",
-              description: `${member.first_name} ${member.last_name}`,
+              // Surface the recurring charge in the order summary itself
+              // (Stripe doesn't render "Then $X/mo" automatically in
+              // payment-mode Checkout — see custom_text.submit.message
+              // below for the same info next to the Pay button).
+              description: `${member.first_name} ${member.last_name} — then $${(member.monthly_cost_cents / 100).toFixed(2)}/mo billed on the 1st starting ${new Date(
+                anchor * 1000
+              ).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+                timeZone: 'UTC',
+              })}`,
             },
           },
           quantity: 1,
