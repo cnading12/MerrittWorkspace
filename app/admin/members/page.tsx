@@ -14,7 +14,25 @@ import {
 } from '@/lib/portal/memberPriority';
 
 type StatusFilter = 'all' | Member['status'];
-type SortMode = 'priority' | 'newest';
+type SortMode = 'priority' | 'newest' | 'office' | 'desk';
+
+// Natural compare for assignment labels: leading numeric portion sorted
+// numerically, then the rest lexicographically. Empty values sort last.
+function compareAssignments(a: string | null | undefined, b: string | null | undefined) {
+  const av = (a || '').trim();
+  const bv = (b || '').trim();
+  if (!av && !bv) return 0;
+  if (!av) return 1;
+  if (!bv) return -1;
+  const am = av.match(/^(\d+)(.*)$/);
+  const bm = bv.match(/^(\d+)(.*)$/);
+  if (am && bm) {
+    const diff = parseInt(am[1], 10) - parseInt(bm[1], 10);
+    if (diff !== 0) return diff;
+    return am[2].localeCompare(bm[2]);
+  }
+  return av.localeCompare(bv);
+}
 
 export default function AdminMembersPage() {
   const router = useRouter();
@@ -101,6 +119,12 @@ export default function AdminMembersPage() {
     if (sortMode === 'priority') {
       return [...list].sort(compareMembersByPriority);
     }
+    if (sortMode === 'office') {
+      return [...list].sort((a, b) => compareAssignments(a.office_number, b.office_number));
+    }
+    if (sortMode === 'desk') {
+      return [...list].sort((a, b) => compareAssignments(a.desk_number, b.desk_number));
+    }
     return list;
   }, [members, search, statusFilter, sortMode]);
 
@@ -145,6 +169,8 @@ export default function AdminMembersPage() {
           >
             <option value="priority">Sort: Priority</option>
             <option value="newest">Sort: Newest</option>
+            <option value="office">Sort: Office #</option>
+            <option value="desk">Sort: Desk #</option>
           </select>
         </div>
       </div>
@@ -231,6 +257,28 @@ export default function AdminMembersPage() {
                       const v = parseFloat(e.target.value);
                       if (!isNaN(v))
                         patchMember(m.id, { monthly_cost_cents: Math.round(v * 100) });
+                    }}
+                    className="border rounded px-2 py-1 text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Office #"
+                    defaultValue={m.office_number || ''}
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v !== (m.office_number || ''))
+                        patchMember(m.id, { office_number: v || null });
+                    }}
+                    className="border rounded px-2 py-1 text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Desk #"
+                    defaultValue={m.desk_number || ''}
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v !== (m.desk_number || ''))
+                        patchMember(m.id, { desk_number: v || null });
                     }}
                     className="border rounded px-2 py-1 text-sm"
                   />

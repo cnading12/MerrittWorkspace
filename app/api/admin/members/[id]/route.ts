@@ -9,6 +9,8 @@ const ALLOWED_FIELDS = [
   'monthly_cost_cents',
   'status',
   'access_code',
+  'office_number',
+  'desk_number',
 ] as const;
 
 export async function GET(
