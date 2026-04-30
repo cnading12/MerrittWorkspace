@@ -158,6 +158,16 @@ export async function POST(req: NextRequest) {
     );
     const lastMonthDepositCents = member.monthly_cost_cents;
 
+    // 3.5% processing fee applies to the upfront charge only when the member
+    // chose to pay by card on their signed Fee Agreement. ACH-paying members
+    // never see this fee. Keeping the math here byte-identical to
+    // `calculateFeeAgreementTotals` (lib/portal/legal.ts) is critical — the
+    // amount Stripe charges must match the Grand Total the member signed.
+    const ccFeeCents =
+      selectedMethod === 'card'
+        ? Math.round((proratedCents + lastMonthDepositCents) * 0.035)
+        : 0;
+
     // Anchor billing to the 1st of the month after the chosen start month.
     const anchor = billingCycleAnchorAfter(startDate);
 
@@ -229,6 +239,22 @@ export async function POST(req: NextRequest) {
           },
           quantity: 1,
         },
+        ...(ccFeeCents > 0
+          ? [
+              {
+                price_data: {
+                  currency: 'usd' as const,
+                  unit_amount: ccFeeCents,
+                  product_data: {
+                    name: '3.5% Credit Card Processing Fee',
+                    description:
+                      'One-time fee on this initial payment, per your signed Fee Agreement. Switch to ACH any time to avoid this fee.',
+                  },
+                },
+                quantity: 1,
+              },
+            ]
+          : []),
       ],
       // Stripe only renders "Then $X per month" copy in subscription-mode
       // Checkout, but subscription-mode + one-time prices triggers the
@@ -259,7 +285,8 @@ export async function POST(req: NextRequest) {
         billing_cycle_anchor: String(anchor),
         prorated_first_charge_cents: String(proratedCents),
         last_month_deposit_cents: String(lastMonthDepositCents),
-        initial_total_cents: String(proratedCents + lastMonthDepositCents),
+        cc_fee_cents: String(ccFeeCents),
+        initial_total_cents: String(proratedCents + lastMonthDepositCents + ccFeeCents),
         selected_payment_method: selectedMethod,
         start_date: typeof startDateRaw === 'string' ? startDateRaw : '',
       },

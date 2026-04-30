@@ -371,18 +371,23 @@ describe('create-subscription', () => {
     expect(call.metadata.member_id).toBe('m-1');
   });
 
-  it('charges only the prorated-first-month and last-month-deposit line items upfront', async () => {
+  it('charges prorated-first-month + last-month-deposit + 3.5% card fee upfront', async () => {
     await createSubscription(makeAuthReq());
     const call = mockStripeCheckoutCreate.mock.calls[0][0];
-    // Two one-time line items only — the recurring subscription is
-    // created later by the webhook, not by Checkout, so no recurring or
-    // subscription_data lives on this session.
-    expect(call.line_items).toHaveLength(2);
+    // Three one-time line items for card-paying members: prorated first
+    // month, last-month deposit, and the 3.5% card processing fee that
+    // the member signed off on in their Fee Agreement. The recurring
+    // subscription is created later by the webhook, not by Checkout, so
+    // no recurring or subscription_data lives on this session.
+    expect(call.line_items).toHaveLength(3);
     expect(call.line_items[0].price_data.recurring).toBeUndefined();
     const prorated = Number(call.metadata.prorated_first_charge_cents);
     expect(call.line_items[0].price_data.unit_amount).toBe(prorated);
     expect(call.line_items[1].price_data.recurring).toBeUndefined();
     expect(call.line_items[1].price_data.unit_amount).toBe(50000);
+    const expectedFee = Math.round((prorated + 50000) * 0.035);
+    expect(call.line_items[2].price_data.unit_amount).toBe(expectedFee);
+    expect(Number(call.metadata.cc_fee_cents)).toBe(expectedFee);
     expect(call.subscription_data).toBeUndefined();
     // Save the payment method off-session so the webhook can attach it
     // to the subscription it creates.
@@ -392,6 +397,16 @@ describe('create-subscription', () => {
     expect(call.metadata.create_subscription).toBe('1');
     expect(call.metadata.monthly_cost_cents).toBe('50000');
     expect(call.metadata.last_month_deposit_cents).toBe('50000');
+    expect(Number(call.metadata.initial_total_cents)).toBe(prorated + 50000 + expectedFee);
+  });
+
+  it('omits the 3.5% card fee for ACH members', async () => {
+    state.feeAgreement = { metadata: { payment_method: 'ach' } };
+    await createSubscription(makeAuthReq());
+    const call = mockStripeCheckoutCreate.mock.calls[0][0];
+    expect(call.line_items).toHaveLength(2);
+    expect(call.metadata.cc_fee_cents).toBe('0');
+    const prorated = Number(call.metadata.prorated_first_charge_cents);
     expect(Number(call.metadata.initial_total_cents)).toBe(prorated + 50000);
   });
 
