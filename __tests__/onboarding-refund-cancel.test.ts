@@ -360,9 +360,12 @@ describe('create-subscription', () => {
     // Third line item: one-off last-month deposit (no recurring field).
     expect(call.line_items[2].price_data.recurring).toBeUndefined();
     expect(call.line_items[2].price_data.unit_amount).toBe(50000);
-    // Recurring item should not be auto-prorated — we charge proration as
-    // an explicit line item above instead.
-    expect(call.subscription_data.proration_behavior).toBe('none');
+    // Recurring item is gated behind a trial through the start month so
+    // Stripe doesn't auto-prorate it — we charge proration as an explicit
+    // line item above instead. (proration_behavior: 'none' isn't allowed
+    // in Checkout when the session also has one-time prices.)
+    expect(call.subscription_data.proration_behavior).toBeUndefined();
+    expect(call.subscription_data.trial_end).toBeDefined();
     // Metadata reflects the expected initial charge.
     expect(call.metadata.last_month_deposit_cents).toBe('50000');
     expect(Number(call.metadata.initial_total_cents)).toBe(prorated + 50000);
@@ -371,7 +374,8 @@ describe('create-subscription', () => {
   it('anchors billing cycle to 1st of the month after the start month', async () => {
     await createSubscription(makeAuthReq());
     const call = mockStripeCheckoutCreate.mock.calls[0][0];
-    const anchorDate = new Date(call.subscription_data.billing_cycle_anchor * 1000);
+    // trial_end becomes the billing cycle anchor once the trial ends.
+    const anchorDate = new Date(call.subscription_data.trial_end * 1000);
     expect(anchorDate.getUTCDate()).toBe(1);
     expect(anchorDate.getUTCHours()).toBe(12);
   });
