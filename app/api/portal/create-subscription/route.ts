@@ -119,23 +119,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ url: session.url, id: session.id });
     }
 
-    // Billing logic:
+    // Billing logic (two-step flow):
     //   - The member chose a membership start_date when signing the Fee
     //     Agreement (today through today + 30 days).
-    //   - The first invoice fires at signup (today) and bundles two
-    //     non-recurring line items: the prorated first partial month
-    //     (start_date → end of start_date's month) and a one-month
-    //     deposit. We pass these as one-off line items so the amounts
-    //     match the signed Fee Agreement exactly.
-    //   - The recurring monthly membership uses `trial_end` set to the 1st
-    //     of the month AFTER the start month. During the trial Stripe
-    //     doesn't charge the recurring item, so the first full-month
-    //     charge fires on trial_end (which becomes the billing cycle
-    //     anchor), then every 1st of the month thereafter. We use
-    //     `trial_end` instead of `billing_cycle_anchor` +
-    //     `proration_behavior: 'none'` because Stripe Checkout disallows
-    //     `proration_behavior: 'none'` when the session also has one-time
-    //     prices (our prorated/deposit line items).
+    //   - Step 1 (this route): Stripe Checkout in `payment` mode collects
+    //     the upfront charge — prorated first partial month (start_date →
+    //     end of start month) plus a one-month deposit — and saves the
+    //     payment method off-session via `setup_future_usage`. The amounts
+    //     match the signed Fee Agreement exactly because we set them as
+    //     one-time line items rather than letting Stripe auto-prorate.
+    //   - Step 2 (webhooks/subscriptions): on `checkout.session.completed`
+    //     we create the recurring subscription via the Stripe API using
+    //     the saved payment method, with `billing_cycle_anchor` = 1st of
+    //     the month after start month and `proration_behavior: 'none'`,
+    //     so the first full-month charge fires on the anchor date with no
+    //     duplicate proration.
+    //   - We use this two-step flow because Stripe Checkout disallows
+    //     `proration_behavior: 'none'` whenever a session contains
+    //     one-time prices, and any alternative (e.g. `trial_end`) would
+    //     surface "X days free / Try Membership" trial copy in the
+    //     Checkout UI, which misrepresents the offering.
     const startDateRaw = (feeAgreement?.metadata as any)?.start_date;
     let startDate: Date;
     try {
@@ -165,57 +168,47 @@ export async function POST(req: NextRequest) {
     //     delay; the member links their bank via Plaid-style flow inside
     //     Stripe Checkout and the subscription auto-debits from it monthly.
     //   - Card members: `card` + `link` (Stripe's one-click wallet).
-    // Checkout automatically saves the payment method used during the flow
-    // as the subscription's default_payment_method, so subsequent monthly
-    // invoices auto-charge it without any extra configuration.
     const checkoutPaymentMethodTypes: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] =
       selectedMethod === 'ach' ? ['us_bank_account', 'card'] : ['card', 'link'];
 
+    // Save the payment method off-session so the webhook can attach it to
+    // the subscription it creates after this Checkout completes. ACH
+    // requires the flag on the bank-account payment_method_options block;
+    // for card/link, setting it on payment_intent_data covers both.
+    const paymentMethodOptions: Stripe.Checkout.SessionCreateParams.PaymentMethodOptions =
+      selectedMethod === 'ach'
+        ? {
+            us_bank_account: {
+              financial_connections: {
+                permissions: ['payment_method'],
+              },
+              verification_method: 'instant',
+              setup_future_usage: 'off_session',
+            },
+          }
+        : {};
+
     const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
+      mode: 'payment',
       customer: customerId,
       payment_method_types: checkoutPaymentMethodTypes,
-      payment_method_options:
-        selectedMethod === 'ach'
-          ? {
-              us_bank_account: {
-                financial_connections: {
-                  permissions: ['payment_method'],
-                },
-                verification_method: 'instant',
-              },
-            }
-          : undefined,
+      payment_method_options: paymentMethodOptions,
+      payment_intent_data: {
+        setup_future_usage: 'off_session',
+      },
       line_items: [
         {
           price_data: {
             currency: 'usd',
-            recurring: { interval: 'month' },
-            unit_amount: member.monthly_cost_cents,
+            unit_amount: proratedCents,
             product_data: {
-              name: 'Merritt Workspace Membership',
+              name: "First Month's Membership Fee (prorated)",
               description: `${member.first_name} ${member.last_name}`,
             },
           },
           quantity: 1,
         },
         {
-          // One-off prorated first partial month (start_date → end of
-          // start month). We charge it explicitly as a one-time item so
-          // the amount matches the signed Fee Agreement regardless of
-          // when the member actually completes Stripe Checkout.
-          price_data: {
-            currency: 'usd',
-            unit_amount: proratedCents,
-            product_data: {
-              name: "First Month's Membership Fee (prorated)",
-            },
-          },
-          quantity: 1,
-        },
-        {
-          // One-off last-month deposit. No `recurring` key -> Stripe treats
-          // this as a one-time item and places it on the first invoice only.
           price_data: {
             currency: 'usd',
             unit_amount: lastMonthDepositCents,
@@ -226,27 +219,16 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         },
       ],
-      subscription_data: {
-        // Trial through the end of the start month. Stripe doesn't charge
-        // the recurring item during the trial, so the first full-month
-        // charge fires on trial_end (which Stripe also uses as the billing
-        // cycle anchor). The prorated first partial month is already on
-        // the first invoice as a one-time line item above.
-        trial_end: anchor,
-        metadata: {
-          member_id: member.id,
-          monthly_cost_cents: String(member.monthly_cost_cents),
-          last_month_deposit_cents: String(lastMonthDepositCents),
-          selected_payment_method: selectedMethod,
-          start_date: typeof startDateRaw === 'string' ? startDateRaw : '',
-        },
-      },
-      payment_method_collection: 'always',
       success_url: `${baseUrl}/portal?subscribed=1`,
       cancel_url: `${baseUrl}/portal?canceled=1`,
       metadata: {
         order_type: 'membership_subscription',
         member_id: member.id,
+        // Tells the webhook to create a subscription after checkout
+        // completes, using the values below.
+        create_subscription: '1',
+        monthly_cost_cents: String(member.monthly_cost_cents),
+        billing_cycle_anchor: String(anchor),
         prorated_first_charge_cents: String(proratedCents),
         last_month_deposit_cents: String(lastMonthDepositCents),
         initial_total_cents: String(proratedCents + lastMonthDepositCents),

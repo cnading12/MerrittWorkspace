@@ -168,6 +168,15 @@ const mockStripeSubscriptionRetrieve = vi.fn().mockResolvedValue({
   id: 'sub_test123',
   status: 'active',
 });
+const mockStripeSubscriptionCreate = vi.fn().mockResolvedValue({
+  id: 'sub_test123',
+  status: 'active',
+});
+const mockStripePaymentIntentRetrieve = vi.fn().mockResolvedValue({
+  id: 'pi_test123',
+  payment_method: 'pm_test123',
+});
+const mockStripeCustomerUpdate = vi.fn().mockResolvedValue({ id: 'cus_test123' });
 const mockStripeRefundCreate = vi.fn().mockResolvedValue({
   id: 're_test123',
   amount: 50000,
@@ -183,12 +192,17 @@ const mockStripeWebhookConstruct = vi.fn();
 vi.mock('stripe', () => {
   return {
     default: class StripeMock {
-      customers = { create: mockStripeCustomerCreate };
+      customers = {
+        create: mockStripeCustomerCreate,
+        update: mockStripeCustomerUpdate,
+      };
       checkout = { sessions: { create: mockStripeCheckoutCreate } };
       subscriptions = {
+        create: mockStripeSubscriptionCreate,
         update: mockStripeSubscriptionUpdate,
         retrieve: mockStripeSubscriptionRetrieve,
       };
+      paymentIntents = { retrieve: mockStripePaymentIntentRetrieve };
       refunds = { create: mockStripeRefundCreate };
       invoiceItems = {
         list: mockStripeInvoiceItemsList,
@@ -247,6 +261,17 @@ beforeEach(() => {
   mockStripeCheckoutCreate.mockClear();
   mockStripeSubscriptionUpdate.mockClear();
   mockStripeSubscriptionRetrieve.mockClear();
+  mockStripeSubscriptionCreate.mockClear();
+  mockStripeSubscriptionCreate.mockResolvedValue({
+    id: 'sub_test123',
+    status: 'active',
+  });
+  mockStripePaymentIntentRetrieve.mockClear();
+  mockStripePaymentIntentRetrieve.mockResolvedValue({
+    id: 'pi_test123',
+    payment_method: 'pm_test123',
+  });
+  mockStripeCustomerUpdate.mockClear();
   mockStripeRefundCreate.mockClear();
   mockStripeInvoiceItemsList.mockClear();
   mockStripeInvoiceItemsList.mockResolvedValue({ data: [] });
@@ -302,7 +327,7 @@ describe('create-subscription', () => {
     );
     expect(mockStripeCheckoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        mode: 'subscription',
+        mode: 'payment',
         customer: 'cus_test123',
       })
     );
@@ -346,27 +371,26 @@ describe('create-subscription', () => {
     expect(call.metadata.member_id).toBe('m-1');
   });
 
-  it('adds non-recurring prorated-first-month and last-month-deposit line items', async () => {
+  it('charges only the prorated-first-month and last-month-deposit line items upfront', async () => {
     await createSubscription(makeAuthReq());
     const call = mockStripeCheckoutCreate.mock.calls[0][0];
-    expect(call.line_items).toHaveLength(3);
-    // First line item: recurring monthly membership.
-    expect(call.line_items[0].price_data.recurring).toEqual({ interval: 'month' });
-    expect(call.line_items[0].price_data.unit_amount).toBe(50000);
-    // Second line item: one-off prorated first partial month.
-    expect(call.line_items[1].price_data.recurring).toBeUndefined();
+    // Two one-time line items only — the recurring subscription is
+    // created later by the webhook, not by Checkout, so no recurring or
+    // subscription_data lives on this session.
+    expect(call.line_items).toHaveLength(2);
+    expect(call.line_items[0].price_data.recurring).toBeUndefined();
     const prorated = Number(call.metadata.prorated_first_charge_cents);
-    expect(call.line_items[1].price_data.unit_amount).toBe(prorated);
-    // Third line item: one-off last-month deposit (no recurring field).
-    expect(call.line_items[2].price_data.recurring).toBeUndefined();
-    expect(call.line_items[2].price_data.unit_amount).toBe(50000);
-    // Recurring item is gated behind a trial through the start month so
-    // Stripe doesn't auto-prorate it — we charge proration as an explicit
-    // line item above instead. (proration_behavior: 'none' isn't allowed
-    // in Checkout when the session also has one-time prices.)
-    expect(call.subscription_data.proration_behavior).toBeUndefined();
-    expect(call.subscription_data.trial_end).toBeDefined();
-    // Metadata reflects the expected initial charge.
+    expect(call.line_items[0].price_data.unit_amount).toBe(prorated);
+    expect(call.line_items[1].price_data.recurring).toBeUndefined();
+    expect(call.line_items[1].price_data.unit_amount).toBe(50000);
+    expect(call.subscription_data).toBeUndefined();
+    // Save the payment method off-session so the webhook can attach it
+    // to the subscription it creates.
+    expect(call.payment_intent_data?.setup_future_usage).toBe('off_session');
+    // Metadata reflects the expected initial charge and tells the
+    // webhook to create the subscription afterward.
+    expect(call.metadata.create_subscription).toBe('1');
+    expect(call.metadata.monthly_cost_cents).toBe('50000');
     expect(call.metadata.last_month_deposit_cents).toBe('50000');
     expect(Number(call.metadata.initial_total_cents)).toBe(prorated + 50000);
   });
@@ -374,8 +398,9 @@ describe('create-subscription', () => {
   it('anchors billing cycle to 1st of the month after the start month', async () => {
     await createSubscription(makeAuthReq());
     const call = mockStripeCheckoutCreate.mock.calls[0][0];
-    // trial_end becomes the billing cycle anchor once the trial ends.
-    const anchorDate = new Date(call.subscription_data.trial_end * 1000);
+    const anchorDate = new Date(
+      Number(call.metadata.billing_cycle_anchor) * 1000
+    );
     expect(anchorDate.getUTCDate()).toBe(1);
     expect(anchorDate.getUTCHours()).toBe(12);
   });
@@ -385,23 +410,62 @@ describe('create-subscription', () => {
 // 2) WEBHOOK: checkout.session.completed — onboarding setup after payment
 // ===========================================================================
 describe('webhook – checkout.session.completed (onboarding setup)', () => {
-  it('unlocks onboarding and sets member to active after successful checkout', async () => {
-    const event = {
+  function makeMembershipSession(overrides: any = {}) {
+    return {
       type: 'checkout.session.completed',
       data: {
         object: {
-          metadata: { order_type: 'membership_subscription', member_id: 'm-1' },
+          mode: 'payment',
           customer: 'cus_test123',
-          subscription: 'sub_test123',
+          payment_intent: 'pi_test123',
+          metadata: {
+            order_type: 'membership_subscription',
+            member_id: 'm-1',
+            create_subscription: '1',
+            monthly_cost_cents: '50000',
+            billing_cycle_anchor: '1700000000',
+            last_month_deposit_cents: '50000',
+            selected_payment_method: 'card',
+            start_date: '2026-05-15',
+            ...overrides.metadata,
+          },
+          ...overrides.object,
         },
       },
     };
+  }
+
+  it('creates the subscription via API and unlocks onboarding after checkout', async () => {
+    const event = makeMembershipSession();
     mockStripeWebhookConstruct.mockReturnValue(event);
 
     const res = await webhookHandler(makeWebhookReq(JSON.stringify(event)));
     expect(res.status).toBe(200);
 
-    // Verify the member record was updated with all onboarding fields
+    // The webhook pulls the saved payment method off the PaymentIntent,
+    // pins it as the customer's invoice default, then creates the
+    // subscription with billing_cycle_anchor + proration_behavior:'none'.
+    expect(mockStripePaymentIntentRetrieve).toHaveBeenCalledWith('pi_test123');
+    expect(mockStripeCustomerUpdate).toHaveBeenCalledWith(
+      'cus_test123',
+      expect.objectContaining({
+        invoice_settings: { default_payment_method: 'pm_test123' },
+      })
+    );
+    expect(mockStripeSubscriptionCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customer: 'cus_test123',
+        billing_cycle_anchor: 1700000000,
+        proration_behavior: 'none',
+        default_payment_method: 'pm_test123',
+        collection_method: 'charge_automatically',
+      })
+    );
+    const subCall = mockStripeSubscriptionCreate.mock.calls[0][0];
+    expect(subCall.items).toHaveLength(1);
+    expect(subCall.items[0].price_data.recurring).toEqual({ interval: 'month' });
+    expect(subCall.items[0].price_data.unit_amount).toBe(50000);
+
     expect(state.lastMemberUpdate).toEqual(
       expect.objectContaining({
         stripe_customer_id: 'cus_test123',
@@ -429,6 +493,7 @@ describe('webhook – checkout.session.completed (onboarding setup)', () => {
     const res = await webhookHandler(makeWebhookReq(JSON.stringify(event)));
     expect(res.status).toBe(200);
     expect(state.lastMemberUpdate).toBeNull();
+    expect(mockStripeSubscriptionCreate).not.toHaveBeenCalled();
   });
 
   it('handles missing member_id gracefully', async () => {
@@ -436,9 +501,10 @@ describe('webhook – checkout.session.completed (onboarding setup)', () => {
       type: 'checkout.session.completed',
       data: {
         object: {
+          mode: 'payment',
           metadata: { order_type: 'membership_subscription' },
           customer: 'cus_test123',
-          subscription: 'sub_test123',
+          payment_intent: 'pi_test123',
         },
       },
     };
@@ -447,6 +513,7 @@ describe('webhook – checkout.session.completed (onboarding setup)', () => {
     const res = await webhookHandler(makeWebhookReq(JSON.stringify(event)));
     expect(res.status).toBe(200);
     expect(state.lastMemberUpdate).toBeNull();
+    expect(mockStripeSubscriptionCreate).not.toHaveBeenCalled();
   });
 });
 
