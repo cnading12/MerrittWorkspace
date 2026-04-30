@@ -127,11 +127,15 @@ export async function POST(req: NextRequest) {
     //     (start_date → end of start_date's month) and a one-month
     //     deposit. We pass these as one-off line items so the amounts
     //     match the signed Fee Agreement exactly.
-    //   - The recurring monthly membership has proration_behavior='none'
-    //     and a future billing_cycle_anchor (1st of the month AFTER the
-    //     start month), so Stripe doesn't auto-prorate anything and the
-    //     first full-month charge fires on the anchor date, then every
-    //     1st of the month thereafter.
+    //   - The recurring monthly membership uses `trial_end` set to the 1st
+    //     of the month AFTER the start month. During the trial Stripe
+    //     doesn't charge the recurring item, so the first full-month
+    //     charge fires on trial_end (which becomes the billing cycle
+    //     anchor), then every 1st of the month thereafter. We use
+    //     `trial_end` instead of `billing_cycle_anchor` +
+    //     `proration_behavior: 'none'` because Stripe Checkout disallows
+    //     `proration_behavior: 'none'` when the session also has one-time
+    //     prices (our prorated/deposit line items).
     const startDateRaw = (feeAgreement?.metadata as any)?.start_date;
     let startDate: Date;
     try {
@@ -223,13 +227,12 @@ export async function POST(req: NextRequest) {
         },
       ],
       subscription_data: {
-        billing_cycle_anchor: anchor,
-        // We've already added the prorated first partial month as an
-        // explicit line item above, so Stripe should NOT auto-prorate the
-        // recurring charge between sub creation and the anchor. With
-        // proration_behavior='none' the recurring item first fires on the
-        // anchor date.
-        proration_behavior: 'none',
+        // Trial through the end of the start month. Stripe doesn't charge
+        // the recurring item during the trial, so the first full-month
+        // charge fires on trial_end (which Stripe also uses as the billing
+        // cycle anchor). The prorated first partial month is already on
+        // the first invoice as a one-time line item above.
+        trial_end: anchor,
         metadata: {
           member_id: member.id,
           monthly_cost_cents: String(member.monthly_cost_cents),
