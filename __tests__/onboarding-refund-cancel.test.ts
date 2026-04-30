@@ -361,8 +361,12 @@ describe('create-subscription', () => {
     expect(call.line_items[2].price_data.recurring).toBeUndefined();
     expect(call.line_items[2].price_data.unit_amount).toBe(50000);
     // Recurring item should not be auto-prorated — we charge proration as
-    // an explicit line item above instead.
-    expect(call.subscription_data.proration_behavior).toBe('none');
+    // an explicit line item above instead. We use trial_end (set to the
+    // billing anchor) to suppress the recurring charge until the anchor;
+    // proration_behavior: 'none' is rejected by Stripe when the session
+    // also contains one-time line items.
+    expect(call.subscription_data.proration_behavior).toBeUndefined();
+    expect(call.subscription_data.trial_end).toBe(call.subscription_data.billing_cycle_anchor);
     // Metadata reflects the expected initial charge.
     expect(call.metadata.last_month_deposit_cents).toBe('50000');
     expect(Number(call.metadata.initial_total_cents)).toBe(prorated + 50000);

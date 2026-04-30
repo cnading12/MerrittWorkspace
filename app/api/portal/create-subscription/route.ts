@@ -127,11 +127,12 @@ export async function POST(req: NextRequest) {
     //     (start_date → end of start_date's month) and a one-month
     //     deposit. We pass these as one-off line items so the amounts
     //     match the signed Fee Agreement exactly.
-    //   - The recurring monthly membership has proration_behavior='none'
-    //     and a future billing_cycle_anchor (1st of the month AFTER the
-    //     start month), so Stripe doesn't auto-prorate anything and the
-    //     first full-month charge fires on the anchor date, then every
-    //     1st of the month thereafter.
+    //   - The recurring monthly membership uses a trial that ends on the
+    //     anchor date (1st of the month AFTER the start month), so Stripe
+    //     doesn't charge or auto-prorate the recurring item before then.
+    //     The first full-month charge fires on the anchor, then every
+    //     1st of the month thereafter. (We can't use proration_behavior:
+    //     'none' here — Stripe rejects that combo with one-time line items.)
     const startDateRaw = (feeAgreement?.metadata as any)?.start_date;
     let startDate: Date;
     try {
@@ -226,10 +227,12 @@ export async function POST(req: NextRequest) {
         billing_cycle_anchor: anchor,
         // We've already added the prorated first partial month as an
         // explicit line item above, so Stripe should NOT auto-prorate the
-        // recurring charge between sub creation and the anchor. With
-        // proration_behavior='none' the recurring item first fires on the
-        // anchor date.
-        proration_behavior: 'none',
+        // recurring charge between sub creation and the anchor. Setting
+        // trial_end to the anchor keeps the recurring item free until
+        // then; the first recurring charge fires on the anchor date.
+        // (proration_behavior: 'none' is rejected here because the session
+        // includes one-time line items.)
+        trial_end: anchor,
         metadata: {
           member_id: member.id,
           monthly_cost_cents: String(member.monthly_cost_cents),
