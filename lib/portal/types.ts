@@ -38,6 +38,8 @@ export interface Member {
   next_charge_date: string | null;
   access_code: string | null;
   access_code_issued_at: string | null;
+  office_number: string | null;
+  desk_number: string | null;
   created_at: string;
   updated_at: string;
   // Read-time annotations populated by admin APIs from the linked
