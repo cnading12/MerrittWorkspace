@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 
@@ -40,6 +41,90 @@ export async function GET(
       sb.from('member_agreements').select('*').eq('member_id', id).order('signed_at', { ascending: false }),
     ]);
 
+    // Backfill any Stripe payments that aren't in payment_history yet.
+    // Older onboarding flows (pre-fix) didn't record the upfront Checkout
+    // charge, and a member who paid multiple times before refunds would
+    // otherwise appear blank here. Walking the customer's PaymentIntents and
+    // upserting any unknown ones keeps Stripe as the source of truth without
+    // requiring a one-off migration. We refresh refunded amounts on every
+    // load so admin-side refunds done in the Stripe Dashboard reflect back
+    // into our local view.
+    let payments = paymentsRes.data || [];
+    if (member.stripe_customer_id && process.env.STRIPE_SECRET_KEY) {
+      try {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+          apiVersion: '2025-08-27.basil' as any,
+        });
+        const intents = await stripe.paymentIntents.list({
+          customer: member.stripe_customer_id,
+          limit: 100,
+        });
+        const knownPiIds = new Set(
+          payments
+            .map((p: any) => p.stripe_payment_intent_id)
+            .filter((x: string | null): x is string => !!x)
+        );
+        const newRows: any[] = [];
+        const updates: { id: string; status: string }[] = [];
+        for (const pi of intents.data) {
+          const refunded =
+            (pi as any).amount_refunded && (pi as any).amount_refunded > 0;
+          const mappedStatus =
+            pi.status === 'succeeded'
+              ? refunded
+                ? 'refunded'
+                : 'succeeded'
+              : pi.status === 'requires_payment_method' ||
+                  pi.status === 'canceled'
+                ? 'failed'
+                : 'pending';
+          if (!knownPiIds.has(pi.id)) {
+            // Skip uncaptured/failed intents that never collected funds; the
+            // member only cares about money that actually moved.
+            if (pi.status !== 'succeeded') continue;
+            newRows.push({
+              member_id: id,
+              stripe_invoice_id: (pi as any).invoice || null,
+              stripe_payment_intent_id: pi.id,
+              amount_cents: pi.amount_received || pi.amount,
+              currency: pi.currency,
+              status: mappedStatus,
+              description:
+                pi.description || 'Initial membership payment',
+              invoice_pdf_url: null,
+              paid_at: new Date(pi.created * 1000).toISOString(),
+            });
+          } else {
+            const existing = payments.find(
+              (p: any) => p.stripe_payment_intent_id === pi.id
+            );
+            if (existing && existing.status !== mappedStatus) {
+              updates.push({ id: existing.id, status: mappedStatus });
+            }
+          }
+        }
+        if (newRows.length > 0) {
+          await sb.from('payment_history').insert(newRows);
+        }
+        for (const u of updates) {
+          await sb
+            .from('payment_history')
+            .update({ status: u.status })
+            .eq('id', u.id);
+        }
+        if (newRows.length > 0 || updates.length > 0) {
+          const { data: refreshed } = await sb
+            .from('payment_history')
+            .select('*')
+            .eq('member_id', id)
+            .order('created_at', { ascending: false });
+          payments = refreshed || payments;
+        }
+      } catch (err) {
+        console.error('Failed to backfill payments from Stripe', err);
+      }
+    }
+
     // Generate signed URLs (1h) for each document.
     const documents = await Promise.all(
       (docsRes.data || []).map(async (d: any) => {
@@ -54,7 +139,7 @@ export async function GET(
       member,
       application: (appRes as any).data || null,
       documents,
-      payments: paymentsRes.data || [],
+      payments,
       agreements: agreementsRes.data || [],
     });
   } catch (e: any) {
