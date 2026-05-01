@@ -212,14 +212,19 @@ export async function POST(req: NextRequest) {
         const memberId = sub.metadata?.member_id;
         if (!memberId) break;
         const cpe = (sub as any).current_period_end as number | undefined;
+        // On delete, clear the subscription pointer so admin views don't
+        // keep treating a canceled subscription's ID as auto-pay on file.
+        // The subscription_status will be 'canceled' here either way.
+        const isDeleted = event.type === 'customer.subscription.deleted';
         await sb
           .from('members')
           .update({
-            stripe_subscription_id: sub.id,
+            stripe_subscription_id: isDeleted ? null : sub.id,
             subscription_status: sub.status,
-            next_charge_date: cpe
-              ? new Date(cpe * 1000).toISOString().slice(0, 10)
-              : null,
+            next_charge_date:
+              !isDeleted && cpe
+                ? new Date(cpe * 1000).toISOString().slice(0, 10)
+                : null,
           })
           .eq('id', memberId);
         break;
