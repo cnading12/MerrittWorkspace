@@ -138,10 +138,69 @@ export async function POST(req: NextRequest) {
               subscriptionId = sub.id;
               subscriptionStatus = sub.status;
             } catch (err) {
+              // Subscription creation failed after the member already paid
+              // through Checkout. Surface the failure instead of silently
+              // dropping it: tag the member's subscription_status with a
+              // sentinel the admin UI matches against, log the error to a
+              // dedicated table for forensics, and email the manager.
+              // The status column stays 'active' so portal/door access is
+              // unaffected — the member did pay and is using the space.
+              const errorMessage =
+                err instanceof Error ? err.message : String(err);
               console.error(
                 'Failed to create subscription after checkout',
                 err
               );
+              subscriptionStatus = 'creation_failed';
+              try {
+                await sb.from('subscription_creation_failures').insert({
+                  member_id: memberId,
+                  stripe_customer_id: customerId,
+                  error_message: errorMessage,
+                  payload: {
+                    monthly_cost_cents: monthlyCostCents,
+                    billing_cycle_anchor: anchor,
+                    selected_payment_method:
+                      session.metadata.selected_payment_method || null,
+                    start_date: session.metadata.start_date || null,
+                    last_month_deposit_cents:
+                      session.metadata.last_month_deposit_cents || null,
+                    checkout_session_id: session.id,
+                    payment_method_id: paymentMethodId,
+                  },
+                });
+              } catch (logErr) {
+                console.error(
+                  'Failed to log subscription creation failure',
+                  logErr
+                );
+              }
+              const resend = getResend();
+              if (resend) {
+                try {
+                  await resend.emails.send({
+                    from: PORTAL_FROM,
+                    to: MANAGER_EMAIL,
+                    replyTo: PORTAL_REPLY_TO,
+                    subject:
+                      'Subscription creation failed for new member',
+                    text: [
+                      'A new member completed Checkout but the follow-up subscription creation failed.',
+                      '',
+                      `Member ID: ${memberId}`,
+                      `Stripe customer: ${customerId}`,
+                      `Error: ${errorMessage}`,
+                      '',
+                      'Open the member in /admin/members and use the "Recreate subscription" button to retry.',
+                    ].join('\n'),
+                  });
+                } catch (mailErr) {
+                  console.error(
+                    'Failed to send subscription failure alert',
+                    mailErr
+                  );
+                }
+              }
             }
           }
         } else if (subscriptionId) {

@@ -179,6 +179,33 @@ export default function AdminMemberDetailPage({
     alert('Reminder email sent.');
   }
 
+  async function recreateSubscription() {
+    if (!token || !data) return;
+    const m = data.member;
+    if (
+      !confirm(
+        `Create subscription for ${m.first_name} ${m.last_name} using saved payment method on Stripe customer ${m.stripe_customer_id}?`
+      )
+    )
+      return;
+    const res = await fetch(
+      `/api/admin/members/${id}/recreate-subscription`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(json.error || 'Failed to create subscription');
+      return;
+    }
+    alert(
+      `Subscription created: ${json.subscription_id} (status: ${json.status}). Refreshing…`
+    );
+    await load(token);
+  }
+
   async function patchMember(body: any) {
     if (!token) return;
     const res = await fetch(`/api/admin/members/${id}`, {
@@ -269,6 +296,18 @@ export default function AdminMemberDetailPage({
             Ping to finish portal
           </button>
         )}
+        {member.stripe_customer_id &&
+          !member.stripe_subscription_id &&
+          member.agreement_signed &&
+          member.subscription_status === 'creation_failed' && (
+            <button
+              onClick={recreateSubscription}
+              className="text-sm border border-red-300 bg-red-50 text-red-700 rounded px-3 py-1.5 hover:bg-red-100 font-medium"
+              title="Retry the Stripe subscription creation that failed during this member's original Checkout. Uses the saved payment method already on the Stripe customer."
+            >
+              Recreate subscription
+            </button>
+          )}
         <button
           onClick={() => patchMember({ status: 'cancelled' })}
           className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 text-red-600"
