@@ -101,19 +101,28 @@ export default function AdminMembersPage() {
         alert(json.error || 'Reconcile failed');
         return;
       }
+      const counts = json.counts || {};
+      const outcomes: any[] = json.outcomes || [];
+      const interesting = outcomes.filter(
+        (o: any) =>
+          o.verdict === 'updated' ||
+          o.verdict === 'no_stripe_customer' ||
+          o.verdict === 'no_subscriptions' ||
+          o.verdict === 'errored'
+      );
       const lines = [
         `Scanned ${json.scanned} members.`,
-        `Updated ${json.updated}.`,
-        json.errored ? `${json.errored} errored.` : '',
+        `  Updated: ${counts.updated || 0}`,
+        `  Already in sync: ${counts.no_change || 0}`,
+        `  No Stripe customer matched email: ${counts.no_stripe_customer || 0}`,
+        `  Customer found but no subscription in Stripe: ${counts.no_subscriptions || 0}`,
+        `  Errored: ${counts.errored || 0}`,
         '',
-        ...((json.changes || []) as any[])
-          .slice(0, 20)
-          .map(
-            (c: any) =>
-              `• ${c.email}: ${c.before.subscription_status || 'none'} → ${c.after.subscription_status || 'none'} (${c.reason})`
-          ),
-      ].filter(Boolean);
+        'Notable members:',
+        ...interesting.slice(0, 30).map((o: any) => `• ${o.email}: ${o.detail}`),
+      ];
       alert(lines.join('\n'));
+      console.log('Reconcile result', json);
       const refreshed = await fetch('/api/admin/members', {
         headers: { Authorization: `Bearer ${token}` },
       });
