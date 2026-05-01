@@ -270,6 +270,14 @@ export default function AdminMembersPage() {
                         TRIAL DAY
                       </span>
                     )}
+                    {m.subscription_status === 'creation_failed' && (
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold tracking-wider bg-red-600 text-white"
+                        title="Member paid through Checkout but subscription creation failed. Open this member to recover."
+                      >
+                        SUB FAILED
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-gray-600">{m.email}</div>
                   {(appliedAgo || m.intended_start_date) && (
@@ -441,13 +449,18 @@ function autoPayState(m: Member): ProgressDotState {
   const s = (m.subscription_status || '').toLowerCase();
   if (s === 'active' || s === 'trialing' || s === 'incomplete' || s === 'past_due')
     return 'done';
-  if (s === 'unpaid' || s === 'incomplete_expired') return 'warn';
+  if (s === 'unpaid' || s === 'incomplete_expired' || s === 'creation_failed')
+    return 'warn';
   return 'pending';
 }
 
 function autoPayTooltip(m: Member): string {
   const s = m.subscription_status || 'none';
   if (!m.stripe_customer_id) return 'No Stripe customer on file';
+  if (s === 'creation_failed')
+    return 'Member paid through Checkout but subscription creation failed. Use "Recreate subscription" on the member page.';
+  if (!m.stripe_subscription_id && (s === 'none' || s === ''))
+    return 'Stripe customer on file but no subscription yet (syncing or in-flight)';
   switch (s) {
     case 'active':
       return 'Auto-pay active';
