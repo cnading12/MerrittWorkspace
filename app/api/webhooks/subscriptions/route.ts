@@ -168,6 +168,41 @@ export async function POST(req: NextRequest) {
             status: 'active',
           })
           .eq('id', memberId);
+
+        // Record the upfront Checkout charge in payment_history. Checkout in
+        // `payment` mode produces a PaymentIntent, not an Invoice, so the
+        // invoice.* branch below never fires for it — without this, the
+        // initial first-month + deposit charge never appears under the
+        // member's payment history in either the portal or the admin panel.
+        // Idempotency: bail if we've already recorded this PaymentIntent
+        // (Stripe retries webhooks on non-2xx responses).
+        const paymentIntentId = (session.payment_intent as string) || null;
+        if (paymentIntentId && session.payment_status === 'paid') {
+          const { data: existing } = await sb
+            .from('payment_history')
+            .select('id')
+            .eq('stripe_payment_intent_id', paymentIntentId)
+            .maybeSingle();
+          if (!existing) {
+            const amountCents =
+              (session.amount_total as number | null) ??
+              Number(session.metadata?.initial_total_cents || 0);
+            const isOneTime = session.metadata?.one_time === '1';
+            await sb.from('payment_history').insert({
+              member_id: memberId,
+              stripe_invoice_id: null,
+              stripe_payment_intent_id: paymentIntentId,
+              amount_cents: amountCents,
+              currency: session.currency || 'usd',
+              status: 'succeeded',
+              description: isOneTime
+                ? 'One-day dedicated desk'
+                : 'Initial membership payment (first month + deposit)',
+              invoice_pdf_url: null,
+              paid_at: new Date().toISOString(),
+            });
+          }
+        }
         break;
       }
       case 'customer.subscription.updated':
