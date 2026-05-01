@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { billingCycleAnchorAfter, parseStartDate } from '@/lib/portal/legal';
+import { getMembershipProductId } from '@/lib/portal/stripeProduct';
 
 export const dynamic = 'force-dynamic';
 
@@ -149,6 +150,7 @@ export async function POST(
 
     const anchor = billingCycleAnchorAfter(startDate);
     const monthlyCostCents = member.monthly_cost_cents;
+    const productId = await getMembershipProductId(stripe);
 
     // Match the webhook's subscriptions.create call byte-for-byte except for
     // default_payment_method, which we omit so the subscription inherits the
@@ -165,9 +167,7 @@ export async function POST(
             currency: 'usd',
             recurring: { interval: 'month' },
             unit_amount: monthlyCostCents,
-            product_data: {
-              name: 'Merritt Workspace Membership',
-            },
+            product: productId,
           },
           quantity: 1,
         },
