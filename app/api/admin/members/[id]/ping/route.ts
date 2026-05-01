@@ -43,21 +43,34 @@ export async function POST(
     if (!member.stripe_subscription_id) missingSteps.push('Set up auto-pay');
 
     let startDateLabel: string | null = null;
-    if (member.application_id) {
+    // Prefer the fee agreement start_date (legal source of truth) and fall
+    // back to the original application's preferred start_date.
+    let startDateRaw: string | null = null;
+    const { data: feeAgreement } = await sb
+      .from('member_agreements')
+      .select('metadata')
+      .eq('member_id', member.id)
+      .eq('agreement_type', 'fee_agreement')
+      .maybeSingle();
+    const feeStart = (feeAgreement?.metadata as any)?.start_date;
+    if (typeof feeStart === 'string' && feeStart) {
+      startDateRaw = feeStart;
+    } else if (member.application_id) {
       const { data: app } = await sb
         .from('member_applications')
         .select('start_date')
         .eq('id', member.application_id)
         .single();
-      if (app?.start_date) {
-        const d = new Date(app.start_date);
-        if (!isNaN(d.getTime())) {
-          startDateLabel = d.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          });
-        }
+      if (app?.start_date) startDateRaw = app.start_date;
+    }
+    if (startDateRaw) {
+      const d = new Date(startDateRaw);
+      if (!isNaN(d.getTime())) {
+        startDateLabel = d.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
       }
     }
 

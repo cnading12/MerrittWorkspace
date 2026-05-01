@@ -60,22 +60,45 @@ export async function GET(req: NextRequest) {
         recent.map((m: any) => m.application_id).filter((id: any): id is string => !!id)
       )
     );
-    let appsById = new Map<string, any>();
-    if (appIds.length > 0) {
-      const { data: apps } = await sb
-        .from('member_applications')
-        .select('id, wants_trial_day, trial_date, start_date, created_at, payload')
-        .in('id', appIds);
-      if (apps) appsById = new Map(apps.map((a: any) => [a.id, a]));
+    const memberIds = recent.map((m: any) => m.id);
+    const [appsRes, feeAgreementsRes] = await Promise.all([
+      appIds.length > 0
+        ? sb
+            .from('member_applications')
+            .select('id, wants_trial_day, trial_date, start_date, created_at, payload')
+            .in('id', appIds)
+        : Promise.resolve({ data: [] as any[] }),
+      memberIds.length > 0
+        ? sb
+            .from('member_agreements')
+            .select('member_id, metadata')
+            .eq('agreement_type', 'fee_agreement')
+            .in('member_id', memberIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const appsById = new Map<string, any>(
+      ((appsRes.data || []) as any[]).map((a: any) => [a.id, a])
+    );
+    // Prefer the fee agreement start_date (legal source of truth) over the
+    // application's preferred start_date so admin views reflect the most
+    // recently signed agreement.
+    const feeStartByMemberId = new Map<string, string | null>();
+    for (const ag of (feeAgreementsRes.data || []) as any[]) {
+      const raw = (ag?.metadata as any)?.start_date;
+      feeStartByMemberId.set(
+        ag.member_id,
+        typeof raw === 'string' && raw ? raw : null
+      );
     }
     const annotatedRecent = recent.map((m: any) => {
       const app = m.application_id ? appsById.get(m.application_id) : null;
+      const feeStart = feeStartByMemberId.get(m.id) ?? null;
       return {
         ...m,
         was_trial_applicant: readTrialFlag(app),
         trial_date: readTrialDate(app),
         applied_at: app?.created_at ?? null,
-        intended_start_date: app?.start_date ?? null,
+        intended_start_date: feeStart ?? app?.start_date ?? null,
       };
     });
 

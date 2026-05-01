@@ -27,32 +27,60 @@ export async function GET(req: NextRequest) {
   }
 }
 
-type MemberRow = Record<string, any> & { application_id: string | null };
+type MemberRow = Record<string, any> & {
+  id: string;
+  application_id: string | null;
+};
 
 async function annotateWithTrialInfo(
   sb: ReturnType<typeof getServiceSupabase>,
   members: MemberRow[]
 ) {
+  if (members.length === 0) return members;
+
   const appIds = Array.from(
     new Set(members.map((m) => m.application_id).filter((id): id is string => !!id))
   );
-  if (appIds.length === 0) return members;
+  const memberIds = members.map((m) => m.id);
 
-  const { data: apps, error } = await sb
-    .from('member_applications')
-    .select('id, wants_trial_day, trial_date, start_date, created_at, payload')
-    .in('id', appIds);
-  if (error || !apps) return members;
+  const [appsRes, agreementsRes] = await Promise.all([
+    appIds.length
+      ? sb
+          .from('member_applications')
+          .select('id, wants_trial_day, trial_date, start_date, created_at, payload')
+          .in('id', appIds)
+      : Promise.resolve({ data: [] as any[], error: null }),
+    sb
+      .from('member_agreements')
+      .select('member_id, metadata')
+      .eq('agreement_type', 'fee_agreement')
+      .in('member_id', memberIds),
+  ]);
 
-  const byId = new Map(apps.map((a: any) => [a.id, a]));
+  const apps = appsRes.error ? [] : appsRes.data || [];
+  const agreements = agreementsRes.error ? [] : agreementsRes.data || [];
+
+  const byAppId = new Map(apps.map((a: any) => [a.id, a]));
+  const feeStartByMemberId = new Map<string, string | null>();
+  for (const ag of agreements as any[]) {
+    const raw = (ag?.metadata as any)?.start_date;
+    feeStartByMemberId.set(
+      ag.member_id,
+      typeof raw === 'string' && raw ? raw : null
+    );
+  }
+
   return members.map((m) => {
-    const app = m.application_id ? byId.get(m.application_id) : null;
+    const app = m.application_id ? byAppId.get(m.application_id) : null;
+    // Prefer the fee agreement start_date (legal source of truth, signed most
+    // recently) over the original application's preferred start_date.
+    const feeStart = feeStartByMemberId.get(m.id) ?? null;
     return {
       ...m,
       was_trial_applicant: readTrialFlag(app),
       trial_date: readTrialDate(app),
       applied_at: app?.created_at ?? null,
-      intended_start_date: app?.start_date ?? null,
+      intended_start_date: feeStart ?? app?.start_date ?? null,
     };
   });
 }
