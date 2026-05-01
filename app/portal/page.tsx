@@ -182,15 +182,22 @@ function PortalDashboard() {
   }, [member?.agreement_signed, member?.stripe_subscription_id, tab]);
 
   // Once the webhook unlocks onboarding, jump the member straight to the
-  // Onboarding tab. This covers both the polling-after-checkout path
-  // above (which sets the tab directly) and any case where the member
-  // navigates back into the portal after the webhook has already fired.
+  // Onboarding tab. This covers three cases:
+  //   1. Just-paid members whose webhook landed during the polling above
+  //      (we set tab='onboarding' there directly; this is a safety net).
+  //   2. Members on the Payments tab whose subscription state refreshes
+  //      mid-session.
+  //   3. Members who experienced the old broken flow — paid successfully
+  //      but were never advanced — and are now logging back in. They land
+  //      on the default Documents tab with `onboarding_unlocked: true`,
+  //      so we move them to Onboarding so they can finally see the info
+  //      they were stuck looking for.
   const autoJumpedToOnboarding = useRef(false);
   useEffect(() => {
     if (
       !autoJumpedToOnboarding.current &&
       member?.onboarding_unlocked &&
-      tab === 'payments'
+      tab !== 'onboarding'
     ) {
       autoJumpedToOnboarding.current = true;
       setTab('onboarding');
