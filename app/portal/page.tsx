@@ -1599,7 +1599,14 @@ function PaymentsTab({
 
   async function cancelMembership() {
     const ok = window.confirm(
-      'Cancel your membership? Your access will continue through the end of the current billing period, then your subscription will end. This cannot be undone from the portal — contact us to reactivate.'
+      'Cancel your membership?\n\n' +
+        'CANCELLATION POLICY (30-DAY NOTICE REQUIRED):\n' +
+        '• Submitting this cancellation serves as your written 30-day notice.\n' +
+        '• Your access continues through the end of the current billing period.\n' +
+        '• You will NOT be billed for your final month — the Last Month\'s Membership Fee you paid at sign-up will be applied to that month.\n' +
+        '• If you fail to provide a full 30 days\' notice (e.g. by abandoning the space sooner), the Last Month\'s Membership Fee is forfeited as liquidated damages.\n' +
+        '• Starting the day after this notice and through your last day, Merritt Workspace may inspect the workspace and assess additional charges for damage, excessive wear, missing items, or restoration.\n\n' +
+        'This cannot be undone from the portal — contact us to reactivate.'
     );
     if (!ok) return;
     setCancelLoading(true);
@@ -1796,7 +1803,7 @@ function PaymentsTab({
               >
                 {portalLoading ? 'Opening…' : 'Manage payment method'}
               </button>
-              {!cancelPending && (
+              {!cancelPending && !oneTime && (
                 <button
                   onClick={cancelMembership}
                   disabled={cancelLoading}
@@ -1806,10 +1813,51 @@ function PaymentsTab({
                 </button>
               )}
             </div>
+            {!cancelPending && !oneTime && (
+              <div className="mt-2 bg-gray-50 border border-gray-200 rounded p-3 text-xs text-gray-700 space-y-1">
+                <p className="font-semibold text-gray-900">
+                  Cancellation policy (30-day notice required)
+                </p>
+                <p>
+                  Clicking <span className="font-semibold">Cancel membership</span>{' '}
+                  serves as your written 30-day notice. Your access continues
+                  through the end of the current billing period, and you will{' '}
+                  <span className="font-semibold">not be billed</span> for your
+                  final month — the Last Month&apos;s Membership Fee you paid at
+                  sign-up is applied to that month.
+                </p>
+                <p>
+                  If you do not provide a full 30 days&apos; notice (e.g. by
+                  abandoning the space sooner), the Last Month&apos;s Membership
+                  Fee is forfeited as liquidated damages. Beginning the day
+                  after notice is received and through your last day of
+                  membership, Merritt Workspace is entitled to inspect the
+                  workspace and assess additional charges for damage, excessive
+                  wear, missing items, or restoration.
+                </p>
+              </div>
+            )}
             {cancelPending && (
-              <p className="text-xs text-amber-700">
-                Your membership is set to end at the end of the current billing period.
-              </p>
+              <div className="mt-2 bg-amber-50 border border-amber-300 rounded p-3 text-xs text-amber-900 space-y-1">
+                <p className="font-semibold">
+                  Your membership is set to end at the end of the current billing period.
+                </p>
+                <p>
+                  Your written 30-day cancellation notice has been received. You
+                  will NOT be billed for your final month — the Last Month&apos;s
+                  Membership Fee you paid at sign-up will be applied to that
+                  month.
+                </p>
+                <p>
+                  Beginning the day after this notice and through your last day
+                  of membership, Merritt Workspace is entitled to inspect the
+                  workspace and assess additional charges for any damage,
+                  excessive wear, missing items, or required restoration. Please
+                  return all keys, access devices, and Merritt-provided
+                  equipment by your last day (keys not returned within 48 hours
+                  of your last day are subject to a $250 fee per item).
+                </p>
+              </div>
             )}
           </div>
         ) : (

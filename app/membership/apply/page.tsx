@@ -504,17 +504,26 @@ export default function MembershipApplicationPage() {
 
               <div className="mt-4 p-4 rounded-lg border border-amber-300 bg-amber-50 flex gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-amber-900">
-                  <p className="font-semibold mb-1">Billing Notice</p>
+                <div className="text-sm text-amber-900 space-y-2">
+                  <p className="font-semibold mb-1">Billing & Cancellation Notice</p>
                   {application.membership_type === 'one_day_dedicated_desk' ? (
                     <p>
                       The One Day Dedicated Desk is a <span className="font-semibold">one-time $30 charge</span> for a single day of access. No recurring subscription, no first/last month billing.
                     </p>
                   ) : (
-                    <p>
-                      Your first billing period will include both your <span className="font-semibold">first month</span> (prorated from your start date)
-                      and your <span className="font-semibold">last month</span> of membership, paid up front. This applies to all recurring membership tiers.
-                    </p>
+                    <>
+                      <p>
+                        Your first billing period will include both your <span className="font-semibold">first month</span> (prorated from your start date)
+                        and your <span className="font-semibold">last month</span> of membership, paid up front. This applies to all recurring membership tiers.
+                      </p>
+                      <p>
+                        <span className="font-semibold">Cancellation policy:</span> To cancel, you must give Merritt Workspace at least <span className="font-semibold">30 days' written notice</span>.
+                        With proper notice, you will <span className="font-semibold">not be billed</span> for your final month — the last month's fee you paid at sign-up
+                        is applied to that final month. <span className="font-semibold">If you do not provide a full 30 days' notice, the last month's fee is forfeited</span> and
+                        retained by Merritt Workspace as liquidated damages. Beginning the day after notice is received and through your last day of membership,
+                        Merritt Workspace is entitled to inspect the workspace and assess any additional charges for damage, excessive wear, or restoration.
+                      </p>
+                    </>
                   )}
                 </div>
               </div>
