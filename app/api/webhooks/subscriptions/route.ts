@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { Resend } from 'resend';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { getMembershipProductId } from '@/lib/portal/stripeProduct';
 import {
   subscriptionPaymentReceiptEmail,
   PORTAL_FROM,
@@ -106,6 +107,11 @@ export async function POST(req: NextRequest) {
 
           if (monthlyCostCents > 0 && anchor > 0) {
             try {
+              // Subscriptions API requires `product` (an existing
+              // Product ID) — `product_data` is only accepted on
+              // Checkout Sessions / Invoice Items. Resolve once via a
+              // find-or-create helper.
+              const productId = await getMembershipProductId(stripe);
               const sub = await stripe.subscriptions.create({
                 customer: customerId,
                 items: [
@@ -114,9 +120,7 @@ export async function POST(req: NextRequest) {
                       currency: 'usd',
                       recurring: { interval: 'month' },
                       unit_amount: monthlyCostCents,
-                      product_data: {
-                        name: 'Merritt Workspace Membership',
-                      },
+                      product: productId,
                     },
                     quantity: 1,
                   },
