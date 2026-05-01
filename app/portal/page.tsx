@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Member, MemberDocument, PaymentHistoryRow } from '@/lib/portal/types';
 import { DESIGNATION_LABELS } from '@/lib/portal/types';
@@ -25,8 +25,17 @@ type AgreementRow = {
 
 type Tab = 'documents' | 'payments' | 'onboarding';
 
-export default function PortalDashboard() {
+export default function PortalDashboardPage() {
+  return (
+    <Suspense fallback={<div className="text-gray-500">Loading…</div>}>
+      <PortalDashboard />
+    </Suspense>
+  );
+}
+
+function PortalDashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<Member | null>(null);
   const [documents, setDocuments] = useState<MemberDocument[]>([]);
@@ -36,10 +45,33 @@ export default function PortalDashboard() {
   const [tab, setTab] = useState<Tab>('documents');
   const [accessRequestStatus, setAccessRequestStatus] = useState<string | null>(null);
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
+  // Post-checkout banner: shown after Stripe redirects back. We surface a
+  // clear success/processing/canceled state independent of the auto-fading
+  // flash message so the member never wonders whether their payment landed.
+  const [paymentBanner, setPaymentBanner] = useState<
+    | { kind: 'success'; ach: boolean }
+    | { kind: 'processing' }
+    | { kind: 'canceled' }
+    | null
+  >(null);
   // When set, the Documents tab opens the signed Fee Agreement in editable
   // "revise" mode so the member can change the start date and re-sign. Used
   // by the back-button on the Payments tab.
   const [reviseFeeAgreementRequest, setReviseFeeAgreementRequest] = useState(false);
+
+  async function loadPortalData(token: string) {
+    const res = await fetch('/api/portal/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Failed to load portal');
+    const data = await res.json();
+    setMember(data.member);
+    setDocuments(data.documents);
+    setPayments(data.payments);
+    setAgreements(data.agreements || []);
+    setApplicationStartDate(data.application_start_date || null);
+    return data.member as Member | null;
+  }
 
   useEffect(() => {
     (async () => {
@@ -48,18 +80,8 @@ export default function PortalDashboard() {
         router.replace('/portal/login');
         return;
       }
-      const token = session.access_token;
       try {
-        const res = await fetch('/api/portal/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error('Failed to load portal');
-        const data = await res.json();
-        setMember(data.member);
-        setDocuments(data.documents);
-        setPayments(data.payments);
-        setAgreements(data.agreements || []);
-        setApplicationStartDate(data.application_start_date || null);
+        await loadPortalData(session.access_token);
       } catch (e) {
         console.error(e);
       } finally {
@@ -67,6 +89,79 @@ export default function PortalDashboard() {
       }
     })();
   }, [router]);
+
+  // Handle the return from Stripe Checkout. The success URL is
+  // `/portal?subscribed=1` and the cancel URL is `/portal?canceled=1`.
+  //
+  // The webhook (`checkout.session.completed`) flips
+  // `onboarding_unlocked: true` and writes `stripe_subscription_id`, but
+  // it can lag the browser redirect by a second or two — so we poll
+  // `/api/portal/me` until that state lands, then jump the member to the
+  // Onboarding tab. While we wait we render a prominent "Processing
+  // payment…" banner so members never wonder whether the payment went
+  // through.
+  const handledCheckoutReturn = useRef(false);
+  useEffect(() => {
+    if (handledCheckoutReturn.current) return;
+    if (loading) return;
+    const subscribed = searchParams?.get('subscribed') === '1';
+    const canceled = searchParams?.get('canceled') === '1';
+    if (!subscribed && !canceled) return;
+    handledCheckoutReturn.current = true;
+
+    // Strip the query string from the URL so a refresh doesn't replay
+    // this flow.
+    router.replace('/portal');
+
+    if (canceled) {
+      setPaymentBanner({ kind: 'canceled' });
+      return;
+    }
+
+    // Subscribed=1 flow.
+    setPaymentBanner({ kind: 'processing' });
+
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+
+      // Poll up to ~24s (12 attempts × 2s) for the webhook to land.
+      const maxAttempts = 12;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        if (cancelled) return;
+        try {
+          const m = await loadPortalData(token);
+          if (m?.onboarding_unlocked || m?.stripe_subscription_id) {
+            const isAch =
+              (m?.subscription_status === 'incomplete' ||
+                m?.subscription_status === 'past_due') &&
+              !!m?.stripe_subscription_id;
+            setPaymentBanner({ kind: 'success', ach: isAch });
+            if (m?.onboarding_unlocked) {
+              setTab('onboarding');
+            }
+            return;
+          }
+        } catch (e) {
+          console.error('Polling /api/portal/me failed', e);
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      // Webhook still hasn't landed. Show the success banner anyway —
+      // the charge succeeded on Stripe's side or we wouldn't be on the
+      // success URL — and tell the member their access will activate
+      // shortly.
+      if (!cancelled) {
+        setPaymentBanner({ kind: 'success', ach: false });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, loading, router]);
 
   // When the agreements become fully signed, jump the user straight to the
   // Payments tab so the next step is obvious. Track whether we've already
@@ -85,6 +180,22 @@ export default function PortalDashboard() {
       setFlashMessage('All agreements signed. Set up auto-pay below to finish onboarding.');
     }
   }, [member?.agreement_signed, member?.stripe_subscription_id, tab]);
+
+  // Once the webhook unlocks onboarding, jump the member straight to the
+  // Onboarding tab. This covers both the polling-after-checkout path
+  // above (which sets the tab directly) and any case where the member
+  // navigates back into the portal after the webhook has already fired.
+  const autoJumpedToOnboarding = useRef(false);
+  useEffect(() => {
+    if (
+      !autoJumpedToOnboarding.current &&
+      member?.onboarding_unlocked &&
+      tab === 'payments'
+    ) {
+      autoJumpedToOnboarding.current = true;
+      setTab('onboarding');
+    }
+  }, [member?.onboarding_unlocked, tab]);
 
   // When required docs become complete, show a confirmation toast.
   useEffect(() => {
@@ -144,6 +255,94 @@ export default function PortalDashboard() {
       </div>
 
       <ProgressBar member={member} />
+
+      {paymentBanner?.kind === 'processing' && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="bg-blue-50 border-2 border-blue-300 text-blue-900 rounded-lg p-4 flex items-start gap-3"
+        >
+          <svg
+            className="animate-spin h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          <div>
+            <div className="font-semibold">Processing your payment…</div>
+            <div className="text-sm mt-0.5">
+              Hang tight — we&apos;re confirming your payment with Stripe and unlocking your
+              onboarding. This usually takes just a few seconds.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {paymentBanner?.kind === 'success' && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="bg-green-50 border-2 border-green-400 text-green-900 rounded-lg p-4 flex items-start justify-between gap-3"
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
+              ✓
+            </div>
+            <div>
+              <div className="font-semibold text-base">
+                Payment successful — welcome to Merritt Workspace!
+              </div>
+              <div className="text-sm mt-1">
+                {paymentBanner.ach ? (
+                  <>
+                    Your ACH bank transfer has been initiated. It can take 3–5 business days
+                    to clear, but your onboarding is unlocked below — no further action
+                    needed right now.
+                  </>
+                ) : (
+                  <>
+                    Your auto-pay is set up and your onboarding is unlocked below. You&apos;ll
+                    receive a receipt by email shortly.
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setPaymentBanner(null)}
+            className="text-green-700 hover:text-green-900 flex-shrink-0"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {paymentBanner?.kind === 'canceled' && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="bg-amber-50 border-2 border-amber-300 text-amber-900 rounded-lg p-4 flex items-start justify-between gap-3"
+        >
+          <div>
+            <div className="font-semibold">Checkout canceled</div>
+            <div className="text-sm mt-0.5">
+              You didn&apos;t complete payment. No charges were made — you can try again
+              from the Payment tab below whenever you&apos;re ready.
+            </div>
+          </div>
+          <button
+            onClick={() => setPaymentBanner(null)}
+            className="text-amber-700 hover:text-amber-900 flex-shrink-0"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {flashMessage && (
         <div className="bg-green-50 border border-green-300 text-green-900 rounded p-3 text-sm flex items-center justify-between">
