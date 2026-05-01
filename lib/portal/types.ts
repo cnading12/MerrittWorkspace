@@ -36,6 +36,9 @@ export interface Member {
   stripe_subscription_id: string | null;
   subscription_status: string | null;
   next_charge_date: string | null;
+  cancellation_notice_received_at: string | null;
+  cancellation_effective_date: string | null;
+  last_month_credit_invoice_item_id: string | null;
   access_code: string | null;
   access_code_issued_at: string | null;
   office_number: string | null;

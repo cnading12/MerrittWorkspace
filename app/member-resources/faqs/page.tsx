@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Clock, Key, Car, Calendar, Phone, Volume2, Heart, Coffee, Mail, MapPin, Shield, Users, Wifi } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, Key, Car, Calendar, Phone, Volume2, Heart, Coffee, Mail, MapPin, Shield, Users, Wifi, FileText } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
 
@@ -331,6 +331,78 @@ export default function FAQPage() {
       )
     },
     {
+      id: 'cancellation-policy',
+      category: 'membership',
+      icon: FileText,
+      question: 'How do I cancel my membership? What is the cancellation policy?',
+      answer: (
+        <div className="space-y-4">
+          <div className="bg-burnt-orange-50 p-4 rounded-lg border border-burnt-orange-200">
+            <h4 className="font-semibold text-burnt-orange-800 mb-2">Quick summary</h4>
+            <ul className="space-y-1 text-burnt-orange-700 text-sm">
+              <li>• At sign-up you pay your <strong>first month</strong> (prorated) and <strong>last month</strong> up front.</li>
+              <li>• To cancel, you must give <strong>30 days&apos; written notice</strong>.</li>
+              <li>• With proper notice, you <strong>are not billed</strong> for your final month — the last month&apos;s fee you already paid covers it.</li>
+              <li>• Without proper 30 days&apos; notice, the last month&apos;s fee is <strong>forfeited</strong>.</li>
+            </ul>
+          </div>
+
+          <div className="space-y-3 text-sm text-gray-700">
+            <div>
+              <p className="font-semibold text-gray-900 mb-1">How to give notice</p>
+              <p>
+                Submit written notice in any of the following ways:
+              </p>
+              <ul className="ml-5 list-disc space-y-1 mt-1">
+                <li>Click <strong>Cancel membership</strong> in your member portal (counts as written notice)</li>
+                <li>Email <a href="mailto:memberservices@merrittworkspace.net" className="text-burnt-orange-600 hover:underline">memberservices@merrittworkspace.net</a></li>
+                <li>Mail a letter to Merritt Workspace, 2246 Irving St., Denver, CO 80211</li>
+              </ul>
+            </div>
+
+            <div>
+              <p className="font-semibold text-gray-900 mb-1">Final month billing</p>
+              <p>
+                Provided you give a full 30 days&apos; notice, you will <strong>not</strong> receive
+                an invoice for your final month of membership. The Last Month&apos;s Membership Fee
+                collected at sign-up is applied in full satisfaction of that final month.
+              </p>
+            </div>
+
+            <div>
+              <p className="font-semibold text-gray-900 mb-1">Forfeiture for insufficient notice</p>
+              <p>
+                If you fail to provide a full 30 days&apos; written notice — including immediate
+                cancellation, abandonment of the workspace, or any cancellation effective sooner
+                than 30 days after we receive your notice — Merritt Workspace is entitled to
+                retain the entire Last Month&apos;s Membership Fee as liquidated damages.
+              </p>
+            </div>
+
+            <div>
+              <p className="font-semibold text-gray-900 mb-1">Inspection &amp; additional charges</p>
+              <p>
+                Beginning the day after we receive your cancellation notice and continuing through
+                your last day of membership, Merritt Workspace is entitled to inspect the
+                workspace and assess additional charges for any damage, excessive wear, missing
+                items, or required restoration. All keys, access devices, and Merritt-provided
+                equipment must be returned by your last day; keys not returned within 48 hours
+                of your last day are subject to a $250 fee per item.
+              </p>
+            </div>
+
+            <p className="text-xs text-gray-600">
+              Full terms are in Section 4 of the{' '}
+              <Link href="/terms" className="text-burnt-orange-600 hover:underline font-semibold">
+                Terms &amp; Conditions
+              </Link>
+              .
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
       id: 'contact',
       category: 'general',
       icon: Mail,
@@ -370,6 +442,7 @@ export default function FAQPage() {
     { id: 'access', name: 'Access & Security', icon: Key },
     { id: 'amenities', name: 'Amenities', icon: Coffee },
     { id: 'policies', name: 'Policies', icon: Shield },
+    { id: 'membership', name: 'Membership & Billing', icon: FileText },
     { id: 'location', name: 'Location & Parking', icon: Car },
     { id: 'technical', name: 'Technical', icon: Wifi },
     { id: 'general', name: 'General', icon: Mail }

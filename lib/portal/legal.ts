@@ -7,7 +7,7 @@
 // live. Bump DOCUMENT_VERSION whenever the wording changes so the
 // signature audit trail is meaningful.
 
-export const DOCUMENT_VERSION = 'v2-2026-04';
+export const DOCUMENT_VERSION = 'v4-2026-05';
 
 export const MERRITT_SIGNATORY = {
   name: 'Lance Nading',
@@ -37,23 +37,94 @@ Effective 1/1/2024
    retains the right to implement changes necessary for the continued
    efficient operations and the safety and security of all its Members.
 
-4. Membership may be terminated at the end of the agreed upon term by
-   sending an email to memberservices@merrittworkspace.net or via letter sent
-   directly to Merritt Workspace, 2246 Irving St., Denver, CO 80211, with at
-   least a 30 day notice.
+4. CANCELLATION AND TERMINATION POLICY.
 
-   Termination becomes effective on the last day of the month following
-   receipt of the notice. All services will immediately cease.
+   (a) Initial Payment Structure. Upon execution of the Member Agreement,
+       Member shall remit payment for both (i) the first month of
+       membership (prorated from the start date through the end of the
+       start month) and (ii) one (1) full month of membership fees, which
+       shall be held by Merritt Workspace as the "Last Month's Membership
+       Fee" (also referred to as the "Security Deposit" or "Last Month
+       Deposit"). The Last Month's Membership Fee is applied to the
+       Member's final month of membership upon proper cancellation in
+       accordance with this Section 4.
 
-   All furniture, equipment, keys, file cabinets, and any other item or
-   device provided by Merritt Workspace must be returned to Merritt Workspace
-   immediately upon vacating the facility. Member will be invoiced for lost
-   or damaged equipment and keys. All keys must be returned within 48 hours
-   of last day or a $250.00 fee will be assessed.
+   (b) Required Notice. To cancel a membership, Member must provide
+       Merritt Workspace with written notice of cancellation no fewer
+       than thirty (30) calendar days prior to the intended last day of
+       membership ("Cancellation Notice"). Cancellation Notice must be
+       delivered by (i) email to memberservices@merrittworkspace.net,
+       (ii) letter sent to Merritt Workspace, 2246 Irving St., Denver,
+       CO 80211, or (iii) the in-portal "Cancel membership" function,
+       which constitutes written notice for purposes of this Section.
 
-   Merritt Workspace has 30 days following full departure of space for
-   inspection of the office, assessment of any charges assessed due to
-   damage, and processing of Security Deposit refund.
+       Effective Date of Termination. For administrative and billing
+       consistency, termination shall be effective on the last day of
+       the calendar month immediately following the Member's then-
+       current paid-for billing period (i.e., the calendar month for
+       which the next monthly invoice would otherwise have been
+       issued). In substantially all cases this satisfies or exceeds
+       the thirty (30) day notice requirement. Member's access to the
+       Workspace shall continue through, and shall cease at the end
+       of, said effective date.
+
+   (c) Application of Last Month's Membership Fee. Provided that Member
+       has delivered timely Cancellation Notice in accordance with
+       Section 4(b), Member shall NOT be invoiced or charged for the
+       final month of membership. The Last Month's Membership Fee
+       previously collected at sign-up shall be applied as a credit
+       against the final month's recurring invoice such that said
+       invoice nets to zero dollars ($0.00), and no additional monthly
+       payment shall be charged to Member's payment method on file for
+       that month.
+
+   (d) Forfeiture for Insufficient Notice. If Member fails to provide a
+       full thirty (30) days' written notice as required by Section
+       4(b)—including, without limitation, immediate or "same-day"
+       cancellation, abandonment of the Workspace, or any cancellation
+       effective sooner than thirty (30) days after the date Cancellation
+       Notice is received by Merritt Workspace—Member hereby agrees and
+       acknowledges that Merritt Workspace shall be entitled to retain
+       the entirety of the Last Month's Membership Fee as liquidated
+       damages, and Member shall have no right to any refund, credit, or
+       offset of said fee. The parties agree that actual damages from
+       insufficient notice would be difficult to ascertain and that the
+       Last Month's Membership Fee represents a reasonable estimate of
+       such damages.
+
+   (e) Inspection Right and Additional Charges. Commencing on the first
+       (1st) day following Merritt Workspace's receipt of Cancellation
+       Notice and continuing through and including the last day of
+       membership, Merritt Workspace shall have the unrestricted right,
+       in its sole discretion and upon reasonable notice to Member, to
+       enter and inspect the Workspace and any associated areas
+       previously assigned to or used by Member, for the purposes of
+       (i) assessing the condition of the Workspace, furniture,
+       equipment, and fixtures, (ii) documenting any damage, excessive
+       wear, missing items, or required cleaning beyond ordinary use,
+       and (iii) determining and assessing any additional charges,
+       restoration costs, housekeeping fees, lost-key fees, or other
+       sums for which Member is liable under this Agreement. Merritt
+       Workspace reserves the right to invoice Member for any such
+       additional charges, and Member authorizes Merritt Workspace to
+       charge any payment method on file for the assessed amounts.
+
+   (f) Return of Property. All furniture, equipment, keys, file
+       cabinets, access devices, and any other item or device provided
+       by Merritt Workspace must be returned to Merritt Workspace on or
+       before the last day of membership. Member will be invoiced for
+       any lost or damaged equipment, keys, or access devices. All keys
+       and access devices must be returned within forty-eight (48) hours
+       of the last day of membership or a $250.00 fee per item will be
+       assessed.
+
+   (g) Post-Departure Inspection. Notwithstanding Section 4(e), Merritt
+       Workspace shall additionally have thirty (30) days following the
+       Member's full departure from the Workspace to conduct a final
+       inspection, assess any charges due to damage or other Member
+       liability, and to process any final accounting. Any sums owed
+       beyond the Last Month's Membership Fee shall be invoiced to
+       Member and are due upon receipt.
 
 5. Early Termination: Merritt Workspace reserves the right to immediately
    terminate any Member or their employees, vendors or guests that do not
@@ -64,9 +135,12 @@ Effective 1/1/2024
    Merritt Workspace may terminate any membership at the end of its term by
    providing immediate notice to the Member.
 
-6. Members may terminate month-to-month following a written 30-day notice.
-   Early termination of longer-term packages by Member may be considered on
-   a case-by-case basis by Merritt Workspace.
+6. Month-to-Month Termination. Members on month-to-month terms may
+   terminate by providing written thirty (30) day notice in accordance
+   with Section 4. Early termination of longer-term packages by Member
+   may be considered on a case-by-case basis by Merritt Workspace, but
+   in all cases the notice and forfeiture provisions of Section 4 shall
+   apply.
 
 7. Member Default. If the Member does not pay the entire invoice by the 1st
    of the Month following invoicing or defaults on any other Terms and
@@ -564,7 +638,23 @@ Member fully acknowledges and hereby agrees to be bound by the financial
 terms and conditions as stated in this Agreement and the accompanying
 CoWork Space Terms and Conditions. *Please note* When the stated term
 (timeframe) of the Agreement has ended, the financial terms shall renew
-automatically, less any discounts (if applicable).`;
+automatically, less any discounts (if applicable).
+
+CANCELLATION POLICY ACKNOWLEDGMENT: Member acknowledges that the "Last
+Months Membership Fee" set forth below is collected at sign-up and held
+as a deposit which will be applied to Member's final month of membership
+upon proper cancellation. To cancel, Member must deliver written notice
+no fewer than thirty (30) calendar days prior to the intended last day
+of membership. Provided proper notice is given, Member will not be
+invoiced for the final month — the Last Months Membership Fee will fully
+satisfy the final month's charges. If Member fails to provide a full
+thirty (30) days' written notice, Member forfeits the entire Last Months
+Membership Fee to Merritt Workspace as liquidated damages. Beginning the
+day after Cancellation Notice is received, and continuing through the
+last day of membership, Merritt Workspace is entitled to inspect the
+Workspace and assess additional charges for damage, excessive wear,
+missing items, or restoration. See Section 4 of the Terms and Conditions
+for full cancellation terms.`;
 
   const feeLines = ctx.oneTime
     ? `${firstMonthLabel}:              ${ctx.termStart}                ${usd(totals.firstMonthCents)}`
