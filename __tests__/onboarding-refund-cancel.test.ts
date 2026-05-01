@@ -24,6 +24,9 @@ const state = {
     stripe_subscription_id: null as string | null,
     subscription_status: null as string | null,
     next_charge_date: null as string | null,
+    cancellation_notice_received_at: null as string | null,
+    cancellation_effective_date: null as string | null,
+    last_month_credit_invoice_item_id: null as string | null,
     access_code: null as string | null,
     access_code_issued_at: null as string | null,
   },
@@ -55,6 +58,9 @@ function resetState() {
     stripe_subscription_id: null,
     subscription_status: null,
     next_charge_date: null,
+    cancellation_notice_received_at: null,
+    cancellation_effective_date: null,
+    last_month_credit_invoice_item_id: null,
     access_code: null,
     access_code_issued_at: null,
   };
@@ -162,11 +168,18 @@ const mockStripeSubscriptionUpdate = vi.fn().mockResolvedValue({
   id: 'sub_test123',
   cancel_at: 1700000000,
   current_period_end: 1700000000,
-  cancel_at_period_end: true,
+  cancel_at_period_end: false,
 });
+// Default: an active subscription with current_period_end on April 1, 2026
+// (unix 1775347200) — handlers compute the final-month-end from this.
 const mockStripeSubscriptionRetrieve = vi.fn().mockResolvedValue({
   id: 'sub_test123',
   status: 'active',
+  customer: 'cus_test123',
+  current_period_end: 1775347200,
+  cancel_at: null,
+  cancel_at_period_end: false,
+  metadata: {},
 });
 const mockStripeSubscriptionCreate = vi.fn().mockResolvedValue({
   id: 'sub_test123',
@@ -777,28 +790,77 @@ describe('cancel-subscription', () => {
     expect(json.error).toMatch(/no active subscription/i);
   });
 
-  it('cancels at period end and updates member status to cancelled', async () => {
+  it('credits the upcoming invoice and hard-cancels at end of final calendar month', async () => {
     state.member.stripe_subscription_id = 'sub_test123';
+    state.member.monthly_cost_cents = 50000;
+    // current_period_end = April 1, 2026 → final month = April → cancel_at = April 30, 23:59:59 UTC.
+    const expectedCancelAt = Math.floor(Date.UTC(2026, 4, 0, 23, 59, 59) / 1000);
+
     const res = await cancelSubscription(
       makeAuthReq('http://localhost/api/portal/cancel-subscription')
     );
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.ok).toBe(true);
-    expect(json.cancel_at).toBeDefined();
-    expect(json.current_period_end).toBeDefined();
+    expect(json.cancellation_effective_date).toBe('2026-04-30');
+    expect(json.last_month_credit_invoice_item_id).toBe('ii_deposit_test');
 
-    // Verify Stripe was called correctly
-    expect(mockStripeSubscriptionUpdate).toHaveBeenCalledWith('sub_test123', {
-      cancel_at_period_end: true,
-      metadata: { cancelled_by: 'member', cancelled_via: 'portal' },
+    // Verify the last-month deposit was credited as a negative invoice item
+    // attached to the subscription (so it auto-applies to the next draft).
+    expect(mockStripeInvoiceItemsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customer: 'cus_test123',
+        subscription: 'sub_test123',
+        amount: -50000,
+        currency: 'usd',
+      })
+    );
+
+    // Verify the subscription was updated with a hard cancel_at, not
+    // cancel_at_period_end (which would have ended access too early).
+    expect(mockStripeSubscriptionUpdate).toHaveBeenCalledWith(
+      'sub_test123',
+      expect.objectContaining({
+        cancel_at: expectedCancelAt,
+        cancel_at_period_end: false,
+        proration_behavior: 'none',
+      })
+    );
+
+    // Verify local member record reflects the cancellation tracking fields.
+    expect(state.lastMemberUpdate).toEqual(
+      expect.objectContaining({
+        subscription_status: 'cancel_at_period_end',
+        status: 'cancelled',
+        cancellation_effective_date: '2026-04-30',
+        last_month_credit_invoice_item_id: 'ii_deposit_test',
+      })
+    );
+    expect(state.lastMemberUpdate.cancellation_notice_received_at).toBeTruthy();
+  });
+
+  it('is idempotent when subscription is already cancelled', async () => {
+    state.member.stripe_subscription_id = 'sub_test123';
+    state.member.monthly_cost_cents = 50000;
+    mockStripeSubscriptionRetrieve.mockResolvedValueOnce({
+      id: 'sub_test123',
+      status: 'active',
+      customer: 'cus_test123',
+      current_period_end: 1775347200,
+      cancel_at: 1777939199,
+      cancel_at_period_end: false,
+      metadata: {},
     });
 
-    // Verify local member record was updated
-    expect(state.lastMemberUpdate).toEqual({
-      subscription_status: 'cancel_at_period_end',
-      status: 'cancelled',
-    });
+    const res = await cancelSubscription(
+      makeAuthReq('http://localhost/api/portal/cancel-subscription')
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.already_cancelled).toBe(true);
+    // No new credit should have been issued on the idempotent path.
+    expect(mockStripeInvoiceItemsCreate).not.toHaveBeenCalled();
+    expect(mockStripeSubscriptionUpdate).not.toHaveBeenCalled();
   });
 
   it('returns 401 for unauthenticated requests', async () => {

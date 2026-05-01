@@ -7,7 +7,7 @@
 // live. Bump DOCUMENT_VERSION whenever the wording changes so the
 // signature audit trail is meaningful.
 
-export const DOCUMENT_VERSION = 'v3-2026-05';
+export const DOCUMENT_VERSION = 'v4-2026-05';
 
 export const MERRITT_SIGNATORY = {
   name: 'Lance Nading',
@@ -58,13 +58,25 @@ Effective 1/1/2024
        CO 80211, or (iii) the in-portal "Cancel membership" function,
        which constitutes written notice for purposes of this Section.
 
+       Effective Date of Termination. For administrative and billing
+       consistency, termination shall be effective on the last day of
+       the calendar month immediately following the Member's then-
+       current paid-for billing period (i.e., the calendar month for
+       which the next monthly invoice would otherwise have been
+       issued). In substantially all cases this satisfies or exceeds
+       the thirty (30) day notice requirement. Member's access to the
+       Workspace shall continue through, and shall cease at the end
+       of, said effective date.
+
    (c) Application of Last Month's Membership Fee. Provided that Member
        has delivered timely Cancellation Notice in accordance with
        Section 4(b), Member shall NOT be invoiced or charged for the
        final month of membership. The Last Month's Membership Fee
-       previously collected at sign-up shall be applied in full
-       satisfaction of the final month's membership fees, and no
-       additional monthly invoice shall issue for that month.
+       previously collected at sign-up shall be applied as a credit
+       against the final month's recurring invoice such that said
+       invoice nets to zero dollars ($0.00), and no additional monthly
+       payment shall be charged to Member's payment method on file for
+       that month.
 
    (d) Forfeiture for Insufficient Notice. If Member fails to provide a
        full thirty (30) days' written notice as required by Section

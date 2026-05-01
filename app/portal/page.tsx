@@ -1522,7 +1522,13 @@ function PaymentsTab({
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
-  const cancelPending = member.subscription_status === 'cancel_at_period_end';
+  // A cancellation has been recorded once we have an effective end date on
+  // file. We don't rely on subscription_status here because Stripe webhooks
+  // sync that field back to whatever Stripe reports — and our new cancel
+  // flow uses `cancel_at` (not `cancel_at_period_end`), so sub.status stays
+  // 'active' until the cancel_at date is reached. The local
+  // cancellation_effective_date is the source of truth for "notice given".
+  const cancelPending = !!member.cancellation_effective_date;
 
   // Read the payment method the member selected when they signed the fee
   // agreement ("card" or "ach"). This drives the copy + button label below.
@@ -1840,13 +1846,24 @@ function PaymentsTab({
             {cancelPending && (
               <div className="mt-2 bg-amber-50 border border-amber-300 rounded p-3 text-xs text-amber-900 space-y-1">
                 <p className="font-semibold">
-                  Your membership is set to end at the end of the current billing period.
+                  Your membership is set to end
+                  {member.cancellation_effective_date
+                    ? ` on ${new Date(member.cancellation_effective_date + 'T00:00:00Z').toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                        timeZone: 'UTC',
+                      })}.`
+                    : ' at the end of your final billing month.'}
                 </p>
                 <p>
-                  Your written 30-day cancellation notice has been received. You
-                  will NOT be billed for your final month — the Last Month&apos;s
-                  Membership Fee you paid at sign-up will be applied to that
-                  month.
+                  Your written 30-day cancellation notice has been received.
+                  You will <span className="font-semibold">NOT be billed</span>{' '}
+                  for your final month — the Last Month&apos;s Membership Fee
+                  you paid at sign-up has been applied as a credit against the
+                  upcoming invoice, which will net to{' '}
+                  <span className="font-semibold">$0.00</span>. No further
+                  charges will be issued.
                 </p>
                 <p>
                   Beginning the day after this notice and through your last day
