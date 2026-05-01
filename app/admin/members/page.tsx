@@ -43,6 +43,7 @@ export default function AdminMembersPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortMode, setSortMode] = useState<SortMode>('priority');
   const [pinging, setPinging] = useState<string | null>(null);
+  const [reconciling, setReconciling] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -79,6 +80,50 @@ export default function AdminMembersPage() {
     }
     const { member } = await res.json();
     setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...member } : m)));
+  }
+
+  async function reconcileStripe() {
+    if (!token || reconciling) return;
+    if (
+      !confirm(
+        'Reconcile every member with Stripe? This reads each member’s subscription state from Stripe and writes it back. Safe to run anytime.'
+      )
+    )
+      return;
+    setReconciling(true);
+    try {
+      const res = await fetch('/api/admin/members/reconcile-stripe', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(json.error || 'Reconcile failed');
+        return;
+      }
+      const lines = [
+        `Scanned ${json.scanned} members.`,
+        `Updated ${json.updated}.`,
+        json.errored ? `${json.errored} errored.` : '',
+        '',
+        ...((json.changes || []) as any[])
+          .slice(0, 20)
+          .map(
+            (c: any) =>
+              `• ${c.email}: ${c.before.subscription_status || 'none'} → ${c.after.subscription_status || 'none'} (${c.reason})`
+          ),
+      ].filter(Boolean);
+      alert(lines.join('\n'));
+      const refreshed = await fetch('/api/admin/members', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (refreshed.ok) {
+        const { members: next } = await refreshed.json();
+        setMembers(next);
+      }
+    } finally {
+      setReconciling(false);
+    }
   }
 
   async function pingMember(m: Member) {
@@ -172,6 +217,14 @@ export default function AdminMembersPage() {
             <option value="office">Sort: Office #</option>
             <option value="desk">Sort: Desk #</option>
           </select>
+          <button
+            onClick={reconcileStripe}
+            disabled={reconciling}
+            className="border rounded px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Pull each member’s current subscription state from Stripe and write it back to the database. Use this when Auto-pay dots look wrong."
+          >
+            {reconciling ? 'Reconciling…' : 'Reconcile with Stripe'}
+          </button>
         </div>
       </div>
 
@@ -230,10 +283,23 @@ export default function AdminMembersPage() {
                     </div>
                   )}
                   <div className="flex items-center gap-3 text-xs text-gray-500 mt-2 flex-wrap">
-                    <ProgressDot done={m.required_docs_complete} label="Documents" />
-                    <ProgressDot done={m.agreement_signed} label="Agreements" />
-                    <ProgressDot done={!!m.stripe_subscription_id} label="Auto-pay" />
-                    <ProgressDot done={m.onboarding_unlocked} label="Onboarded" />
+                    <ProgressDot
+                      state={m.required_docs_complete ? 'done' : 'pending'}
+                      label="Documents"
+                    />
+                    <ProgressDot
+                      state={m.agreement_signed ? 'done' : 'pending'}
+                      label="Agreements"
+                    />
+                    <ProgressDot
+                      state={autoPayState(m)}
+                      label="Auto-pay"
+                      title={autoPayTooltip(m)}
+                    />
+                    <ProgressDot
+                      state={m.onboarding_unlocked ? 'done' : 'pending'}
+                      label="Onboarded"
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 min-w-[300px]">
@@ -321,15 +387,76 @@ export default function AdminMembersPage() {
   );
 }
 
-function ProgressDot({ done, label }: { done: boolean; label: string }) {
+type ProgressDotState = 'done' | 'warn' | 'pending';
+
+function ProgressDot({
+  state,
+  label,
+  title,
+}: {
+  state: ProgressDotState;
+  label: string;
+  title?: string;
+}) {
+  const dotClass =
+    state === 'done'
+      ? 'bg-green-500'
+      : state === 'warn'
+        ? 'bg-amber-500'
+        : 'bg-gray-300';
+  const textClass =
+    state === 'done'
+      ? 'text-green-700 font-medium'
+      : state === 'warn'
+        ? 'text-amber-700 font-medium'
+        : '';
   return (
-    <span className="inline-flex items-center gap-1">
-      <span
-        className={`w-2 h-2 rounded-full ${done ? 'bg-green-500' : 'bg-gray-300'}`}
-      />
-      <span className={done ? 'text-green-700 font-medium' : ''}>{label}</span>
+    <span className="inline-flex items-center gap-1" title={title}>
+      <span className={`w-2 h-2 rounded-full ${dotClass}`} />
+      <span className={textClass}>{label}</span>
     </span>
   );
+}
+
+// Auto-pay reflects whether the member has an active Stripe subscription
+// configured to charge their saved payment method. We derive it from
+// `subscription_status` (synced from Stripe webhooks) rather than just the
+// presence of `stripe_subscription_id`, because:
+//   - ACH subscriptions sit in `incomplete` for 3-5 days during bank
+//     verification but are still "set up"; they should read as done.
+//   - Canceled subscriptions still have an ID stored on the row (the
+//     webhook overwrites it on delete) and should read as not set up.
+//   - `unpaid` / `incomplete_expired` mean auto-pay was attempted but is
+//     broken — the admin needs to act, so we surface those as warn.
+function autoPayState(m: Member): ProgressDotState {
+  const s = (m.subscription_status || '').toLowerCase();
+  if (s === 'active' || s === 'trialing' || s === 'incomplete' || s === 'past_due')
+    return 'done';
+  if (s === 'unpaid' || s === 'incomplete_expired') return 'warn';
+  return 'pending';
+}
+
+function autoPayTooltip(m: Member): string {
+  const s = m.subscription_status || 'none';
+  if (!m.stripe_customer_id) return 'No Stripe customer on file';
+  switch (s) {
+    case 'active':
+      return 'Auto-pay active';
+    case 'trialing':
+      return 'Auto-pay active (trial)';
+    case 'incomplete':
+      return 'Auto-pay set up; payment processing (typical for ACH, 3–5 business days)';
+    case 'past_due':
+      return 'Auto-pay set up; latest invoice is past due';
+    case 'unpaid':
+      return 'Auto-pay broken: invoice unpaid';
+    case 'incomplete_expired':
+      return 'Auto-pay setup expired before completing';
+    case 'canceled':
+      return 'Subscription canceled';
+    default:
+      return 'No active subscription';
+  }
 }
 
 function StatusBadge({ status }: { status: Member['status'] }) {
