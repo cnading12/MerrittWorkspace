@@ -394,6 +394,54 @@ export function accessCodeRequestedAdminEmail(opts: {
   };
 }
 
+export function workspaceAssignmentNotificationEmail(opts: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  designationLabel: string;
+  deskNumber: string | null;
+  officeNumber: string | null;
+  adminUrl: string;
+}) {
+  const seatLine = opts.officeNumber
+    ? `Office: <strong>${opts.officeNumber}</strong>`
+    : opts.deskNumber
+      ? `Dedicated desk: <strong>${opts.deskNumber}</strong>`
+      : 'Cleared their assignment';
+  const seatText = opts.officeNumber
+    ? `Office: ${opts.officeNumber}`
+    : opts.deskNumber
+      ? `Dedicated desk: ${opts.deskNumber}`
+      : 'Cleared their assignment';
+  return {
+    subject: `Workspace assignment updated - ${opts.firstName} ${opts.lastName}`,
+    html: shell({
+      title: 'Workspace Assignment Updated',
+      tagline: 'A member set their desk or office',
+      body: `
+        <p><strong>${opts.firstName} ${opts.lastName}</strong> (${opts.email}) updated their workspace assignment from the member portal.</p>
+        <div class="info-card">
+          <p style="margin:0 0 6px;">Membership: <strong>${opts.designationLabel}</strong></p>
+          <p style="margin:0;">${seatLine}</p>
+        </div>
+        <p>Please confirm this seat is available and update any building records as needed.</p>
+        <p style="text-align:center;">
+          <a href="${opts.adminUrl}" class="button">Open Admin Panel</a>
+        </p>
+      `,
+    }),
+    text: [
+      `${opts.firstName} ${opts.lastName} (${opts.email}) updated their workspace assignment from the member portal.`,
+      '',
+      `Membership: ${opts.designationLabel}`,
+      seatText,
+      '',
+      'Confirm the seat and update records as needed:',
+      opts.adminUrl,
+    ].join('\n'),
+  };
+}
+
 // Sender used for portal/member-services emails (access codes, general
 // notifications). Uses a descriptive display name — generic "From" names
 // score worse with Gmail/Outlook spam filters.
