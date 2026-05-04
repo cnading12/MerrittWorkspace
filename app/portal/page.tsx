@@ -755,6 +755,12 @@ function DocumentsTab({
             memberName={memberName}
             designationLabel={designationLabel}
             applicationStartDate={applicationStartDate}
+            signedMetadata={
+              (agreements.find((a) => a.agreement_type === 'fee_agreement')?.metadata as
+                | Record<string, unknown>
+                | null
+                | undefined) || null
+            }
             signed={hasSigned('fee_agreement')}
             signedAt={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signed_at || null}
             signedBy={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signature_name || null}
@@ -898,6 +904,7 @@ function FeeAgreementSection({
   memberName,
   designationLabel,
   applicationStartDate,
+  signedMetadata,
   signed,
   signedAt,
   signedBy,
@@ -910,6 +917,7 @@ function FeeAgreementSection({
   memberName: string;
   designationLabel: string;
   applicationStartDate: string | null;
+  signedMetadata: Record<string, unknown> | null;
   signed: boolean;
   signedAt: string | null;
   signedBy: string | null;
@@ -946,7 +954,19 @@ function FeeAgreementSection({
   const [phone, setPhone] = useState(member.phone || '');
   const [email] = useState(member.email);
   const [federalId, setFederalId] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'ach'>('card');
+  // If the member has already signed, hydrate the form from the saved
+  // metadata so the preview displayed here matches what was actually signed
+  // (and what Stripe + the Payments tab will use). Otherwise fall back to
+  // sensible defaults for the unsigned/first-time case.
+  const signedPaymentMethod: 'card' | 'ach' | null =
+    (signedMetadata as any)?.payment_method === 'ach'
+      ? 'ach'
+      : (signedMetadata as any)?.payment_method === 'card'
+        ? 'card'
+        : null;
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'ach'>(
+    signedPaymentMethod ?? 'card'
+  );
   const [localError, setLocalError] = useState<string | null>(null);
 
   // Invoicing details — default "same as member"
@@ -963,11 +983,18 @@ function FeeAgreementSection({
 
   const today = new Date();
   const { minIso, maxIso } = startDateBounds(today);
-  // Default to the start date the member chose on their application, but
-  // clamp to the allowed window. Day passes don't have a recurring start
-  // date and stay locked to today.
+  // Prefer the start date that was actually signed (so the preview matches
+  // what's saved in metadata and what Stripe will charge); otherwise default
+  // to the date the member picked on their application, clamped to the
+  // allowed window. Day passes don't have a recurring start date and stay
+  // locked to today.
+  const signedStartDate =
+    typeof (signedMetadata as any)?.start_date === 'string'
+      ? ((signedMetadata as any).start_date as string)
+      : null;
   const defaultStartIso = (() => {
     if (oneTime) return minIso;
+    if (signedStartDate) return signedStartDate;
     const candidate = applicationStartDate || minIso;
     if (candidate < minIso) return minIso;
     if (candidate > maxIso) return maxIso;
