@@ -23,6 +23,66 @@ const resend = {
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
+// Plan catalog used to label & price the items in `selected_plans`. Kept in
+// lockstep with app/membership/apply/page.tsx and lib/portal/pricing.ts.
+const PLAN_CATALOG: Record<string, { label: string; price_cents: number; recurrence: 'monthly' | 'one_time' }> = {
+  dedicated_desk:          { label: 'Dedicated Desk (Promo)',     price_cents: 10000,  recurrence: 'monthly'  },
+  one_day_dedicated_desk:  { label: 'One Day Dedicated Desk',     price_cents: 3000,   recurrence: 'one_time' },
+  private_office_single:   { label: 'Private Office — Single',    price_cents: 50000,  recurrence: 'monthly'  },
+  private_office_double:   { label: 'Private Office — Double',    price_cents: 70000,  recurrence: 'monthly'  },
+  private_office_large:    { label: 'Private Office — Large',     price_cents: 120000, recurrence: 'monthly'  },
+};
+
+interface SelectedPlanInput { plan_id?: string; quantity?: number }
+
+interface ItemizedLine {
+  plan_id: string;
+  label: string;
+  quantity: number;
+  unit_price_cents: number;
+  subtotal_cents: number;
+  recurrence: 'monthly' | 'one_time';
+}
+
+function itemizeSelectedPlans(selected: SelectedPlanInput[] | undefined, fallbackMembershipType?: string): {
+  lines: ItemizedLine[];
+  total_monthly_cents: number;
+  total_one_time_cents: number;
+} {
+  const list = Array.isArray(selected) && selected.length > 0
+    ? selected
+    : fallbackMembershipType
+      ? [{ plan_id: fallbackMembershipType, quantity: 1 }]
+      : [];
+
+  const lines: ItemizedLine[] = [];
+  let monthly = 0;
+  let oneTime = 0;
+  for (const item of list) {
+    const planId = item?.plan_id;
+    const qty = Math.max(0, Math.floor(Number(item?.quantity) || 0));
+    if (!planId || qty <= 0) continue;
+    const def = PLAN_CATALOG[planId];
+    if (!def) continue;
+    const subtotal = def.price_cents * qty;
+    lines.push({
+      plan_id: planId,
+      label: def.label,
+      quantity: qty,
+      unit_price_cents: def.price_cents,
+      subtotal_cents: subtotal,
+      recurrence: def.recurrence,
+    });
+    if (def.recurrence === 'monthly') monthly += subtotal;
+    else oneTime += subtotal;
+  }
+  return { lines, total_monthly_cents: monthly, total_one_time_cents: oneTime };
+}
+
+function formatUsdCents(cents: number): string {
+  return `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const applicationData = await request.json();
@@ -51,6 +111,15 @@ export async function POST(request: NextRequest) {
     // Generate application ID
     const applicationId = `APP-${Date.now()}`;
     const submittedAt = new Date();
+
+    // Itemize the applicant's selected plans server-side so the totals stored
+    // and emailed are authoritative — never trust the numbers the client sent.
+    const itemized = itemizeSelectedPlans(applicationData.selected_plans, applicationData.membership_type);
+    // Make these available to email helpers below by attaching them onto the
+    // applicationData object passed through.
+    applicationData.itemized_lines = itemized.lines;
+    applicationData.total_monthly_cost_cents = itemized.total_monthly_cents;
+    applicationData.total_one_time_cost_cents = itemized.total_one_time_cents;
 
     // Persist to member_applications so the admin panel can review it.
     // Core fields land in dedicated columns; everything else (housing
@@ -88,8 +157,19 @@ export async function POST(request: NextRequest) {
         membership_type,
         start_date,
         // Mirror trial fields into payload so the admin UI can fall back to
-        // them if the DB hasn't been migrated yet.
-        payload: { ...rest, wants_trial_day: wantsTrial, trial_date: trialDate },
+        // them if the DB hasn't been migrated yet. Also stash the itemized
+        // selected plans + computed totals so the admin/approval flow can
+        // reconstruct the combined charge across multiple offices/desks
+        // without recomputing from scratch.
+        payload: {
+          ...rest,
+          wants_trial_day: wantsTrial,
+          trial_date: trialDate,
+          selected_plans: rest.selected_plans ?? null,
+          itemized_lines: itemized.lines,
+          total_monthly_cost_cents: itemized.total_monthly_cents,
+          total_one_time_cost_cents: itemized.total_one_time_cents,
+        },
       };
 
       // First attempt: include the new dedicated trial columns.
@@ -136,12 +216,24 @@ export async function POST(request: NextRequest) {
       member_services_error: null as string | null
     };
 
-    // Format membership type for display
-    const membershipTypeDisplay = applicationData.membership_type
-      .replace(/_/g, ' ')
-      .split(' ')
-      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    // Format membership type for display. When the applicant selected
+    // multiple offices/desks, prefer a compact summary like
+    //   "1× Private Office Single + 2× Dedicated Desk"
+    // so emails clearly reflect the combined application.
+    const membershipTypeDisplay = (() => {
+      if (itemized.lines.length > 1 || (itemized.lines.length === 1 && itemized.lines[0].quantity > 1)) {
+        return itemized.lines.map(l => `${l.quantity}× ${l.label}`).join(' + ');
+      }
+      if (itemized.lines.length === 1) {
+        return itemized.lines[0].label;
+      }
+      // Fallback for legacy clients that didn't send selected_plans.
+      return applicationData.membership_type
+        .replace(/_/g, ' ')
+        .split(' ')
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    })();
 
     // Helper to avoid Resend rate limit (2 req/sec on free plan)
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -501,11 +593,34 @@ function generateManagerEmailHTML(data: {
             <p><strong>Applicant:</strong> ${app.first_name} ${app.last_name}</p>
             <p><strong>Email:</strong> ${app.email}</p>
             <p><strong>Phone:</strong> ${app.phone}</p>
-            <p><strong>Membership Type:</strong> ${data.membershipTypeDisplay}</p>
             <p><strong>Preferred Start Date:</strong> ${new Date(app.start_date).toLocaleDateString()}</p>
             ${app.wants_trial_day ? `<p><strong>Trial Day Date:</strong> ${app.trial_date ? new Date(app.trial_date).toLocaleDateString() : 'not specified'}</p>` : ''}
             <p><strong>Application ID:</strong> ${data.applicationId}</p>
             <p><strong>Submitted:</strong> ${data.submittedAt.toLocaleString()}</p>
+          </div>
+
+          <div class="section">
+            <h3>Selected Offices &amp; Dedicated Desks</h3>
+            ${Array.isArray(app.itemized_lines) && app.itemized_lines.length > 0 ? `
+              <table>
+                <tr style="background:#fff8e1;"><td>Plan</td><td>Quantity</td><td>Unit</td><td>Subtotal</td></tr>
+                ${app.itemized_lines.map((line: ItemizedLine) => `
+                  <tr>
+                    <td style="font-weight: normal;">${line.label}</td>
+                    <td style="font-weight: normal;">${line.quantity}</td>
+                    <td style="font-weight: normal;">${formatUsdCents(line.unit_price_cents)}${line.recurrence === 'monthly' ? '/mo' : ' one-time'}</td>
+                    <td style="font-weight: normal;">${formatUsdCents(line.subtotal_cents)}${line.recurrence === 'monthly' ? '/mo' : ' one-time'}</td>
+                  </tr>
+                `).join('')}
+              </table>
+              <div style="margin-top: 12px; padding: 12px; background: #fff; border: 1px solid #ed7611; border-radius: 6px;">
+                ${app.total_monthly_cost_cents > 0 ? `<p style="margin: 0;"><strong>Total monthly charge:</strong> <span style="font-size: 18px; color: #ad4a00;">${formatUsdCents(app.total_monthly_cost_cents)}/month</span></p>` : ''}
+                ${app.total_one_time_cost_cents > 0 ? `<p style="margin: 4px 0 0 0;"><strong>One-time charges:</strong> <span style="font-size: 18px; color: #ad4a00;">${formatUsdCents(app.total_one_time_cost_cents)}</span></p>` : ''}
+                <p style="margin: 8px 0 0 0; font-size: 13px; color: #555;">All offices and dedicated desks selected by the applicant are billed together as a single combined charge.</p>
+              </div>
+            ` : `
+              <p>Membership Type: ${data.membershipTypeDisplay}</p>
+            `}
           </div>
 
           <div class="section">
@@ -626,8 +741,18 @@ A trial-day info email has been sent to the applicant directly.
 ` : ''}Applicant: ${app.first_name} ${app.last_name}
 Email: ${app.email}
 Phone: ${app.phone}
-Membership Type: ${data.membershipTypeDisplay}
 Preferred Start Date: ${new Date(app.start_date).toLocaleDateString()}
+
+SELECTED OFFICES & DEDICATED DESKS
+${Array.isArray(app.itemized_lines) && app.itemized_lines.length > 0
+  ? app.itemized_lines.map((line: ItemizedLine) =>
+      `- ${line.quantity} × ${line.label} @ ${formatUsdCents(line.unit_price_cents)}${line.recurrence === 'monthly' ? '/mo' : ' one-time'} = ${formatUsdCents(line.subtotal_cents)}${line.recurrence === 'monthly' ? '/mo' : ' one-time'}`
+    ).join('\n')
+  : `- ${data.membershipTypeDisplay}`}
+${app.total_monthly_cost_cents > 0 ? `TOTAL MONTHLY CHARGE: ${formatUsdCents(app.total_monthly_cost_cents)}/month` : ''}
+${app.total_one_time_cost_cents > 0 ? `ONE-TIME CHARGES:     ${formatUsdCents(app.total_one_time_cost_cents)}` : ''}
+(All selected offices/desks are billed together as a single combined charge.)
+
 ${app.wants_trial_day ? `Trial Day Date: ${app.trial_date ? new Date(app.trial_date).toLocaleDateString() : 'not specified'}\n` : ''}Application ID: ${data.applicationId}
 Submitted: ${data.submittedAt.toLocaleString()}
 

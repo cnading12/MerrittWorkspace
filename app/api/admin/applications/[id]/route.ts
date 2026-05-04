@@ -65,10 +65,21 @@ export async function POST(
     }
 
     // 2. Create or update the member row. Auto-assign the designation and
-    //    monthly cost from the applicant's selected plan so the fee agreement
-    //    and Stripe checkout can reference a real number without any manual
-    //    accountant step.
+    //    monthly cost so the fee agreement and Stripe checkout can reference
+    //    a real number without any manual accountant step.
+    //
+    //    For multi-plan applications (multiple offices and/or dedicated desks
+    //    on a single submission), the applicant's combined total is stored
+    //    in payload.total_monthly_cost_cents. Prefer that when present so
+    //    the member's recurring charge totals every selection. Fall back to
+    //    the single-plan lookup for legacy applications.
     const plan = planForMembershipType(app.membership_type);
+    const payload = (app.payload as Record<string, any> | null) || {};
+    const payloadMonthly = Number(payload.total_monthly_cost_cents);
+    const monthlyCostCents = Number.isFinite(payloadMonthly) && payloadMonthly > 0
+      ? payloadMonthly
+      : plan?.monthly_cost_cents ?? null;
+
     const { data: member, error: memErr } = await sb
       .from('members')
       .upsert(
@@ -82,7 +93,7 @@ export async function POST(
           status: 'approved',
           application_id: app.id,
           designation: plan?.designation ?? null,
-          monthly_cost_cents: plan?.monthly_cost_cents ?? null,
+          monthly_cost_cents: monthlyCostCents,
         },
         { onConflict: 'email' }
       )
