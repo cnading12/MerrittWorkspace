@@ -206,6 +206,40 @@ export default function AdminMemberDetailPage({
     await load(token);
   }
 
+  async function cancelMembership() {
+    if (!token || !data) return;
+    const m = data.member;
+    const hasSub = !!m.stripe_subscription_id;
+    const ok = window.confirm(
+      `Cancel membership for ${m.first_name} ${m.last_name}?\n\n` +
+        (hasSub
+          ? 'This will:\n' +
+            '• Stop future Stripe charges by scheduling a hard cancel at the end of the next calendar month.\n' +
+            "• Apply the Last Month's Membership Fee as a credit against the upcoming invoice (member is not billed for the final month).\n" +
+            '• Set the member\'s status to cancelled and record the effective date.\n\n' +
+            'This is the same flow the member sees when they cancel themselves.'
+          : 'This member has no active Stripe subscription, so only their local status will be set to cancelled.')
+    );
+    if (!ok) return;
+    const res = await fetch(`/api/admin/members/${id}/cancel-subscription`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(json.error || 'Failed to cancel membership');
+      return;
+    }
+    if (json.already_cancelled) {
+      alert('Membership was already cancelled.');
+    } else if (json.no_subscription) {
+      alert('No active subscription — local status set to cancelled.');
+    } else if (json.cancellation_effective_date) {
+      alert(`Membership cancelled. Effective date: ${json.cancellation_effective_date}.`);
+    }
+    await load(token);
+  }
+
   async function patchMember(body: any) {
     if (!token) return;
     const res = await fetch(`/api/admin/members/${id}`, {
@@ -309,8 +343,9 @@ export default function AdminMemberDetailPage({
             </button>
           )}
         <button
-          onClick={() => patchMember({ status: 'cancelled' })}
+          onClick={cancelMembership}
           className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 text-red-600"
+          title="Stop the member's Stripe subscription, apply the Last Month's Fee credit, and schedule cancel at end of next calendar month"
         >
           Cancel membership
         </button>
