@@ -429,6 +429,7 @@ function PortalDashboard() {
           member={member}
           accessRequestStatus={accessRequestStatus}
           setAccessRequestStatus={setAccessRequestStatus}
+          onMemberChange={setMember}
         />
       )}
     </div>
@@ -1984,15 +1985,136 @@ function PaymentsTab({
   );
 }
 
+// Member-editable spot for declaring which dedicated desk they're taking or
+// which private office they'd like. The desk/office number is the same field
+// admins manage in the admin panel — saving here updates `members` directly
+// and emails member services so they can confirm the seat is available.
+function WorkspaceAssignmentSection({
+  member,
+  onMemberChange,
+}: {
+  member: Member;
+  onMemberChange: (m: Member) => void;
+}) {
+  const designation = member.designation;
+  const isOffice =
+    designation === 'private_office_single' ||
+    designation === 'private_office_double' ||
+    designation === 'private_office_large';
+  const isDesk =
+    designation === 'dedicated_desk' || designation === 'one_day_dedicated_desk';
+  const editable = isOffice || isDesk;
+
+  const initial = isOffice ? member.office_number || '' : member.desk_number || '';
+  const [value, setValue] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+
+  // Keep the input in sync if the member record refreshes (e.g. admin override).
+  useEffect(() => {
+    setValue(initial);
+  }, [initial]);
+
+  if (!editable) {
+    return null;
+  }
+
+  const labelTitle = isOffice ? 'Your Office' : 'Your Dedicated Desk';
+  const helper = isOffice
+    ? "Tell us which office you'd like. Member services will confirm availability and finalize your assignment."
+    : "Add the desk number you're taking. Member services will confirm and update building records.";
+  const placeholder = isOffice ? 'e.g. 12 or 12B' : 'e.g. 4 or 4A';
+  const fieldLabel = isOffice ? 'Office number' : 'Desk number';
+  const currentLabel = isOffice ? 'Current office:' : 'Current desk:';
+  const currentValue = isOffice ? member.office_number : member.desk_number;
+
+  const trimmed = value.trim();
+  const baseline = (currentValue || '').trim();
+  const dirty = trimmed !== baseline;
+
+  async function save() {
+    setSaving(true);
+    setStatus(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const body: Record<string, string | null> = isOffice
+        ? { office_number: trimmed || null }
+        : { desk_number: trimmed || null };
+      const res = await fetch('/api/portal/assignment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Save failed');
+      onMemberChange(data.member);
+      setStatus({ kind: 'ok', text: 'Saved! Member services has been notified.' });
+    } catch (e: any) {
+      setStatus({ kind: 'err', text: e.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="bg-white border rounded-lg p-6">
+      <h3 className="font-semibold text-gray-900 mb-1">{labelTitle}</h3>
+      <p className="text-sm text-gray-600 mb-4">{helper}</p>
+      <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+        <div className="flex-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            {fieldLabel}
+          </label>
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={placeholder}
+            maxLength={32}
+            className="w-full border rounded px-3 py-2 text-sm"
+          />
+        </div>
+        <button
+          onClick={save}
+          disabled={saving || !dirty}
+          className="bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+      </div>
+      {currentValue && (
+        <p className="mt-3 text-xs text-gray-500">
+          {currentLabel} <span className="font-mono">{currentValue}</span>
+        </p>
+      )}
+      {status && (
+        <p
+          className={`mt-2 text-sm ${
+            status.kind === 'ok' ? 'text-green-700' : 'text-red-700'
+          }`}
+        >
+          {status.text}
+        </p>
+      )}
+    </section>
+  );
+}
+
 // --- Onboarding tab ---
 function OnboardingTab({
   member,
   accessRequestStatus,
   setAccessRequestStatus,
+  onMemberChange,
 }: {
   member: Member;
   accessRequestStatus: string | null;
   setAccessRequestStatus: (s: string | null) => void;
+  onMemberChange: (m: Member) => void;
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -2030,6 +2152,8 @@ function OnboardingTab({
           essential information about your workspace.
         </p>
       </section>
+
+      <WorkspaceAssignmentSection member={member} onMemberChange={onMemberChange} />
 
       {/* About Merritt Workspace */}
       <section className="bg-white border rounded-lg p-6">
