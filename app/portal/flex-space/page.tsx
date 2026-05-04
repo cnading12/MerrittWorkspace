@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import FlexCalendar from '@/components/portal/FlexCalendar';
 
 interface FlexBooking {
   id: string;
@@ -55,6 +56,7 @@ export default function FlexSpacePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [calendarRefreshKey, setCalendarRefreshKey] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -128,6 +130,7 @@ export default function FlexSpacePage() {
       }
       setSuccess('Booking confirmed. Check your email for details.');
       setDate('');
+      setCalendarRefreshKey((k) => k + 1);
       await refresh(token);
     } catch (e: any) {
       setError(e?.message || 'Network error');
@@ -152,6 +155,7 @@ export default function FlexSpacePage() {
         return;
       }
       setSuccess('Booking cancelled.');
+      setCalendarRefreshKey((k) => k + 1);
       await refresh(token);
     } catch (e: any) {
       setError(e?.message || 'Network error');
@@ -194,6 +198,8 @@ export default function FlexSpacePage() {
           />
         </div>
       </div>
+
+      <FlexCalendar authToken={token} refreshKey={calendarRefreshKey} />
 
       <form
         onSubmit={submit}
