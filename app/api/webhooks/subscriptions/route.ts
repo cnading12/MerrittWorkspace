@@ -52,6 +52,43 @@ export async function POST(req: NextRequest) {
 
   const sb = getServiceSupabase();
 
+  // Stripe API 2025-08-27.basil removed `Invoice.payment_intent`. The
+  // associated PaymentIntent now lives at
+  // `invoice.payments.data[].payment.payment_intent`, with the legacy
+  // string field still appearing on older event payloads. Resolve from
+  // both shapes, falling back to a fresh retrieve with `payments` expanded
+  // when the webhook payload didn't include it (Stripe doesn't expand by
+  // default for webhook events).
+  const resolveInvoicePaymentIntent = async (
+    invoice: any
+  ): Promise<string | null> => {
+    if (typeof invoice?.payment_intent === 'string') {
+      return invoice.payment_intent;
+    }
+    const fromPayments = (inv: any): string | null => {
+      const list = inv?.payments?.data;
+      if (!Array.isArray(list)) return null;
+      for (const p of list) {
+        const pi = p?.payment?.payment_intent;
+        if (typeof pi === 'string') return pi;
+        if (pi?.id) return pi.id;
+      }
+      return null;
+    };
+    const direct = fromPayments(invoice);
+    if (direct) return direct;
+    if (!invoice?.id) return null;
+    try {
+      const expanded = await stripe.invoices.retrieve(invoice.id, {
+        expand: ['payments.data.payment'],
+      } as any);
+      return fromPayments(expanded);
+    } catch (err) {
+      console.error('Failed to expand invoice for payment_intent', err);
+      return null;
+    }
+  };
+
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -313,11 +350,13 @@ export async function POST(req: NextRequest) {
             : event.type === 'invoice.payment_failed'
               ? 'failed'
               : 'pending';
+        const resolvedPaymentIntentId =
+          await resolveInvoicePaymentIntent(invoice);
         await sb.from('payment_history').upsert(
           {
             member_id: member?.id || null,
             stripe_invoice_id: invoice.id,
-            stripe_payment_intent_id: (invoice as any).payment_intent || null,
+            stripe_payment_intent_id: resolvedPaymentIntentId,
             amount_cents: invoice.amount_paid || invoice.amount_due,
             currency: invoice.currency,
             status: mappedStatus,

@@ -64,8 +64,19 @@ export async function GET(
             .map((p: any) => p.stripe_payment_intent_id)
             .filter((x: string | null): x is string => !!x)
         );
+        // Also index existing rows by their Stripe invoice ID. The
+        // `invoice.paid` webhook records subscription invoices with
+        // `stripe_invoice_id` set but — under Stripe API 2025-08-27.basil
+        // where the legacy `invoice.payment_intent` field is gone —
+        // potentially with `stripe_payment_intent_id` null. Without a
+        // second lookup key, the PaymentIntent walk below would treat
+        // those rows as missing and insert a duplicate every load.
+        const invoiceIdToRow = new Map<string, any>();
+        for (const p of payments) {
+          if (p.stripe_invoice_id) invoiceIdToRow.set(p.stripe_invoice_id, p);
+        }
         const newRows: any[] = [];
-        const updates: { id: string; status: string }[] = [];
+        const updates: { id: string; status: string; piId?: string | null }[] = [];
         for (const pi of intents.data) {
           const refunded =
             (pi as any).amount_refunded && (pi as any).amount_refunded > 0;
@@ -78,13 +89,16 @@ export async function GET(
                   pi.status === 'canceled'
                 ? 'failed'
                 : 'pending';
-          if (!knownPiIds.has(pi.id)) {
+          const piInvoiceId = (pi as any).invoice || null;
+          const matchedByInvoice =
+            piInvoiceId ? invoiceIdToRow.get(piInvoiceId) : null;
+          if (!knownPiIds.has(pi.id) && !matchedByInvoice) {
             // Skip uncaptured/failed intents that never collected funds; the
             // member only cares about money that actually moved.
             if (pi.status !== 'succeeded') continue;
             newRows.push({
               member_id: id,
-              stripe_invoice_id: (pi as any).invoice || null,
+              stripe_invoice_id: piInvoiceId,
               stripe_payment_intent_id: pi.id,
               amount_cents: pi.amount_received || pi.amount,
               currency: pi.currency,
@@ -95,11 +109,24 @@ export async function GET(
               paid_at: new Date(pi.created * 1000).toISOString(),
             });
           } else {
-            const existing = payments.find(
-              (p: any) => p.stripe_payment_intent_id === pi.id
-            );
-            if (existing && existing.status !== mappedStatus) {
-              updates.push({ id: existing.id, status: mappedStatus });
+            const existing =
+              matchedByInvoice ||
+              payments.find(
+                (p: any) => p.stripe_payment_intent_id === pi.id
+              );
+            if (!existing) continue;
+            const needsStatus = existing.status !== mappedStatus;
+            // Backfill the PI ID onto invoice rows that were saved without
+            // one — collapses the two dedup keys into a single fast lookup
+            // on subsequent loads.
+            const needsPiId =
+              !existing.stripe_payment_intent_id && pi.id;
+            if (needsStatus || needsPiId) {
+              updates.push({
+                id: existing.id,
+                status: mappedStatus,
+                piId: needsPiId ? pi.id : null,
+              });
             }
           }
         }
@@ -107,9 +134,11 @@ export async function GET(
           await sb.from('payment_history').insert(newRows);
         }
         for (const u of updates) {
+          const patch: Record<string, any> = { status: u.status };
+          if (u.piId) patch.stripe_payment_intent_id = u.piId;
           await sb
             .from('payment_history')
-            .update({ status: u.status })
+            .update(patch)
             .eq('id', u.id);
         }
         if (newRows.length > 0 || updates.length > 0) {
