@@ -1538,12 +1538,12 @@ function PaymentsTab({
     (feeMeta as any)?.payment_method === 'ach' ? 'ach' : 'card';
   const isAch = selectedMethod === 'ach';
 
-  // Pull the exact upfront amounts the member signed off on so the payment
-  // tab mirrors the Fee Agreement Grand Total to the cent. If the agreement
-  // is missing those fields (e.g. an old signature pre-migration), fall back
-  // to recomputing them from the start_date + monthly cost. The Stripe
-  // checkout route runs the same fallback so the charged amount and the
-  // amount shown here always match.
+  // Compute the upfront amounts from the member's current monthly rate and
+  // the signed start date. Stripe Checkout
+  // (app/api/portal/create-subscription/route.ts) runs the same math against
+  // member.monthly_cost_cents at charge time, and the Fee Agreement preview
+  // re-renders from that field too, so all three surfaces stay in sync —
+  // including when an admin adjusts the rate after the agreement was signed.
   const oneTime = isOneTimeDesignation(member.designation);
   const monthlyCostCents = member.monthly_cost_cents || 0;
   const startDateIso = typeof (feeMeta as any)?.start_date === 'string'
@@ -1557,27 +1557,19 @@ function PaymentsTab({
       return new Date();
     }
   })();
-  const fallbackProratedCents = oneTime
+  const proratedCents = oneTime
     ? monthlyCostCents
     : calculateProratedFirstMonthCents(monthlyCostCents, startDate);
-  const fallbackTotals = calculateFeeAgreementTotals(
+  const totals = calculateFeeAgreementTotals(
     monthlyCostCents,
     selectedMethod,
     oneTime,
-    fallbackProratedCents,
+    proratedCents,
   );
-  const firstMonthCents = Number(
-    (feeMeta as any)?.first_month_cents ?? fallbackTotals.firstMonthCents,
-  );
-  const lastMonthCents = Number(
-    (feeMeta as any)?.last_month_cents ?? fallbackTotals.lastMonthCents,
-  );
-  const ccFeeCents = Number(
-    (feeMeta as any)?.cc_fee_cents ?? fallbackTotals.ccFeeCents,
-  );
-  const grandTotalCents = Number(
-    (feeMeta as any)?.grand_total_cents ?? fallbackTotals.grandTotalCents,
-  );
+  const firstMonthCents = totals.firstMonthCents;
+  const lastMonthCents = totals.lastMonthCents;
+  const ccFeeCents = totals.ccFeeCents;
+  const grandTotalCents = totals.grandTotalCents;
 
   // First recurring charge fires on the 1st of the month after the chosen
   // start date. Format that date for the next-charge note. Day passes don't
