@@ -1,0 +1,159 @@
+import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
+import { requireAdmin, PortalError } from '@/lib/portal/auth';
+import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+
+export const dynamic = 'force-dynamic';
+
+// Admin-initiated cancellation. Mirrors the member self-service flow in
+// app/api/portal/cancel-subscription/route.ts so an admin-side cancel stops
+// the Stripe subscription, applies the Last Month's Membership Fee credit
+// against the upcoming invoice, and writes the cancellation effective date
+// back onto the member row. Use this when an admin needs to cancel on behalf
+// of a member (rare — most members will cancel themselves from the portal).
+
+function lastDayOfMonth(d: Date): Date {
+  return new Date(Date.UTC(
+    d.getUTCFullYear(),
+    d.getUTCMonth() + 1,
+    0,
+    23, 59, 59,
+  ));
+}
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+    const adminUser = await requireAdmin(req);
+
+    const sb = getServiceSupabase();
+    const { data: member, error: memErr } = await sb
+      .from('members')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (memErr || !member) {
+      return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+    }
+
+    if (!member.stripe_subscription_id) {
+      // No live subscription — just flip the local status so the admin's
+      // intent is recorded. Nothing to do in Stripe.
+      await sb
+        .from('members')
+        .update({ status: 'cancelled' })
+        .eq('id', id);
+      return NextResponse.json({
+        ok: true,
+        no_subscription: true,
+      });
+    }
+    if (!member.monthly_cost_cents) {
+      return NextResponse.json(
+        { error: 'Monthly cost not set on member record.' },
+        { status: 400 },
+      );
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2025-08-27.basil' as any,
+    });
+
+    const sub = await stripe.subscriptions.retrieve(member.stripe_subscription_id);
+
+    // Idempotent: if already cancelled, just return current state.
+    if (sub.cancel_at || sub.cancel_at_period_end || sub.status === 'canceled') {
+      return NextResponse.json({
+        ok: true,
+        already_cancelled: true,
+        cancel_at: sub.cancel_at,
+        cancellation_effective_date: member.cancellation_effective_date ?? null,
+      });
+    }
+
+    const currentPeriodEndUnix = (sub as any).current_period_end as number | undefined;
+    if (!currentPeriodEndUnix) {
+      return NextResponse.json(
+        { error: 'Subscription has no current period.' },
+        { status: 400 },
+      );
+    }
+    const currentPeriodEndDate = new Date(currentPeriodEndUnix * 1000);
+    const finalMonthEnd = lastDayOfMonth(currentPeriodEndDate);
+    const finalMonthEndUnix = Math.floor(finalMonthEnd.getTime() / 1000);
+
+    const customerId =
+      typeof sub.customer === 'string' ? sub.customer : sub.customer?.id;
+    if (!customerId) {
+      return NextResponse.json(
+        { error: 'Subscription has no customer.' },
+        { status: 400 },
+      );
+    }
+
+    // Step 1: credit the upcoming invoice for one full month (Last Month's Fee).
+    const credit = await stripe.invoiceItems.create({
+      customer: customerId,
+      subscription: member.stripe_subscription_id,
+      amount: -member.monthly_cost_cents,
+      currency: 'usd',
+      description: "Last Month's Membership Fee — credit applied (paid at sign-up)",
+      metadata: {
+        kind: 'last_month_deposit_credit',
+        member_id: member.id,
+      },
+    });
+
+    // Step 2: hard-cancel at the end of the final calendar month.
+    let updated: Stripe.Subscription;
+    try {
+      updated = await stripe.subscriptions.update(member.stripe_subscription_id, {
+        cancel_at: finalMonthEndUnix,
+        cancel_at_period_end: false,
+        proration_behavior: 'none',
+        metadata: {
+          ...(sub.metadata || {}),
+          cancelled_by: 'admin',
+          cancelled_via: 'admin',
+          cancelled_by_admin_user_id: adminUser.id,
+          notice_received_at: new Date().toISOString(),
+          cancellation_effective_at: finalMonthEnd.toISOString(),
+        },
+      });
+    } catch (e) {
+      try {
+        await stripe.invoiceItems.del(credit.id);
+      } catch {
+        // best effort
+      }
+      throw e;
+    }
+
+    // Step 3: mirror cancellation state locally.
+    const effectiveDateIso = finalMonthEnd.toISOString().slice(0, 10);
+    await sb
+      .from('members')
+      .update({
+        subscription_status: 'cancel_at_period_end',
+        status: 'cancelled',
+        cancellation_notice_received_at: new Date().toISOString(),
+        cancellation_effective_date: effectiveDateIso,
+        last_month_credit_invoice_item_id: credit.id,
+      })
+      .eq('id', id);
+
+    return NextResponse.json({
+      ok: true,
+      cancel_at: updated.cancel_at,
+      current_period_end: (updated as any).current_period_end ?? null,
+      cancellation_effective_date: effectiveDateIso,
+      last_month_credit_invoice_item_id: credit.id,
+    });
+  } catch (e: any) {
+    const status = e instanceof PortalError ? e.status : 500;
+    return NextResponse.json({ error: e.message }, { status });
+  }
+}
