@@ -13,8 +13,9 @@ export const dynamic = 'force-dynamic';
 
 // Which assignment fields a member can edit themselves, based on their
 // designation. Office members pick an office; dedicated-desk members pick a
-// desk. Other designations can edit neither — flex/trial members don't have
-// a fixed seat, and admins still control the field via the admin panel.
+// desk. Members whose designation hasn't been set yet can edit either field
+// — admins still finalize the assignment in the admin panel. Flex/other
+// members don't have a fixed seat and can edit neither.
 function allowedFields(designation: MemberDesignation | null): {
   desk: boolean;
   office: boolean;
@@ -27,6 +28,9 @@ function allowedFields(designation: MemberDesignation | null): {
     case 'private_office_double':
     case 'private_office_large':
       return { desk: false, office: true };
+    case null:
+    case undefined:
+      return { desk: true, office: true };
     default:
       return { desk: false, office: false };
   }

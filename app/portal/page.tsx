@@ -364,6 +364,8 @@ function PortalDashboard() {
         </div>
       )}
 
+      <WorkspaceAssignmentSection member={member} onMemberChange={setMember} />
+
       <div className="border-b">
         <nav className="flex gap-6">
           <TabButton active={tab === 'documents'} onClick={() => setTab('documents')}>
@@ -429,7 +431,6 @@ function PortalDashboard() {
           member={member}
           accessRequestStatus={accessRequestStatus}
           setAccessRequestStatus={setAccessRequestStatus}
-          onMemberChange={setMember}
         />
       )}
     </div>
@@ -2003,34 +2004,52 @@ function WorkspaceAssignmentSection({
     designation === 'private_office_large';
   const isDesk =
     designation === 'dedicated_desk' || designation === 'one_day_dedicated_desk';
-  const editable = isOffice || isDesk;
+  // Flex/other don't get a fixed seat. For everyone else (including members
+  // whose designation hasn't been set yet by admin) we render the section so
+  // they always have a place to record their preference.
+  const hidden = designation === 'flex' || designation === 'other';
 
-  const initial = isOffice ? member.office_number || '' : member.desk_number || '';
-  const [value, setValue] = useState(initial);
+  // Show the relevant kind of input. When designation isn't set yet we show
+  // both fields so the member can fill in whichever applies.
+  const showOffice = isOffice || !designation;
+  const showDesk = isDesk || !designation;
+
+  const [officeValue, setOfficeValue] = useState(member.office_number || '');
+  const [deskValue, setDeskValue] = useState(member.desk_number || '');
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
-  // Keep the input in sync if the member record refreshes (e.g. admin override).
+  // Keep inputs in sync if the member record refreshes (e.g. admin override).
   useEffect(() => {
-    setValue(initial);
-  }, [initial]);
+    setOfficeValue(member.office_number || '');
+  }, [member.office_number]);
+  useEffect(() => {
+    setDeskValue(member.desk_number || '');
+  }, [member.desk_number]);
 
-  if (!editable) {
-    return null;
+  if (hidden) return null;
+
+  const officeBaseline = (member.office_number || '').trim();
+  const deskBaseline = (member.desk_number || '').trim();
+  const officeDirty = showOffice && officeValue.trim() !== officeBaseline;
+  const deskDirty = showDesk && deskValue.trim() !== deskBaseline;
+  const dirty = officeDirty || deskDirty;
+
+  let title: string;
+  let helper: string;
+  if (isOffice) {
+    title = 'Your Office';
+    helper =
+      "Tell us which office you'd like. Member services will confirm availability and finalize your assignment.";
+  } else if (isDesk) {
+    title = 'Your Dedicated Desk';
+    helper =
+      "Add the desk number you're taking. Member services will confirm and update building records.";
+  } else {
+    title = 'Your Desk or Office';
+    helper =
+      "Let us know which dedicated desk you're taking or which private office you'd like. Member services will confirm availability.";
   }
-
-  const labelTitle = isOffice ? 'Your Office' : 'Your Dedicated Desk';
-  const helper = isOffice
-    ? "Tell us which office you'd like. Member services will confirm availability and finalize your assignment."
-    : "Add the desk number you're taking. Member services will confirm and update building records.";
-  const placeholder = isOffice ? 'e.g. 12 or 12B' : 'e.g. 4 or 4A';
-  const fieldLabel = isOffice ? 'Office number' : 'Desk number';
-  const currentLabel = isOffice ? 'Current office:' : 'Current desk:';
-  const currentValue = isOffice ? member.office_number : member.desk_number;
-
-  const trimmed = value.trim();
-  const baseline = (currentValue || '').trim();
-  const dirty = trimmed !== baseline;
 
   async function save() {
     setSaving(true);
@@ -2038,9 +2057,9 @@ function WorkspaceAssignmentSection({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const body: Record<string, string | null> = isOffice
-        ? { office_number: trimmed || null }
-        : { desk_number: trimmed || null };
+      const body: Record<string, string | null> = {};
+      if (officeDirty) body.office_number = officeValue.trim() || null;
+      if (deskDirty) body.desk_number = deskValue.trim() || null;
       const res = await fetch('/api/portal/assignment', {
         method: 'POST',
         headers: {
@@ -2061,23 +2080,42 @@ function WorkspaceAssignmentSection({
   }
 
   return (
-    <section className="bg-white border rounded-lg p-6">
-      <h3 className="font-semibold text-gray-900 mb-1">{labelTitle}</h3>
+    <section className="bg-white border-2 border-orange-200 rounded-lg p-6">
+      <h3 className="font-semibold text-gray-900 mb-1">{title}</h3>
       <p className="text-sm text-gray-600 mb-4">{helper}</p>
-      <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            {fieldLabel}
-          </label>
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={placeholder}
-            maxLength={32}
-            className="w-full border rounded px-3 py-2 text-sm"
-          />
-        </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {showOffice && (
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Office number
+            </label>
+            <input
+              type="text"
+              value={officeValue}
+              onChange={(e) => setOfficeValue(e.target.value)}
+              placeholder="e.g. 12 or 12B"
+              maxLength={32}
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+          </div>
+        )}
+        {showDesk && (
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Dedicated desk number
+            </label>
+            <input
+              type="text"
+              value={deskValue}
+              onChange={(e) => setDeskValue(e.target.value)}
+              placeholder="e.g. 4 or 4A"
+              maxLength={32}
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+          </div>
+        )}
+      </div>
+      <div className="mt-4 flex items-center gap-3">
         <button
           onClick={save}
           disabled={saving || !dirty}
@@ -2085,12 +2123,22 @@ function WorkspaceAssignmentSection({
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
+        {(member.office_number || member.desk_number) && (
+          <p className="text-xs text-gray-500">
+            {member.office_number && (
+              <>
+                Current office: <span className="font-mono">{member.office_number}</span>
+              </>
+            )}
+            {member.office_number && member.desk_number && ' · '}
+            {member.desk_number && (
+              <>
+                Current desk: <span className="font-mono">{member.desk_number}</span>
+              </>
+            )}
+          </p>
+        )}
       </div>
-      {currentValue && (
-        <p className="mt-3 text-xs text-gray-500">
-          {currentLabel} <span className="font-mono">{currentValue}</span>
-        </p>
-      )}
       {status && (
         <p
           className={`mt-2 text-sm ${
@@ -2109,12 +2157,10 @@ function OnboardingTab({
   member,
   accessRequestStatus,
   setAccessRequestStatus,
-  onMemberChange,
 }: {
   member: Member;
   accessRequestStatus: string | null;
   setAccessRequestStatus: (s: string | null) => void;
-  onMemberChange: (m: Member) => void;
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -2152,8 +2198,6 @@ function OnboardingTab({
           essential information about your workspace.
         </p>
       </section>
-
-      <WorkspaceAssignmentSection member={member} onMemberChange={onMemberChange} />
 
       {/* About Merritt Workspace */}
       <section className="bg-white border rounded-lg p-6">
