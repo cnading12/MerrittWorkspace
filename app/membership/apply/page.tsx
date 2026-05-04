@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from 'react';
-import { CheckCircle, AlertCircle, Loader2, User, Briefcase, Calendar, Phone, Shield, CreditCard, Home, Dumbbell } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { CheckCircle, AlertCircle, Loader2, User, Briefcase, Calendar, Phone, Shield, CreditCard, Home, Dumbbell, Plus, Minus } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
 
 type HousingReferenceType = '' | 'mortgage' | 'landlord';
 type MembershipReferenceType = '' | 'gym' | 'workspace';
+type PlanId = 'dedicated_desk' | 'one_day_dedicated_desk' | 'private_office_single' | 'private_office_double' | 'private_office_large';
+
+interface SelectedPlan {
+  plan_id: PlanId;
+  quantity: number;
+}
 
 interface HousingReference {
   type: HousingReferenceType;
@@ -39,7 +45,10 @@ interface MembershipApplication {
   industry: string;
   linkedin_url?: string;
   website_url?: string;
-  membership_type: 'dedicated_desk' | 'one_day_dedicated_desk' | 'private_office_single' | 'private_office_double' | 'private_office_large';
+  // Representative single plan kept for backward compat with downstream
+  // systems that expect one designation; computed from selected_plans.
+  membership_type: PlanId;
+  selected_plans: SelectedPlan[];
   start_date: string;
   // null = applicant has not yet picked between trial-first and membership-now
   wants_trial_day: boolean | null;
@@ -58,13 +67,24 @@ interface MembershipApplication {
   marketing_consent: boolean;
 }
 
-const membershipPlans = [
+interface PlanDef {
+  id: PlanId;
+  name: string;
+  price: number;
+  description: string;
+  category: string;
+  recurrence: 'monthly' | 'one_time';
+  features: string[];
+}
+
+const membershipPlans: PlanDef[] = [
   {
     id: 'dedicated_desk',
     name: 'Dedicated Desk — $100/mo Promo (for life)',
     price: 100,
     description: 'Limited-time promo: lock in $100/month for life on your own dedicated desk in our collaborative environment.',
     category: 'Shared Workspace',
+    recurrence: 'monthly',
     features: ['$100/mo locked in for life', '24/7 access', 'High-speed WiFi', 'Printing access', 'Kitchen access', '2 meeting room hours/month']
   },
   {
@@ -73,6 +93,7 @@ const membershipPlans = [
     price: 30,
     description: 'Single-day dedicated desk pass. A one-time $30 charge — no recurring subscription.',
     category: 'Day Pass',
+    recurrence: 'one_time',
     features: ['One-time $30 charge', 'Full day of access', 'High-speed WiFi', 'Kitchen access', 'Printing access']
   },
   {
@@ -81,6 +102,7 @@ const membershipPlans = [
     price: 500,
     description: 'Private lockable office for individual professionals',
     category: 'Private Office',
+    recurrence: 'monthly',
     features: ['24/7 access', 'Lockable office', 'Window view', 'High-speed WiFi', '4 meeting room hours/month']
   },
   {
@@ -89,6 +111,7 @@ const membershipPlans = [
     price: 700,
     description: 'Private office space perfect for small teams',
     category: 'Private Office',
+    recurrence: 'monthly',
     features: ['24/7 access', 'Lockable office', 'Space for 2 desks', 'Window view', '6 meeting room hours/month']
   },
   {
@@ -97,9 +120,12 @@ const membershipPlans = [
     price: 1200,
     description: 'Spacious office for established teams',
     category: 'Private Office',
+    recurrence: 'monthly',
     features: ['24/7 access', 'Large lockable office', 'Space for 4+ desks', 'Conference table', '10 meeting room hours/month']
   }
 ];
+
+const planById = (id: PlanId): PlanDef | undefined => membershipPlans.find(p => p.id === id);
 
 const workStyleOptions = [
   'Quiet focused work',
@@ -152,6 +178,7 @@ export default function MembershipApplicationPage() {
     linkedin_url: '',
     website_url: '',
     membership_type: 'dedicated_desk',
+    selected_plans: [],
     start_date: '',
     wants_trial_day: null,
     trial_date: '',
@@ -186,6 +213,48 @@ export default function MembershipApplicationPage() {
     marketing_consent: false
   });
 
+  const getQuantity = (planId: PlanId): number =>
+    application.selected_plans.find(p => p.plan_id === planId)?.quantity ?? 0;
+
+  const setQuantity = (planId: PlanId, quantity: number) => {
+    const clean = Math.max(0, Math.min(20, Math.floor(quantity || 0)));
+    setApplication(prev => {
+      const others = prev.selected_plans.filter(p => p.plan_id !== planId);
+      const next = clean > 0 ? [...others, { plan_id: planId, quantity: clean }] : others;
+      // Pick the most expensive selected plan as the representative
+      // membership_type for legacy single-plan code paths.
+      const representative = next.length > 0
+        ? [...next].sort((a, b) => (planById(b.plan_id)?.price ?? 0) - (planById(a.plan_id)?.price ?? 0))[0].plan_id
+        : prev.membership_type;
+      return { ...prev, selected_plans: next, membership_type: representative };
+    });
+  };
+
+  const adjustQuantity = (planId: PlanId, delta: number) =>
+    setQuantity(planId, getQuantity(planId) + delta);
+
+  const totals = useMemo(() => {
+    let monthlyCents = 0;
+    let oneTimeCents = 0;
+    const lines: { plan: PlanDef; quantity: number; subtotal: number }[] = [];
+    for (const sel of application.selected_plans) {
+      const plan = planById(sel.plan_id);
+      if (!plan || sel.quantity <= 0) continue;
+      const subtotal = plan.price * sel.quantity;
+      lines.push({ plan, quantity: sel.quantity, subtotal });
+      if (plan.recurrence === 'monthly') monthlyCents += subtotal * 100;
+      else oneTimeCents += subtotal * 100;
+    }
+    return {
+      lines,
+      monthly: monthlyCents / 100,
+      oneTime: oneTimeCents / 100,
+      hasMonthly: monthlyCents > 0,
+      hasOneTime: oneTimeCents > 0,
+      anySelected: application.selected_plans.some(p => p.quantity > 0),
+    };
+  }, [application.selected_plans]);
+
   const handleWorkStyleChange = (style: string, checked: boolean) => {
     setApplication(prev => ({
       ...prev,
@@ -217,6 +286,11 @@ export default function MembershipApplicationPage() {
       return;
     }
 
+    if (!totals.anySelected) {
+      setError('Please choose at least one office or dedicated desk.');
+      return;
+    }
+
     if (application.wants_trial_day === null) {
       setError('Please tell us whether this is a trial day application or you are ready to begin membership.');
       return;
@@ -245,13 +319,16 @@ export default function MembershipApplicationPage() {
     try {
       console.log('📝 Submitting membership application to API...');
 
-      // Call the API endpoint
       const response = await fetch('/api/membership-application', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(application),
+        body: JSON.stringify({
+          ...application,
+          total_monthly_cost_cents: Math.round(totals.monthly * 100),
+          total_one_time_cost_cents: Math.round(totals.oneTime * 100),
+        }),
       });
 
       const data = await response.json();
@@ -272,8 +349,6 @@ export default function MembershipApplicationPage() {
       setSubmitting(false);
     }
   };
-
-  const selectedPlanDetails = membershipPlans.find(plan => plan.id === application.membership_type);
 
   if (success) {
     return (
@@ -350,78 +425,153 @@ export default function MembershipApplicationPage() {
                 <h3 className="text-xl font-semibold text-gray-900">Choose Your Membership</h3>
               </div>
 
+              <p className="text-sm text-gray-600 mb-4">
+                Need more than one office or dedicated desk? Set the quantity for each plan you want — your charges below will roll up into one combined total.
+              </p>
+
               <div className="grid md:grid-cols-2 gap-4">
-                {membershipPlans.map((plan) => (
-                  <div
-                    key={plan.id}
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition relative ${application.membership_type === plan.id
-                        ? 'border-orange-500 bg-orange-50'
-                        : plan.id === 'dedicated_desk' ? 'border-green-400 hover:border-green-500' : 'border-gray-200 hover:border-gray-300'
+                {membershipPlans.map((plan) => {
+                  const quantity = getQuantity(plan.id);
+                  const isSelected = quantity > 0;
+                  return (
+                    <div
+                      key={plan.id}
+                      className={`border-2 rounded-lg p-4 transition relative ${
+                        isSelected
+                          ? 'border-orange-500 bg-orange-50'
+                          : plan.id === 'dedicated_desk'
+                            ? 'border-green-400 hover:border-green-500'
+                            : 'border-gray-200 hover:border-gray-300'
                       }`}
-                    onClick={() => setApplication(prev => ({ ...prev, membership_type: plan.id as any }))}
-                  >
-                    {plan.id === 'dedicated_desk' && (
-                      <div className="absolute -top-3 left-4 bg-green-500 text-white px-3 py-0.5 rounded-full text-xs font-bold">
-                        LIMITED DEAL — $100/MO FOR LIFE
-                      </div>
-                    )}
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">{plan.name}</h4>
-                        <p className="text-sm text-gray-600 mb-2">{plan.description}</p>
-                        <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{plan.category}</span>
-                      </div>
-                      <div className="text-right">
-                        {plan.id === 'dedicated_desk' ? (
-                          <>
-                            <p className="text-sm text-gray-400 line-through">${plan.price}</p>
-                            <p className="text-2xl font-bold text-green-600">$100</p>
-                            <p className="text-xs text-gray-500">/month for life</p>
-                          </>
-                        ) : plan.id === 'one_day_dedicated_desk' ? (
-                          <>
-                            <p className="text-2xl font-bold text-orange-600">${plan.price}</p>
-                            <p className="text-xs text-gray-500">one-time / day</p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-2xl font-bold text-orange-600">${plan.price}</p>
-                            <p className="text-xs text-gray-500">/month</p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      {plan.features.map((feature, idx) => (
-                        <div key={idx} className="flex items-center text-xs text-gray-600">
-                          <CheckCircle className="w-3 h-3 text-green-500 mr-2 flex-shrink-0" />
-                          {feature}
+                    >
+                      {plan.id === 'dedicated_desk' && (
+                        <div className="absolute -top-3 left-4 bg-green-500 text-white px-3 py-0.5 rounded-full text-xs font-bold">
+                          LIMITED DEAL — $100/MO FOR LIFE
                         </div>
-                      ))}
+                      )}
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{plan.name}</h4>
+                          <p className="text-sm text-gray-600 mb-2">{plan.description}</p>
+                          <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{plan.category}</span>
+                        </div>
+                        <div className="text-right">
+                          {plan.id === 'dedicated_desk' ? (
+                            <>
+                              <p className="text-sm text-gray-400 line-through">$300</p>
+                              <p className="text-2xl font-bold text-green-600">$100</p>
+                              <p className="text-xs text-gray-500">/month for life</p>
+                            </>
+                          ) : plan.recurrence === 'one_time' ? (
+                            <>
+                              <p className="text-2xl font-bold text-orange-600">${plan.price}</p>
+                              <p className="text-xs text-gray-500">one-time / day</p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-2xl font-bold text-orange-600">${plan.price}</p>
+                              <p className="text-xs text-gray-500">/month each</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-1 mb-4">
+                        {plan.features.map((feature, idx) => (
+                          <div key={idx} className="flex items-center text-xs text-gray-600">
+                            <CheckCircle className="w-3 h-3 text-green-500 mr-2 flex-shrink-0" />
+                            {feature}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                        <span className="text-sm font-medium text-gray-700">
+                          {plan.recurrence === 'one_time' ? 'Days' : 'Quantity'}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            aria-label={`Decrease ${plan.name}`}
+                            onClick={() => adjustQuantity(plan.id, -1)}
+                            disabled={quantity === 0}
+                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <input
+                            type="number"
+                            min={0}
+                            max={20}
+                            value={quantity}
+                            onChange={(e) => setQuantity(plan.id, parseInt(e.target.value, 10) || 0)}
+                            className="w-14 text-center p-2 border border-gray-300 rounded"
+                            aria-label={`${plan.name} quantity`}
+                          />
+                          <button
+                            type="button"
+                            aria-label={`Increase ${plan.name}`}
+                            onClick={() => adjustQuantity(plan.id, 1)}
+                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {isSelected && (
+                        <div className="mt-3 text-sm text-orange-700 font-medium text-right">
+                          Subtotal: ${(plan.price * quantity).toLocaleString()}
+                          {plan.recurrence === 'monthly' ? '/month' : ' one-time'}
+                        </div>
+                      )}
+
+                      {plan.id === 'dedicated_desk' && (
+                        <p className="text-xs text-green-700 font-medium mt-2">First 10 members only — Save $200/month off standard rate</p>
+                      )}
                     </div>
-                    {plan.id === 'dedicated_desk' && (
-                      <p className="text-xs text-green-700 font-medium mt-2">First 10 members only — Save $200/month off standard rate</p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
-              {selectedPlanDetails && (
-                <div className={`mt-6 p-4 rounded-lg border ${selectedPlanDetails.id === 'dedicated_desk' ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'}`}>
-                  <h4 className={`font-semibold mb-2 ${selectedPlanDetails.id === 'dedicated_desk' ? 'text-green-900' : 'text-orange-900'}`}>Selected Plan: {selectedPlanDetails.name}</h4>
-                  <div className="flex justify-between items-center">
-                    <span className={selectedPlanDetails.id === 'dedicated_desk' ? 'text-green-700' : 'text-orange-700'}>{selectedPlanDetails.description}</span>
-                    {selectedPlanDetails.id === 'dedicated_desk' ? (
-                      <div className="text-right">
-                        <span className="text-sm text-gray-400 line-through mr-2">${selectedPlanDetails.price}/mo</span>
-                        <span className="text-xl font-bold text-green-600">$100/month for life</span>
+              {totals.anySelected && (
+                <div className="mt-6 p-5 rounded-lg border-2 border-orange-300 bg-orange-50">
+                  <h4 className="font-semibold text-orange-900 mb-3">Your Combined Charge</h4>
+                  <div className="space-y-1 mb-4">
+                    {totals.lines.map(({ plan, quantity, subtotal }) => (
+                      <div key={plan.id} className="flex justify-between text-sm text-gray-800">
+                        <span>
+                          {quantity} × {plan.name}
+                        </span>
+                        <span className="font-medium">
+                          ${subtotal.toLocaleString()}
+                          {plan.recurrence === 'monthly' ? '/mo' : ' one-time'}
+                        </span>
                       </div>
-                    ) : selectedPlanDetails.id === 'one_day_dedicated_desk' ? (
-                      <span className="text-xl font-bold text-orange-600">${selectedPlanDetails.price} one-time</span>
-                    ) : (
-                      <span className="text-xl font-bold text-orange-600">${selectedPlanDetails.price}/month</span>
+                    ))}
+                  </div>
+                  <div className="border-t border-orange-200 pt-3 space-y-1">
+                    {totals.hasMonthly && (
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-gray-700">Total monthly</span>
+                        <span className="text-2xl font-bold text-orange-700">
+                          ${totals.monthly.toLocaleString()}
+                          <span className="text-sm font-normal text-gray-600">/month</span>
+                        </span>
+                      </div>
+                    )}
+                    {totals.hasOneTime && (
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-gray-700">One-time charges</span>
+                        <span className="text-2xl font-bold text-orange-700">
+                          ${totals.oneTime.toLocaleString()}
+                          <span className="text-sm font-normal text-gray-600"> one-time</span>
+                        </span>
+                      </div>
                     )}
                   </div>
+                  <p className="text-xs text-gray-600 mt-3">
+                    All offices and dedicated desks you've selected will be billed together as a single charge.
+                  </p>
                 </div>
               )}
 
@@ -506,15 +656,16 @@ export default function MembershipApplicationPage() {
                 <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-amber-900 space-y-2">
                   <p className="font-semibold mb-1">Billing & Cancellation Notice</p>
-                  {application.membership_type === 'one_day_dedicated_desk' ? (
+                  {totals.hasOneTime && (
                     <p>
-                      The One Day Dedicated Desk is a <span className="font-semibold">one-time $30 charge</span> for a single day of access. No recurring subscription, no first/last month billing.
+                      Each One Day Dedicated Desk is a <span className="font-semibold">one-time $30 charge</span> per day of access. No recurring subscription on those passes.
                     </p>
-                  ) : (
+                  )}
+                  {totals.hasMonthly && (
                     <>
                       <p>
                         Your first billing period will include both your <span className="font-semibold">first month</span> (prorated from your start date)
-                        and your <span className="font-semibold">last month</span> of membership, paid up front. This applies to all recurring membership tiers.
+                        and your <span className="font-semibold">last month</span> of membership, paid up front. This applies to all recurring memberships and is calculated against your <span className="font-semibold">combined monthly total</span> across every office and dedicated desk on this application.
                       </p>
                       <p>
                         <span className="font-semibold">Cancellation policy:</span> To cancel, you must give Merritt Workspace at least <span className="font-semibold">30 days' written notice</span>.
@@ -524,6 +675,9 @@ export default function MembershipApplicationPage() {
                         Merritt Workspace is entitled to inspect the workspace and assess any additional charges for damage, excessive wear, or restoration.
                       </p>
                     </>
+                  )}
+                  {!totals.anySelected && (
+                    <p>Select at least one office or dedicated desk above to see billing details.</p>
                   )}
                 </div>
               </div>
@@ -1062,7 +1216,7 @@ export default function MembershipApplicationPage() {
             <div className="pt-6">
               <button
                 type="submit"
-                disabled={submitting || !application.agrees_to_terms}
+                disabled={submitting || !application.agrees_to_terms || !totals.anySelected}
                 className="w-full bg-orange-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-lg"
               >
                 {submitting ? (
