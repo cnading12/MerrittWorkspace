@@ -265,6 +265,9 @@ export function subscriptionPaymentReceiptEmail(opts: {
   };
 }
 
+export const ACCESS_CODE_VIDEO_URL =
+  'https://www.youtube.com/watch?v=yNvPrGs8uDY';
+
 export function accessCodeIssuedEmail(opts: {
   firstName: string;
   accessCode: string;
@@ -283,7 +286,13 @@ export function accessCodeIssuedEmail(opts: {
         <div class="highlight">
           <p style="margin:0;"><strong>Building hours:</strong> The main entrance is unlocked from 8 AM – 6 PM Monday through Friday. Use this code outside those hours to enter the building.</p>
         </div>
-        <p>Please keep this code confidential — it's tied to your member account. If you ever suspect it's been shared, let us know and we'll issue a new one.</p>
+        <p><strong>How to use the keypad:</strong> Watch this short tutorial on locking and unlocking the front door with your access code:</p>
+        <p style="text-align:center;">
+          <a href="${ACCESS_CODE_VIDEO_URL}" class="button">▶ Watch the Keypad Tutorial</a>
+        </p>
+        <p style="font-size:13px;color:#555;text-align:center;">Or open this link: <a href="${ACCESS_CODE_VIDEO_URL}">${ACCESS_CODE_VIDEO_URL}</a></p>
+        <p>Please keep this code and video confidential — they are tied to your member account. If you ever suspect either has been shared, let us know and we'll issue a new code.</p>
+        <p>Questions? Reply to this email or contact <a href="mailto:memberservices@merrittworkspace.net">memberservices@merrittworkspace.net</a>.</p>
         <p>— The Merritt Workspace Team</p>
       `,
     }),
@@ -296,7 +305,12 @@ export function accessCodeIssuedEmail(opts: {
       '',
       'Building hours: The main entrance is unlocked from 8 AM - 6 PM Monday through Friday. Use this code outside those hours to enter the building.',
       '',
-      'Please keep this code confidential — it is tied to your member account. If you ever suspect it has been shared, let us know and we will issue a new one.',
+      'How to use the keypad: watch this short tutorial on locking and unlocking the front door with your access code:',
+      `    ${ACCESS_CODE_VIDEO_URL}`,
+      '',
+      'Please keep this code and video confidential — they are tied to your member account. If you ever suspect either has been shared, let us know and we will issue a new code.',
+      '',
+      'Questions? Reply to this email or contact memberservices@merrittworkspace.net.',
       '',
       '— The Merritt Workspace Team',
       '',

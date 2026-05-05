@@ -56,21 +56,19 @@ export default function FAQPage() {
         <div className="space-y-4">
           <p>Our front door uses a keypad system for secure after-hours access.</p>
 
-          {/* YouTube Video Embed */}
           <div className="bg-gray-50 p-4 rounded-lg border">
-            <h4 className="font-semibold text-gray-900 mb-3">📹 Video Tutorial</h4>
-            <div className="relative w-full" style={{ paddingBottom: '56.25%', height: 0 }}>
-              <iframe
-                src="https://www.youtube.com/embed/yNvPrGs8uDY?si=KgRztNprvRC6uTlN"
-                title="How to Use the Front Door Keypad System"
-                className="absolute top-0 left-0 w-full h-full rounded-lg"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
-            </div>
-            <p className="text-sm text-gray-600 mt-2">
-              Watch this quick tutorial to learn how to operate the keypad system.
+            <h4 className="font-semibold text-gray-900 mb-2">📹 Video Tutorial</h4>
+            <p className="text-sm text-gray-700">
+              For security reasons, the keypad tutorial video is no longer hosted publicly.
+              We sent it to you in the email titled <strong>&ldquo;Your Merritt Workspace Access Code&rdquo;</strong> when
+              your access code was issued — please check your inbox (and spam folder) for that message.
+            </p>
+            <p className="text-sm text-gray-700 mt-2">
+              If you can&rsquo;t find the email or have any questions, reach out to member services at{' '}
+              <a href="mailto:memberservices@merrittworkspace.net" className="text-burnt-orange-600 underline">
+                memberservices@merrittworkspace.net
+              </a>
+              .
             </p>
           </div>
 
