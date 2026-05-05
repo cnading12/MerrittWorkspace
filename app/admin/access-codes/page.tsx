@@ -8,6 +8,7 @@ interface PendingRequest {
   id: string;
   member_id: string;
   requested_at: string;
+  intended_start_date: string | null;
   member: {
     first_name: string;
     last_name: string;
@@ -72,6 +73,11 @@ export default function AccessCodesPage() {
       <p className="text-sm text-gray-600">
         Get a code from POPS, then enter it here. The member will be emailed automatically.
       </p>
+      <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-800">
+        <strong>Reminder:</strong> do not submit the access code until the
+        member&apos;s membership is about to start. Check the start date below
+        before sending.
+      </div>
       {requests.length === 0 && <p className="text-gray-500">No pending requests.</p>}
       <div className="space-y-3">
         {requests.map((r) => (
@@ -81,6 +87,10 @@ export default function AccessCodesPage() {
                 {r.member?.first_name} {r.member?.last_name}
               </div>
               <div className="text-sm text-gray-600">{r.member?.email}</div>
+              <div className="text-sm font-semibold text-red-600 mt-1">
+                Start date:{' '}
+                {r.intended_start_date ? r.intended_start_date : 'not set'}
+              </div>
               <div className="text-xs text-gray-400">
                 Requested {new Date(r.requested_at).toLocaleString()}
               </div>
