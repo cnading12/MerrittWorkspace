@@ -12,7 +12,10 @@ interface FlexBooking {
   duration_minutes: number;
   status: 'pending' | 'confirmed' | 'cancelled';
   google_event_id: string | null;
+  event_title: string | null;
 }
+
+const EVENT_TITLE_MAX_LENGTH = 120;
 
 const DURATION_OPTIONS = [
   { label: '30 min', minutes: 30 },
@@ -53,6 +56,7 @@ export default function FlexSpacePage() {
   const [date, setDate] = useState('');
   const [startTime, setStartTime] = useState('09:00');
   const [duration, setDuration] = useState(60);
+  const [eventTitle, setEventTitle] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -100,6 +104,11 @@ export default function FlexSpacePage() {
       setError('Please pick a date and start time.');
       return;
     }
+    const trimmedTitle = eventTitle.trim();
+    if (!trimmedTitle) {
+      setError('Please describe your event (e.g. team meeting, art class, workshop).');
+      return;
+    }
     // datetime-local style string. The browser will interpret this in the
     // user's local timezone — for MT members this matches flex hours; the
     // server still validates against America/Denver explicitly.
@@ -121,6 +130,7 @@ export default function FlexSpacePage() {
         body: JSON.stringify({
           start_time: startLocal.toISOString(),
           end_time: endLocal.toISOString(),
+          event_title: trimmedTitle,
         }),
       });
       const data = await res.json();
@@ -130,6 +140,7 @@ export default function FlexSpacePage() {
       }
       setSuccess('Booking confirmed. Check your email for details.');
       setDate('');
+      setEventTitle('');
       setCalendarRefreshKey((k) => k + 1);
       await refresh(token);
     } catch (e: any) {
@@ -206,6 +217,29 @@ export default function FlexSpacePage() {
         className="bg-white border rounded-lg p-5 space-y-4"
       >
         <h2 className="text-lg font-medium text-gray-900">Book a time</h2>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Event title
+          </label>
+          <input
+            type="text"
+            required
+            maxLength={EVENT_TITLE_MAX_LENGTH}
+            value={eventTitle}
+            onChange={(e) => setEventTitle(e.target.value)}
+            placeholder="e.g. Team meeting, art class, workshop"
+            className="mt-1 w-full border rounded px-3 py-2 text-base"
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Tell us what you&apos;re using the space for so staff and other
+            members know what&apos;s happening.
+          </p>
+        </div>
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <strong>Heads up:</strong> all setup and breakdown for your event
+          must happen within your booked window. Please plan your arrival and
+          cleanup time accordingly so the next member can start on time.
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -288,7 +322,12 @@ export default function FlexSpacePage() {
                 className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
               >
                 <div>
-                  <div className="text-sm font-medium text-gray-900">
+                  {b.event_title && (
+                    <div className="text-sm font-semibold text-gray-900">
+                      {b.event_title}
+                    </div>
+                  )}
+                  <div className="text-sm text-gray-900">
                     {formatLocal(b.start_time)} – {formatLocal(b.end_time)}
                   </div>
                   <div className="text-xs text-gray-500">

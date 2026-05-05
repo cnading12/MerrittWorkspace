@@ -308,8 +308,18 @@ export function accessCodeIssuedEmail(opts: {
   };
 }
 
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function flexBookingConfirmedEmail(opts: {
   firstName: string;
+  eventTitle: string;
   startLocal: string;
   endLocal: string;
   durationMinutes: number;
@@ -324,9 +334,10 @@ export function flexBookingConfirmedEmail(opts: {
   const used = fmtHours(opts.weeklyMinutesUsed);
   const allowed = fmtHours(opts.weeklyMinutesAllowed);
   const dur = fmtHours(opts.durationMinutes);
+  const safeTitle = escapeHtml(opts.eventTitle);
 
   return {
-    subject: `Flex Space booked - ${opts.startLocal}`,
+    subject: `Flex Space booked - ${opts.eventTitle} - ${opts.startLocal}`,
     html: shell({
       title: 'Flex Space Booking Confirmed',
       tagline: 'Your reservation is on the calendar',
@@ -335,11 +346,13 @@ export function flexBookingConfirmedEmail(opts: {
         <p>Your flex space (church building) reservation is confirmed.</p>
         <div class="info-card">
           <h3 style="margin-top:0;">Reservation</h3>
+          <p><strong>Event:</strong> ${safeTitle}</p>
           <p><strong>Starts:</strong> ${opts.startLocal}</p>
           <p><strong>Ends:</strong> ${opts.endLocal}</p>
           <p><strong>Duration:</strong> ${dur} hour${dur === '1' ? '' : 's'}</p>
         </div>
         <div class="highlight">
+          <p style="margin:0 0 8px;"><strong>Heads up:</strong> all setup and breakdown for your event must happen within your booked window. Please plan your arrival and cleanup accordingly so the next member can start on time.</p>
           <p style="margin:0;"><strong>This week:</strong> ${used} of ${allowed} hours used.</p>
         </div>
         <p>Need to cancel? <a href="${opts.cancelUrl}">Manage your flex bookings</a> in the member portal.</p>
@@ -351,9 +364,12 @@ export function flexBookingConfirmedEmail(opts: {
       '',
       'Your flex space (church building) reservation is confirmed.',
       '',
+      `Event:    ${opts.eventTitle}`,
       `Starts:   ${opts.startLocal}`,
       `Ends:     ${opts.endLocal}`,
       `Duration: ${dur} hour${dur === '1' ? '' : 's'}`,
+      '',
+      'Heads up: all setup and breakdown for your event must happen within your booked window. Please plan your arrival and cleanup accordingly so the next member can start on time.',
       '',
       `This week: ${used} of ${allowed} hours used.`,
       '',
