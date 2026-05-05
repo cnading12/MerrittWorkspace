@@ -29,6 +29,7 @@ const MT_TZ = 'America/Denver';
 const MAX_WEEKLY_MINUTES = 240;
 const MIN_BOOKING_MINUTES = 30;
 const MAX_BOOKING_MINUTES = 240;
+const MAX_EVENT_TITLE_LENGTH = 120;
 
 // Flex hours: weekdays 9:00 AM – 4:30 PM Mountain Time.
 const FLEX_OPEN_MINUTES = 9 * 60;
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
   try {
     const member = await requireMember(req);
     const body = await req.json();
-    const { start_time, end_time } = body || {};
+    const { start_time, end_time, event_title } = body || {};
 
     if (typeof start_time !== 'string' || typeof end_time !== 'string') {
       return NextResponse.json(
@@ -94,6 +95,14 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    if (typeof event_title !== 'string' || !event_title.trim()) {
+      return NextResponse.json(
+        { error: 'Please describe your event (e.g. team meeting, art class, workshop).' },
+        { status: 400 }
+      );
+    }
+    const eventTitle = event_title.trim().slice(0, MAX_EVENT_TITLE_LENGTH);
 
     const start = new Date(start_time);
     const end = new Date(end_time);
@@ -197,6 +206,7 @@ export async function POST(req: NextRequest) {
         member_id: member.id,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
+        event_title: eventTitle,
         status: 'pending',
       })
       .select('*')
@@ -219,11 +229,14 @@ export async function POST(req: NextRequest) {
       const ev = await calendar.events.insert({
         calendarId: flexId,
         requestBody: {
-          summary: `Flex Space — ${memberLabel || member.email}`,
+          summary: `Flex Space — ${eventTitle} (${memberLabel || member.email})`,
           description: [
             'Merritt Workspace flex space reservation.',
+            `Event: ${eventTitle}`,
             `Member: ${memberLabel} <${member.email}>`,
             `Booking ID: ${inserted.id}`,
+            '',
+            'Reminder: all setup and breakdown for this event must happen within the booked window.',
           ].join('\n'),
           start: { dateTime: start.toISOString(), timeZone: MT_TZ },
           end: { dateTime: end.toISOString(), timeZone: MT_TZ },
@@ -275,6 +288,7 @@ export async function POST(req: NextRequest) {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
         const tpl = flexBookingConfirmedEmail({
           firstName: member.first_name,
+          eventTitle,
           startLocal: formatLocal(start),
           endLocal: formatLocal(end),
           durationMinutes,
