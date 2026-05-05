@@ -454,13 +454,15 @@ function generateApplicantEmailHTML(data: {
               <p><strong>Email:</strong> ${data.email}</p>
               <p><strong>Membership Type:</strong> ${data.membershipType}</p>
               <p><strong>Application ID:</strong> ${data.applicationId}</p>
-              <p><strong>Submitted:</strong> ${data.submittedAt.toLocaleDateString('en-US', {
+              <p><strong>Submitted:</strong> ${data.submittedAt.toLocaleString('en-US', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
+                timeZone: 'America/Denver',
+                timeZoneName: 'short'
               })}</p>
             </div>
 
@@ -521,7 +523,7 @@ Application Details:
 - Email: ${data.email}
 - Membership Type: ${data.membershipType}
 - Application ID: ${data.applicationId}
-- Submitted: ${data.submittedAt.toLocaleString()}
+- Submitted: ${data.submittedAt.toLocaleString('en-US', { timeZone: 'America/Denver', timeZoneName: 'short' })}
 
 What's Next:
 1. Review Process: Our team will review your application within 1-2 business days
@@ -596,7 +598,7 @@ function generateManagerEmailHTML(data: {
             <p><strong>Preferred Start Date:</strong> ${new Date(app.start_date).toLocaleDateString()}</p>
             ${app.wants_trial_day ? `<p><strong>Trial Day Date:</strong> ${app.trial_date ? new Date(app.trial_date).toLocaleDateString() : 'not specified'}</p>` : ''}
             <p><strong>Application ID:</strong> ${data.applicationId}</p>
-            <p><strong>Submitted:</strong> ${data.submittedAt.toLocaleString()}</p>
+            <p><strong>Submitted:</strong> ${data.submittedAt.toLocaleString('en-US', { timeZone: 'America/Denver', timeZoneName: 'short' })}</p>
           </div>
 
           <div class="section">
@@ -754,7 +756,7 @@ ${app.total_one_time_cost_cents > 0 ? `ONE-TIME CHARGES:     ${formatUsdCents(ap
 (All selected offices/desks are billed together as a single combined charge.)
 
 ${app.wants_trial_day ? `Trial Day Date: ${app.trial_date ? new Date(app.trial_date).toLocaleDateString() : 'not specified'}\n` : ''}Application ID: ${data.applicationId}
-Submitted: ${data.submittedAt.toLocaleString()}
+Submitted: ${data.submittedAt.toLocaleString('en-US', { timeZone: 'America/Denver', timeZoneName: 'short' })}
 
 PERSONAL INFORMATION
 Name: ${app.first_name} ${app.last_name}
