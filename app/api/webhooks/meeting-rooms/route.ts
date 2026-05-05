@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import { googleCalendarAPI } from '@/lib/google-calendar';
-import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
+import { sendMemberBookingConfirmationEmail, sendNonMemberConferenceRoomOnboardingEmail } from '@/lib/resend';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
@@ -136,6 +136,22 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       console.log('✅ Confirmation emails sent successfully');
     } catch (emailError) {
       console.error('⚠️ Failed to send confirmation emails:', emailError);
+    }
+
+    // Non-members renting the conference room get the same kind of practical
+    // day-of onboarding info as trial-day applicants so they can show up and
+    // get to work without needing to ask.
+    try {
+      console.log('📧 Sending non-member conference room onboarding email...');
+      await sendNonMemberConferenceRoomOnboardingEmail({
+        to: customer_email,
+        customerName: customer_name || 'Customer',
+        booking: booking as any,
+        roomName: room_name || 'Conference Room',
+      });
+      console.log('✅ Non-member onboarding email sent');
+    } catch (onboardingError) {
+      console.error('⚠️ Failed to send non-member onboarding email:', onboardingError);
     }
 
     console.log('✅✅✅ PAID BOOKING COMPLETE: Payment confirmed, calendar updated, emails sent');

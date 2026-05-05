@@ -1050,3 +1050,256 @@ export async function sendMemberBookingConfirmationEmail(data: {
         throw error;
     }
 }
+
+// Onboarding email sent to non-members who rent the conference room.
+// Mirrors the trial-day onboarding email so first-time visitors have everything
+// they need (address, WiFi, parking, hours, etc.) for the day of their booking.
+export const nonMemberConferenceRoomOnboarding = (data: {
+    customerName: string;
+    booking: Booking;
+    roomName: string;
+}) => {
+    const firstName = (data.customerName || '').trim().split(/\s+/)[0] || 'there';
+    const bookingDateDisplay = data.booking.booking_date
+        ? new Date(data.booking.booking_date).toLocaleDateString('en-US', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        })
+        : 'your scheduled day';
+
+    return {
+        subject: `Your Conference Room Booking at Merritt Workspace | What to Expect`,
+        html: `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Your Conference Room Booking at Merritt Workspace</title>
+        <style>
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .header h1 { margin: 0; font-size: 24px; }
+          .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
+          .info-block { background: #fff8e1; padding: 18px; border-radius: 8px; border-left: 4px solid #ed7611; margin: 18px 0; }
+          .info-block h3 { margin-top: 0; color: #ad4a00; }
+          .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; border-radius: 0 0 8px 8px; font-size: 13px; }
+          ul { padding-left: 20px; }
+          li { margin: 4px 0; }
+          .kv td { padding: 6px 4px; border-bottom: 1px solid #eee; }
+          .kv td:first-child { font-weight: 600; width: 140px; color: #555; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>You're Set for Your Meeting</h1>
+            <p style="margin: 8px 0 0 0;">Everything you need for your day at Merritt Workspace</p>
+          </div>
+
+          <div class="content">
+            <p>Hi ${firstName},</p>
+
+            <p>Thanks for booking the conference room at Merritt Workspace. We're looking forward to hosting you on <strong>${bookingDateDisplay}</strong>. A separate confirmation with your booking details and calendar invite has been sent — the info below covers everything you need to walk in and get to work.</p>
+
+            <div class="info-block">
+              <h3>Your booking</h3>
+              <table class="kv">
+                <tr><td>Room</td><td>${data.roomName}</td></tr>
+                <tr><td>Date</td><td>${bookingDateDisplay}</td></tr>
+                <tr><td>Time</td><td>${data.booking.start_time} – ${data.booking.end_time}</td></tr>
+              </table>
+            </div>
+
+            <div class="info-block">
+              <h3>Where to find us</h3>
+              <table class="kv">
+                <tr><td>Address</td><td>2246 Irving Street, Denver, CO 80211</td></tr>
+                <tr><td>Neighborhood</td><td>Sloan's Lake — 3 minutes to I-25</td></tr>
+                <tr><td>Hours</td><td>Building open Mon–Fri, 8:00 AM – 6:00 PM</td></tr>
+                <tr><td>Parking</td><td>Onsite parking available</td></tr>
+              </table>
+            </div>
+
+            <div class="info-block">
+              <h3>When you arrive</h3>
+              <ul>
+                <li>No front desk — just let yourself in through the main entrance during building hours (8:00 AM – 6:00 PM).</li>
+                <li>Head to ${data.roomName}; it will be reserved under your name for your booking window.</li>
+                <li>Feel free to use the kitchen, snack shop, phone booths, and bathrooms while you're here.</li>
+              </ul>
+            </div>
+
+            <div class="info-block">
+              <h3>WiFi</h3>
+              <table class="kv">
+                <tr><td>Network</td><td><code>merrittcowork</code></td></tr>
+                <tr><td>Password</td><td><code>Merritt23X</code></td></tr>
+              </table>
+            </div>
+
+            <div class="info-block">
+              <h3>What's in the room</h3>
+              <ul>
+                <li>75" Smart TV with wireless presentation</li>
+                <li>Conference calling capabilities</li>
+                <li>Comfortable seating for up to 8 people</li>
+                <li>High-speed WiFi</li>
+              </ul>
+            </div>
+
+            <div class="info-block">
+              <h3>What to bring</h3>
+              <ul>
+                <li>Laptop, charger, and any adapters you need for the TV</li>
+                <li>A water bottle (filtered water on tap)</li>
+              </ul>
+            </div>
+
+            <div class="info-block">
+              <h3>What's on us</h3>
+              <ul>
+                <li>Coffee, tea, and beer — help yourself in the kitchen</li>
+              </ul>
+            </div>
+
+            <div class="info-block">
+              <h3>Snacks &amp; other beverages (available for purchase)</h3>
+              <ul>
+                <li>Snacks and other drinks in the kitchen are not included with your booking.</li>
+                <li>Scan the QR code posted in the kitchen — it takes you to our website where you can check out and pay.</li>
+                <li>Snack shop: <a href="https://www.merrittworkspace.net/snackshop">www.merrittworkspace.net/snackshop</a></li>
+              </ul>
+            </div>
+
+            <div class="info-block">
+              <h3>A few house notes</h3>
+              <ul>
+                <li>If you need to step out for a one-on-one call, phone booths are available outside the conference room.</li>
+                <li>Printers are by the kitchen.</li>
+                <li>Please leave the room as you found it for the next group.</li>
+              </ul>
+            </div>
+
+            <div class="info-block">
+              <h3>Thinking about membership?</h3>
+              <p style="margin: 0;">Members get <strong>24/7 building access with a personal access code</strong> plus included monthly conference room hours. If you'd like to learn more, just reply to this email.</p>
+            </div>
+
+            <div class="info-block">
+              <h3>Questions or need anything day-of?</h3>
+              <p style="margin: 0;">Text or call Member Services at <strong>(303) 359-8337</strong> or email <a href="mailto:memberservices@merrittworkspace.net">memberservices@merrittworkspace.net</a> and we'll get back to you quickly.</p>
+            </div>
+
+            <p style="margin-top: 24px;">See you soon!</p>
+            <p style="margin: 0;">— The Merritt Workspace team</p>
+          </div>
+
+          <div class="footer">
+            <p style="margin: 0;"><strong>Merritt Workspace</strong> · 2246 Irving Street, Denver, CO 80211</p>
+            <p style="margin: 4px 0 0 0;">memberservices@merrittworkspace.net · (303) 359-8337</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `,
+        text: `
+YOU'RE SET FOR YOUR MEETING AT MERRITT WORKSPACE
+
+Hi ${firstName},
+
+Thanks for booking the conference room at Merritt Workspace. We're looking
+forward to hosting you on ${bookingDateDisplay}. A separate confirmation
+with your booking details and calendar invite has been sent — the info
+below covers everything you need to walk in and get to work.
+
+YOUR BOOKING
+Room: ${data.roomName}
+Date: ${bookingDateDisplay}
+Time: ${data.booking.start_time} – ${data.booking.end_time}
+
+WHERE TO FIND US
+Address:      2246 Irving Street, Denver, CO 80211
+Neighborhood: Sloan's Lake — 3 minutes to I-25
+Hours:        Building open Mon–Fri, 8:00 AM – 6:00 PM
+Parking:      Onsite parking available
+
+WHEN YOU ARRIVE
+- No front desk — just let yourself in through the main entrance during
+  building hours (8:00 AM – 6:00 PM).
+- Head to ${data.roomName}; it will be reserved under your name for your
+  booking window.
+- Feel free to use the kitchen, snack shop, phone booths, and bathrooms
+  while you're here.
+
+WIFI
+- Network:  merrittcowork
+- Password: Merritt23X
+
+WHAT'S IN THE ROOM
+- 75" Smart TV with wireless presentation
+- Conference calling capabilities
+- Comfortable seating for up to 8 people
+- High-speed WiFi
+
+WHAT TO BRING
+- Laptop, charger, and any adapters you need for the TV
+- A water bottle (filtered water on tap)
+
+WHAT'S ON US
+- Coffee, tea, and beer — help yourself in the kitchen
+
+SNACKS & OTHER BEVERAGES (available for purchase)
+- Snacks and other drinks in the kitchen are not included with your booking.
+- Scan the QR code posted in the kitchen — it takes you to our website
+  where you can check out and pay.
+- Snack shop: www.merrittworkspace.net/snackshop
+
+A FEW HOUSE NOTES
+- If you need to step out for a one-on-one call, phone booths are
+  available outside the conference room.
+- Printers are by the kitchen.
+- Please leave the room as you found it for the next group.
+
+THINKING ABOUT MEMBERSHIP?
+Members get 24/7 building access with a personal access code plus included
+monthly conference room hours. If you'd like to learn more, just reply to
+this email.
+
+QUESTIONS OR NEED ANYTHING DAY-OF?
+Text or call Member Services at (303) 359-8337 or email
+memberservices@merrittworkspace.net and we'll get back to you quickly.
+
+See you soon!
+— The Merritt Workspace team
+
+Merritt Workspace · 2246 Irving Street, Denver, CO 80211
+memberservices@merrittworkspace.net · (303) 359-8337
+  `
+    };
+};
+
+export async function sendNonMemberConferenceRoomOnboardingEmail(data: {
+    to: string;
+    customerName: string;
+    booking: Booking;
+    roomName: string;
+}) {
+    try {
+        const template = nonMemberConferenceRoomOnboarding(data);
+
+        const result = await resend.emails.send({
+            from: 'Merritt Workspace Meetings <memberservices@merrittworkspace.net>',
+            to: data.to,
+            subject: template.subject,
+            html: template.html,
+            text: template.text,
+        });
+
+        console.log('Non-member conference room onboarding email sent:', result);
+        return result;
+    } catch (error) {
+        console.error('Failed to send non-member conference room onboarding email:', error);
+        throw error;
+    }
+}
