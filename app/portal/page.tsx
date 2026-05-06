@@ -1654,8 +1654,21 @@ function PaymentsTab({
     }
   }
 
+  // Detect a successful initial Checkout payment that hasn't yet been
+  // attached to a subscription. Initial Checkout payments are recorded with
+  // a stripe_payment_intent_id but no stripe_invoice_id (recurring invoice
+  // charges have an invoice_id). If we find one, the member already paid
+  // for sign-up — don't let them click "Set up auto-pay" again and incur a
+  // second charge while we (or staff) finalize the subscription.
+  const hasInitialPayment = payments.some(
+    (p) => p.status === 'succeeded' && !p.stripe_invoice_id
+  );
+
   const canSetUp =
-    member.agreement_signed && member.monthly_cost_cents != null && !member.stripe_subscription_id;
+    member.agreement_signed &&
+    member.monthly_cost_cents != null &&
+    !member.stripe_subscription_id &&
+    !hasInitialPayment;
 
   async function openBillingPortal() {
     setPortalLoading(true);
@@ -1897,6 +1910,14 @@ function PaymentsTab({
               </div>
             )}
           </div>
+        ) : hasInitialPayment ? (
+          <div className="mt-4 bg-blue-50 border border-blue-300 text-blue-900 rounded p-3 text-sm">
+            <strong>We&apos;ve received your initial payment.</strong> Your
+            subscription is being finalized — please don&apos;t pay again. If
+            this section hasn&apos;t updated within an hour, email{' '}
+            memberservices@merrittworkspace.net and we&apos;ll set up auto-pay
+            against the payment you already made (no second charge).
+          </div>
         ) : (
           <>
             {member.agreement_signed && (
@@ -1951,34 +1972,59 @@ function PaymentsTab({
         {payments.length === 0 ? (
           <p className="text-sm text-gray-500">No payments yet.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="text-left text-gray-500 border-b">
-              <tr>
-                <th className="py-2">Date</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((p) => (
-                <tr key={p.id} className="border-b last:border-0">
-                  <td className="py-2">{p.paid_at?.slice(0, 10) || p.created_at.slice(0, 10)}</td>
-                  <td>{p.description || '—'}</td>
-                  <td>${(p.amount_cents / 100).toFixed(2)}</td>
-                  <td className="capitalize">{p.status}</td>
-                  <td>
-                    {p.invoice_pdf_url && (
-                      <a className="text-blue-600 hover:underline" href={p.invoice_pdf_url}>
-                        Invoice
-                      </a>
-                    )}
-                  </td>
+          <>
+            {payments.some((p) => p.status === 'refunded') && (
+              <div className="mb-3 bg-amber-50 border border-amber-300 text-amber-900 rounded p-3 text-xs">
+                <strong>Refund in progress.</strong> One or more of your payments
+                has been refunded. Refunds typically take{' '}
+                <span className="font-semibold">3–5 business days</span> to appear
+                back on your original payment method. Contact{' '}
+                memberservices@merrittworkspace.net if you don&apos;t see the
+                refund after 5 business days.
+              </div>
+            )}
+            <table className="w-full text-sm">
+              <thead className="text-left text-gray-500 border-b">
+                <tr>
+                  <th className="py-2">Date</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {payments.map((p) => {
+                  const isRefunded = p.status === 'refunded';
+                  return (
+                    <tr key={p.id} className="border-b last:border-0">
+                      <td className="py-2">{p.paid_at?.slice(0, 10) || p.created_at.slice(0, 10)}</td>
+                      <td>{p.description || '—'}</td>
+                      <td>${(p.amount_cents / 100).toFixed(2)}</td>
+                      <td>
+                        <span
+                          className={
+                            isRefunded
+                              ? 'inline-flex items-center rounded-full bg-amber-100 text-amber-900 px-2 py-0.5 text-xs font-medium'
+                              : 'capitalize'
+                          }
+                        >
+                          {isRefunded ? 'Refunded' : p.status}
+                        </span>
+                      </td>
+                      <td>
+                        {p.invoice_pdf_url && (
+                          <a className="text-blue-600 hover:underline" href={p.invoice_pdf_url}>
+                            Invoice
+                          </a>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </>
         )}
       </section>
     </div>
