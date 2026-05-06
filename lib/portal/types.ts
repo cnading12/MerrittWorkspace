@@ -112,6 +112,7 @@ export interface PaymentHistoryRow {
   id: string;
   member_id: string | null;
   stripe_invoice_id: string | null;
+  stripe_payment_intent_id: string | null;
   amount_cents: number;
   currency: string;
   status: string;

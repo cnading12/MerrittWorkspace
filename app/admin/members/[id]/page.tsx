@@ -240,6 +240,29 @@ export default function AdminMemberDetailPage({
     await load(token);
   }
 
+  async function deletePaymentRow(paymentId: string) {
+    if (!token) return;
+    const ok = window.confirm(
+      'Delete this payment row from our local records?\n\n' +
+        "This does NOT refund the member or change anything in Stripe — it only removes the row from the admin/portal payment history. Use this for phantom or stale rows that don't correspond to a real Stripe charge."
+    );
+    if (!ok) return;
+    const res = await fetch(`/api/admin/members/${id}/payments/${paymentId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || 'Failed to delete payment row');
+      return;
+    }
+    setData((prev) =>
+      prev
+        ? { ...prev, payments: prev.payments.filter((p) => p.id !== paymentId) }
+        : prev
+    );
+  }
+
   async function patchMember(body: any) {
     if (!token) return;
     const res = await fetch(`/api/admin/members/${id}`, {
@@ -471,6 +494,7 @@ export default function AdminMemberDetailPage({
               <tr>
                 <th className="py-2">Date</th>
                 <th>Description</th>
+                <th>Stripe IDs</th>
                 <th>Amount</th>
                 <th>Status</th>
                 <th></th>
@@ -478,14 +502,29 @@ export default function AdminMemberDetailPage({
             </thead>
             <tbody>
               {payments.map((p) => (
-                <tr key={p.id} className="border-b last:border-0">
+                <tr key={p.id} className="border-b last:border-0 align-top">
                   <td className="py-2">
                     {(p.paid_at || p.created_at).slice(0, 10)}
                   </td>
                   <td>{p.description || '—'}</td>
+                  <td className="font-mono text-[11px] text-gray-600 max-w-[260px]">
+                    {p.stripe_invoice_id ? (
+                      <div className="truncate" title={p.stripe_invoice_id}>
+                        inv: {p.stripe_invoice_id}
+                      </div>
+                    ) : null}
+                    {p.stripe_payment_intent_id ? (
+                      <div className="truncate" title={p.stripe_payment_intent_id}>
+                        pi: {p.stripe_payment_intent_id}
+                      </div>
+                    ) : null}
+                    {!p.stripe_invoice_id && !p.stripe_payment_intent_id && (
+                      <span className="text-amber-600">no Stripe ID</span>
+                    )}
+                  </td>
                   <td>${(p.amount_cents / 100).toFixed(2)}</td>
                   <td className="capitalize">{p.status}</td>
-                  <td>
+                  <td className="space-x-3 whitespace-nowrap">
                     {p.invoice_pdf_url && (
                       <a
                         href={p.invoice_pdf_url}
@@ -496,6 +535,14 @@ export default function AdminMemberDetailPage({
                         Invoice
                       </a>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => deletePaymentRow(p.id)}
+                      className="text-red-600 hover:underline"
+                      title="Remove this row from the local payment_history. Use only for phantom/stale rows that don't match a real Stripe charge — does not refund anything."
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
