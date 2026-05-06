@@ -27,10 +27,11 @@ function getResend(): Resend | null {
 // Configure in Stripe to send:
 //   checkout.session.completed,
 //   customer.subscription.{created,updated,deleted},
-//   invoice.{paid,payment_failed,payment_action_required}
-// The last event fires for ACH subscriptions that need additional
-// verification (e.g. micro-deposit fallback). It is handled below so we
-// can record the pending state without marking the invoice as failed.
+//   invoice.{paid,payment_failed,payment_action_required},
+//   charge.refunded
+// `charge.refunded` keeps the local payment_history in sync when staff
+// issue refunds directly from the Stripe Dashboard (i.e. outside our admin
+// refund route), so the member portal reflects the refunded state.
 //
 // Set STRIPE_SUBSCRIPTION_WEBHOOK_SECRET in your env.
 
@@ -425,6 +426,27 @@ export async function POST(req: NextRequest) {
             }
           }
         }
+        break;
+      }
+      case 'charge.refunded': {
+        // Stripe fires this whenever a refund is created (full or partial),
+        // including refunds issued from the Stripe Dashboard. Match on the
+        // PaymentIntent ID — that's the stable key shared between our
+        // initial Checkout charges (no invoice) and recurring invoice
+        // charges. We don't differentiate partial vs full refunds here;
+        // any non-zero refund flips the row to 'refunded' so the portal
+        // can warn the member that funds are on the way back.
+        const charge = event.data.object as Stripe.Charge;
+        const piId =
+          typeof charge.payment_intent === 'string'
+            ? charge.payment_intent
+            : (charge.payment_intent as any)?.id || null;
+        if (!piId) break;
+        if (!charge.amount_refunded || charge.amount_refunded <= 0) break;
+        await sb
+          .from('payment_history')
+          .update({ status: 'refunded' })
+          .eq('stripe_payment_intent_id', piId);
         break;
       }
     }

@@ -27,11 +27,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Subscription already exists' }, { status: 400 });
     }
 
+    const sb = getServiceSupabase();
+
+    // Fail-safe: block duplicate signup payments. If we've already recorded
+    // a successful initial Checkout payment for this member (one without a
+    // Stripe invoice ID — those come from `invoice.paid` for recurring
+    // charges), don't open another Checkout session even if the follow-up
+    // subscription creation hasn't landed yet. Without this, a member who
+    // returned to the portal before the webhook finished could click "Set
+    // up auto-pay" again and be charged a second prorated first month +
+    // deposit. Recovery (manually creating the subscription against the
+    // already-saved payment method) goes through the admin panel.
+    const { data: existingInitialPayment } = await sb
+      .from('payment_history')
+      .select('id, amount_cents, paid_at, created_at')
+      .eq('member_id', member.id)
+      .eq('status', 'succeeded')
+      .is('stripe_invoice_id', null)
+      .not('stripe_payment_intent_id', 'is', null)
+      .limit(1)
+      .maybeSingle();
+    if (existingInitialPayment) {
+      return NextResponse.json(
+        {
+          error:
+            "We've already received your initial payment. Your subscription is still being finalized — please don't pay again. If your portal hasn't unlocked within an hour, email memberservices@merrittworkspace.net and we'll fix it without charging you again.",
+        },
+        { status: 409 }
+      );
+    }
+
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: '2025-08-27.basil' as any,
     });
-
-    const sb = getServiceSupabase();
 
     // Read the payment method the member selected when they signed the Fee
     // Agreement. Valid values are 'card' (default) or 'ach'. When 'ach', we
