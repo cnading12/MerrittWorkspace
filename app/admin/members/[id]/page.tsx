@@ -45,6 +45,7 @@ export default function AdminMemberDetailPage({
   const [data, setData] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reconciling, setReconciling] = useState(false);
 
   async function load(authToken: string) {
     const res = await fetch(`/api/admin/members/${id}`, {
@@ -261,6 +262,40 @@ export default function AdminMemberDetailPage({
         ? { ...prev, payments: prev.payments.filter((p) => p.id !== paymentId) }
         : prev
     );
+  }
+
+  async function reconcilePayments() {
+    if (!token) return;
+    const ok = window.confirm(
+      'Reconcile payment history with Stripe?\n\n' +
+        'This pulls all real charges and invoices for this customer from Stripe and rewrites the local payment history to match:\n' +
+        '  • Phantom rows (no matching Stripe charge) are deleted\n' +
+        '  • Existing rows have their amount and status corrected\n' +
+        '  • Missing real charges are added\n\n' +
+        'Nothing in Stripe is changed — this is local-only.'
+    );
+    if (!ok) return;
+    setReconciling(true);
+    try {
+      const res = await fetch(
+        `/api/admin/members/${id}/reconcile-payments`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const json = await res.json();
+      if (!res.ok) {
+        alert(json.error || 'Failed to reconcile payments');
+        return;
+      }
+      alert(
+        `Reconcile complete:\n  • ${json.added} added\n  • ${json.updated} updated\n  • ${json.removed} removed (phantoms)\n  • ${json.stripe_payments_seen} real Stripe payments seen`
+      );
+      await load(token);
+    } finally {
+      setReconciling(false);
+    }
   }
 
   async function patchMember(body: any) {
@@ -493,7 +528,18 @@ export default function AdminMemberDetailPage({
 
       {/* Payments */}
       <section className="bg-white border rounded p-6">
-        <h2 className="font-semibold mb-3">Payment history</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">Payment history</h2>
+          <button
+            type="button"
+            onClick={reconcilePayments}
+            disabled={reconciling}
+            className="text-xs border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
+            title="Pull real charges from Stripe and rewrite the local payment history to match. Removes phantom rows, corrects amounts/statuses, adds anything missing. Local-only — does not touch Stripe."
+          >
+            {reconciling ? 'Reconciling…' : 'Reconcile from Stripe'}
+          </button>
+        </div>
         {payments.length === 0 ? (
           <p className="text-sm text-gray-500">No payments yet.</p>
         ) : (
