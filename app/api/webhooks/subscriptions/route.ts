@@ -109,7 +109,104 @@ export async function POST(req: NextRequest) {
           (session.subscription as string) || null;
         let subscriptionStatus: string | null = null;
 
+        // Legacy / existing-member auto-pay setup. The Checkout session
+        // ran in `setup` mode (no upfront charge) — the PaymentMethod is
+        // attached to a SetupIntent rather than a PaymentIntent. We pull
+        // it off, set it as the customer default, and create a clean
+        // recurring subscription anchored to the next 1st of the month
+        // with no proration.
         if (
+          !subscriptionId &&
+          session.mode === 'setup' &&
+          session.metadata?.legacy_setup === '1'
+        ) {
+          const monthlyCostCents = Number(
+            session.metadata.monthly_cost_cents || 0
+          );
+          const anchor = Number(session.metadata.billing_cycle_anchor || 0);
+
+          let paymentMethodId: string | null = null;
+          if (session.setup_intent) {
+            try {
+              const si = await stripe.setupIntents.retrieve(
+                session.setup_intent as string
+              );
+              paymentMethodId = (si.payment_method as string) || null;
+            } catch (err) {
+              console.error(
+                'Failed to retrieve SetupIntent for legacy auto-pay',
+                err
+              );
+            }
+          }
+          if (paymentMethodId) {
+            await stripe.customers.update(customerId, {
+              invoice_settings: { default_payment_method: paymentMethodId },
+            });
+          }
+
+          if (monthlyCostCents > 0 && anchor > 0) {
+            try {
+              const productId = await getMembershipProductId(stripe);
+              const sub = await stripe.subscriptions.create({
+                customer: customerId,
+                items: [
+                  {
+                    price_data: {
+                      currency: 'usd',
+                      recurring: { interval: 'month' },
+                      unit_amount: monthlyCostCents,
+                      product: productId,
+                    },
+                    quantity: 1,
+                  },
+                ],
+                billing_cycle_anchor: anchor,
+                proration_behavior: 'none',
+                default_payment_method: paymentMethodId || undefined,
+                collection_method: 'charge_automatically',
+                metadata: {
+                  member_id: memberId,
+                  monthly_cost_cents: String(monthlyCostCents),
+                  legacy_member: '1',
+                  selected_payment_method:
+                    session.metadata.selected_payment_method || '',
+                },
+              } as any);
+              subscriptionId = sub.id;
+              subscriptionStatus = sub.status;
+            } catch (err) {
+              const errorMessage =
+                err instanceof Error ? err.message : String(err);
+              console.error(
+                'Failed to create legacy auto-pay subscription',
+                err
+              );
+              subscriptionStatus = 'creation_failed';
+              try {
+                await sb.from('subscription_creation_failures').insert({
+                  member_id: memberId,
+                  stripe_customer_id: customerId,
+                  error_message: errorMessage,
+                  payload: {
+                    legacy_member: true,
+                    monthly_cost_cents: monthlyCostCents,
+                    billing_cycle_anchor: anchor,
+                    selected_payment_method:
+                      session.metadata.selected_payment_method || null,
+                    checkout_session_id: session.id,
+                    payment_method_id: paymentMethodId,
+                  },
+                });
+              } catch (logErr) {
+                console.error(
+                  'Failed to log legacy subscription creation failure',
+                  logErr
+                );
+              }
+            }
+          }
+        } else if (
           !subscriptionId &&
           session.mode === 'payment' &&
           session.metadata?.create_subscription === '1'

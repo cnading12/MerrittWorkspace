@@ -203,6 +203,15 @@ function PortalDashboard() {
   //      they were stuck looking for.
   const autoJumpedToOnboarding = useRef(false);
   useEffect(() => {
+    // Legacy members get onboarding_unlocked the moment they sign the three
+    // agreements (no Stripe webhook gate). We don't want to skip them past
+    // the Payments tab — they need to see and explicitly accept-or-skip the
+    // optional auto-pay step. Auto-jump only applies once they've either
+    // set up auto-pay (stripe_subscription_id present) OR for non-legacy
+    // members where onboarding_unlocked already implies a paid checkout.
+    if (member?.is_legacy_member && !member?.stripe_subscription_id) {
+      return;
+    }
     if (
       !autoJumpedToOnboarding.current &&
       member?.onboarding_unlocked &&
@@ -211,7 +220,12 @@ function PortalDashboard() {
       autoJumpedToOnboarding.current = true;
       setTab('onboarding');
     }
-  }, [member?.onboarding_unlocked, tab]);
+  }, [
+    member?.onboarding_unlocked,
+    member?.is_legacy_member,
+    member?.stripe_subscription_id,
+    tab,
+  ]);
 
   // When required docs become complete, show a confirmation toast.
   useEffect(() => {
@@ -803,25 +817,44 @@ function DocumentsTab({
             />
           </div>
 
-          <FeeAgreementSection
-            member={member}
-            memberName={memberName}
-            designationLabel={designationLabel}
-            applicationStartDate={applicationStartDate}
-            signedMetadata={
-              (agreements.find((a) => a.agreement_type === 'fee_agreement')?.metadata as
-                | Record<string, unknown>
-                | null
-                | undefined) || null
-            }
-            signed={hasSigned('fee_agreement')}
-            signedAt={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signed_at || null}
-            signedBy={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signature_name || null}
-            signing={signing === 'fee_agreement'}
-            onSign={(metadata) => signAgreement('fee_agreement', metadata)}
-            reviseRequested={reviseFeeAgreementRequest}
-            onReviseHandled={onReviseFeeAgreementHandled}
-          />
+          {member.is_legacy_member ? (
+            <LegacyFeeAgreementSection
+              member={member}
+              memberName={memberName}
+              designationLabel={designationLabel}
+              signedMetadata={
+                (agreements.find((a) => a.agreement_type === 'fee_agreement')?.metadata as
+                  | Record<string, unknown>
+                  | null
+                  | undefined) || null
+              }
+              signed={hasSigned('fee_agreement')}
+              signedAt={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signed_at || null}
+              signedBy={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signature_name || null}
+              signing={signing === 'fee_agreement'}
+              onSign={(metadata) => signAgreement('fee_agreement', metadata)}
+            />
+          ) : (
+            <FeeAgreementSection
+              member={member}
+              memberName={memberName}
+              designationLabel={designationLabel}
+              applicationStartDate={applicationStartDate}
+              signedMetadata={
+                (agreements.find((a) => a.agreement_type === 'fee_agreement')?.metadata as
+                  | Record<string, unknown>
+                  | null
+                  | undefined) || null
+              }
+              signed={hasSigned('fee_agreement')}
+              signedAt={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signed_at || null}
+              signedBy={agreements.find((a) => a.agreement_type === 'fee_agreement')?.signature_name || null}
+              signing={signing === 'fee_agreement'}
+              onSign={(metadata) => signAgreement('fee_agreement', metadata)}
+              reviseRequested={reviseFeeAgreementRequest}
+              onReviseHandled={onReviseFeeAgreementHandled}
+            />
+          )}
 
           <SignableDoc
             title="Terms & Conditions"
@@ -947,6 +980,278 @@ function SignableDoc({
         <pre className="border-t bg-white p-4 text-xs text-gray-800 whitespace-pre-wrap font-sans max-h-80 overflow-auto">
           {body}
         </pre>
+      )}
+    </div>
+  );
+}
+
+// Legacy-member Fee Agreement.
+//
+// Existing members migrating from manual/paper billing don't pay a prorated
+// first month or a last-month deposit. The only thing they're committing to
+// is the monthly rate they're already paying — and, if/when they later set
+// up auto-pay from the Payments tab, that the auto-charge will run on the
+// 1st of each month starting on the next billing cycle.
+function LegacyFeeAgreementSection({
+  member,
+  memberName,
+  designationLabel,
+  signedMetadata,
+  signed,
+  signedAt,
+  signedBy,
+  signing,
+  onSign,
+}: {
+  member: Member;
+  memberName: string;
+  designationLabel: string;
+  signedMetadata: Record<string, unknown> | null;
+  signed: boolean;
+  signedAt: string | null;
+  signedBy: string | null;
+  signing: boolean;
+  onSign: (metadata: Record<string, unknown>) => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [memberTitle, setMemberTitle] = useState(
+    typeof (signedMetadata as any)?.member_title === 'string'
+      ? ((signedMetadata as any).member_title as string)
+      : ''
+  );
+  const [street, setStreet] = useState(
+    typeof (signedMetadata as any)?.street === 'string'
+      ? ((signedMetadata as any).street as string)
+      : ''
+  );
+  const [cityStateZip, setCityStateZip] = useState(
+    typeof (signedMetadata as any)?.city_state_zip === 'string'
+      ? ((signedMetadata as any).city_state_zip as string)
+      : ''
+  );
+  const [phone, setPhone] = useState(
+    typeof (signedMetadata as any)?.phone === 'string'
+      ? ((signedMetadata as any).phone as string)
+      : member.phone || ''
+  );
+  const email = member.email;
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const monthlyCostCents = member.monthly_cost_cents || 0;
+  const today = new Date();
+  // Next billing cycle = 1st of next month, in local-server terms.
+  const nextBillingCycleDate = new Date(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    1
+  );
+  const nextBillingCycleLabel = nextBillingCycleDate.toLocaleDateString(
+    'en-US',
+    { month: 'long', day: 'numeric', year: 'numeric' }
+  );
+
+  const disabled = member.monthly_cost_cents == null;
+
+  async function handleSign() {
+    setLocalError(null);
+    if (!street.trim() || !cityStateZip.trim() || !phone.trim()) {
+      setLocalError('Please fill in your street address, city/state/zip, and telephone.');
+      return;
+    }
+    const metadata = {
+      legacy_member: true,
+      member_title: memberTitle,
+      street,
+      city_state_zip: cityStateZip,
+      phone,
+      email,
+      designation_label: designationLabel,
+      monthly_cost_cents: monthlyCostCents,
+      next_billing_cycle: nextBillingCycleDate.toISOString().slice(0, 10),
+    };
+    await onSign(metadata);
+  }
+
+  return (
+    <div
+      className={`border-2 rounded-lg ${
+        signed ? 'border-green-400 bg-green-50' : 'border-gray-200'
+      }`}
+    >
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-base font-bold flex-shrink-0 ${
+              signed ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-400 border border-gray-300'
+            }`}
+          >
+            {signed ? '✓' : '•'}
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-gray-900">
+              Fee Agreement
+              {signed && (
+                <span className="ml-2 text-green-700 text-xs font-bold uppercase tracking-wider">
+                  Signed
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-gray-500">
+              Existing member rate acknowledgement. No first/last-month deposit
+              and no proration.
+            </div>
+            {signed && signedBy && signedAt && (
+              <div className="text-xs text-green-800 mt-1 font-medium">
+                Signed by {signedBy} on {new Date(signedAt).toLocaleString()}
+              </div>
+            )}
+            {disabled && !signed && (
+              <div className="text-xs text-amber-700 mt-1">
+                Your administrator hasn&rsquo;t assigned a monthly cost yet.
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="text-sm border rounded px-3 py-1.5 hover:bg-white bg-white"
+          >
+            {open ? 'Hide' : signed ? 'Review' : 'Open & sign'}
+          </button>
+          {signed && (
+            <button
+              type="button"
+              disabled
+              className="text-sm bg-green-600 text-white rounded px-4 py-1.5 cursor-default font-semibold"
+            >
+              ✓ Signed
+            </button>
+          )}
+        </div>
+      </div>
+
+      {open && (
+        <div className="border-t bg-gray-50 p-4 space-y-5">
+          <div className="bg-gray-900 text-white text-center font-semibold py-2 rounded">
+            MERRITT WORKSPACE FEE AGREEMENT — EXISTING MEMBER
+          </div>
+
+          <fieldset disabled={signed} className="space-y-3 disabled:opacity-70">
+            <legend className="text-sm font-semibold text-gray-900">Member Information</legend>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field label="Contact Name" value={memberName} readOnly />
+              <Field label="Telephone" value={phone} onChange={setPhone} required />
+              <Field label="Street Address" value={street} onChange={setStreet} required />
+              <Field
+                label="City / State / ZIP"
+                value={cityStateZip}
+                onChange={setCityStateZip}
+                required
+              />
+              <Field label="Email" value={email} readOnly />
+              <Field
+                label="Title (optional)"
+                value={memberTitle}
+                onChange={setMemberTitle}
+                placeholder="Optional"
+              />
+            </div>
+          </fieldset>
+
+          <div className="bg-white border rounded overflow-hidden">
+            <div className="bg-blue-100 text-gray-900 font-semibold text-sm px-3 py-2 flex justify-between">
+              <span>MEMBERSHIP DESCRIPTION</span>
+              <span>RATE</span>
+            </div>
+            <div className="px-3 py-2 text-sm">
+              <div className="font-semibold text-gray-900">{designationLabel}</div>
+            </div>
+            <Row
+              label="Monthly Membership Fee"
+              value={`${formatUsd(monthlyCostCents)}/month`}
+            />
+          </div>
+
+          <div className="bg-amber-50 border-2 border-amber-400 rounded p-3 text-sm text-amber-900 space-y-2">
+            <div className="font-semibold uppercase tracking-wide text-xs">
+              What you are agreeing to
+            </div>
+            <p>
+              I, <span className="font-semibold">{memberName}</span>, am an
+              existing Merritt Workspace member at the rate of{' '}
+              <span className="font-semibold">
+                {formatUsd(monthlyCostCents)}/month
+              </span>
+              . I agree to pay any amount currently owed and continue paying
+              this monthly rate on the <span className="font-semibold">1st
+              of each billing cycle</span>.
+            </p>
+            <p>
+              <span className="font-semibold">No first/last-month deposit.</span>{' '}
+              No proration. If I choose to set up auto-pay from the Payments
+              tab, the auto-charge will run on the 1st of each month starting
+              with the next billing cycle ({nextBillingCycleLabel}).
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white border rounded p-3 text-sm">
+              <div className="font-semibold mb-2">MEMBER</div>
+              <div className="space-y-1 text-xs text-gray-700">
+                <div>Name Printed: <span className="text-gray-900">{memberName}</span></div>
+                <div className="flex items-center gap-2">
+                  <span>Title:</span>
+                  <input
+                    disabled={signed}
+                    value={memberTitle}
+                    onChange={(e) => setMemberTitle(e.target.value)}
+                    placeholder="Optional"
+                    className="border rounded px-2 py-0.5 text-xs flex-1"
+                  />
+                </div>
+                <div>Signature: <em>typed name on the form above</em></div>
+                <div>Date: {today.toLocaleDateString()}</div>
+              </div>
+            </div>
+            <div className="bg-white border rounded p-3 text-sm">
+              <div className="font-semibold mb-2">MERRITT WORKSPACE</div>
+              <div className="space-y-1 text-xs text-gray-700">
+                <div>Name Printed: <span className="text-gray-900">{MERRITT_SIGNATORY.name}</span></div>
+                <div>Title: {MERRITT_SIGNATORY.title}</div>
+                <div>Signature: <em>on file</em></div>
+                <div>Date: {today.toLocaleDateString()}</div>
+              </div>
+            </div>
+          </div>
+
+          {localError && (
+            <div className="bg-red-50 border border-red-300 text-red-900 rounded p-3 text-sm">
+              {localError}
+            </div>
+          )}
+
+          {signed ? (
+            <div className="bg-green-100 border border-green-400 rounded p-3 text-center">
+              <div className="text-2xl">✓</div>
+              <div className="text-sm font-semibold text-green-900">
+                Fee Agreement signed
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleSign}
+                disabled={signing || disabled}
+                className="text-sm bg-gray-900 text-white rounded px-6 py-3 hover:bg-gray-800 disabled:opacity-50 font-semibold"
+              >
+                {signing ? 'Signing…' : 'Sign Fee Agreement'}
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
@@ -1668,6 +1973,20 @@ function PaymentsTab({
     timeZone: 'UTC',
   });
 
+  // Legacy members don't have a signed start_date — there's no proration and
+  // no upfront charge. Their first auto-pay charge fires on the 1st of the
+  // upcoming month, which is the only date we promise them on the agreement.
+  const legacyAutoPayStartLabel = (() => {
+    if (!member.is_legacy_member) return null;
+    const today = new Date();
+    const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    return next.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  })();
+
   // ACH subscriptions start in `incomplete` and move to `active` only after
   // the first invoice settles (3–5 business days). Surface this so members
   // know their setup is in flight, not broken.
@@ -1784,76 +2103,101 @@ function PaymentsTab({
             Your administrator hasn&apos;t assigned a monthly cost yet.
           </p>
         ) : !member.stripe_subscription_id ? (
-          <>
-            <p className="text-sm text-gray-700">
-              Your monthly cost is{' '}
-              <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>
-              {oneTime
-                ? ' (one-time charge — day pass).'
-                : ', billed on the 1st of each month (first charge prorated).'}
-            </p>
+          member.is_legacy_member ? (
+            <>
+              <p className="text-sm text-gray-700">
+                Your monthly cost is{' '}
+                <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>
+                . As an existing member, there is{' '}
+                <span className="font-semibold">no first/last-month deposit</span>{' '}
+                and no proration. Setting up auto-pay just authorizes the
+                normal monthly charge on the 1st of each month going forward.
+              </p>
 
-            <div className="mt-4 border rounded bg-gray-50 p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
-                Due today — matches your signed Fee Agreement
-              </div>
-              <dl className="space-y-1.5 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-gray-700">
-                    {oneTime
-                      ? 'One Day Membership Fee'
-                      : 'First Month Membership Fee (prorated)'}
-                  </dt>
-                  <dd className="font-medium text-gray-900">
-                    {formatUsd(firstMonthCents)}
-                  </dd>
+              {legacyAutoPayStartLabel && (
+                <div className="mt-3 bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-900">
+                  <strong>If you set up auto-pay today,</strong> your first
+                  auto-charge of{' '}
+                  <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>{' '}
+                  will run on{' '}
+                  <span className="font-semibold">{legacyAutoPayStartLabel}</span>{' '}
+                  (the 1st of the next billing cycle), and on the 1st of every
+                  month after that. Nothing is charged today.
                 </div>
-                {!oneTime && (
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-gray-700">
+                Your monthly cost is{' '}
+                <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>
+                {oneTime
+                  ? ' (one-time charge — day pass).'
+                  : ', billed on the 1st of each month (first charge prorated).'}
+              </p>
+
+              <div className="mt-4 border rounded bg-gray-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
+                  Due today — matches your signed Fee Agreement
+                </div>
+                <dl className="space-y-1.5 text-sm">
                   <div className="flex justify-between">
                     <dt className="text-gray-700">
-                      Last Month&apos;s Membership Fee (deposit)
+                      {oneTime
+                        ? 'One Day Membership Fee'
+                        : 'First Month Membership Fee (prorated)'}
                     </dt>
                     <dd className="font-medium text-gray-900">
-                      {formatUsd(lastMonthCents)}
+                      {formatUsd(firstMonthCents)}
                     </dd>
                   </div>
-                )}
-                {selectedMethod === 'card' && (
-                  <div className="flex justify-between">
-                    <dt className="text-gray-700">
-                      Credit Card Processing Fee (3.5%)
-                    </dt>
-                    <dd className="font-medium text-gray-900">
-                      {formatUsd(ccFeeCents)}
+                  {!oneTime && (
+                    <div className="flex justify-between">
+                      <dt className="text-gray-700">
+                        Last Month&apos;s Membership Fee (deposit)
+                      </dt>
+                      <dd className="font-medium text-gray-900">
+                        {formatUsd(lastMonthCents)}
+                      </dd>
+                    </div>
+                  )}
+                  {selectedMethod === 'card' && (
+                    <div className="flex justify-between">
+                      <dt className="text-gray-700">
+                        Credit Card Processing Fee (3.5%)
+                      </dt>
+                      <dd className="font-medium text-gray-900">
+                        {formatUsd(ccFeeCents)}
+                      </dd>
+                    </div>
+                  )}
+                  {isAch && (
+                    <div className="flex justify-between text-xs text-green-800">
+                      <dt>Paying by ACH / EFT — no processing fee.</dt>
+                      <dd>—</dd>
+                    </div>
+                  )}
+                  <div className="border-t pt-2 mt-2 flex justify-between text-base">
+                    <dt className="font-semibold text-gray-900">Total due today</dt>
+                    <dd className="font-bold text-gray-900">
+                      {formatUsd(grandTotalCents)}
                     </dd>
                   </div>
-                )}
-                {isAch && (
-                  <div className="flex justify-between text-xs text-green-800">
-                    <dt>Paying by ACH / EFT — no processing fee.</dt>
-                    <dd>—</dd>
-                  </div>
-                )}
-                <div className="border-t pt-2 mt-2 flex justify-between text-base">
-                  <dt className="font-semibold text-gray-900">Total due today</dt>
-                  <dd className="font-bold text-gray-900">
-                    {formatUsd(grandTotalCents)}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            {!oneTime && (
-              <div className="mt-3 bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-900">
-                <strong>What happens next:</strong> After this initial payment,
-                you&apos;ll be charged{' '}
-                <span className="font-semibold">{formatUsd(monthlyCostCents)}/month</span>{' '}
-                automatically on the 1st of every month, starting{' '}
-                <span className="font-semibold">{firstRecurringChargeLabel}</span>.
-                {selectedMethod === 'card' && ' (No card processing fee on recurring charges.)'}
+                </dl>
               </div>
-            )}
-          </>
+
+              {!oneTime && (
+                <div className="mt-3 bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-900">
+                  <strong>What happens next:</strong> After this initial payment,
+                  you&apos;ll be charged{' '}
+                  <span className="font-semibold">{formatUsd(monthlyCostCents)}/month</span>{' '}
+                  automatically on the 1st of every month, starting{' '}
+                  <span className="font-semibold">{firstRecurringChargeLabel}</span>.
+                  {selectedMethod === 'card' && ' (No card processing fee on recurring charges.)'}
+                </div>
+              )}
+            </>
+          )
         ) : (
           <p className="text-sm text-gray-700">
             Your monthly cost is{' '}

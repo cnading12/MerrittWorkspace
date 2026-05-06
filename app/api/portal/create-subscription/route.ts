@@ -63,6 +63,66 @@ export async function POST(req: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
+    // Legacy / existing-member migration flow.
+    //
+    // Legacy members didn't sign a Fee Agreement that included a prorated
+    // first month or a last-month deposit — their agreement was just an
+    // acknowledgement of the standard monthly rate, billable on the 1st of
+    // the next billing cycle. So when they opt in to auto-pay, we DON'T
+    // collect any upfront charge: Stripe Checkout runs in `setup` mode (just
+    // saves a payment method off-session). The companion webhook then
+    // creates the subscription via the API with `billing_cycle_anchor` set
+    // to the 1st of the upcoming month and `proration_behavior: 'none'`, so
+    // the very first charge is a clean monthly invoice on that anchor date.
+    if ((member as any).is_legacy_member) {
+      const today = new Date();
+      const anchorDate = new Date(
+        Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1)
+      );
+      const anchor = Math.floor(anchorDate.getTime() / 1000);
+
+      const checkoutPaymentMethodTypes: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] =
+        selectedMethod === 'ach' ? ['us_bank_account', 'card'] : ['card', 'link'];
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'setup',
+        customer: customerId,
+        payment_method_types: checkoutPaymentMethodTypes,
+        payment_method_options:
+          selectedMethod === 'ach'
+            ? {
+                us_bank_account: {
+                  financial_connections: {
+                    permissions: ['payment_method'],
+                  },
+                  verification_method: 'instant',
+                },
+              }
+            : undefined,
+        success_url: `${baseUrl}/portal?subscribed=1`,
+        cancel_url: `${baseUrl}/portal?canceled=1`,
+        custom_text: {
+          submit: {
+            message: `No charge today. Your monthly auto-charge of $${(member.monthly_cost_cents / 100).toFixed(2)} will run on ${anchorDate.toLocaleDateString(
+              'en-US',
+              { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }
+            )} and on the 1st of every month after.`,
+          },
+        },
+        metadata: {
+          order_type: 'membership_subscription',
+          member_id: member.id,
+          legacy_setup: '1',
+          create_subscription: '1',
+          monthly_cost_cents: String(member.monthly_cost_cents),
+          billing_cycle_anchor: String(anchor),
+          selected_payment_method: selectedMethod,
+        },
+      });
+
+      return NextResponse.json({ url: session.url, id: session.id });
+    }
+
     // One-time day-pass flow (e.g. One Day Dedicated Desk at $30).
     // These members pay a single upfront charge instead of a recurring
     // monthly subscription, so we use Stripe Checkout in `payment` mode.
