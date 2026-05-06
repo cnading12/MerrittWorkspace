@@ -119,10 +119,9 @@ function PortalLogin() {
       <div className="mt-8 pt-6 border-t border-gray-200">
         <p className="text-sm font-semibold text-gray-900">Already a member?</p>
         <p className="text-sm text-gray-600 mt-1">
-          If you joined Merritt Workspace through a paper application before
-          our online portal existed, set up your portal account here. It takes
-          about a minute and you can keep your current billing arrangement if
-          you prefer.
+          If you joined Merritt Workspace before our online portal existed,
+          set up your portal account here. It takes about a minute and you
+          can keep your current billing arrangement if you prefer.
         </p>
         <Link
           href="/portal/existing-member"

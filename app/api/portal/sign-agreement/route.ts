@@ -33,7 +33,13 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-      const required = ['street', 'city_state_zip', 'phone', 'email', 'payment_method'];
+      // Legacy (existing-member migration) Fee Agreements skip start_date
+      // and payment_method validation: there is no upfront prorated charge,
+      // no first/last-month deposit, and the payment method is chosen later
+      // (and only if) they decide to set up auto-pay from the Payments tab.
+      const required = member.is_legacy_member
+        ? ['street', 'city_state_zip', 'phone', 'email']
+        : ['street', 'city_state_zip', 'phone', 'email', 'payment_method'];
       const missing = required.filter((k) => !metadata?.[k]);
       if (missing.length) {
         return NextResponse.json(
@@ -43,8 +49,9 @@ export async function POST(req: NextRequest) {
       }
       // Recurring memberships must include a start_date in the YYYY-MM-DD
       // range [today, today + 30 days]. Day passes are anchored to today and
-      // skip this check.
-      if (!isOneTimeDesignation(member.designation)) {
+      // skip this check. Legacy members have no membership "start" — they're
+      // already members — so start_date is also skipped for them.
+      if (!isOneTimeDesignation(member.designation) && !member.is_legacy_member) {
         const startDateRaw = metadata?.start_date;
         if (typeof startDateRaw !== 'string' || !startDateRaw) {
           return NextResponse.json(

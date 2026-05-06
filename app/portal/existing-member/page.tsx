@@ -163,10 +163,10 @@ export default function ExistingMemberMigrationPage() {
         Existing member account setup
       </h1>
       <p className="text-sm text-gray-600 mb-6">
-        If you signed up with Merritt Workspace on paper before our online portal
-        existed, use this form to set up your account. We&apos;ll just need a few
-        details. Setting up auto-pay is <strong>optional</strong> — you can keep
-        paying however you do today and add auto-pay later.
+        If you joined Merritt Workspace before our online portal existed,
+        use this form to set up your account. We&apos;ll just need a few
+        details. Setting up auto-pay is <strong>optional</strong> — you can
+        keep paying however you do today and add auto-pay later.
       </p>
 
       <div className="bg-orange-50 border border-orange-200 rounded p-4 text-sm text-gray-700 mb-6">
@@ -331,7 +331,7 @@ export default function ExistingMemberMigrationPage() {
                   required
                   value={deskNumber}
                   onChange={(e) => setDeskNumber(e.target.value)}
-                  placeholder="e.g. 12B"
+                  placeholder="e.g. 12"
                   className="mt-1 w-full border rounded px-3 py-2 sm:w-48"
                 />
               </>
@@ -345,14 +345,17 @@ export default function ExistingMemberMigrationPage() {
                   required
                   value={officeNumber}
                   onChange={(e) => setOfficeNumber(e.target.value)}
-                  placeholder="e.g. 4"
+                  placeholder="e.g. 110"
                   className="mt-1 w-full border rounded px-3 py-2 sm:w-48"
                 />
               </>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              If you&apos;re unsure, leave a best guess — staff can adjust it on
-              the admin side.
+              {selectedPlan.needs === 'desk'
+                ? 'Dedicated desks are numbered 1–25.'
+                : 'Offices are numbered 101–120.'}{' '}
+              If you&apos;re unsure, leave a best guess — staff can adjust it
+              on the admin side.
             </p>
           </div>
         </section>
