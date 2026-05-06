@@ -177,9 +177,18 @@ function PortalDashboard() {
     ) {
       autoJumpedToPayments.current = true;
       setTab('payments');
-      setFlashMessage('All agreements signed. Set up auto-pay below to finish onboarding.');
+      setFlashMessage(
+        member?.is_legacy_member
+          ? 'All agreements signed. Auto-pay is optional below — you can also skip and keep your current billing.'
+          : 'All agreements signed. Set up auto-pay below to finish onboarding.'
+      );
     }
-  }, [member?.agreement_signed, member?.stripe_subscription_id, tab]);
+  }, [
+    member?.agreement_signed,
+    member?.stripe_subscription_id,
+    member?.is_legacy_member,
+    tab,
+  ]);
 
   // Once the webhook unlocks onboarding, jump the member straight to the
   // Onboarding tab. This covers three cases:
@@ -409,12 +418,23 @@ function PortalDashboard() {
             setReviseFeeAgreementRequest(true);
             setTab('documents');
           }}
+          onSkipPayment={
+            member.is_legacy_member
+              ? () => {
+                  setTab('onboarding');
+                  setFlashMessage(
+                    'Got it — your billing stays on the existing arrangement. You can still set up auto-pay any time.'
+                  );
+                }
+              : undefined
+          }
         />
       )}
       {tab === 'payments' && paymentsLocked && (
         <div className="bg-amber-50 border border-amber-300 rounded p-6 text-sm text-amber-900">
-          You must complete steps 1 (upload required documents and sign all three
-          agreements) before you can set up payment.
+          {member.is_legacy_member
+            ? 'Sign all three agreements first, and then you can (optionally) set up auto-pay here.'
+            : 'You must complete steps 1 (upload required documents and sign all three agreements) before you can set up payment.'}
           <button
             onClick={() => setTab('documents')}
             className="ml-2 underline font-medium hover:text-amber-700"
@@ -437,12 +457,24 @@ function PortalDashboard() {
 }
 
 function ProgressBar({ member }: { member: Member }) {
-  const steps = [
-    { label: 'Upload ID & proof of address', done: member.required_docs_complete },
-    { label: 'Sign 3 agreements', done: member.agreement_signed },
-    { label: 'Set up auto-pay', done: !!member.stripe_subscription_id },
-    { label: 'Onboarding unlocked', done: member.onboarding_unlocked },
-  ];
+  // Legacy migration members skip the doc-upload step entirely (Photo ID /
+  // Proof of Address are optional for them) and treat auto-pay setup as an
+  // optional add-on rather than a gate. Their progress bar reflects that.
+  const steps = member.is_legacy_member
+    ? [
+        { label: 'Sign 3 agreements', done: member.agreement_signed },
+        {
+          label: 'Set up auto-pay (optional)',
+          done: !!member.stripe_subscription_id,
+        },
+        { label: 'Onboarding unlocked', done: member.onboarding_unlocked },
+      ]
+    : [
+        { label: 'Upload ID & proof of address', done: member.required_docs_complete },
+        { label: 'Sign 3 agreements', done: member.agreement_signed },
+        { label: 'Set up auto-pay', done: !!member.stripe_subscription_id },
+        { label: 'Onboarding unlocked', done: member.onboarding_unlocked },
+      ];
   const completed = steps.filter((s) => s.done).length;
   const pct = Math.round((completed / steps.length) * 100);
   return (
@@ -650,14 +682,34 @@ function DocumentsTab({
         <div className="flex items-start justify-between mb-1">
           <div>
             <h2 className="font-semibold text-gray-900">
-              Step 1 · Required documents
-              {member.required_docs_complete && (
+              Step 1 ·{' '}
+              {member.is_legacy_member
+                ? 'Documents (optional)'
+                : 'Required documents'}
+              {!member.is_legacy_member && member.required_docs_complete && (
                 <span className="ml-2 text-green-700 text-sm font-semibold">✓ Complete</span>
+              )}
+              {member.is_legacy_member && (
+                <span className="ml-2 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                  Optional for existing members
+                </span>
               )}
             </h2>
             <p className="text-sm text-gray-500 mb-4 mt-1">
-              Upload a photo ID and proof of address. Both are required before you can
-              sign your agreements.
+              {member.is_legacy_member ? (
+                <>
+                  We have your information on file from your original paper
+                  application, so uploading photo ID and proof of address is{' '}
+                  <strong>not required</strong>. You may upload them if you&apos;d
+                  like to keep everything in one place — otherwise skip ahead and
+                  sign your agreements below.
+                </>
+              ) : (
+                <>
+                  Upload a photo ID and proof of address. Both are required before you can
+                  sign your agreements.
+                </>
+              )}
             </p>
           </div>
           <div className="text-xs text-gray-500 whitespace-nowrap">
@@ -724,7 +776,7 @@ function DocumentsTab({
             <p className="text-sm text-gray-500 mb-4 mt-1">
               Review and sign each document below. All three are required before you can set up
               payment.{' '}
-              {!member.required_docs_complete && (
+              {!member.required_docs_complete && !member.is_legacy_member && (
                 <span className="text-amber-700 font-medium">
                   Upload your required documents above first.
                 </span>
@@ -737,7 +789,7 @@ function DocumentsTab({
         </div>
 
         <fieldset
-          disabled={!member.required_docs_complete}
+          disabled={!member.required_docs_complete && !member.is_legacy_member}
           className="space-y-4 disabled:opacity-50"
         >
           <div>
@@ -1541,11 +1593,13 @@ function PaymentsTab({
   payments,
   agreements,
   onReviseFeeAgreement,
+  onSkipPayment,
 }: {
   member: Member;
   payments: PaymentHistoryRow[];
   agreements: AgreementRow[];
   onReviseFeeAgreement: () => void;
+  onSkipPayment?: () => void;
 }) {
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -1926,17 +1980,50 @@ function PaymentsTab({
                 )}
               </div>
             )}
-            <button
-              onClick={startCheckout}
-              disabled={!canSetUp || loading}
-              className="mt-4 bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
-            >
-              {loading
-                ? 'Loading…'
-                : isAch
-                  ? 'Set up ACH auto-debit'
-                  : 'Set up auto-pay'}
-            </button>
+            {member.is_legacy_member && (
+              <div className="mt-4 bg-orange-50 border border-orange-200 rounded p-4 text-sm text-gray-800 space-y-2">
+                <p className="font-semibold text-orange-900">
+                  Auto-pay is optional for existing members
+                </p>
+                <p>
+                  As an existing Merritt Workspace member, you don&apos;t have to
+                  switch to auto-pay. If you set it up, your monthly fee of{' '}
+                  <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>{' '}
+                  will simply be auto-charged on the 1st of each month going
+                  forward — you will <strong>not</strong> be charged a first
+                  month / last month deposit, and there is no proration.
+                </p>
+                <p>
+                  Prefer to keep your current billing arrangement? You can skip
+                  this step entirely. Your membership stays active and our team
+                  will continue to invoice you the way you do today.
+                </p>
+              </div>
+            )}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                onClick={startCheckout}
+                disabled={!canSetUp || loading}
+                className="bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
+              >
+                {loading
+                  ? 'Loading…'
+                  : isAch
+                    ? 'Set up ACH auto-debit'
+                    : member.is_legacy_member
+                      ? 'Set up auto-pay (optional)'
+                      : 'Set up auto-pay'}
+              </button>
+              {member.is_legacy_member && member.onboarding_unlocked && onSkipPayment && (
+                <button
+                  type="button"
+                  onClick={onSkipPayment}
+                  className="border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 text-sm font-medium"
+                >
+                  Skip — keep my current billing
+                </button>
+              )}
+            </div>
           </>
         )}
         {!member.agreement_signed && (

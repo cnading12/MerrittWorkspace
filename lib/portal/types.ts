@@ -43,6 +43,11 @@ export interface Member {
   access_code_issued_at: string | null;
   office_number: string | null;
   desk_number: string | null;
+  // True for members who came in through the "Already a member?" migration
+  // flow on the portal sign-in page. Legacy members can skip required
+  // documents and Stripe auto-pay setup; their billing may continue to be
+  // handled manually by the accountant.
+  is_legacy_member: boolean;
   created_at: string;
   updated_at: string;
   // Read-time annotations populated by admin APIs from the linked
@@ -68,6 +73,10 @@ export interface MemberApplication {
   // into `payload` as a fallback.
   wants_trial_day?: boolean | null;
   trial_date?: string | null;
+  // True for applications submitted through the "Already a member?"
+  // migration flow. These are auto-approved at submit time and never
+  // appear in the admin pending-applications queue.
+  is_existing_member?: boolean | null;
   payload: Record<string, unknown>;
   status: 'pending' | 'approved' | 'declined';
   decision_note: string | null;

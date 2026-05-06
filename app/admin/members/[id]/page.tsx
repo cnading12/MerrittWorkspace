@@ -292,6 +292,14 @@ export default function AdminMemberDetailPage({
                 {readTrialDate(application) && ` · ${readTrialDate(application)}`}
               </span>
             )}
+            {member.is_legacy_member && (
+              <span
+                className="inline-flex items-center px-2 py-1 rounded text-xs font-bold tracking-wider bg-purple-600 text-white"
+                title="Existing member who self-migrated into the portal via the 'Already a member?' flow. Photo ID / Proof of Address are not required and Stripe auto-pay is optional for legacy members."
+              >
+                LEGACY MEMBER
+              </span>
+            )}
           </div>
           <p className="text-sm text-gray-600">{member.email}</p>
         </div>

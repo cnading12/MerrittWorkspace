@@ -1,17 +1,37 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
 export default function PortalLoginPage() {
+  return (
+    <Suspense fallback={<div className="text-gray-500">Loading…</div>}>
+      <PortalLogin />
+    </Suspense>
+  );
+}
+
+function PortalLogin() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<'signin' | 'set_password'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+
+  // After the existing-member migration form auto-login fallback redirects
+  // here with ?migrated=1, surface a friendly note.
+  useEffect(() => {
+    if (searchParams?.get('migrated') === '1') {
+      setInfo(
+        "Your existing-member account was created. Sign in with the email and password you just chose to finish setting up your portal."
+      );
+    }
+  }, [searchParams]);
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -95,6 +115,22 @@ export default function PortalLoginPage() {
           Forgot password? Email me a reset link
         </button>
       </form>
+
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <p className="text-sm font-semibold text-gray-900">Already a member?</p>
+        <p className="text-sm text-gray-600 mt-1">
+          If you joined Merritt Workspace through a paper application before
+          our online portal existed, set up your portal account here. It takes
+          about a minute and you can keep your current billing arrangement if
+          you prefer.
+        </p>
+        <Link
+          href="/portal/existing-member"
+          className="mt-3 inline-block w-full text-center border-2 border-orange-600 text-orange-700 py-2 rounded font-semibold hover:bg-orange-50"
+        >
+          Set up existing member account
+        </Link>
+      </div>
     </div>
   );
 }
