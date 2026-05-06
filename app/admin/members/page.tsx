@@ -320,6 +320,14 @@ export default function AdminMembersPage() {
                         SUB FAILED
                       </span>
                     )}
+                    {m.is_legacy_member && (
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold tracking-wider bg-purple-600 text-white"
+                        title="Existing member who self-migrated into the portal. Billing may still be on the manual/accountant track until they set up Stripe auto-pay."
+                      >
+                        LEGACY
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-gray-600">{m.email}</div>
                   {(appliedAgo || m.intended_start_date) && (

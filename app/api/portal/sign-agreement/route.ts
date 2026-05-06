@@ -9,7 +9,10 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const member = await requireMember(req);
-    if (!member.required_docs_complete) {
+    // Legacy members (existing paper-application members migrating into the
+    // portal) are not required to upload Photo ID / Proof of Address before
+    // signing — that gate only applies to standard new applicants.
+    if (!member.required_docs_complete && !member.is_legacy_member) {
       return NextResponse.json(
         { error: 'Submit required documents first' },
         { status: 400 }
@@ -96,6 +99,21 @@ export async function POST(req: NextRequest) {
       types.has('fee_agreement');
     if (fullySigned !== member.agreement_signed) {
       await sb.from('members').update({ agreement_signed: fullySigned }).eq('id', member.id);
+    }
+
+    // Legacy members don't have a Stripe webhook to flip onboarding_unlocked
+    // (auto-pay is optional for them), so once their agreements are fully
+    // signed we unlock the onboarding tab here directly. Standard members
+    // continue to be unlocked by checkout.session.completed.
+    if (
+      fullySigned &&
+      member.is_legacy_member &&
+      !member.onboarding_unlocked
+    ) {
+      await sb
+        .from('members')
+        .update({ onboarding_unlocked: true })
+        .eq('id', member.id);
     }
 
     const { data: updatedMember } = await sb
