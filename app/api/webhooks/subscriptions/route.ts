@@ -288,6 +288,27 @@ export async function POST(req: NextRequest) {
               (session.amount_total as number | null) ??
               Number(session.metadata?.initial_total_cents || 0);
             const isOneTime = session.metadata?.one_time === '1';
+            // Checkout in `payment` mode never produces a Stripe Invoice,
+            // so `invoice.invoice_pdf` doesn't exist for this charge. The
+            // Charge's `receipt_url` is the equivalent member-facing PDF
+            // (publicly accessible, no auth) — save it so the admin/portal
+            // "Invoice" button works for the initial signup charge too.
+            let receiptUrl: string | null = null;
+            try {
+              const pi = await stripe.paymentIntents.retrieve(
+                paymentIntentId,
+                { expand: ['latest_charge'] }
+              );
+              const charge = pi.latest_charge;
+              if (charge && typeof charge !== 'string') {
+                receiptUrl = charge.receipt_url || null;
+              }
+            } catch (err) {
+              console.error(
+                'Failed to retrieve receipt_url for checkout PaymentIntent',
+                err
+              );
+            }
             await sb.from('payment_history').insert({
               member_id: memberId,
               stripe_invoice_id: null,
@@ -298,7 +319,7 @@ export async function POST(req: NextRequest) {
               description: isOneTime
                 ? 'One-day dedicated desk'
                 : 'Initial membership payment (first month + deposit)',
-              invoice_pdf_url: null,
+              invoice_pdf_url: receiptUrl,
               paid_at: new Date().toISOString(),
             });
           }

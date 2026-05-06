@@ -44,6 +44,7 @@ export default function AdminMembersPage() {
   const [sortMode, setSortMode] = useState<SortMode>('priority');
   const [pinging, setPinging] = useState<string | null>(null);
   const [reconciling, setReconciling] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -132,6 +133,39 @@ export default function AdminMembersPage() {
       }
     } finally {
       setReconciling(false);
+    }
+  }
+
+  async function backfillReceipts() {
+    if (!token || backfilling) return;
+    if (
+      !confirm(
+        'Backfill missing receipt URLs for older successful payments? This reads each row’s PaymentIntent or Invoice from Stripe and saves the receipt PDF link. Safe to run anytime.'
+      )
+    )
+      return;
+    setBackfilling(true);
+    try {
+      const res = await fetch('/api/admin/payment-history/backfill-receipts', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(json.error || 'Backfill failed');
+        return;
+      }
+      const counts = json.counts || {};
+      const lines = [
+        `Scanned ${json.scanned} payments missing a receipt URL.`,
+        `  Updated: ${counts.updated || 0}`,
+        `  No URL available from Stripe: ${counts.no_url_available || 0}`,
+        `  Errored: ${counts.errored || 0}`,
+      ];
+      alert(lines.join('\n'));
+      console.log('Backfill receipts result', json);
+    } finally {
+      setBackfilling(false);
     }
   }
 
@@ -233,6 +267,14 @@ export default function AdminMembersPage() {
             title="Pull each member’s current subscription state from Stripe and write it back to the database. Use this when Auto-pay dots look wrong."
           >
             {reconciling ? 'Reconciling…' : 'Reconcile with Stripe'}
+          </button>
+          <button
+            onClick={backfillReceipts}
+            disabled={backfilling}
+            className="border rounded px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Fill in missing Invoice/receipt PDF links on past successful payments. Use this once after deploying the receipt fix to surface buttons for older charges."
+          >
+            {backfilling ? 'Backfilling…' : 'Backfill receipts'}
           </button>
         </div>
       </div>
