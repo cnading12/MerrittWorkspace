@@ -58,6 +58,12 @@ export async function GET(
         const intents = await stripe.paymentIntents.list({
           customer: member.stripe_customer_id,
           limit: 100,
+          // Expand the linked Charge so we can read its refund state.
+          // PaymentIntent itself has no `amount_refunded` field under
+          // Stripe API 2025-08-27.basil — refund totals live on the
+          // Charge — so without the expansion every PI looked unrefunded
+          // and dashboard refunds never reflected back into the local row.
+          expand: ['data.latest_charge'],
         });
         const knownPiIds = new Set(
           payments
@@ -78,8 +84,14 @@ export async function GET(
         const newRows: any[] = [];
         const updates: { id: string; status: string; piId?: string | null }[] = [];
         for (const pi of intents.data) {
+          const charge =
+            typeof (pi as any).latest_charge === 'object'
+              ? ((pi as any).latest_charge as Stripe.Charge | null)
+              : null;
           const refunded =
-            (pi as any).amount_refunded && (pi as any).amount_refunded > 0;
+            !!charge &&
+            typeof charge.amount_refunded === 'number' &&
+            charge.amount_refunded > 0;
           const mappedStatus =
             pi.status === 'succeeded'
               ? refunded
