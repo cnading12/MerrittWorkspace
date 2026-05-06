@@ -84,6 +84,12 @@ export async function POST(
     };
 
     const truths: Truth[] = [];
+    // Track charge IDs already accounted for by a PI truth so we can
+    // dedupe invoices that point to the same underlying money. A
+    // subscription's first invoice and its Checkout PaymentIntent often
+    // resolve to the same Charge — without this, the same $108.93
+    // appears as both a "pi:" row and an "inv:" row.
+    const accountedChargeIds = new Set<string>();
 
     // PaymentIntents (covers initial Checkout one-off charges that have
     // no associated invoice). Filter to ones where money actually moved.
@@ -95,6 +101,7 @@ export async function POST(
         typeof (pi as any).latest_charge === 'object'
           ? ((pi as any).latest_charge as Stripe.Charge | null)
           : null;
+      if (charge?.id) accountedChargeIds.add(charge.id);
       const refunded =
         !!charge &&
         typeof charge.amount_refunded === 'number' &&
@@ -116,10 +123,14 @@ export async function POST(
       });
     }
 
-    // Invoices (covers recurring subscription charges). Skip invoices
-    // already represented by a PaymentIntent truth above (matched by
-    // invoice id) so we don't duplicate. Skip $0 invoices entirely —
-    // those are the placeholders that caused the original phantom.
+    // Invoices (covers recurring subscription charges). Skip:
+    //   • invoices linked to a PaymentIntent we already counted (by id
+    //     OR by the underlying Charge — the latter catches the case
+    //     where the PI's `invoice` field is null but the invoice's
+    //     `charge` resolves to the same Stripe.Charge)
+    //   • $0 placeholder invoices (the original phantom source)
+    //   • paid_out_of_band invoices, where Stripe was told the invoice
+    //     is settled without an actual Stripe-side charge
     const piInvoiceIds = new Set(
       truths
         .map((t) => t.stripe_invoice_id)
@@ -128,6 +139,12 @@ export async function POST(
     for (const inv of invoicesRes.data) {
       if (!inv.id) continue;
       if (piInvoiceIds.has(inv.id)) continue;
+      if ((inv as any).paid_out_of_band) continue;
+      const invChargeId =
+        typeof (inv as any).charge === 'string'
+          ? ((inv as any).charge as string)
+          : ((inv as any).charge as any)?.id || null;
+      if (invChargeId && accountedChargeIds.has(invChargeId)) continue;
       const paid = inv.amount_paid || 0;
       const due = inv.amount_due || 0;
       const status =
@@ -141,6 +158,7 @@ export async function POST(
       if (status === 'succeeded' && paid <= 0) continue;
       const amount = status === 'succeeded' ? paid : due || paid;
       if (amount <= 0) continue;
+      if (invChargeId) accountedChargeIds.add(invChargeId);
       truths.push({
         stripe_payment_intent_id: null,
         stripe_invoice_id: inv.id,

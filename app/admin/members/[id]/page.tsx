@@ -564,12 +564,28 @@ export default function AdminMemberDetailPage({
                   <td className="font-mono text-[11px] text-gray-600 max-w-[260px]">
                     {p.stripe_invoice_id ? (
                       <div className="truncate" title={p.stripe_invoice_id}>
-                        inv: {p.stripe_invoice_id}
+                        inv:{' '}
+                        <a
+                          href={`https://dashboard.stripe.com/invoices/${p.stripe_invoice_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          {p.stripe_invoice_id}
+                        </a>
                       </div>
                     ) : null}
                     {p.stripe_payment_intent_id ? (
                       <div className="truncate" title={p.stripe_payment_intent_id}>
-                        pi: {p.stripe_payment_intent_id}
+                        pi:{' '}
+                        <a
+                          href={`https://dashboard.stripe.com/payments/${p.stripe_payment_intent_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          {p.stripe_payment_intent_id}
+                        </a>
                       </div>
                     ) : null}
                     {!p.stripe_invoice_id && !p.stripe_payment_intent_id && (
