@@ -372,6 +372,31 @@ export async function POST(req: NextRequest) {
             : event.type === 'invoice.payment_failed'
               ? 'failed'
               : 'pending';
+        // Pick the right amount per event. Previously this fell back to
+        // `amount_due` when `amount_paid` was 0, which polluted the table
+        // with phantom rows: Stripe fires `invoice.paid` for $0 invoices
+        // (e.g. the placeholder created during subscription_create with a
+        // future billing anchor + proration_behavior='none', or any invoice
+        // fully zeroed out by credits) where amount_paid=0 but amount_due
+        // still reflects the gross subscription item amount. Recording
+        // amount_due in that case writes a "succeeded" row for money that
+        // never moved.
+        //
+        //   invoice.paid              → record amount_paid (the real amount
+        //                                actually charged); skip if it's 0
+        //   invoice.payment_failed    → record amount_due (what we tried
+        //                                to charge)
+        //   invoice.payment_action_required → record amount_due (pending)
+        const amountCents =
+          event.type === 'invoice.paid'
+            ? (invoice.amount_paid || 0)
+            : (invoice.amount_due || invoice.amount_paid || 0);
+        if (event.type === 'invoice.paid' && amountCents <= 0) {
+          // No money moved on this paid invoice — don't record a row.
+          // Receipt email below is also skipped via the same gate so
+          // members aren't notified about $0 "payments".
+          break;
+        }
         const resolvedPaymentIntentId =
           await resolveInvoicePaymentIntent(invoice);
         await sb.from('payment_history').upsert(
@@ -379,7 +404,7 @@ export async function POST(req: NextRequest) {
             member_id: member?.id || null,
             stripe_invoice_id: invoice.id,
             stripe_payment_intent_id: resolvedPaymentIntentId,
-            amount_cents: invoice.amount_paid || invoice.amount_due,
+            amount_cents: amountCents,
             currency: invoice.currency,
             status: mappedStatus,
             description: invoice.description || 'Membership',
@@ -408,8 +433,6 @@ export async function POST(req: NextRequest) {
           } else {
             const isFirstPayment =
               (invoice as any).billing_reason === 'subscription_create';
-            const amountCents =
-              invoice.amount_paid || invoice.amount_due || 0;
             const amount = (amountCents / 100).toFixed(2);
             const paidAtSec = invoice.status_transitions?.paid_at;
             const paidOn = new Date(
