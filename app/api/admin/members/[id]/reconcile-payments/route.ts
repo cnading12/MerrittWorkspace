@@ -69,6 +69,11 @@ export async function POST(
       stripe.invoices.list({
         customer: member.stripe_customer_id,
         limit: 100,
+        // Under Stripe API 2025-08-27.basil the legacy
+        // `Invoice.payment_intent` field is replaced by `payments.data[]`.
+        // Expand it so the dedup check below can resolve the PaymentIntent
+        // that settled each invoice without an extra retrieve.
+        expand: ['data.payments.data.payment'],
       }),
     ]);
 
@@ -84,12 +89,13 @@ export async function POST(
     };
 
     const truths: Truth[] = [];
-    // Track charge IDs already accounted for by a PI truth so we can
-    // dedupe invoices that point to the same underlying money. A
+    // Track charge IDs and PaymentIntent IDs already accounted for so we
+    // can dedupe invoices that point to the same underlying money. A
     // subscription's first invoice and its Checkout PaymentIntent often
     // resolve to the same Charge — without this, the same $108.93
     // appears as both a "pi:" row and an "inv:" row.
     const accountedChargeIds = new Set<string>();
+    const accountedPaymentIntentIds = new Set<string>();
 
     // PaymentIntents (covers initial Checkout one-off charges that have
     // no associated invoice). Filter to ones where money actually moved.
@@ -102,6 +108,7 @@ export async function POST(
           ? ((pi as any).latest_charge as Stripe.Charge | null)
           : null;
       if (charge?.id) accountedChargeIds.add(charge.id);
+      accountedPaymentIntentIds.add(pi.id);
       const refunded =
         !!charge &&
         typeof charge.amount_refunded === 'number' &&
@@ -145,6 +152,25 @@ export async function POST(
           ? ((inv as any).charge as string)
           : ((inv as any).charge as any)?.id || null;
       if (invChargeId && accountedChargeIds.has(invChargeId)) continue;
+      // Also dedupe via the invoice's PaymentIntent linkage. Under
+      // Stripe API 2025-08-27.basil the legacy `Invoice.payment_intent`
+      // is gone; the link now lives in `payments.data[].payment.payment_intent`.
+      // Check both shapes.
+      const invPaymentIntentIds: string[] = [];
+      const legacyPi = (inv as any).payment_intent;
+      if (typeof legacyPi === 'string') invPaymentIntentIds.push(legacyPi);
+      else if (legacyPi?.id) invPaymentIntentIds.push(legacyPi.id);
+      const paymentsList = (inv as any).payments?.data;
+      if (Array.isArray(paymentsList)) {
+        for (const p of paymentsList) {
+          const pid = p?.payment?.payment_intent;
+          if (typeof pid === 'string') invPaymentIntentIds.push(pid);
+          else if (pid?.id) invPaymentIntentIds.push(pid.id);
+        }
+      }
+      if (invPaymentIntentIds.some((pid) => accountedPaymentIntentIds.has(pid))) {
+        continue;
+      }
       const paid = inv.amount_paid || 0;
       const due = inv.amount_due || 0;
       const status =
