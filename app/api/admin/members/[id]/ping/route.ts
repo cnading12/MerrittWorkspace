@@ -87,7 +87,15 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({ ok: true });
+    // Record the ping timestamp so other admins sharing this account can see
+    // when this member was last pinged and avoid sending duplicate reminders.
+    const pingedAt = new Date().toISOString();
+    await sb
+      .from('members')
+      .update({ last_pinged_at: pingedAt })
+      .eq('id', member.id);
+
+    return NextResponse.json({ ok: true, last_pinged_at: pingedAt });
   } catch (e: any) {
     const status = e instanceof PortalError ? e.status : 500;
     return NextResponse.json({ error: e.message }, { status });

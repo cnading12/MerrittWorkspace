@@ -9,6 +9,7 @@ import { shouldShowTrialBadge } from '@/lib/portal/trial';
 import {
   compareMembersByPriority,
   formatAppliedAgo,
+  formatLastPingAgo,
   formatStartDateRelative,
 } from '@/lib/portal/memberPriority';
 
@@ -38,6 +39,7 @@ interface RecentMember {
   trial_date?: string | null;
   applied_at?: string | null;
   intended_start_date?: string | null;
+  last_pinged_at?: string | null;
   created_at: string;
 }
 
@@ -100,6 +102,18 @@ export default function AdminDashboardPage() {
         alert(err.error || 'Failed to send reminder');
         return;
       }
+      const json = await res.json().catch(() => ({}));
+      const pingedAt: string | null = json.last_pinged_at || new Date().toISOString();
+      setSummary((prev) =>
+        prev
+          ? {
+              ...prev,
+              recentMembers: prev.recentMembers.map((rm) =>
+                rm.id === m.id ? { ...rm, last_pinged_at: pingedAt } : rm
+              ),
+            }
+          : prev
+      );
       alert('Reminder email sent.');
     } finally {
       setPinging(null);
@@ -181,6 +195,7 @@ export default function AdminDashboardPage() {
                   <th className="pr-3">Start date</th>
                   <th className="pr-3">Status</th>
                   <th className="pr-3">Onboarding</th>
+                  <th className="pr-3">Last ping</th>
                   <th></th>
                 </tr>
               </thead>
@@ -189,6 +204,7 @@ export default function AdminDashboardPage() {
                   const showTrial = shouldShowTrialBadge(m);
                   const appliedAgo = formatAppliedAgo(m.applied_at);
                   const startRel = formatStartDateRelative(m.intended_start_date);
+                  const lastPingAgo = formatLastPingAgo(m.last_pinged_at);
                   const canPing =
                     !m.onboarding_unlocked && m.status !== 'cancelled' && m.status !== 'declined';
                   return (
@@ -237,6 +253,13 @@ export default function AdminDashboardPage() {
                     <td className="pr-3">
                       <OnboardingProgress member={m} />
                     </td>
+                    <td className="pr-3 whitespace-nowrap">
+                      {lastPingAgo ? (
+                        <span className="text-gray-700">{lastPingAgo}</span>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">never</span>
+                      )}
+                    </td>
                     <td className="pr-3">
                       <div className="flex items-center gap-2">
                         <button
@@ -245,7 +268,9 @@ export default function AdminDashboardPage() {
                           className="text-xs border rounded px-2 py-1 hover:bg-amber-50 text-amber-700 border-amber-300 disabled:opacity-40 disabled:cursor-not-allowed"
                           title={
                             canPing
-                              ? 'Email a portal-completion reminder with a fresh sign-in link'
+                              ? lastPingAgo
+                                ? `Email a portal-completion reminder with a fresh sign-in link. Last pinged ${lastPingAgo}.`
+                                : 'Email a portal-completion reminder with a fresh sign-in link. Never pinged.'
                               : 'Member has finished onboarding'
                           }
                         >

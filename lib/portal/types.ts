@@ -43,6 +43,7 @@ export interface Member {
   access_code_issued_at: string | null;
   office_number: string | null;
   desk_number: string | null;
+  last_pinged_at: string | null;
   // True for members who came in through the "Already a member?" migration
   // flow on the portal sign-in page. Legacy members can skip required
   // documents and Stripe auto-pay setup; their billing may continue to be
