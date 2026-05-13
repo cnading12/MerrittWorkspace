@@ -10,6 +10,7 @@ import { shouldShowTrialBadge } from '@/lib/portal/trial';
 import {
   compareMembersByPriority,
   formatAppliedAgo,
+  formatLastPingAgo,
   formatStartDateRelative,
 } from '@/lib/portal/memberPriority';
 
@@ -188,6 +189,11 @@ export default function AdminMembersPage() {
         alert(err.error || 'Failed to send reminder');
         return;
       }
+      const json = await res.json().catch(() => ({}));
+      const pingedAt: string = json.last_pinged_at || new Date().toISOString();
+      setMembers((prev) =>
+        prev.map((mm) => (mm.id === m.id ? { ...mm, last_pinged_at: pingedAt } : mm))
+      );
       alert('Reminder email sent.');
     } finally {
       setPinging(null);
@@ -289,6 +295,7 @@ export default function AdminMembersPage() {
             const showTrial = shouldShowTrialBadge(m);
             const appliedAgo = formatAppliedAgo(m.applied_at);
             const startRel = formatStartDateRelative(m.intended_start_date);
+            const lastPingAgo = formatLastPingAgo(m.last_pinged_at);
             const canPing = !m.onboarding_unlocked && m.status !== 'cancelled' && m.status !== 'declined';
             return (
             <div
@@ -330,7 +337,7 @@ export default function AdminMembersPage() {
                     )}
                   </div>
                   <div className="text-sm text-gray-600">{m.email}</div>
-                  {(appliedAgo || m.intended_start_date) && (
+                  {(appliedAgo || m.intended_start_date || canPing) && (
                     <div className="flex items-center gap-3 text-xs text-gray-600 mt-1.5 flex-wrap">
                       {appliedAgo && (
                         <span>
@@ -345,6 +352,16 @@ export default function AdminMembersPage() {
                             {m.intended_start_date}
                             {startRel && ` (${startRel})`}
                           </span>
+                        </span>
+                      )}
+                      {canPing && (
+                        <span>
+                          <span className="text-gray-500">Last pinged</span>{' '}
+                          {lastPingAgo ? (
+                            <span className="font-medium">{lastPingAgo}</span>
+                          ) : (
+                            <span className="italic text-gray-400">never</span>
+                          )}
                         </span>
                       )}
                     </div>
@@ -431,7 +448,9 @@ export default function AdminMembersPage() {
                     className="text-sm border rounded px-2 py-1 hover:bg-amber-50 text-amber-700 border-amber-300 disabled:opacity-40 disabled:cursor-not-allowed"
                     title={
                       canPing
-                        ? 'Email a portal-completion reminder with a fresh sign-in link'
+                        ? lastPingAgo
+                          ? `Email a portal-completion reminder with a fresh sign-in link. Last pinged ${lastPingAgo}.`
+                          : 'Email a portal-completion reminder with a fresh sign-in link. Never pinged.'
                         : 'Member has finished onboarding'
                     }
                   >

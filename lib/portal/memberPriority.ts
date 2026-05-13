@@ -68,6 +68,13 @@ export function formatAppliedAgo(value: string | null | undefined): string | nul
   return `${years}y ago`;
 }
 
+// Returns a short "X ago" label for the last-ping timestamp. Returns null if
+// the member has never been pinged so callers can render their own "never"
+// label.
+export function formatLastPingAgo(value: string | null | undefined): string | null {
+  return formatAppliedAgo(value);
+}
+
 // Returns a short "in X days" / "X days ago" label for a future or past date.
 // Compares calendar days in local time so a SQL date like "2026-05-01" isn't
 // pulled back to the previous day by UTC parsing.

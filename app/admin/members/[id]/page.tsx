@@ -12,6 +12,7 @@ import type {
 } from '@/lib/portal/types';
 import { DESIGNATION_LABELS, DOC_TYPE_LABELS } from '@/lib/portal/types';
 import { readTrialFlag, readTrialDate } from '@/lib/portal/trial';
+import { formatLastPingAgo } from '@/lib/portal/memberPriority';
 
 type DocWithUrl = MemberDocument & { signed_url: string | null };
 
@@ -177,6 +178,13 @@ export default function AdminMemberDetailPage({
       alert(err.error || 'Failed to send reminder');
       return;
     }
+    const json = await res.json().catch(() => ({}));
+    const pingedAt: string = json.last_pinged_at || new Date().toISOString();
+    setData((prev) =>
+      prev
+        ? { ...prev, member: { ...prev.member, last_pinged_at: pingedAt } }
+        : prev
+    );
     alert('Reminder email sent.');
   }
 
@@ -391,9 +399,22 @@ export default function AdminMemberDetailPage({
           <button
             onClick={pingMember}
             className="text-sm border border-amber-300 text-amber-700 rounded px-3 py-1.5 hover:bg-amber-50"
-            title="Email a reminder with the remaining onboarding steps and a fresh sign-in link"
+            title={
+              member.last_pinged_at
+                ? `Email a reminder with the remaining onboarding steps and a fresh sign-in link. Last pinged ${formatLastPingAgo(member.last_pinged_at) ?? 'recently'}.`
+                : 'Email a reminder with the remaining onboarding steps and a fresh sign-in link. Never pinged.'
+            }
           >
             Ping to finish portal
+            {member.last_pinged_at ? (
+              <span className="ml-1 text-[10px] text-amber-600 font-normal">
+                (last {formatLastPingAgo(member.last_pinged_at)})
+              </span>
+            ) : (
+              <span className="ml-1 text-[10px] text-amber-600 font-normal italic">
+                (never pinged)
+              </span>
+            )}
           </button>
         )}
         {member.stripe_customer_id &&

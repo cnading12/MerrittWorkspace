@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
       sb
         .from('members')
         .select(
-          'id, application_id, first_name, last_name, email, status, designation, monthly_cost_cents, required_docs_complete, agreement_signed, stripe_subscription_id, subscription_status, onboarding_unlocked, created_at'
+          'id, application_id, first_name, last_name, email, status, designation, monthly_cost_cents, required_docs_complete, agreement_signed, stripe_subscription_id, subscription_status, onboarding_unlocked, created_at, last_pinged_at'
         )
         .order('created_at', { ascending: false })
         .limit(25),
