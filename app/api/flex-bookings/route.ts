@@ -19,6 +19,7 @@ import { checkFreebusy } from '@/lib/calendar/freebusy';
 import { getWeeklyMinutes } from '@/lib/bookings/weekly-hours';
 import {
   flexBookingConfirmedEmail,
+  getTransactionalEmailHeaders,
   PORTAL_FROM,
   PORTAL_REPLY_TO,
 } from '@/lib/portal/emails';
@@ -304,6 +305,8 @@ export async function POST(req: NextRequest) {
           subject: tpl.subject,
           html: tpl.html,
           text: tpl.text,
+          headers: getTransactionalEmailHeaders(),
+          tags: [{ name: 'category', value: 'flex_booking_confirmation' }],
         });
       } catch (e) {
         console.error('flex booking email failed', e);

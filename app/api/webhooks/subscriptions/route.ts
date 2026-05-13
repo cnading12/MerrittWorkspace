@@ -4,6 +4,7 @@ import { Resend } from 'resend';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { getMembershipProductId } from '@/lib/portal/stripeProduct';
 import {
+  getTransactionalEmailHeaders,
   subscriptionPaymentReceiptEmail,
   PORTAL_FROM,
   PORTAL_REPLY_TO,
@@ -558,6 +559,8 @@ export async function POST(req: NextRequest) {
                 subject: email.subject,
                 html: email.html,
                 text: email.text,
+                headers: getTransactionalEmailHeaders(),
+                tags: [{ name: 'category', value: 'payment_receipt' }],
               });
             } catch (err) {
               // Do not fail the webhook if email delivery fails —
