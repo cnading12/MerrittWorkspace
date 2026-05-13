@@ -488,3 +488,55 @@ export const PORTAL_ONBOARDING_FROM =
 // Reply-To header improves deliverability and gives recipients a clear
 // path to respond.
 export const PORTAL_REPLY_TO = 'manager@merrittworkspace.net';
+
+// Mailbox used for `List-Unsubscribe`. Receivers prefer a monitored
+// member-services address over a no-reply pattern.
+export const PORTAL_LIST_UNSUBSCRIBE_MAILBOX =
+  'memberservices@merrittworkspace.net';
+
+// Headers we attach to every automated/transactional send. These are
+// the levers that demonstrably move messages from junk into the primary
+// inbox at Gmail, Outlook, Yahoo, and Apple Mail:
+//
+//   • `List-Unsubscribe` (RFC 2369) + `List-Unsubscribe-Post` (RFC 8058)
+//     — required by Gmail and Yahoo's Feb 2024 sender rules. Even on
+//     low-volume transactional mail this is now scored as a positive
+//     "legitimate sender" signal. We expose a mailto: option (and
+//     One-Click) so receivers can render the native "Unsubscribe"
+//     button next to the From address; messages that have it are far
+//     less likely to be classified as spam.
+//   • `Auto-Submitted: auto-generated` (RFC 3834) — flags the message
+//     as automated. Stops mailbox auto-responders from replying to it
+//     and tells receivers this is a system message, not a personal
+//     conversation, which improves filter scoring.
+//   • `Precedence: bulk` is INTENTIONALLY OMITTED — for one-to-one
+//     transactional mail (approval, password reset) it suppresses
+//     priority inbox placement at Gmail. We want these in the primary
+//     inbox.
+//   • `X-Entity-Ref-ID` — a unique-per-message id. Prevents Gmail from
+//     collapsing distinct transactional sends into a single thread
+//     (which can trigger "looks like a marketing blast" heuristics)
+//     and gives us a traceable id in Resend logs.
+//
+// NOTE: These headers help, but the dominant factor in inbox
+// placement is DNS authentication (SPF, DKIM, DMARC) on
+// `merrittworkspace.net` plus the sending domain's reputation with
+// Resend. If approval mail is still hitting spam after this change,
+// verify in the Resend dashboard that the domain shows:
+//   ✓ SPF verified (TXT include for Resend)
+//   ✓ DKIM verified (CNAME records)
+//   ✓ DMARC published (TXT `_dmarc` record, at minimum `p=none`
+//     with an `rua` reporting address)
+// — and ask the affected recipient to mark a past message "Not Spam"
+// once; that single user signal trains their account permanently.
+export function getTransactionalEmailHeaders(opts?: {
+  entityRefId?: string;
+}): Record<string, string> {
+  const id = opts?.entityRefId ?? (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  return {
+    'List-Unsubscribe': `<mailto:${PORTAL_LIST_UNSUBSCRIBE_MAILBOX}?subject=unsubscribe>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    'Auto-Submitted': 'auto-generated',
+    'X-Entity-Ref-ID': id,
+  };
+}

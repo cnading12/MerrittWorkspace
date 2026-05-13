@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { type Order, type OrderItem } from './snackshop';
 import { type Booking } from './supabase';
+import { getTransactionalEmailHeaders } from './portal/emails';
 
 // Lazy-load Resend client to avoid build-time errors
 let resendClient: Resend | null = null;
@@ -428,10 +429,13 @@ export async function sendOrderConfirmationEmail(data: {
         // Send to customer
         const customerEmail = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
+            replyTo: MEMBER_SERVICES_EMAIL,
             to: data.to,
             subject: template.subject,
             html: template.html,
             text: template.text,
+            headers: getTransactionalEmailHeaders(),
+            tags: [{ name: 'category', value: 'snackshop_order_confirmation' }],
         });
 
         await delay(1000);
@@ -472,10 +476,13 @@ export async function sendBookingConfirmationEmail(data: {
         // Send to customer
         const customerEmail = await resend.emails.send({
             from: 'Merritt Workspace Meetings <memberservices@merrittworkspace.net>',
+            replyTo: MEMBER_SERVICES_EMAIL,
             to: data.to,
             subject: template.subject,
             html: template.html,
             text: template.text,
+            headers: getTransactionalEmailHeaders(),
+            tags: [{ name: 'category', value: 'booking_confirmation' }],
         });
 
         await delay(1000);
@@ -519,10 +526,13 @@ export async function sendMembershipApplicationEmail(data: {
         // Send to applicant
         const applicantEmail = await resend.emails.send({
             from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
+            replyTo: MANAGER_EMAIL,
             to: data.to,
             subject: template.subject,
             html: template.html,
             text: template.text,
+            headers: getTransactionalEmailHeaders(),
+            tags: [{ name: 'category', value: 'application_received' }],
         });
 
         await delay(1000);
@@ -640,8 +650,11 @@ export async function sendOrderStatusUpdate(data: {
         // Send to customer
         const customerEmail = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
+            replyTo: MEMBER_SERVICES_EMAIL,
             to: data.to,
             subject: `Order Update - ${data.orderNumber} | Merritt Workspace`,
+            headers: getTransactionalEmailHeaders(),
+            tags: [{ name: 'category', value: 'snackshop_order_status' }],
             html: `
         <p>Hi ${data.customerName},</p>
         <p>Your order <strong>${data.orderNumber}</strong> status has been updated:</p>
@@ -1026,10 +1039,13 @@ export async function sendMemberBookingConfirmationEmail(data: {
         // Send to customer
         const customerEmail = await resend.emails.send({
             from: 'Merritt Workspace Meetings <memberservices@merrittworkspace.net>',
+            replyTo: MEMBER_SERVICES_EMAIL,
             to: data.to,
             subject: customerTemplate.subject,
             html: customerTemplate.html,
             text: customerTemplate.text,
+            headers: getTransactionalEmailHeaders(),
+            tags: [{ name: 'category', value: 'member_booking_confirmation' }],
         });
 
         await delay(1000);
@@ -1290,10 +1306,13 @@ export async function sendNonMemberConferenceRoomOnboardingEmail(data: {
 
         const result = await resend.emails.send({
             from: 'Merritt Workspace Meetings <memberservices@merrittworkspace.net>',
+            replyTo: MEMBER_SERVICES_EMAIL,
             to: data.to,
             subject: template.subject,
             html: template.html,
             text: template.text,
+            headers: getTransactionalEmailHeaders(),
+            tags: [{ name: 'category', value: 'conference_room_onboarding' }],
         });
 
         console.log('Non-member conference room onboarding email sent:', result);

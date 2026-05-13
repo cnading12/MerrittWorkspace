@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import { Resend } from 'resend';
+import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
@@ -156,8 +157,11 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
       try {
         await resend.emails.send({
           from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
+          replyTo: MEMBER_SERVICES_EMAIL,
           to: orderInfo.customer_email,
           subject: `Payment Failed - Order ${orderInfo.order_id}`,
+          headers: getTransactionalEmailHeaders(),
+          tags: [{ name: 'category', value: 'snackshop_payment_failed' }],
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <div style="background: #fee; padding: 20px; text-align: center;">
@@ -242,8 +246,11 @@ async function sendPaymentConfirmationEmails(orderDetails: any) {
   try {
     await resend.emails.send({
       from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
+      replyTo: MEMBER_SERVICES_EMAIL,
       to: customer_email,
       subject: `Payment Confirmed - Order ${order_id} | Merritt Workspace`,
+      headers: getTransactionalEmailHeaders(),
+      tags: [{ name: 'category', value: 'snackshop_payment_confirmed' }],
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; padding: 20px; text-align: center;">

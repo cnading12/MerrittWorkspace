@@ -12,6 +12,7 @@
 // breaks the set-password handoff.
 import { Resend } from 'resend';
 import {
+  getTransactionalEmailHeaders,
   membershipApprovedEmail,
   portalCompletionReminderEmail,
   PORTAL_ONBOARDING_FROM,
@@ -69,6 +70,8 @@ export async function sendOnboardingMagicLink(opts: {
       subject: tpl.subject,
       html: tpl.html,
       text: tpl.text,
+      headers: getTransactionalEmailHeaders(),
+      tags: [{ name: 'category', value: 'membership_approval' }],
     });
     return true;
   } catch (e) {
@@ -107,6 +110,8 @@ export async function sendPortalCompletionReminder(opts: {
       subject: tpl.subject,
       html: tpl.html,
       text: tpl.text,
+      headers: getTransactionalEmailHeaders(),
+      tags: [{ name: 'category', value: 'portal_completion_reminder' }],
     });
     return true;
   } catch (e) {

@@ -1,6 +1,7 @@
 // app/api/membership-application/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
 
 export const dynamic = 'force-dynamic';
 
@@ -244,6 +245,7 @@ export async function POST(request: NextRequest) {
       
       const applicantEmail = await resend.emails.send({
         from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
+        replyTo: MANAGER_EMAIL,
         to: applicationData.email,
         subject: 'Membership Application Received | Merritt Workspace',
         html: generateApplicantEmailHTML({
@@ -261,7 +263,9 @@ export async function POST(request: NextRequest) {
           membershipType: membershipTypeDisplay,
           applicationId,
           submittedAt
-        })
+        }),
+        headers: getTransactionalEmailHeaders(),
+        tags: [{ name: 'category', value: 'application_received' }],
       });
 
       emailResults.applicant_sent = true;
@@ -282,6 +286,7 @@ export async function POST(request: NextRequest) {
         console.log('📧 Sending trial-day info email...');
         const trialEmail = await resend.emails.send({
           from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
+          replyTo: MANAGER_EMAIL,
           to: applicationData.email,
           subject: 'Your Trial Day at Merritt Workspace | What to Expect',
           html: generateTrialDayEmailHTML({
@@ -292,6 +297,8 @@ export async function POST(request: NextRequest) {
             firstName: applicationData.first_name,
             trialDate: applicationData.trial_date,
           }),
+          headers: getTransactionalEmailHeaders(),
+          tags: [{ name: 'category', value: 'trial_day_info' }],
         });
         emailResults.trial_info_sent = true;
         console.log('✅ Trial-day info email sent:', trialEmail.data?.id);
