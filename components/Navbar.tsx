@@ -201,6 +201,9 @@ export default function Navbar() {
               )}
             </div>
 
+            <Link href="/events" className="text-gray-700 hover:text-burnt-orange-600 transition">
+              Upcoming Events
+            </Link>
             <Link href="/about" className="text-gray-700 hover:text-burnt-orange-600 transition">
               About
             </Link>
@@ -367,8 +370,15 @@ export default function Navbar() {
                 )}
               </div>
 
-              <Link 
-                href="/about" 
+              <Link
+                href="/events"
+                className="text-gray-700 hover:text-burnt-orange-600 transition py-2"
+                onClick={closeAllMenus}
+              >
+                Upcoming Events
+              </Link>
+              <Link
+                href="/about"
                 className="text-gray-700 hover:text-burnt-orange-600 transition py-2"
                 onClick={closeAllMenus}
               >
