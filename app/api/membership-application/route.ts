@@ -282,20 +282,32 @@ export async function POST(request: NextRequest) {
     // immediately so they can show up and work without waiting on application
     // review. They still receive the standard onboarding flow.
     if (applicationData.wants_trial_day) {
+      // Trial users applying for a private office need a different email than
+      // dedicated-desk trial users: offices must be unlocked and equipped
+      // ahead of time, so they need to coordinate with Member Services before
+      // the trial day to confirm an office number.
+      const isOfficeTrial = itemized.lines.some(line =>
+        typeof line.plan_id === 'string' && line.plan_id.startsWith('private_office')
+      );
+
       try {
-        console.log('📧 Sending trial-day info email...');
+        console.log(`📧 Sending trial-day info email (${isOfficeTrial ? 'office' : 'dedicated desk'} variant)...`);
         const trialEmail = await resend.emails.send({
           from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
           replyTo: MANAGER_EMAIL,
           to: applicationData.email,
-          subject: 'Your Trial Day at Merritt Workspace | What to Expect',
+          subject: isOfficeTrial
+            ? 'Your Office Trial Day at Merritt Workspace | Confirm Your Office'
+            : 'Your Trial Day at Merritt Workspace | What to Expect',
           html: generateTrialDayEmailHTML({
             firstName: applicationData.first_name,
             trialDate: applicationData.trial_date,
+            isOfficeTrial,
           }),
           text: generateTrialDayEmailText({
             firstName: applicationData.first_name,
             trialDate: applicationData.trial_date,
+            isOfficeTrial,
           }),
           headers: getTransactionalEmailHeaders(),
           tags: [{ name: 'category', value: 'trial_day_info' }],
@@ -829,12 +841,58 @@ ACTION REQUIRED: Please follow up within 1-2 business days.
   `;
 }
 
-function generateTrialDayEmailHTML(data: { firstName: string; trialDate: string }) {
+function generateTrialDayEmailHTML(data: { firstName: string; trialDate: string; isOfficeTrial?: boolean }) {
   const trialDateDisplay = data.trialDate
     ? new Date(data.trialDate).toLocaleDateString('en-US', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
       })
     : 'the date you selected';
+
+  const headerTitle = data.isOfficeTrial
+    ? 'Your Office Trial Day is Almost Set'
+    : "You're Set for Your Trial Day";
+
+  const headerSubtitle = data.isOfficeTrial
+    ? 'One quick step — confirm your office number with us'
+    : 'Everything you need to show up and get to work';
+
+  const introParagraph = data.isOfficeTrial
+    ? `Thanks for signing up for an office trial day at Merritt Workspace. We're looking forward to having you in for <strong>${trialDateDisplay}</strong>. Because you're trialing a private office, there's one important step before your visit — see below.`
+    : `Thanks for signing up for a trial day at Merritt Workspace. We're looking forward to having you in for <strong>${trialDateDisplay}</strong>. Everything below is what you need to walk in and get to work.`;
+
+  const officeConfirmationBlock = data.isOfficeTrial
+    ? `
+            <div class="info-block" style="background: #fde6d4; border-left-color: #de5f07;">
+              <h3 style="color: #8a3a00;">⚠️ Please confirm your office before your trial day</h3>
+              <p style="margin: 0 0 10px 0;">Private offices need to be unlocked and stocked with the right equipment ahead of time, so we need to coordinate with you in advance.</p>
+              <p style="margin: 0 0 10px 0;"><strong>Before ${trialDateDisplay}, please reach out to the Manager of Member Services to confirm your office number:</strong></p>
+              <ul>
+                <li>Email <a href="mailto:memberservices@merrittworkspace.net">memberservices@merrittworkspace.net</a></li>
+                <li>Or text/call <strong>(303) 359-8337</strong></li>
+              </ul>
+              <p style="margin: 10px 0 0 0;">Once your office is confirmed, it will be unlocked and ready with everything you need on the day of your trial.</p>
+            </div>`
+    : '';
+
+  const arrivalBlock = data.isOfficeTrial
+    ? `
+            <div class="info-block">
+              <h3>When you arrive</h3>
+              <ul>
+                <li>No front desk — just let yourself in through the main entrance during building hours (8:00 AM – 6:00 PM).</li>
+                <li>Head to your confirmed office — it will be unlocked and equipped for you.</li>
+                <li>Feel free to explore: kitchen, snack shop, meeting rooms, phone booths, and bathrooms are all available for your use.</li>
+              </ul>
+            </div>`
+    : `
+            <div class="info-block">
+              <h3>When you arrive</h3>
+              <ul>
+                <li>No front desk — just let yourself in through the main entrance during building hours (8:00 AM – 6:00 PM).</li>
+                <li>Pick any open desk in the dedicated-desk or flex area and settle in.</li>
+                <li>Feel free to explore: kitchen, snack shop, meeting rooms, phone booths, and bathrooms are all available for your use.</li>
+              </ul>
+            </div>`;
 
   return `
     <!DOCTYPE html>
@@ -861,15 +919,15 @@ function generateTrialDayEmailHTML(data: { firstName: string; trialDate: string 
       <body>
         <div class="container">
           <div class="header">
-            <h1>You're Set for Your Trial Day</h1>
-            <p style="margin: 8px 0 0 0;">Everything you need to show up and get to work</p>
+            <h1>${headerTitle}</h1>
+            <p style="margin: 8px 0 0 0;">${headerSubtitle}</p>
           </div>
 
           <div class="content">
             <p>Hi ${data.firstName},</p>
 
-            <p>Thanks for signing up for a trial day at Merritt Workspace. We're looking forward to having you in for <strong>${trialDateDisplay}</strong>. Everything below is what you need to walk in and get to work.</p>
-
+            <p>${introParagraph}</p>
+${officeConfirmationBlock}
             <div class="info-block">
               <h3>Where to find us</h3>
               <table class="kv">
@@ -879,15 +937,7 @@ function generateTrialDayEmailHTML(data: { firstName: string; trialDate: string 
                 <tr><td>Parking</td><td>Onsite parking available</td></tr>
               </table>
             </div>
-
-            <div class="info-block">
-              <h3>When you arrive</h3>
-              <ul>
-                <li>No front desk — just let yourself in through the main entrance during building hours (8:00 AM – 6:00 PM).</li>
-                <li>Pick any open desk in the dedicated-desk or flex area and settle in.</li>
-                <li>Feel free to explore: kitchen, snack shop, meeting rooms, phone booths, and bathrooms are all available for your use.</li>
-              </ul>
-            </div>
+${arrivalBlock}
 
             <div class="info-block">
               <h3>WiFi</h3>
@@ -955,32 +1005,67 @@ function generateTrialDayEmailHTML(data: { firstName: string; trialDate: string 
   `;
 }
 
-function generateTrialDayEmailText(data: { firstName: string; trialDate: string }) {
+function generateTrialDayEmailText(data: { firstName: string; trialDate: string; isOfficeTrial?: boolean }) {
   const trialDateDisplay = data.trialDate
     ? new Date(data.trialDate).toLocaleDateString()
     : 'the date you selected';
 
+  const headerLine = data.isOfficeTrial
+    ? 'YOUR OFFICE TRIAL DAY AT MERRITT WORKSPACE'
+    : "YOU'RE SET FOR YOUR TRIAL DAY AT MERRITT WORKSPACE";
+
+  const intro = data.isOfficeTrial
+    ? `Thanks for signing up for an office trial day at Merritt Workspace. We're
+looking forward to having you in for ${trialDateDisplay}. Because you're
+trialing a private office, there's one important step before your visit.`
+    : `Thanks for signing up for a trial day at Merritt Workspace. We're looking
+forward to having you in for ${trialDateDisplay}. Everything below is what
+you need to walk in and get to work.`;
+
+  const officeConfirmationSection = data.isOfficeTrial
+    ? `
+PLEASE CONFIRM YOUR OFFICE BEFORE YOUR TRIAL DAY
+Private offices need to be unlocked and stocked with the right equipment
+ahead of time, so we need to coordinate with you in advance.
+
+Before ${trialDateDisplay}, please reach out to the Manager of Member
+Services to confirm your office number:
+- Email: memberservices@merrittworkspace.net
+- Text/call: (303) 359-8337
+
+Once your office is confirmed, it will be unlocked and ready with
+everything you need on the day of your trial.
+`
+    : '';
+
+  const arrivalSection = data.isOfficeTrial
+    ? `WHEN YOU ARRIVE
+- No front desk — just let yourself in through the main entrance during
+  building hours (8:00 AM – 6:00 PM).
+- Head to your confirmed office — it will be unlocked and equipped for you.
+- Feel free to explore: kitchen, snack shop, meeting rooms, phone booths,
+  and bathrooms are all available for your use.`
+    : `WHEN YOU ARRIVE
+- No front desk — just let yourself in through the main entrance during
+  building hours (8:00 AM – 6:00 PM).
+- Pick any open desk in the dedicated-desk or flex area and settle in.
+- Feel free to explore: kitchen, snack shop, meeting rooms, phone booths,
+  and bathrooms are all available for your use.`;
+
   return `
-YOU'RE SET FOR YOUR TRIAL DAY AT MERRITT WORKSPACE
+${headerLine}
 
 Hi ${data.firstName},
 
-Thanks for signing up for a trial day at Merritt Workspace. We're looking
-forward to having you in for ${trialDateDisplay}. Everything below is what
-you need to walk in and get to work.
-
+${intro}
+${officeConfirmationSection}
 WHERE TO FIND US
 Address:      2246 Irving Street, Denver, CO 80211
 Neighborhood: Sloan's Lake — 3 minutes to I-25
 Hours:        Building open Mon–Fri, 8:00 AM – 6:00 PM
 Parking:      Onsite parking available
 
-WHEN YOU ARRIVE
-- No front desk — just let yourself in through the main entrance during
-  building hours (8:00 AM – 6:00 PM).
-- Pick any open desk in the dedicated-desk or flex area and settle in.
-- Feel free to explore: kitchen, snack shop, meeting rooms, phone booths,
-  and bathrooms are all available for your use.
+${arrivalSection}
 
 WIFI
 - Network:  merrittcowork
