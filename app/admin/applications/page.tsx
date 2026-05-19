@@ -32,9 +32,10 @@ function byTrialDateAsc(a: MemberApplication, b: MemberApplication) {
 interface CardProps {
   app: MemberApplication;
   onDecide: (id: string, action: 'approve' | 'decline') => void;
+  onView: (id: string) => void;
 }
 
-function TrialCard({ app, onDecide }: CardProps) {
+function TrialCard({ app, onDecide, onView }: CardProps) {
   return (
     <div className="bg-orange-50 border-2 border-orange-500 border-l-8 rounded-lg p-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -81,6 +82,12 @@ function TrialCard({ app, onDecide }: CardProps) {
         </div>
         <div className="flex flex-col gap-2 flex-shrink-0">
           <button
+            onClick={() => onView(app.id)}
+            className="bg-gray-900 text-white px-3 py-1.5 rounded text-sm hover:bg-gray-800"
+          >
+            View application
+          </button>
+          <button
             onClick={() => onDecide(app.id, 'approve')}
             className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700"
           >
@@ -94,17 +101,11 @@ function TrialCard({ app, onDecide }: CardProps) {
           </button>
         </div>
       </div>
-      <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-gray-600">Full submission</summary>
-        <pre className="mt-2 bg-white border border-orange-200 p-3 rounded text-xs overflow-auto">
-          {JSON.stringify(app.payload, null, 2)}
-        </pre>
-      </details>
     </div>
   );
 }
 
-function StandardCard({ app, onDecide }: CardProps) {
+function StandardCard({ app, onDecide, onView }: CardProps) {
   return (
     <div className="bg-white border rounded p-4">
       <div className="flex items-start justify-between gap-4">
@@ -131,7 +132,13 @@ function StandardCard({ app, onDecide }: CardProps) {
             Submitted {new Date(app.created_at).toLocaleString()}
           </div>
         </div>
-        <div className="flex gap-2 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
+          <button
+            onClick={() => onView(app.id)}
+            className="bg-gray-900 text-white px-3 py-1.5 rounded text-sm hover:bg-gray-800"
+          >
+            View application
+          </button>
           <button
             onClick={() => onDecide(app.id, 'approve')}
             className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700"
@@ -146,12 +153,6 @@ function StandardCard({ app, onDecide }: CardProps) {
           </button>
         </div>
       </div>
-      <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-gray-500">Full submission</summary>
-        <pre className="mt-2 bg-gray-50 p-3 rounded text-xs overflow-auto">
-          {JSON.stringify(app.payload, null, 2)}
-        </pre>
-      </details>
     </div>
   );
 }
@@ -182,6 +183,36 @@ export default function AdminApplicationsPage() {
       setLoading(false);
     })();
   }, [router]);
+
+  async function viewApplication(id: string) {
+    if (!token) return;
+    // Open the popup synchronously inside the click gesture so the browser
+    // doesn't block it — window.open() after an await loses user activation.
+    const win = window.open('', '_blank');
+    if (!win) {
+      alert(
+        'Your browser blocked the popup. Please allow popups for this site, then try again.'
+      );
+      return;
+    }
+    win.document.write(loadingHtml());
+    try {
+      const res = await fetch(`/api/admin/applications/${id}/view`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        writeError(win, err.error || 'Failed to load application');
+        return;
+      }
+      const html = await res.text();
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+    } catch (e: any) {
+      writeError(win, e.message || 'Failed to open application');
+    }
+  }
 
   async function decide(id: string, action: 'approve' | 'decline') {
     if (!token) return;
@@ -245,7 +276,7 @@ export default function AdminApplicationsPage() {
           </div>
           <div className="bg-orange-100/40 border-2 border-t-0 border-orange-600 rounded-b-lg p-3 space-y-3">
             {trialApps.map((a) => (
-              <TrialCard key={a.id} app={a} onDecide={decide} />
+              <TrialCard key={a.id} app={a} onDecide={decide} onView={viewApplication} />
             ))}
           </div>
         </section>
@@ -263,11 +294,40 @@ export default function AdminApplicationsPage() {
           </div>
           <div className="bg-gray-50 border-2 border-t-0 border-gray-700 rounded-b-lg p-3 space-y-3">
             {standardApps.map((a) => (
-              <StandardCard key={a.id} app={a} onDecide={decide} />
+              <StandardCard key={a.id} app={a} onDecide={decide} onView={viewApplication} />
             ))}
           </div>
         </section>
       )}
     </div>
   );
+}
+
+function loadingHtml(): string {
+  return `<!doctype html><html><head><title>Loading application…</title>
+<style>body{font-family:ui-sans-serif,system-ui,sans-serif;color:#6b7280;padding:32px;background:#f9fafb}</style>
+</head><body><p>Loading application…</p></body></html>`;
+}
+
+function writeError(win: Window, message: string) {
+  try {
+    win.document.open();
+    win.document.write(
+      `<!doctype html><html><head><title>Error</title>
+<style>body{font-family:ui-sans-serif,system-ui,sans-serif;color:#991b1b;padding:32px;background:#fef2f2}</style>
+</head><body><p><strong>Error:</strong> ${escapeHtml(message)}</p></body></html>`
+    );
+    win.document.close();
+  } catch {
+    // Popup may have been closed before the error came back — ignore.
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
