@@ -3007,6 +3007,33 @@ function OnboardingTab({
         </p>
       </section>
 
+      {/* Leave a Review */}
+      <section className="bg-orange-50 border-2 border-orange-300 rounded-lg p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">
+          ⭐ Have you been enjoying Merritt Workspace?
+        </h3>
+        <p className="text-sm text-gray-800">
+          As a small, locally-owned business, <strong>nothing helps us more than a quick
+          Google review from a happy member</strong>. Every star and kind word makes a real
+          difference — it helps new members discover us, supports our team, and keeps our
+          community growing. We&apos;d be incredibly grateful if you could take a moment to
+          share your experience.
+        </p>
+        <div className="mt-4">
+          <a
+            href="https://g.page/r/CQ0n3_RM3TiMEBM/review"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-orange-600 text-white font-semibold px-5 py-2.5 rounded hover:bg-orange-700 transition-colors"
+          >
+            ⭐ Leave us a review
+          </a>
+        </div>
+        <p className="mt-3 text-xs text-gray-600">
+          Thank you so much — it means the world to us!
+        </p>
+      </section>
+
       {/* Closing */}
       <section className="bg-white border rounded-lg p-6">
         <p className="text-sm text-gray-700">
