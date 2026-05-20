@@ -174,13 +174,15 @@ export async function POST(request: NextRequest) {
         }
 
         const inquiryLabel = INQUIRY_LABELS[inquiry_type] || inquiry_type;
-        const submittedAt = new Date().toLocaleDateString('en-US', {
+        const submittedAt = new Date().toLocaleString('en-US', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
+            timeZone: 'America/Denver',
+            timeZoneName: 'short',
         });
 
         const notificationHtml = `
