@@ -233,13 +233,15 @@ async function sendPaymentConfirmationEmails(orderDetails: any) {
     </tr>
   `).join('');
 
-  const orderTime = new Date().toLocaleDateString('en-US', {
+  const orderTime = new Date().toLocaleString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: 'America/Denver',
+    timeZoneName: 'short',
   });
 
   // Send customer confirmation email

@@ -23,6 +23,47 @@ const resend = {
 // Helper to avoid Resend rate limit (2 req/sec on free plan)
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Merritt Workspace is in Denver. Format all customer-facing timestamps in
+// America/Denver so the displayed time matches when the email actually arrives,
+// regardless of the server's timezone (Vercel runs in UTC).
+const DENVER_TZ = 'America/Denver';
+
+const formatDenverDateTime = (
+    date: Date | string = new Date(),
+    opts: Intl.DateTimeFormatOptions = {}
+): string => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: DENVER_TZ,
+        timeZoneName: 'short',
+        ...opts,
+    });
+};
+
+// booking_date is stored as a YYYY-MM-DD date with no time component. Anchor it
+// to noon UTC so it renders as the same calendar day in every timezone.
+const formatBookingDate = (
+    dateStr: string,
+    opts: Intl.DateTimeFormatOptions = {}
+): string => {
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+        ? new Date(`${dateStr}T12:00:00Z`)
+        : new Date(dateStr);
+    return d.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: DENVER_TZ,
+        ...opts,
+    });
+};
+
 // Centralized email configuration
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
@@ -81,14 +122,7 @@ export const emailTemplates = {
                 <h3 style="margin-top: 0;">Order Information</h3>
                 <p><strong>Order Number:</strong> ${data.order.order_number}</p>
                 <p><strong>Office/Desk:</strong> ${data.order.office_number}</p>
-                <p><strong>Order Date:</strong> ${new Date(data.order.created_at).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        })}</p>
+                <p><strong>Order Date:</strong> ${formatDenverDateTime(data.order.created_at)}</p>
                 <p><strong>Status:</strong> <span class="status-badge">${data.order.status.replace('_', ' ').toUpperCase()}</span></p>
                 ${data.order.delivery_notes ? `<p><strong>Delivery Notes:</strong> ${data.order.delivery_notes}</p>` : ''}
               </div>
@@ -146,7 +180,7 @@ Your Snackshop order has been confirmed! Here are the details:
 
 Order Number: ${data.order.order_number}
 Office/Desk: ${data.order.office_number}
-Order Date: ${new Date(data.order.created_at).toLocaleString()}
+Order Date: ${formatDenverDateTime(data.order.created_at)}
 Status: ${data.order.status.replace('_', ' ').toUpperCase()}
 
 Items Ordered:
@@ -173,7 +207,7 @@ Merritt Workspace Team
         booking: Booking;
         roomName: string;
     }) => ({
-        subject: `Meeting Room Confirmed - ${new Date(data.booking.booking_date).toLocaleDateString()} | Merritt Workspace`,
+        subject: `Meeting Room Confirmed - ${formatBookingDate(data.booking.booking_date)} | Merritt Workspace`,
         html: `
       <!DOCTYPE html>
       <html>
@@ -208,12 +242,7 @@ Merritt Workspace Team
               <div class="booking-info">
                 <h3 style="margin-top: 0;">Booking Information</h3>
                 <p><strong>Room:</strong> ${data.roomName}</p>
-                <p><strong>Date:</strong> ${new Date(data.booking.booking_date).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        })}</p>
+                <p><strong>Date:</strong> ${formatBookingDate(data.booking.booking_date, { weekday: 'long' })}</p>
                 <p><strong>Time:</strong> ${data.booking.start_time} - ${data.booking.end_time}</p>
                 <p><strong>Duration:</strong> ${data.booking.duration_hours} hour${data.booking.duration_hours > 1 ? 's' : ''}</p>
                 <p><strong>Attendees:</strong> ${data.booking.attendees}</p>
@@ -256,7 +285,7 @@ Your meeting room booking has been confirmed!
 
 Booking Details:
 - Room: ${data.roomName}
-- Date: ${new Date(data.booking.booking_date).toLocaleDateString()}
+- Date: ${formatBookingDate(data.booking.booking_date, { weekday: 'long' })}
 - Time: ${data.booking.start_time} - ${data.booking.end_time}
 - Duration: ${data.booking.duration_hours} hour${data.booking.duration_hours > 1 ? 's' : ''}
 - Attendees: ${data.booking.attendees}
@@ -326,14 +355,7 @@ Thank you for choosing Merritt Workspace!
                 <p><strong>Email:</strong> ${data.email}</p>
                 <p><strong>Membership Type:</strong> ${data.membershipType}</p>
                 <p><strong>Application ID:</strong> ${data.applicationId}</p>
-                <p><strong>Submitted:</strong> ${new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        })}</p>
+                <p><strong>Submitted:</strong> ${formatDenverDateTime()}</p>
               </div>
 
               <div class="next-steps">
@@ -383,7 +405,7 @@ Application Details:
 - Email: ${data.email}
 - Membership Type: ${data.membershipType}
 - Application ID: ${data.applicationId}
-- Submitted: ${new Date().toLocaleString()}
+- Submitted: ${formatDenverDateTime()}
 
 What's Next:
 1. Review Process: Our team will review your application within 1-2 business days
@@ -498,11 +520,11 @@ export async function sendBookingConfirmationEmail(data: {
           <strong>Sent to:</strong> ${data.to}<br>
           <strong>Customer:</strong> ${data.customerName}<br>
           <strong>Room:</strong> ${data.roomName}<br>
-          <strong>Date:</strong> ${data.booking.booking_date} at ${data.booking.start_time}
+          <strong>Date:</strong> ${formatBookingDate(data.booking.booking_date)} at ${data.booking.start_time}
         </div>
         ${template.html}
       `,
-            text: `[MEETING BOOKING COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\nRoom: ${data.roomName}\nDate: ${data.booking.booking_date} at ${data.booking.start_time}\n\n${template.text}`,
+            text: `[MEETING BOOKING COPY]\nSent to: ${data.to}\nCustomer: ${data.customerName}\nRoom: ${data.roomName}\nDate: ${formatBookingDate(data.booking.booking_date)} at ${data.booking.start_time}\n\n${template.text}`,
         });
 
         console.log('Booking confirmation email sent to customer and member services:', { customerEmail, memberServicesEmail });
@@ -553,14 +575,7 @@ export async function sendMembershipApplicationEmail(data: {
           <p><strong>Email:</strong> ${data.email}</p>
           <p><strong>Membership Type:</strong> ${data.membershipType}</p>
           <p><strong>Application ID:</strong> ${data.applicationId}</p>
-          <p><strong>Submitted:</strong> ${new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            })}</p>
+          <p><strong>Submitted:</strong> ${formatDenverDateTime()}</p>
         </div>
 
         <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
@@ -577,7 +592,7 @@ export async function sendMembershipApplicationEmail(data: {
         <hr style="margin: 20px 0;">
         <p style="color: #666; font-size: 14px;"><em>A copy of the welcome email was also sent to the applicant.</em></p>
       `,
-            text: `NEW MEMBERSHIP APPLICATION\n\nApplicant: ${data.applicantName}\nEmail: ${data.email}\nMembership Type: ${data.membershipType}\nApplication ID: ${data.applicationId}\nSubmitted: ${new Date().toLocaleString()}\n\nNext Steps:\n1. Review the application\n2. Contact ${data.applicantName} to schedule a tour\n3. Arrange their free trial day\n4. Process membership approval\n\nACTION REQUIRED: Please follow up within 1-2 business days.\n\nA copy of the welcome email was also sent to the applicant.`,
+            text: `NEW MEMBERSHIP APPLICATION\n\nApplicant: ${data.applicantName}\nEmail: ${data.email}\nMembership Type: ${data.membershipType}\nApplication ID: ${data.applicationId}\nSubmitted: ${formatDenverDateTime()}\n\nNext Steps:\n1. Review the application\n2. Contact ${data.applicantName} to schedule a tour\n3. Arrange their free trial day\n4. Process membership approval\n\nACTION REQUIRED: Please follow up within 1-2 business days.\n\nA copy of the welcome email was also sent to the applicant.`,
         });
 
         await delay(1000);
@@ -598,14 +613,7 @@ export async function sendMembershipApplicationEmail(data: {
           <p><strong>Email:</strong> ${data.email}</p>
           <p><strong>Membership Type:</strong> ${data.membershipType}</p>
           <p><strong>Application ID:</strong> ${data.applicationId}</p>
-          <p><strong>Submitted:</strong> ${new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            })}</p>
+          <p><strong>Submitted:</strong> ${formatDenverDateTime()}</p>
         </div>
 
         <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
@@ -622,7 +630,7 @@ export async function sendMembershipApplicationEmail(data: {
         <hr style="margin: 20px 0;">
         <p style="color: #666; font-size: 14px;"><em>A copy of the welcome email was also sent to the applicant.</em></p>
       `,
-            text: `NEW MEMBERSHIP APPLICATION\n\nApplicant: ${data.applicantName}\nEmail: ${data.email}\nMembership Type: ${data.membershipType}\nApplication ID: ${data.applicationId}\nSubmitted: ${new Date().toLocaleString()}\n\nNext Steps:\n1. Review the application\n2. Contact ${data.applicantName} to schedule a tour\n3. Arrange their free trial day\n4. Process membership approval\n\nACTION REQUIRED: Please follow up within 1-2 business days.\n\nA copy of the welcome email was also sent to the applicant.`,
+            text: `NEW MEMBERSHIP APPLICATION\n\nApplicant: ${data.applicantName}\nEmail: ${data.email}\nMembership Type: ${data.membershipType}\nApplication ID: ${data.applicationId}\nSubmitted: ${formatDenverDateTime()}\n\nNext Steps:\n1. Review the application\n2. Contact ${data.applicantName} to schedule a tour\n3. Arrange their free trial day\n4. Process membership approval\n\nACTION REQUIRED: Please follow up within 1-2 business days.\n\nA copy of the welcome email was also sent to the applicant.`,
         });
 
         console.log('Membership application email sent to applicant, manager, and member services:', { applicantEmail, managerEmail, memberServicesEmail });
@@ -765,7 +773,7 @@ export const memberBookingConfirmation = (data: {
     memberHoursUsed?: number;
     remainingHours?: number;
 }) => ({
-    subject: `${data.isMemberBooking ? 'Member' : 'Paid'} Meeting Room Confirmed - ${new Date(data.booking.booking_date).toLocaleDateString()} | Merritt Workspace`,
+    subject: `${data.isMemberBooking ? 'Member' : 'Paid'} Meeting Room Confirmed - ${formatBookingDate(data.booking.booking_date)} | Merritt Workspace`,
     html: `
     <!DOCTYPE html>
     <html>
@@ -804,12 +812,7 @@ export const memberBookingConfirmation = (data: {
             <div class="booking-info">
               <h3 style="margin-top: 0;">Booking Information</h3>
               <p><strong>Room:</strong> ${data.roomName}</p>
-              <p><strong>Date:</strong> ${new Date(data.booking.booking_date).toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    })}</p>
+              <p><strong>Date:</strong> ${formatBookingDate(data.booking.booking_date, { weekday: 'long' })}</p>
               <p><strong>Time:</strong> ${data.booking.start_time} - ${data.booking.end_time}</p>
               <p><strong>Duration:</strong> ${data.booking.duration_hours} hour${data.booking.duration_hours > 1 ? 's' : ''}</p>
               <p><strong>Attendees:</strong> ${data.booking.attendees}</p>
@@ -870,7 +873,7 @@ Your ${data.isMemberBooking ? 'member' : 'paid'} meeting room booking has been c
 
 Booking Details:
 - Room: ${data.roomName}
-- Date: ${new Date(data.booking.booking_date).toLocaleDateString()}
+- Date: ${formatBookingDate(data.booking.booking_date, { weekday: 'long' })}
 - Time: ${data.booking.start_time} - ${data.booking.end_time}
 - Duration: ${data.booking.duration_hours} hour${data.booking.duration_hours > 1 ? 's' : ''}
 - Attendees: ${data.booking.attendees}
@@ -919,7 +922,7 @@ export const managerMemberBookingNotification = (data: {
         remaining_hours: number;
     };
 }) => ({
-    subject: `🏢 ${data.isMemberBooking ? 'Member' : 'Paid'} Meeting Room Booking - ${data.roomName} | ${new Date(data.booking.booking_date).toLocaleDateString()}`,
+    subject: `🏢 ${data.isMemberBooking ? 'Member' : 'Paid'} Meeting Room Booking - ${data.roomName} | ${formatBookingDate(data.booking.booking_date)}`,
     html: `
     <!DOCTYPE html>
     <html>
@@ -951,12 +954,7 @@ export const managerMemberBookingNotification = (data: {
             <p><strong>Customer:</strong> ${data.customerName}</p>
             <p><strong>Email:</strong> ${data.booking.customer_email}</p>
             <p><strong>Room:</strong> ${data.roomName}</p>
-            <p><strong>Date:</strong> ${new Date(data.booking.booking_date).toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    })}</p>
+            <p><strong>Date:</strong> ${formatBookingDate(data.booking.booking_date, { weekday: 'long' })}</p>
             <p><strong>Time:</strong> ${data.booking.start_time} - ${data.booking.end_time}</p>
             <p><strong>Duration:</strong> ${data.booking.duration_hours} hour${data.booking.duration_hours > 1 ? 's' : ''}</p>
             <p><strong>Attendees:</strong> ${data.booking.attendees}</p>
@@ -995,7 +993,7 @@ NEW MEETING ROOM BOOKING - ${data.isMemberBooking ? 'MEMBER' : 'PAID'}
 Customer: ${data.customerName}
 Email: ${data.booking.customer_email}
 Room: ${data.roomName}
-Date: ${new Date(data.booking.booking_date).toLocaleDateString()}
+Date: ${formatBookingDate(data.booking.booking_date, { weekday: 'long' })}
 Time: ${data.booking.start_time} - ${data.booking.end_time}
 Duration: ${data.booking.duration_hours} hour${data.booking.duration_hours > 1 ? 's' : ''}
 Attendees: ${data.booking.attendees}
@@ -1077,9 +1075,7 @@ export const nonMemberConferenceRoomOnboarding = (data: {
 }) => {
     const firstName = (data.customerName || '').trim().split(/\s+/)[0] || 'there';
     const bookingDateDisplay = data.booking.booking_date
-        ? new Date(data.booking.booking_date).toLocaleDateString('en-US', {
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-        })
+        ? formatBookingDate(data.booking.booking_date, { weekday: 'long' })
         : 'your scheduled day';
 
     return {
