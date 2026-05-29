@@ -671,7 +671,63 @@ describe('webhook – subscription events', () => {
     expect(state.lastMemberUpdate.next_charge_date).toBeTruthy();
   });
 
-  it('handles subscription deleted event', async () => {
+  it('does not touch member status on a non-cancellation update', async () => {
+    state.member.status = 'active';
+    const event = {
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: 'sub_test123',
+          metadata: { member_id: 'm-1' },
+          status: 'active',
+          current_period_end: 1700000000,
+        },
+      },
+    };
+    mockStripeWebhookConstruct.mockReturnValue(event);
+
+    const res = await webhookHandler(makeWebhookReq(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    // No cancellation signal -> status must be left untouched.
+    expect(state.lastMemberUpdate.status).toBeUndefined();
+  });
+
+  it('flips member status to cancelled when the sub is scheduled to cancel', async () => {
+    // Regression: member (or admin) cancels directly in Stripe, so the sub is
+    // still 'active' but has cancel_at_period_end / cancel_at set. The member
+    // row must follow into 'cancelled' instead of staying 'active'.
+    state.member.status = 'active';
+    const event = {
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: 'sub_test123',
+          metadata: { member_id: 'm-1' },
+          status: 'active',
+          current_period_end: 1700000000,
+          cancel_at_period_end: true,
+          cancel_at: 1777939199, // 2026-05-04 UTC
+          canceled_at: 1775347200,
+        },
+      },
+    };
+    mockStripeWebhookConstruct.mockReturnValue(event);
+
+    const res = await webhookHandler(makeWebhookReq(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    expect(state.lastMemberUpdate).toEqual(
+      expect.objectContaining({
+        status: 'cancelled',
+        subscription_status: 'active',
+        cancellation_effective_date: '2026-05-04',
+      })
+    );
+    expect(state.lastMemberUpdate.cancellation_notice_received_at).toBeTruthy();
+    expect(state.member.status).toBe('cancelled');
+  });
+
+  it('handles subscription deleted event and marks the member cancelled', async () => {
+    state.member.status = 'active';
     const event = {
       type: 'customer.subscription.deleted',
       data: {
@@ -680,6 +736,8 @@ describe('webhook – subscription events', () => {
           metadata: { member_id: 'm-1' },
           status: 'canceled',
           current_period_end: 1700000000,
+          ended_at: 1777939199, // 2026-05-04 UTC
+          canceled_at: 1775347200,
         },
       },
     };
@@ -690,6 +748,9 @@ describe('webhook – subscription events', () => {
     expect(state.lastMemberUpdate).toEqual(
       expect.objectContaining({
         subscription_status: 'canceled',
+        status: 'cancelled',
+        stripe_subscription_id: null,
+        cancellation_effective_date: '2026-05-04',
       })
     );
   });
