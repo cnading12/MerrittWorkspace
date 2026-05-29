@@ -436,17 +436,52 @@ export async function POST(req: NextRequest) {
         // keep treating a canceled subscription's ID as auto-pay on file.
         // The subscription_status will be 'canceled' here either way.
         const isDeleted = event.type === 'customer.subscription.deleted';
-        await sb
-          .from('members')
-          .update({
-            stripe_subscription_id: isDeleted ? null : sub.id,
-            subscription_status: sub.status,
-            next_charge_date:
-              !isDeleted && cpe
-                ? new Date(cpe * 1000).toISOString().slice(0, 10)
-                : null,
-          })
-          .eq('id', memberId);
+
+        const update: Record<string, any> = {
+          stripe_subscription_id: isDeleted ? null : sub.id,
+          subscription_status: sub.status,
+          next_charge_date:
+            !isDeleted && cpe
+              ? new Date(cpe * 1000).toISOString().slice(0, 10)
+              : null,
+        };
+
+        // Mirror cancellation onto the member's own status so the portal and
+        // admin views reflect reality even when the cancel originates outside
+        // our cancel routes — e.g. the member cancels directly in the Stripe
+        // dashboard, or our own DB write failed earlier. Without this the
+        // member row stays status='active' forever and admin "Cancel
+        // membership" can only ever report "already cancelled".
+        const isCancelled =
+          isDeleted ||
+          sub.status === 'canceled' ||
+          !!sub.cancel_at ||
+          !!sub.cancel_at_period_end;
+        if (isCancelled) {
+          update.status = 'cancelled';
+          // Effective date: the scheduled cancel_at, else when the sub ended.
+          const effectiveUnix =
+            (sub.cancel_at as number | null) ??
+            ((sub as any).ended_at as number | null) ??
+            ((sub as any).canceled_at as number | null) ??
+            null;
+          if (effectiveUnix) {
+            update.cancellation_effective_date = new Date(effectiveUnix * 1000)
+              .toISOString()
+              .slice(0, 10);
+          }
+          // Use Stripe's own canceled_at as the notice timestamp: it's
+          // authoritative and stable across webhook redeliveries, so this stays
+          // idempotent and won't clobber the real notice time with "now".
+          const noticeUnix = (sub as any).canceled_at as number | null;
+          if (noticeUnix) {
+            update.cancellation_notice_received_at = new Date(
+              noticeUnix * 1000,
+            ).toISOString();
+          }
+        }
+
+        await sb.from('members').update(update).eq('id', memberId);
         break;
       }
       case 'invoice.paid':

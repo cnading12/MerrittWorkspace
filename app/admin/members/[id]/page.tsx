@@ -240,7 +240,14 @@ export default function AdminMemberDetailPage({
       return;
     }
     if (json.already_cancelled) {
-      alert('Membership was already cancelled.');
+      alert(
+        json.reconciled
+          ? 'The Stripe subscription was already cancelled, but the member record was out of sync — status has now been updated to cancelled.' +
+              (json.cancellation_effective_date
+                ? ` Effective date: ${json.cancellation_effective_date}.`
+                : '')
+          : 'Membership was already cancelled.'
+      );
     } else if (json.no_subscription) {
       alert('No active subscription — local status set to cancelled.');
     } else if (json.cancellation_effective_date) {
