@@ -863,6 +863,76 @@ describe('cancel-subscription', () => {
     expect(mockStripeSubscriptionUpdate).not.toHaveBeenCalled();
   });
 
+  it('reconciles a drifted local status when Stripe is already cancelled', async () => {
+    // Regression: the member cancelled on their end (or it was cancelled
+    // directly in Stripe) so Stripe shows cancel_at, but the local member row
+    // never got flipped and still reads 'active'. Cancelling again must repair
+    // the local status instead of just reporting "already cancelled" and
+    // leaving the member stuck as active.
+    state.member.stripe_subscription_id = 'sub_test123';
+    state.member.monthly_cost_cents = 50000;
+    state.member.status = 'active';
+    state.member.cancellation_effective_date = null;
+    // 1777939199 -> 2026-05-04 (UTC)
+    mockStripeSubscriptionRetrieve.mockResolvedValueOnce({
+      id: 'sub_test123',
+      status: 'active',
+      customer: 'cus_test123',
+      current_period_end: 1775347200,
+      cancel_at: 1777939199,
+      cancel_at_period_end: false,
+      metadata: {},
+    });
+
+    const res = await cancelSubscription(
+      makeAuthReq('http://localhost/api/portal/cancel-subscription')
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.already_cancelled).toBe(true);
+    expect(json.reconciled).toBe(true);
+
+    // Local record must now reflect the cancellation.
+    expect(state.member.status).toBe('cancelled');
+    expect(state.lastMemberUpdate).toEqual(
+      expect.objectContaining({
+        status: 'cancelled',
+        subscription_status: 'cancel_at_period_end',
+        cancellation_effective_date: '2026-05-04',
+      })
+    );
+    // Must not re-credit the invoice or re-touch the cancel schedule.
+    expect(mockStripeInvoiceItemsCreate).not.toHaveBeenCalled();
+    expect(mockStripeSubscriptionUpdate).not.toHaveBeenCalled();
+  });
+
+  it('does not re-update when local status already matches Stripe', async () => {
+    // When the local row is already in sync, the idempotent path should be a
+    // true no-op (no DB write, no reconcile flag).
+    state.member.stripe_subscription_id = 'sub_test123';
+    state.member.monthly_cost_cents = 50000;
+    state.member.status = 'cancelled';
+    state.member.cancellation_effective_date = '2026-05-04';
+    mockStripeSubscriptionRetrieve.mockResolvedValueOnce({
+      id: 'sub_test123',
+      status: 'active',
+      customer: 'cus_test123',
+      current_period_end: 1775347200,
+      cancel_at: 1777939199,
+      cancel_at_period_end: false,
+      metadata: {},
+    });
+
+    const res = await cancelSubscription(
+      makeAuthReq('http://localhost/api/portal/cancel-subscription')
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.already_cancelled).toBe(true);
+    expect(json.reconciled).toBe(false);
+    expect(state.lastMemberUpdate).toBeNull();
+  });
+
   it('returns 401 for unauthenticated requests', async () => {
     const res = await cancelSubscription(
       makeUnauthReq('http://localhost/api/portal/cancel-subscription')

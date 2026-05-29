@@ -64,13 +64,51 @@ export async function POST(
 
     const sub = await stripe.subscriptions.retrieve(member.stripe_subscription_id);
 
-    // Idempotent: if already cancelled, just return current state.
+    // Idempotent: if the subscription is already cancelled in Stripe, don't
+    // re-credit the invoice or touch the cancel schedule again. But the local
+    // member row can drift out of sync — e.g. the member cancelled themselves,
+    // it was cancelled directly in the Stripe dashboard, or a previous webhook
+    // / DB write never landed. In those cases status can still read 'active'
+    // even though Stripe is cancelled. Reconcile the local record here so the
+    // admin's click actually fixes the displayed status instead of just
+    // reporting "already cancelled" forever.
     if (sub.cancel_at || sub.cancel_at_period_end || sub.status === 'canceled') {
+      // Derive the effective cancellation date from Stripe: the scheduled
+      // cancel_at if set, otherwise the timestamp the sub actually ended.
+      const effectiveUnix =
+        (sub.cancel_at as number | null) ??
+        ((sub as any).ended_at as number | null) ??
+        ((sub as any).canceled_at as number | null) ??
+        null;
+      const effectiveDateIso = effectiveUnix
+        ? new Date(effectiveUnix * 1000).toISOString().slice(0, 10)
+        : (member.cancellation_effective_date ?? null);
+
+      const needsReconcile =
+        member.status !== 'cancelled' ||
+        member.cancellation_effective_date !== effectiveDateIso;
+
+      if (needsReconcile) {
+        await sb
+          .from('members')
+          .update({
+            subscription_status:
+              sub.status === 'canceled' ? 'canceled' : 'cancel_at_period_end',
+            status: 'cancelled',
+            // Preserve the original notice timestamp if we already recorded one.
+            cancellation_notice_received_at:
+              member.cancellation_notice_received_at ?? new Date().toISOString(),
+            cancellation_effective_date: effectiveDateIso,
+          })
+          .eq('id', id);
+      }
+
       return NextResponse.json({
         ok: true,
         already_cancelled: true,
+        reconciled: needsReconcile,
         cancel_at: sub.cancel_at,
-        cancellation_effective_date: member.cancellation_effective_date ?? null,
+        cancellation_effective_date: effectiveDateIso,
       });
     }
 

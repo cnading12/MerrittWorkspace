@@ -59,14 +59,44 @@ export async function POST(req: NextRequest) {
 
     const sub = await stripe.subscriptions.retrieve(member.stripe_subscription_id);
 
-    // Idempotent: if already cancelled, just return current state. Don't
-    // double-credit the upcoming invoice.
+    // Idempotent: if already cancelled, don't double-credit the upcoming
+    // invoice. But still reconcile the local member row in case it drifted out
+    // of sync (e.g. it was cancelled directly in Stripe, or a prior DB write /
+    // webhook never landed) so the portal reflects the real cancelled state.
     if (sub.cancel_at || sub.cancel_at_period_end || sub.status === 'canceled') {
+      const effectiveUnix =
+        (sub.cancel_at as number | null) ??
+        ((sub as any).ended_at as number | null) ??
+        ((sub as any).canceled_at as number | null) ??
+        null;
+      const effectiveDateIso = effectiveUnix
+        ? new Date(effectiveUnix * 1000).toISOString().slice(0, 10)
+        : (member.cancellation_effective_date ?? null);
+
+      const needsReconcile =
+        member.status !== 'cancelled' ||
+        member.cancellation_effective_date !== effectiveDateIso;
+
+      if (needsReconcile) {
+        await getServiceSupabase()
+          .from('members')
+          .update({
+            subscription_status:
+              sub.status === 'canceled' ? 'canceled' : 'cancel_at_period_end',
+            status: 'cancelled',
+            cancellation_notice_received_at:
+              member.cancellation_notice_received_at ?? new Date().toISOString(),
+            cancellation_effective_date: effectiveDateIso,
+          })
+          .eq('id', member.id);
+      }
+
       return NextResponse.json({
         ok: true,
         already_cancelled: true,
+        reconciled: needsReconcile,
         cancel_at: sub.cancel_at,
-        cancellation_effective_date: member.cancellation_effective_date ?? null,
+        cancellation_effective_date: effectiveDateIso,
       });
     }
 
