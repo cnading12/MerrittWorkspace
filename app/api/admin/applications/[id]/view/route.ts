@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { readTrialFlag, readTrialDate } from '@/lib/portal/trial';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +57,17 @@ function renderApplicationHtml(app: any): string {
         .join(' ')
     : '—';
 
+  const wantsTrial = readTrialFlag(app);
+  const trialDate = readTrialDate(app);
+
   const sections: string[] = [];
+
+  // Highlight trial-day applications up top so the admin can immediately see
+  // which day the applicant requested for their trial. This is the single
+  // most actionable piece of info for a trial applicant.
+  if (wantsTrial) {
+    sections.push(trialBanner(trialDate));
+  }
 
   sections.push(
     tableSection('Application summary', [
@@ -65,6 +76,10 @@ function renderApplicationHtml(app: any): string {
       ['Phone', app.phone || '—'],
       ['Company', app.company_name || '—'],
       ['Membership type', membershipTypeLabel],
+      ['Trial day requested', wantsTrial ? 'Yes' : 'No'],
+      ...(wantsTrial
+        ? [['Trial day date', formatTrialDate(trialDate)] as [string, string]]
+        : []),
       ['Preferred start date', app.start_date || '—'],
       ['Status', (app.status || 'pending').toUpperCase()],
       ['Submitted', submittedAt],
@@ -280,10 +295,37 @@ function renderApplicationHtml(app: any): string {
   .status-badge.approved { background: #d1fae5; color: #065f46; }
   .status-badge.declined { background: #fee2e2; color: #991b1b; }
   .empty { color: #9ca3af; font-size: 13px; font-style: italic; }
+  .trial-banner {
+    margin-top: 0;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-left: 4px solid #ea580c;
+    border-radius: 8px;
+    padding: 16px 20px;
+  }
+  .trial-banner-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-weight: 700;
+    color: #c2410c;
+  }
+  .trial-banner-date {
+    font-size: 20px;
+    font-weight: 700;
+    color: #9a3412;
+    margin-top: 4px;
+  }
+  .trial-banner-sub {
+    font-size: 12px;
+    color: #ea580c;
+    margin-top: 2px;
+  }
   @media print {
     body { background: #fff; margin: 0; }
     .page { border: 0; box-shadow: none; padding: 0; }
     .toolbar { display: none; }
+    .trial-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
@@ -313,6 +355,33 @@ function renderApplicationHtml(app: any): string {
 </div>
 </body>
 </html>`;
+}
+
+// Formats a trial date (stored as a YYYY-MM-DD string) into a friendly,
+// long-form date. Parsed as a local date to avoid the off-by-one shift that
+// `new Date('YYYY-MM-DD')` causes by treating the string as UTC midnight.
+function formatTrialDate(date: string | null): string {
+  if (!date) return 'Not specified';
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date);
+  if (!m) return date;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  if (isNaN(d.getTime())) return date;
+  return d.toLocaleDateString(undefined, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+// Prominent callout for trial-day applicants so the requested trial date is
+// impossible to miss when an admin opens the application view.
+function trialBanner(date: string | null): string {
+  return `<section class="trial-banner">
+    <div class="trial-banner-label">🟧 Trial Day Applicant</div>
+    <div class="trial-banner-date">${escapeHtml(formatTrialDate(date))}</div>
+    <div class="trial-banner-sub">Requested trial day date</div>
+  </section>`;
 }
 
 function tableSection(title: string, rows: Array<[string, string]>): string {
