@@ -894,6 +894,13 @@ function generateTrialDayEmailHTML(data: { firstName: string; trialDate: string;
               </ul>
             </div>`;
 
+  // Phone/video call courtesy note only applies to dedicated-desk trials —
+  // private office trial users can take calls in their own office.
+  const phoneCallNoteHtml = data.isOfficeTrial
+    ? ''
+    : `
+                <li>Phone calls and video calls: please use a phone booth or empty meeting room out of courtesy to other members.</li>`;
+
   return `
     <!DOCTYPE html>
     <html>
@@ -973,8 +980,7 @@ ${arrivalBlock}
 
             <div class="info-block">
               <h3>A few house notes</h3>
-              <ul>
-                <li>Phone calls and video calls: please use a phone booth or empty meeting room out of courtesy to other members.</li>
+              <ul>${phoneCallNoteHtml}
                 <li>Printers are by the kitchen.</li>
               </ul>
             </div>
@@ -1052,6 +1058,14 @@ everything you need on the day of your trial.
 - Feel free to explore: kitchen, snack shop, meeting rooms, phone booths,
   and bathrooms are all available for your use.`;
 
+  // Phone/video call courtesy note only applies to dedicated-desk trials —
+  // private office trial users can take calls in their own office.
+  const phoneCallNoteText = data.isOfficeTrial
+    ? ''
+    : `- Phone calls and video calls: please use a phone booth or empty meeting
+  room out of courtesy to other members.
+`;
+
   return `
 ${headerLine}
 
@@ -1085,9 +1099,7 @@ SNACKS & OTHER BEVERAGES (available for purchase)
 - Snack shop: www.merrittworkspace.net/snackshop
 
 A FEW HOUSE NOTES
-- Phone calls and video calls: please use a phone booth or empty meeting
-  room out of courtesy to other members.
-- Printers are by the kitchen.
+${phoneCallNoteText}- Printers are by the kitchen.
 
 THINKING ABOUT MEMBERSHIP?
 Members get 24/7 building access with a personal access code to our
