@@ -1,6 +1,6 @@
 -- Add the new 'private_office_single_large' designation ($600/mo tier)
--- and keep the existing dedicated_desk value (now used for the $100/mo
--- promo). Pricing itself lives in lib/portal/pricing.ts; this migration
+-- and keep the existing dedicated_desk value ($200/mo standard rate).
+-- Pricing itself lives in lib/portal/pricing.ts; this migration
 -- only expands the allowed values on the members table.
 
 alter table public.members
