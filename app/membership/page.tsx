@@ -9,7 +9,7 @@ const membershipPlans = [
   {
     id: 'dedicated_desk',
     name: 'Dedicated Desk',
-    price: 300,
+    price: 200,
     description: 'Your own workspace in our vibrant coworking community',
     capacity: '1 person',
     privacy: 'Shared Space',
@@ -205,7 +205,7 @@ export default function MembershipPage() {
   const renderPlanCard = (plan: typeof membershipPlans[number]) => (
     <div
       key={plan.id}
-      className={`bg-white rounded-xl shadow-lg border-2 overflow-hidden hover:shadow-2xl transition group flex flex-col ${plan.id === 'dedicated_desk' ? 'border-green-400' : 'border-gray-200'}`}
+      className={`bg-white rounded-xl shadow-lg border-2 overflow-hidden hover:shadow-2xl transition group flex flex-col ${plan.id === 'dedicated_desk' ? 'border-burnt-orange-400' : 'border-gray-200'}`}
     >
       {/* Image */}
       <div className="relative h-48 overflow-hidden">
@@ -217,11 +217,7 @@ export default function MembershipPage() {
           blurDataURL={plan.blurDataURL}
           className="object-cover group-hover:scale-105 transition duration-300"
         />
-        {plan.id === 'dedicated_desk' ? (
-          <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
-            $100/MO FOR LIFE
-          </div>
-        ) : plan.badge ? (
+        {plan.badge ? (
           <div className="absolute top-4 right-4 bg-burnt-orange-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
             {plan.badge}
           </div>
@@ -232,16 +228,7 @@ export default function MembershipPage() {
       <div className="p-6 flex flex-col flex-grow">
         <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
 
-        {plan.id === 'dedicated_desk' ? (
-          <div className="mb-4">
-            <div className="flex items-baseline gap-2">
-              <span className="text-xl text-gray-400 line-through">${plan.price}</span>
-              <span className="text-4xl font-bold text-green-600">$100</span>
-              <span className="text-lg text-gray-500">/month</span>
-            </div>
-            <p className="text-xs text-green-700 font-medium mt-1">First 10 members — locked in for life</p>
-          </div>
-        ) : plan.id === 'one_day_dedicated_desk' ? (
+        {plan.id === 'one_day_dedicated_desk' ? (
           <div className="flex items-baseline gap-2 mb-4">
             <span className="text-4xl font-bold text-burnt-orange-600">${plan.price}</span>
             <span className="text-lg text-gray-500">one-time / day</span>
@@ -413,11 +400,7 @@ export default function MembershipPage() {
                 <tbody>
                   <tr className="border-b border-gray-200">
                     <td className="p-4 font-medium text-gray-900">Monthly Price</td>
-                    <td className="p-4 text-center">
-                      <span className="text-sm text-gray-400 line-through block">$300</span>
-                      <span className="text-green-600 font-bold">$100/mo for life</span>
-                      <span className="text-xs text-green-700 block">First 10 members</span>
-                    </td>
+                    <td className="p-4 text-center text-burnt-orange-600 font-bold">$200</td>
                     <td className="p-4 text-center text-burnt-orange-600 font-bold">$500</td>
                     <td className="p-4 text-center text-burnt-orange-600 font-bold">$700</td>
                     <td className="p-4 text-center text-burnt-orange-600 font-bold">$1,200</td>

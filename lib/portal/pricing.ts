@@ -24,8 +24,8 @@ export interface MembershipPlan {
 export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
   dedicated_desk: {
     designation: 'dedicated_desk',
-    label: 'Dedicated Desk (Promo — $100/mo for life)',
-    monthly_cost_cents: 10000,
+    label: 'Dedicated Desk',
+    monthly_cost_cents: 20000,
   },
   one_day_dedicated_desk: {
     designation: 'one_day_dedicated_desk',

@@ -80,12 +80,12 @@ interface PlanDef {
 const membershipPlans: PlanDef[] = [
   {
     id: 'dedicated_desk',
-    name: 'Dedicated Desk — $100/mo Promo (for life)',
-    price: 100,
-    description: 'Limited-time promo: lock in $100/month for life on your own dedicated desk in our collaborative environment.',
+    name: 'Dedicated Desk',
+    price: 200,
+    description: 'Your own dedicated desk in our collaborative coworking environment.',
     category: 'Shared Workspace',
     recurrence: 'monthly',
-    features: ['$100/mo locked in for life', '24/7 access', 'High-speed WiFi', 'Printing access', 'Kitchen access', '2 meeting room hours/month']
+    features: ['24/7 access', 'High-speed WiFi', 'Printing access', 'Kitchen access', '2 meeting room hours/month']
   },
   {
     id: 'one_day_dedicated_desk',
@@ -439,16 +439,9 @@ export default function MembershipApplicationPage() {
                       className={`border-2 rounded-lg p-4 transition relative ${
                         isSelected
                           ? 'border-orange-500 bg-orange-50'
-                          : plan.id === 'dedicated_desk'
-                            ? 'border-green-400 hover:border-green-500'
-                            : 'border-gray-200 hover:border-gray-300'
+                          : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      {plan.id === 'dedicated_desk' && (
-                        <div className="absolute -top-3 left-4 bg-green-500 text-white px-3 py-0.5 rounded-full text-xs font-bold">
-                          LIMITED DEAL — $100/MO FOR LIFE
-                        </div>
-                      )}
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h4 className="font-semibold text-gray-900">{plan.name}</h4>
@@ -456,13 +449,7 @@ export default function MembershipApplicationPage() {
                           <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{plan.category}</span>
                         </div>
                         <div className="text-right">
-                          {plan.id === 'dedicated_desk' ? (
-                            <>
-                              <p className="text-sm text-gray-400 line-through">$300</p>
-                              <p className="text-2xl font-bold text-green-600">$100</p>
-                              <p className="text-xs text-gray-500">/month for life</p>
-                            </>
-                          ) : plan.recurrence === 'one_time' ? (
+                          {plan.recurrence === 'one_time' ? (
                             <>
                               <p className="text-2xl font-bold text-orange-600">${plan.price}</p>
                               <p className="text-xs text-gray-500">one-time / day</p>
@@ -523,10 +510,6 @@ export default function MembershipApplicationPage() {
                           Subtotal: ${(plan.price * quantity).toLocaleString()}
                           {plan.recurrence === 'monthly' ? '/month' : ' one-time'}
                         </div>
-                      )}
-
-                      {plan.id === 'dedicated_desk' && (
-                        <p className="text-xs text-green-700 font-medium mt-2">First 10 members only — Save $200/month off standard rate</p>
                       )}
                     </div>
                   );

@@ -103,21 +103,16 @@ export default function DedicatedDeskPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 pt-16">
-      {/* Urgency Banner */}
-      <div className="bg-yellow-400 text-gray-900 py-3 text-center font-semibold text-sm md:text-base">
-        <Zap className="w-4 h-4 inline-block mr-1 -mt-0.5" /> Limited Deal: First 10 members lock in $100/month for life — $200 off our standard $300/month rate. Only a few spots remain.
-      </div>
-
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Dedicated Desk — $100/Month.
-              <span className="text-burnt-orange-600 block">Only 10 Spots.</span>
+              Dedicated Desk
+              <span className="text-burnt-orange-600 block">$200/Month</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Our standard rate is $300/month. For a limited time, the first 10 members lock in $100/month for life. Once those spots are claimed, this rate is gone forever.
+              Your own desk in our collaborative Sloan's Lake coworking space — with free access to our beautiful flex space next door. Month-to-month, no long-term contracts.
             </p>
             <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-bold mb-6">
               <Check className="w-4 h-4" />
@@ -128,7 +123,7 @@ export default function DedicatedDeskPage() {
                 href="/membership/apply"
                 className="bg-burnt-orange-600 hover:bg-burnt-orange-700 text-white py-4 px-8 rounded-lg font-semibold transition inline-flex items-center justify-center gap-2"
               >
-                Claim Your Spot — $100/Month
+                Apply for a Dedicated Desk
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
@@ -153,14 +148,10 @@ export default function DedicatedDeskPage() {
               <div>
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-2xl text-gray-400 line-through">$300/month</span>
-                    <span className="text-5xl font-bold text-green-600">$100</span>
+                    <span className="text-5xl font-bold text-burnt-orange-600">$200</span>
                     <span className="text-2xl text-gray-500">/month</span>
                   </div>
-                  <p className="text-gray-600 text-lg mb-4">Lock in this rate for life • Save $200/month off standard • No long-term contracts</p>
-                  <div className="bg-burnt-orange-50 border border-burnt-orange-200 rounded-lg p-3 mb-4">
-                    <p className="text-burnt-orange-800 font-bold text-sm">10 SPOTS ONLY — $100/MONTH FOR LIFE</p>
-                  </div>
+                  <p className="text-gray-600 text-lg mb-4">Month-to-month • No long-term contracts</p>
                 </div>
 
                 <div className="mb-8">
@@ -217,7 +208,7 @@ export default function DedicatedDeskPage() {
                   href="/membership/apply"
                   className="w-full bg-burnt-orange-600 hover:bg-burnt-orange-700 text-white py-4 px-6 rounded-lg font-semibold transition text-center block"
                 >
-                  Claim Your Spot — $100/Month
+                  Apply for a Dedicated Desk
                 </Link>
                 <Link
                   href="/contact"
@@ -232,7 +223,7 @@ export default function DedicatedDeskPage() {
                 <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
                   <Image
                     src="/images/hero/dedicated-desk.webp"
-                    alt="Dedicated desk workspace at Merritt Workspace coworking space in Sloan's Lake, Denver - $300/month"
+                    alt="Dedicated desk workspace at Merritt Workspace coworking space in Sloan's Lake, Denver - $200/month"
                     fill
                     placeholder="blur"
                     blurDataURL="data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAACwAQCdASoKAA0ABUB8JZACdADYt8AAAOD9JmNTjrhhjajRJ8jDWLTrgAA="
@@ -413,12 +404,12 @@ export default function DedicatedDeskPage() {
         </div>
       </section>
 
-      {/* Scarcity Section */}
+      {/* Community Section */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">This Rate Won't Last</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">A Coworking Home in Sloan's Lake</h2>
           <p className="text-lg text-gray-600">
-            Merritt Workspace has been a neighborhood coworking home for over 4 years. This $100/month rate is a one-time promotional offer — not our standard pricing. The first 10 members to sign up lock in $100/month for life. After that, the rate returns to $300/month. Claim your spot now.
+            Merritt Workspace has been a neighborhood coworking home for over 4 years. A dedicated desk is $200/month, month-to-month, with no long-term contract — and every new member gets a free trial day to experience the space first.
           </p>
         </div>
       </section>
@@ -431,17 +422,17 @@ export default function DedicatedDeskPage() {
             Free Trial Day Included — Try Before You Commit
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Reserve Your Desk at $100/Month
+            Reserve Your Desk at $200/Month
           </h2>
           <p className="text-xl text-burnt-orange-100 mb-8">
-            Only 10 spots at this rate — locked in for life. Standard rate is $300/month. Every potential new member gets a free trial day first.
+            Month-to-month with no long-term contract. Every potential new member gets a free trial day first.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/membership/apply"
               className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
             >
-              Apply Now — $100/Month Deal
+              Apply Now
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link

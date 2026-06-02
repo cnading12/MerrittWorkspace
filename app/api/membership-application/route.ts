@@ -27,7 +27,7 @@ const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 // Plan catalog used to label & price the items in `selected_plans`. Kept in
 // lockstep with app/membership/apply/page.tsx and lib/portal/pricing.ts.
 const PLAN_CATALOG: Record<string, { label: string; price_cents: number; recurrence: 'monthly' | 'one_time' }> = {
-  dedicated_desk:          { label: 'Dedicated Desk (Promo)',     price_cents: 10000,  recurrence: 'monthly'  },
+  dedicated_desk:          { label: 'Dedicated Desk',             price_cents: 20000,  recurrence: 'monthly'  },
   one_day_dedicated_desk:  { label: 'One Day Dedicated Desk',     price_cents: 3000,   recurrence: 'one_time' },
   private_office_single:   { label: 'Private Office — Single',    price_cents: 50000,  recurrence: 'monthly'  },
   private_office_double:   { label: 'Private Office — Double',    price_cents: 70000,  recurrence: 'monthly'  },
