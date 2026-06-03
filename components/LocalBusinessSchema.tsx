@@ -9,9 +9,9 @@ export default function LocalBusinessSchema() {
     "url": "https://merrittworkspace.net",
     "logo": "https://merrittworkspace.net/images/hero/logo.png",
     "image": [
-      "https://merrittworkspace.net/images/hero/outside-hero.jpg",
-      "https://merrittworkspace.net/images/hero/dedicated-desk.jpg",
-      "https://merrittworkspace.net/images/private-offices/single.png"
+      "https://merrittworkspace.net/images/hero/outside-hero.webp",
+      "https://merrittworkspace.net/images/hero/dedicated-desk.webp",
+      "https://merrittworkspace.net/images/private-offices/single.webp"
     ],
     "telephone": "+1-720-357-9499",
     "email": "memberservices@merrittworkspace.net",
@@ -45,7 +45,7 @@ export default function LocalBusinessSchema() {
         "description": "Office hours for tours and support"
       }
     ],
-    "priceRange": "$300 - $1200/month",
+    "priceRange": "$200 - $1200/month",
     "currenciesAccepted": "USD",
     "paymentAccepted": ["Credit Card", "Debit Card"],
     "areaServed": [
@@ -90,11 +90,11 @@ export default function LocalBusinessSchema() {
             "name": "Dedicated Desk",
             "description": "Your own permanent desk in our collaborative coworking space in Sloan's Lake, Denver. Includes 24/7 access, high-speed WiFi, 2 hours meeting room credits, and all-you-can-drink coffee and tea."
           },
-          "price": "300",
+          "price": "200",
           "priceCurrency": "USD",
           "priceSpecification": {
             "@type": "UnitPriceSpecification",
-            "price": "300",
+            "price": "200",
             "priceCurrency": "USD",
             "unitText": "month"
           }
@@ -150,6 +150,9 @@ export default function LocalBusinessSchema() {
       ]
     },
     "sameAs": [
+      "https://www.instagram.com/themerritthouse/",
+      "https://www.facebook.com/profile.php?id=61577369304992",
+      "https://www.google.com/maps?cid=10105178442159244045",
       "https://www.merrittwellness.net"
     ],
     "foundingDate": "2023",

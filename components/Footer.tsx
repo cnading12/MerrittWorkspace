@@ -49,10 +49,10 @@ export default function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-4 text-burnt-orange-400">Quick Links</h4>
             <div className="space-y-2">
-              <Link href="/meeting-rooms" className="block text-gray-400 hover:text-white transition">
+              <Link href="/member-resources/meeting-rooms" className="block text-gray-400 hover:text-white transition">
                 Meeting Rooms
               </Link>
-              <Link href="/snackshop" className="block text-gray-400 hover:text-white transition">
+              <Link href="/member-resources/snackshop" className="block text-gray-400 hover:text-white transition">
                 Snackshop
               </Link>
               <Link href="/membership" className="block text-gray-400 hover:text-white transition">
