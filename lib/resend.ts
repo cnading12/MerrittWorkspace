@@ -68,6 +68,22 @@ const formatBookingDate = (
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
+// Production site URL. Emails require absolute asset URLs — relative paths
+// (e.g. "/images/...") won't resolve inside a mail client. We reference the
+// logo as a PNG rather than the navbar's WebP because several email clients
+// (notably Outlook desktop) don't render WebP.
+const SITE_URL = 'https://merrittworkspace.net';
+const LOGO_URL = `${SITE_URL}/images/hero/logo.png`;
+
+// White header band carrying the Merritt Workspace logo. Sits above the orange
+// gradient banner so the logo appears on white (as it does in the site navbar),
+// keeping it crisp instead of muddy against the orange. Inline styles are used
+// for broad email-client compatibility.
+const EMAIL_LOGO_BAND = `
+            <div style="background:#ffffff;text-align:center;padding:24px 20px 12px;border-radius:8px 8px 0 0;">
+              <img src="${LOGO_URL}" alt="Merritt Workspace" width="200" style="display:inline-block;width:200px;max-width:75%;height:auto;border:0;" />
+            </div>`;
+
 // Email templates and functions
 export const emailTemplates = {
     // Snackshop Order Confirmation
@@ -92,7 +108,7 @@ export const emailTemplates = {
           <style>
             body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 0; }
             .header h1 { margin: 0; font-size: 24px; }
             .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
             .order-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
@@ -108,6 +124,7 @@ export const emailTemplates = {
         </head>
         <body>
           <div class="container">
+            ${EMAIL_LOGO_BAND}
             <div class="header">
               <h1>Order Confirmation</h1>
               <p>Thank you for your Snackshop order!</p>
@@ -218,7 +235,7 @@ Merritt Workspace Team
           <style>
             body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 0; }
             .header h1 { margin: 0; font-size: 24px; }
             .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
             .booking-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
@@ -229,6 +246,7 @@ Merritt Workspace Team
         </head>
         <body>
           <div class="container">
+            ${EMAIL_LOGO_BAND}
             <div class="header">
               <h1>Booking Confirmed</h1>
               <p>Your meeting room is reserved!</p>
@@ -328,7 +346,7 @@ Thank you for choosing Merritt Workspace!
           <style>
             body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 0; }
             .header h1 { margin: 0; font-size: 24px; }
             .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
             .application-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
@@ -339,6 +357,7 @@ Thank you for choosing Merritt Workspace!
         </head>
         <body>
           <div class="container">
+            ${EMAIL_LOGO_BAND}
             <div class="header">
               <h1>Welcome to Merritt Workspace!</h1>
               <p>Your membership application has been received</p>
@@ -784,7 +803,7 @@ export const memberBookingConfirmation = (data: {
         <style>
           body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 0; }
           .header h1 { margin: 0; font-size: 24px; }
           .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
           .booking-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
@@ -797,6 +816,7 @@ export const memberBookingConfirmation = (data: {
       </head>
       <body>
         <div class="container">
+          ${EMAIL_LOGO_BAND}
           <div class="header">
             <h1>Booking Confirmed</h1>
             <p>Your meeting room is reserved!</p>
@@ -942,6 +962,9 @@ export const managerMemberBookingNotification = (data: {
       </head>
       <body>
         <div class="container">
+          <div style="text-align:center;padding:6px 0 18px;">
+            <img src="${LOGO_URL}" alt="Merritt Workspace" width="180" style="display:inline-block;width:180px;max-width:70%;height:auto;border:0;" />
+          </div>
           <div class="header">
             <h2 style="margin: 0;">New Meeting Room Booking</h2>
             <span class="badge ${data.isMemberBooking ? 'member-badge' : 'paid-badge'}">
@@ -1090,7 +1113,7 @@ export const nonMemberConferenceRoomOnboarding = (data: {
         <style>
           body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 0; }
           .header h1 { margin: 0; font-size: 24px; }
           .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
           .info-block { background: #fff8e1; padding: 18px; border-radius: 8px; border-left: 4px solid #ed7611; margin: 18px 0; }
@@ -1104,6 +1127,7 @@ export const nonMemberConferenceRoomOnboarding = (data: {
       </head>
       <body>
         <div class="container">
+          ${EMAIL_LOGO_BAND}
           <div class="header">
             <h1>You're Set for Your Meeting</h1>
             <p style="margin: 8px 0 0 0;">Everything you need for your day at Merritt Workspace</p>
