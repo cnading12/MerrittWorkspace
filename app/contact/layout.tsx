@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     url: "https://merrittworkspace.net/contact",
     images: [
       {
-        url: "/images/hero/outside-hero.jpg",
+        url: "/images/hero/outside-hero.webp",
         width: 1200,
         height: 630,
         alt: "Merritt Workspace location at 2246 Irving Street in Sloan's Lake, Denver",

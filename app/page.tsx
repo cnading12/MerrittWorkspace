@@ -152,7 +152,7 @@ export default function ImprovedHomePage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     <div className="absolute bottom-8 left-8 right-8">
                       <div className="bg-white/95 backdrop-blur-sm rounded-xl p-6 shadow-lg">
-                        <h3 className="text-xl font-bold text-gray-900 mb-1">{image.title}</h3>
+                        <h2 className="text-xl font-bold text-gray-900 mb-1">{image.title}</h2>
                         <p className="text-gray-600">{image.subtitle}</p>
                       </div>
                     </div>
