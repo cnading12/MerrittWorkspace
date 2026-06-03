@@ -150,6 +150,9 @@ export default function LocalBusinessSchema() {
       ]
     },
     "sameAs": [
+      "https://www.instagram.com/themerritthouse/",
+      "https://www.facebook.com/profile.php?id=61577369304992",
+      "https://share.google/lbtWJ3alBRrm3URAW",
       "https://www.merrittwellness.net"
     ],
     "foundingDate": "2023",
