@@ -59,11 +59,14 @@ async function releaseRecipient(
   column: 'cancellation_email_member_sent_at' | 'cancellation_email_staff_sent_at',
 ): Promise<void> {
   const sb = getServiceSupabase();
-  await sb
-    .from('members')
-    .update({ [column]: null })
-    .eq('id', memberId)
-    .catch((e) => console.error(`Failed to release ${column} for member ${memberId}`, e));
+  try {
+    await sb
+      .from('members')
+      .update({ [column]: null })
+      .eq('id', memberId);
+  } catch (e) {
+    console.error(`Failed to release ${column} for member ${memberId}`, e);
+  }
 }
 
 export interface CancellationEmailMember {
