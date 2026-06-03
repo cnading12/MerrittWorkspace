@@ -436,13 +436,37 @@ export default function AdminMemberDetailPage({
               Recreate subscription
             </button>
           )}
-        <button
-          onClick={cancelMembership}
-          className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 text-red-600"
-          title="Stop the member's Stripe subscription, apply the Last Month's Fee credit, and schedule cancel at end of next calendar month"
-        >
-          Cancel membership
-        </button>
+        {member.status === 'cancelled' || member.cancellation_effective_date ? (
+          <span
+            className="inline-flex items-center gap-1.5 text-sm border border-red-200 bg-red-50 text-red-700 rounded px-3 py-1.5 font-medium"
+            title={
+              member.cancellation_effective_date
+                ? `Cancellation notice recorded${member.cancellation_notice_received_at ? ` on ${new Date(member.cancellation_notice_received_at).toLocaleDateString()}` : ''}. Membership ends ${new Date(member.cancellation_effective_date + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}.`
+                : 'This membership has been cancelled.'
+            }
+          >
+            ✓ Membership cancelled
+            {member.cancellation_effective_date && (
+              <span className="font-normal text-red-600">
+                · ends{' '}
+                {new Date(member.cancellation_effective_date + 'T00:00:00Z').toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  timeZone: 'UTC',
+                })}
+              </span>
+            )}
+          </span>
+        ) : (
+          <button
+            onClick={cancelMembership}
+            className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 text-red-600"
+            title="Stop the member's Stripe subscription, apply the Last Month's Fee credit, and schedule cancel at end of next calendar month"
+          >
+            Cancel membership
+          </button>
+        )}
       </section>
 
       {/* Application payload */}

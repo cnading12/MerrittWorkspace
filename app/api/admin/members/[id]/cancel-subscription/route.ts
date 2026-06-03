@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { sendCancellationEmailsOnce } from '@/lib/portal/cancellationEmails';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,13 @@ export async function POST(
         .from('members')
         .update({ status: 'cancelled' })
         .eq('id', id);
+      // No Stripe sub, so no effective date to derive — the member is
+      // cancelled immediately. Still notify both parties (once each).
+      await sendCancellationEmailsOnce({
+        member,
+        effectiveDateIso: member.cancellation_effective_date ?? null,
+        cancelledBy: 'admin',
+      });
       return NextResponse.json({
         ok: true,
         no_subscription: true,
@@ -102,6 +110,13 @@ export async function POST(
           })
           .eq('id', id);
       }
+
+      // Idempotent per-recipient, so a repeat admin click won't re-send.
+      await sendCancellationEmailsOnce({
+        member,
+        effectiveDateIso,
+        cancelledBy: 'admin',
+      });
 
       return NextResponse.json({
         ok: true,
@@ -182,6 +197,14 @@ export async function POST(
         last_month_credit_invoice_item_id: credit.id,
       })
       .eq('id', id);
+
+    // Notify the member (confirmation + policy) and staff. Best-effort and
+    // idempotent per-recipient — never blocks or fails the cancellation.
+    await sendCancellationEmailsOnce({
+      member,
+      effectiveDateIso,
+      cancelledBy: 'admin',
+    });
 
     return NextResponse.json({
       ok: true,

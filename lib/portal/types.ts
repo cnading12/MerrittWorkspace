@@ -39,6 +39,11 @@ export interface Member {
   cancellation_notice_received_at: string | null;
   cancellation_effective_date: string | null;
   last_month_credit_invoice_item_id: string | null;
+  // Per-recipient idempotency for the cancellation confirmation emails so the
+  // member and staff are each notified at most once, even if the Cancel button
+  // is pressed multiple times. See lib/portal/cancellationEmails.ts.
+  cancellation_email_member_sent_at: string | null;
+  cancellation_email_staff_sent_at: string | null;
   access_code: string | null;
   access_code_issued_at: string | null;
   office_number: string | null;
