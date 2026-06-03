@@ -472,6 +472,158 @@ export function workspaceAssignmentNotificationEmail(opts: {
   };
 }
 
+// Shared cancellation-policy block, kept in one place so the member email and
+// the in-portal notice never drift apart. Mirrors Section 4 of the Terms &
+// Conditions (lib/portal/legal.ts).
+function cancellationPolicyHtml(effectiveDateLabel: string | null) {
+  const endLine = effectiveDateLabel
+    ? `Your membership and building access will continue through <strong>${effectiveDateLabel}</strong>, the last day of your final billing month.`
+    : 'Your membership and building access will continue through the end of your current billing period.';
+  return `
+        <div class="info-card">
+          <h3 style="margin-top:0;">Cancellation details</h3>
+          <p style="margin:0 0 6px;"><strong>Notice received:</strong> ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+          <p style="margin:0;"><strong>Membership ends:</strong> ${effectiveDateLabel ?? 'End of current billing period'}</p>
+        </div>
+        <p>${endLine}</p>
+        <div class="highlight">
+          <h3 style="margin:0 0 10px;">Our cancellation policy (30-day notice)</h3>
+          <ul style="margin:0; padding-left:18px;">
+            <li><strong>Written 30-day notice.</strong> Submitting this cancellation serves as your required written 30-day notice of cancellation.</li>
+            <li><strong>First &amp; last month covered at sign-up.</strong> Your initial payment covered your first month <em>and</em> a Last Month's Membership Fee (held as your deposit). That Last Month's Fee is now applied to your final month, so <strong>you will not be billed</strong> for it — your upcoming invoice nets to $0.00.</li>
+            <li><strong>Notice given late / leaving early.</strong> If a full 30 days' notice is not provided (for example by leaving the workspace sooner), the Last Month's Membership Fee is forfeited as liquidated damages, with no refund, credit, or offset.</li>
+            <li><strong>Inspection &amp; damages.</strong> From the day after this notice through your last day, Merritt Workspace may inspect the workspace and assess additional charges for any damage, excessive wear, missing items, or required restoration. Any charges beyond the Last Month's Fee will be invoiced to you.</li>
+            <li><strong>Return of property.</strong> Please return all keys, access devices, and Merritt-provided equipment by your last day. Keys not returned within 48 hours of your last day are subject to a $250 fee per item.</li>
+          </ul>
+        </div>`;
+}
+
+function cancellationPolicyText(effectiveDateLabel: string | null) {
+  return [
+    'CANCELLATION DETAILS',
+    `  Notice received: ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`,
+    `  Membership ends: ${effectiveDateLabel ?? 'End of current billing period'}`,
+    '',
+    'OUR CANCELLATION POLICY (30-DAY NOTICE)',
+    "  - Written 30-day notice: submitting this cancellation serves as your required written 30-day notice.",
+    "  - First & last month covered at sign-up: your initial payment covered your first month AND a Last Month's Membership Fee (held as your deposit). That Last Month's Fee is now applied to your final month, so you will NOT be billed for it -- your upcoming invoice nets to $0.00.",
+    "  - Notice given late / leaving early: if a full 30 days' notice is not provided, the Last Month's Membership Fee is forfeited as liquidated damages, with no refund, credit, or offset.",
+    '  - Inspection & damages: from the day after this notice through your last day, Merritt Workspace may inspect the workspace and assess additional charges for any damage, excessive wear, missing items, or required restoration. Any charges beyond the Last Month\'s Fee will be invoiced to you.',
+    '  - Return of property: please return all keys, access devices, and Merritt-provided equipment by your last day. Keys not returned within 48 hours of your last day are subject to a $250 fee per item.',
+  ].join('\n');
+}
+
+// Confirmation sent to the member when their membership is cancelled (either
+// self-service from the portal or by an admin on their behalf). Restates the
+// effective end date and the full cancellation policy.
+export function membershipCancelledMemberEmail(opts: {
+  firstName: string;
+  effectiveDateLabel: string | null;
+}) {
+  return {
+    subject: 'Your Merritt Workspace Membership Cancellation Confirmation',
+    html: shell({
+      title: 'Membership Cancellation Confirmed',
+      tagline: 'We have received your cancellation notice',
+      body: `
+        <p>Hi ${opts.firstName},</p>
+        <p>This confirms that your Merritt Workspace membership has been cancelled. We're sorry to see you go and we'd love to welcome you back any time.</p>
+        ${cancellationPolicyHtml(opts.effectiveDateLabel)}
+        <p>If you believe this was a mistake, or you'd like to reactivate your membership, just reply to this email or contact us at <a href="mailto:memberservices@merrittworkspace.net">memberservices@merrittworkspace.net</a> — we're happy to help.</p>
+        <p>Thank you for being part of the Merritt Workspace community.</p>
+        <p>— The Merritt Workspace Team</p>
+      `,
+    }),
+    text: [
+      `Hi ${opts.firstName},`,
+      '',
+      "This confirms that your Merritt Workspace membership has been cancelled. We're sorry to see you go and we'd love to welcome you back any time.",
+      '',
+      cancellationPolicyText(opts.effectiveDateLabel),
+      '',
+      "If you believe this was a mistake, or you'd like to reactivate your membership, just reply to this email or contact us at memberservices@merrittworkspace.net -- we're happy to help.",
+      '',
+      'Thank you for being part of the Merritt Workspace community.',
+      '',
+      '— The Merritt Workspace Team',
+      '',
+      '--',
+      'Merritt Workspace',
+      '2246 Irving Street, Denver, CO 80211',
+      'memberservices@merrittworkspace.net',
+    ].join('\n'),
+  };
+}
+
+// Staff-facing notification that a membership was cancelled. Includes who
+// initiated it and the effective end date so the team can plan inspection,
+// key return, and reassigning the desk/office.
+export function membershipCancelledStaffEmail(opts: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  companyName: string | null;
+  designationLabel: string | null;
+  deskNumber: string | null;
+  officeNumber: string | null;
+  cancelledBy: 'member' | 'admin';
+  effectiveDateLabel: string | null;
+  adminUrl: string;
+}) {
+  const seatLine = opts.officeNumber
+    ? `Office: <strong>${opts.officeNumber}</strong>`
+    : opts.deskNumber
+      ? `Dedicated desk: <strong>${opts.deskNumber}</strong>`
+      : 'No desk/office on file';
+  const seatText = opts.officeNumber
+    ? `Office: ${opts.officeNumber}`
+    : opts.deskNumber
+      ? `Dedicated desk: ${opts.deskNumber}`
+      : 'No desk/office on file';
+  const initiatedBy =
+    opts.cancelledBy === 'admin' ? 'an admin (on the member\'s behalf)' : 'the member';
+  return {
+    subject: `Membership cancelled - ${opts.firstName} ${opts.lastName}`,
+    html: shell({
+      title: 'Membership Cancelled',
+      tagline: 'A member has cancelled their membership',
+      body: `
+        <p><strong>${opts.firstName} ${opts.lastName}</strong> (${opts.email}) has cancelled their Merritt Workspace membership. Cancellation was initiated by ${initiatedBy}.</p>
+        <div class="info-card">
+          <p style="margin:0 0 6px;"><strong>Member:</strong> ${opts.firstName} ${opts.lastName}${opts.companyName ? ` — ${opts.companyName}` : ''}</p>
+          <p style="margin:0 0 6px;"><strong>Email:</strong> ${opts.email}</p>
+          ${opts.designationLabel ? `<p style="margin:0 0 6px;"><strong>Membership:</strong> ${opts.designationLabel}</p>` : ''}
+          <p style="margin:0 0 6px;">${seatLine}</p>
+          <p style="margin:0 0 6px;"><strong>Notice received:</strong> ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+          <p style="margin:0;"><strong>Membership ends:</strong> ${opts.effectiveDateLabel ?? 'End of current billing period'}</p>
+        </div>
+        <div class="highlight">
+          <p style="margin:0;">The member's Stripe subscription has been scheduled to stop and the Last Month's Membership Fee credit has been applied (member is not billed for their final month). Plan a workspace inspection and key/access-device return before their last day, and free up the seat once they're out.</p>
+        </div>
+        <p style="text-align:center;">
+          <a href="${opts.adminUrl}" class="button">Open Member in Admin Panel</a>
+        </p>
+      `,
+    }),
+    text: [
+      `${opts.firstName} ${opts.lastName} (${opts.email}) has cancelled their Merritt Workspace membership. Cancellation was initiated by ${initiatedBy}.`,
+      '',
+      `Member:          ${opts.firstName} ${opts.lastName}${opts.companyName ? ` — ${opts.companyName}` : ''}`,
+      `Email:           ${opts.email}`,
+      opts.designationLabel ? `Membership:      ${opts.designationLabel}` : '',
+      seatText,
+      `Notice received: ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`,
+      `Membership ends: ${opts.effectiveDateLabel ?? 'End of current billing period'}`,
+      '',
+      "The member's Stripe subscription has been scheduled to stop and the Last Month's Membership Fee credit has been applied (member is not billed for their final month). Plan a workspace inspection and key/access-device return before their last day, and free up the seat once they're out.",
+      '',
+      `Open member in admin panel: ${opts.adminUrl}`,
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  };
+}
+
 // Sender used for portal/member-services emails (access codes, general
 // notifications). Uses a descriptive display name — generic "From" names
 // score worse with Gmail/Outlook spam filters.

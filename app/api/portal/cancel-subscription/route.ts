@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { sendCancellationEmailsOnce } from '@/lib/portal/cancellationEmails';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,6 +92,14 @@ export async function POST(req: NextRequest) {
           .eq('id', member.id);
       }
 
+      // Best-effort confirmation/notification. Idempotent per-recipient, so a
+      // repeat click (which lands here) won't re-send to anyone already mailed.
+      await sendCancellationEmailsOnce({
+        member,
+        effectiveDateIso,
+        cancelledBy: 'member',
+      });
+
       return NextResponse.json({
         ok: true,
         already_cancelled: true,
@@ -177,6 +186,14 @@ export async function POST(req: NextRequest) {
         last_month_credit_invoice_item_id: credit.id,
       })
       .eq('id', member.id);
+
+    // Notify the member (confirmation + policy) and staff. Best-effort and
+    // idempotent per-recipient — never blocks or fails the cancellation.
+    await sendCancellationEmailsOnce({
+      member,
+      effectiveDateIso,
+      cancelledBy: 'member',
+    });
 
     return NextResponse.json({
       ok: true,
