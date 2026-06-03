@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
                 <style>
                   body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                   .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+                  .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 20px; border-radius: 0; }
                   .header h2 { margin: 0; }
                   .content { background: white; padding: 25px; border: 1px solid #e5e5e5; }
                   .field { margin-bottom: 12px; }
@@ -204,6 +204,9 @@ export async function POST(request: NextRequest) {
               </head>
               <body>
                 <div class="container">
+                  <div style="background:#ffffff;text-align:center;padding:24px 20px 12px;border-radius:8px 8px 0 0;">
+                    <img src="https://merrittworkspace.net/images/hero/logo.png" alt="Merritt Workspace" width="200" style="display:inline-block;width:200px;max-width:75%;height:auto;border:0;" />
+                  </div>
                   <div class="header">
                     <h2>New Contact Form Submission</h2>
                     <p style="margin: 5px 0 0 0;">Inquiry Type: ${inquiryLabel}</p>

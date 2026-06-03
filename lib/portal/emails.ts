@@ -3,6 +3,18 @@
 // bordered content card, gray footer) so portal mail looks consistent
 // with snackshop / booking confirmations.
 
+// Emails require absolute asset URLs — relative paths won't resolve in mail
+// clients. We use a PNG (not the navbar's WebP) for broad client support, e.g.
+// Outlook desktop doesn't render WebP.
+const LOGO_URL = 'https://merrittworkspace.net/images/hero/logo.png';
+
+// White header band carrying the logo on white (as in the site navbar), placed
+// above the orange gradient banner so the logo stays crisp.
+const LOGO_BAND = `
+      <div style="background:#ffffff;text-align:center;padding:24px 20px 12px;border-radius:8px 8px 0 0;">
+        <img src="${LOGO_URL}" alt="Merritt Workspace" width="200" style="display:inline-block;width:200px;max-width:75%;height:auto;border:0;" />
+      </div>`;
+
 const FOOTER = `
   <div class="footer">
     <p><strong>Merritt Workspace</strong></p>
@@ -14,7 +26,7 @@ const FOOTER = `
 const STYLES = `
   body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
   .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-  .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+  .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 0; }
   .header h1 { margin: 0; font-size: 24px; }
   .header p { margin: 6px 0 0; opacity: 0.95; }
   .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
@@ -46,6 +58,7 @@ function shell({
   </head>
   <body>
     <div class="container">
+      ${LOGO_BAND}
       <div class="header">
         <h1>${title}</h1>
         <p>${tagline}</p>
