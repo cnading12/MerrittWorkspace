@@ -8,6 +8,7 @@ import {
   PORTAL_REPLY_TO,
 } from '@/lib/portal/emails';
 import { DESIGNATION_LABELS, type MemberDesignation } from '@/lib/portal/types';
+import { normalizeDeskNumber, deskTakenMessage } from '@/lib/portal/desks';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,10 +49,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const sb = getServiceSupabase();
+
     const update: Record<string, string | null> = {};
     if (allowed.desk && 'desk_number' in body) {
-      const v = typeof body.desk_number === 'string' ? body.desk_number.trim() : '';
-      update.desk_number = v ? v.slice(0, 32) : null;
+      const raw = typeof body.desk_number === 'string' ? body.desk_number.trim() : '';
+      if (!raw) {
+        // Allow clearing the desk so a member can correct a mistake.
+        update.desk_number = null;
+      } else {
+        // Enforce the DD# format and DD1–DD25 range.
+        const result = normalizeDeskNumber(raw);
+        if (!result.ok) {
+          return NextResponse.json({ error: result.error }, { status: 400 });
+        }
+        // Reject desks already claimed by another member. Case-insensitive so
+        // legacy values like "dd4" still collide with "DD4".
+        const { data: clash, error: clashErr } = await sb
+          .from('members')
+          .select('id')
+          .ilike('desk_number', result.value)
+          .neq('id', member.id)
+          .limit(1);
+        if (clashErr) throw new Error(clashErr.message);
+        if (clash && clash.length > 0) {
+          return NextResponse.json(
+            { error: deskTakenMessage(result.value) },
+            { status: 409 },
+          );
+        }
+        update.desk_number = result.value;
+      }
     }
     if (allowed.office && 'office_number' in body) {
       const v = typeof body.office_number === 'string' ? body.office_number.trim() : '';
@@ -61,8 +89,6 @@ export async function POST(req: NextRequest) {
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ error: 'No assignment fields provided' }, { status: 400 });
     }
-
-    const sb = getServiceSupabase();
     const { data: updated, error } = await sb
       .from('members')
       .update(update)

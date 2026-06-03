@@ -15,6 +15,14 @@ import {
   MERRITT_SIGNATORY,
 } from '@/lib/portal/legal';
 import { formatUsd, isOneTimeDesignation } from '@/lib/portal/pricing';
+import {
+  normalizeDeskNumber,
+  DD_MIN,
+  DD_MAX,
+  MEMBER_SERVICES_PHONE_DISPLAY,
+  MEMBER_SERVICES_PHONE_TEL,
+  MEMBER_SERVICES_EMAIL,
+} from '@/lib/portal/desks';
 
 type AgreementRow = {
   agreement_type: 'member_agreement' | 'terms_and_conditions' | 'fee_agreement';
@@ -2499,8 +2507,10 @@ function WorkspaceAssignmentSection({
   const labelTitle = isOffice ? 'Your Office' : 'Your Dedicated Desk';
   const helper = isOffice
     ? "Tell us which office you'd like. Member services will confirm availability and finalize your assignment."
-    : "Add the desk number you're taking. Member services will confirm and update building records.";
-  const placeholder = isOffice ? 'e.g. 12 or 12B' : 'e.g. 4 or 4A';
+    : `Add the desk you're taking using the format DD# (for example, DD4). ` +
+      `Desks run from DD${DD_MIN} to DD${DD_MAX}, and a desk that's already ` +
+      `claimed can't be selected. Member services will confirm and update building records.`;
+  const placeholder = isOffice ? 'e.g. 12 or 12B' : 'e.g. DD4';
   const fieldLabel = isOffice ? 'Office number' : 'Desk number';
   const currentLabel = isOffice ? 'Current office:' : 'Current desk:';
   const currentValue = isOffice ? member.office_number : member.desk_number;
@@ -2510,6 +2520,18 @@ function WorkspaceAssignmentSection({
   const dirty = trimmed !== baseline;
 
   async function save() {
+    // Validate the DD# format up front so desk members get instant feedback
+    // before we hit the server. Empty is allowed (clears the desk).
+    let deskValue: string | null = null;
+    if (isDesk && trimmed) {
+      const result = normalizeDeskNumber(trimmed);
+      if (!result.ok) {
+        setStatus({ kind: 'err', text: result.error });
+        return;
+      }
+      deskValue = result.value;
+    }
+
     setSaving(true);
     setStatus(null);
     try {
@@ -2517,7 +2539,7 @@ function WorkspaceAssignmentSection({
       const token = session?.access_token;
       const body: Record<string, string | null> = isOffice
         ? { office_number: trimmed || null }
-        : { desk_number: trimmed || null };
+        : { desk_number: deskValue };
       const res = await fetch('/api/portal/assignment', {
         method: 'POST',
         headers: {
@@ -2575,6 +2597,25 @@ function WorkspaceAssignmentSection({
           }`}
         >
           {status.text}
+        </p>
+      )}
+      {isDesk && status?.kind === 'err' && (
+        <p className="mt-1 text-xs text-gray-600">
+          Think there&apos;s a mistake? Call member services at{' '}
+          <a
+            href={`tel:${MEMBER_SERVICES_PHONE_TEL}`}
+            className="text-orange-700 hover:underline"
+          >
+            {MEMBER_SERVICES_PHONE_DISPLAY}
+          </a>{' '}
+          or email{' '}
+          <a
+            href={`mailto:${MEMBER_SERVICES_EMAIL}`}
+            className="text-orange-700 hover:underline break-all"
+          >
+            {MEMBER_SERVICES_EMAIL}
+          </a>
+          .
         </p>
       )}
     </section>
