@@ -277,6 +277,56 @@ export default function AdminMemberDetailPage({
     await load(token);
   }
 
+  async function archiveMember() {
+    if (!token || !data) return;
+    const m = data.member;
+    if (
+      !confirm(
+        `Archive ${m.first_name} ${m.last_name}?\n\n` +
+          'They will be hidden from the member list and will no longer count toward total members. ' +
+          'All of their information — documents, agreements, and payment history — is kept and can be restored later.'
+      )
+    )
+      return;
+    const res = await fetch(`/api/admin/members/${id}/archive`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(json.error || 'Failed to archive member');
+      return;
+    }
+    setData((prev) =>
+      prev
+        ? { ...prev, member: { ...prev.member, archived_at: json.archived_at } }
+        : prev
+    );
+  }
+
+  async function restoreMember() {
+    if (!token || !data) return;
+    const m = data.member;
+    if (
+      !confirm(
+        `Restore ${m.first_name} ${m.last_name} to the member list? They will count toward total members again.`
+      )
+    )
+      return;
+    const res = await fetch(`/api/admin/members/${id}/archive`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(json.error || 'Failed to restore member');
+      return;
+    }
+    setData((prev) =>
+      prev ? { ...prev, member: { ...prev.member, archived_at: null } } : prev
+    );
+  }
+
   async function deletePaymentRow(paymentId: string) {
     if (!token) return;
     const ok = window.confirm(
@@ -394,6 +444,14 @@ export default function AdminMemberDetailPage({
                 LEGACY MEMBER
               </span>
             )}
+            {member.archived_at && (
+              <span
+                className="inline-flex items-center px-2 py-1 rounded text-xs font-bold tracking-wider bg-gray-700 text-white"
+                title={`Archived on ${new Date(member.archived_at).toLocaleDateString()}. Hidden from the roster and totals; data preserved.`}
+              >
+                ARCHIVED
+              </span>
+            )}
           </div>
           <p className="text-sm text-gray-600">{member.email}</p>
         </div>
@@ -487,6 +545,25 @@ export default function AdminMemberDetailPage({
           >
             Cancel membership
           </button>
+        )}
+        {member.archived_at ? (
+          <button
+            onClick={restoreMember}
+            className="text-sm border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50"
+            title="Restore this member to the active roster. They will count toward total members again."
+          >
+            Restore to members
+          </button>
+        ) : (
+          member.status === 'cancelled' && (
+            <button
+              onClick={archiveMember}
+              className="text-sm border border-gray-300 text-gray-600 rounded px-3 py-1.5 hover:bg-gray-100"
+              title="Hide this former member from the roster and totals. Keeps all their data (documents, agreements, payments) and can be restored later."
+            >
+              Archive member
+            </button>
+          )
         )}
       </section>
 

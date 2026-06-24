@@ -49,6 +49,12 @@ export interface Member {
   office_number: string | null;
   desk_number: string | null;
   last_pinged_at: string | null;
+  // Soft-archive: set when a former (cancelled, once-paying) member is removed
+  // from the active roster. Archived members keep all their data (documents,
+  // agreements, payments) but are hidden from member lists/counts by default
+  // and can be restored by clearing this. See the member archive route.
+  archived_at: string | null;
+  archived_by: string | null;
   // True for members who came in through the "Already a member?" migration
   // flow on the portal sign-in page. Legacy members can skip required
   // documents and Stripe auto-pay setup; their billing may continue to be
