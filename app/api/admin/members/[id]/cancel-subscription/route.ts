@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { sendCancellationEmailsOnce } from '@/lib/portal/cancellationEmails';
+import { memberHasEverPaid, removeUnpaidMember } from '@/lib/portal/memberRemoval';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,16 @@ export async function POST(
       .single();
     if (memErr || !member) {
       return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+    }
+
+    // Never-paid members (e.g. trial-day signups who never completed a real
+    // payment) are removed from the system entirely on cancellation rather
+    // than left lingering as cancelled rows. Staff are emailed inside
+    // removeUnpaidMember so the team knows who dropped off. Members who have
+    // actually paid fall through to the normal Stripe wind-down below.
+    if (!(await memberHasEverPaid(sb, member.id))) {
+      await removeUnpaidMember({ sb, member, cancelledBy: 'admin' });
+      return NextResponse.json({ ok: true, deleted: true });
     }
 
     if (!member.stripe_subscription_id) {

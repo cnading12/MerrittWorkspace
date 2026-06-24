@@ -219,15 +219,29 @@ export default function AdminMemberDetailPage({
     if (!token || !data) return;
     const m = data.member;
     const hasSub = !!m.stripe_subscription_id;
+    // Mirrors the server rule in memberRemoval.ts: a member with no successful
+    // (or refunded) charge has never paid and will be hard-deleted on cancel,
+    // not just marked cancelled. Surface that clearly so the admin knows.
+    const everPaid = data.payments.some(
+      (p) => p.status === 'succeeded' || p.status === 'refunded'
+    );
     const ok = window.confirm(
-      `Cancel membership for ${m.first_name} ${m.last_name}?\n\n` +
-        (hasSub
-          ? 'This will:\n' +
-            '• Stop future Stripe charges by scheduling a hard cancel at the end of the next calendar month.\n' +
-            "• Apply the Last Month's Membership Fee as a credit against the upcoming invoice (member is not billed for the final month).\n" +
-            '• Set the member\'s status to cancelled and record the effective date.\n\n' +
-            'This is the same flow the member sees when they cancel themselves.'
-          : 'This member has no active Stripe subscription, so only their local status will be set to cancelled.')
+      everPaid
+        ? `Cancel membership for ${m.first_name} ${m.last_name}?\n\n` +
+            (hasSub
+              ? 'This will:\n' +
+                '• Stop future Stripe charges by scheduling a hard cancel at the end of the next calendar month.\n' +
+                "• Apply the Last Month's Membership Fee as a credit against the upcoming invoice (member is not billed for the final month).\n" +
+                '• Set the member\'s status to cancelled and record the effective date.\n\n' +
+                'This is the same flow the member sees when they cancel themselves.'
+              : 'This member has no active Stripe subscription, so only their local status will be set to cancelled.')
+        : `Remove ${m.first_name} ${m.last_name}?\n\n` +
+            'This member has never paid (e.g. a trial-day signup), so cancelling will ' +
+            'REMOVE them from the system entirely:\n' +
+            '• Permanently delete their member record, login, uploaded documents, and application.\n' +
+            '• Stop any onboarding emails.\n' +
+            '• Email member services and the manager so the team knows they dropped off.\n\n' +
+            'This cannot be undone.'
     );
     if (!ok) return;
     const res = await fetch(`/api/admin/members/${id}/cancel-subscription`, {
@@ -237,6 +251,13 @@ export default function AdminMemberDetailPage({
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
       alert(json.error || 'Failed to cancel membership');
+      return;
+    }
+    if (json.deleted) {
+      alert(
+        `${m.first_name} ${m.last_name} never paid and has been removed from the system. Staff have been notified.`
+      );
+      router.push('/admin/members');
       return;
     }
     if (json.already_cancelled) {

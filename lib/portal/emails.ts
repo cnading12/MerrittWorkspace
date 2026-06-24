@@ -138,6 +138,10 @@ export function portalCompletionReminderEmail(opts: {
   loginUrl: string;
   missingSteps: string[];
   startDateLabel?: string | null;
+  // When provided, render a low-key "cancel my signup / stop these emails"
+  // link. Points at a confirmation page (not a mutating endpoint) so the
+  // member has to click through before anything is removed.
+  cancelUrl?: string | null;
 }) {
   const stepsHtml = opts.missingSteps.length
     ? `<div class="info-card">
@@ -158,6 +162,15 @@ export function portalCompletionReminderEmail(opts: {
   const startDateText = opts.startDateLabel
     ? `Your intended start date: ${opts.startDateLabel}. Finishing your portal now keeps everything on track.\n\n`
     : '';
+  const cancelHtml = opts.cancelUrl
+    ? `<p style="font-size:13px;color:#888;border-top:1px solid #eee;margin-top:24px;padding-top:16px;">
+          Changed your mind, or signed up by mistake? You can
+          <a href="${opts.cancelUrl}" style="color:#888;">cancel your signup and stop these reminders</a>.
+        </p>`
+    : '';
+  const cancelText = opts.cancelUrl
+    ? `\nChanged your mind, or signed up by mistake? Cancel your signup and stop these reminders:\n${opts.cancelUrl}\n`
+    : '';
 
   return {
     subject: 'Reminder: Finish setting up your Merritt Workspace membership',
@@ -177,6 +190,7 @@ export function portalCompletionReminderEmail(opts: {
         <p style="font-size:13px;color:#666;"><strong>This link expires in 24 hours.</strong> If it expires, request another any time at <a href="${opts.loginUrl}">${opts.loginUrl}</a>.</p>
         <p>Questions? Just reply to this email — we're happy to help.</p>
         <p>— The Merritt Workspace Team</p>
+        ${cancelHtml}
       `,
     }),
     text: [
@@ -192,6 +206,7 @@ export function portalCompletionReminderEmail(opts: {
       "Questions? Just reply to this email — we're happy to help.",
       '',
       '— The Merritt Workspace Team',
+      cancelText,
       '',
       '--',
       'Merritt Workspace',
@@ -636,6 +651,85 @@ export function membershipCancelledStaffEmail(opts: {
       .join('\n'),
   };
 }
+
+// Staff-facing notification that a never-paid member (e.g. a trial-day signup)
+// cancelled before completing onboarding and has been REMOVED from the system
+// entirely. Unlike the cancellation notice above, there's no Stripe wind-down,
+// final-month credit, or future end date — the record is gone — so the team is
+// told only what they need for offboarding (free the seat, recover any access
+// device) and for their own awareness that someone dropped off.
+export function membershipRemovedStaffEmail(opts: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  companyName: string | null;
+  designationLabel: string | null;
+  deskNumber: string | null;
+  officeNumber: string | null;
+  cancelledBy: 'member' | 'admin';
+  wasTrialApplicant: boolean;
+  trialDate: string | null;
+}) {
+  const seatLine = opts.officeNumber
+    ? `Office: <strong>${opts.officeNumber}</strong>`
+    : opts.deskNumber
+      ? `Dedicated desk: <strong>${opts.deskNumber}</strong>`
+      : 'No desk/office on file';
+  const seatText = opts.officeNumber
+    ? `Office: ${opts.officeNumber}`
+    : opts.deskNumber
+      ? `Dedicated desk: ${opts.deskNumber}`
+      : 'No desk/office on file';
+  const initiatedBy =
+    opts.cancelledBy === 'admin'
+      ? 'an admin (on the member\'s behalf)'
+      : 'the member (from their reminder email)';
+  const trialLine = opts.wasTrialApplicant
+    ? `Trial-day signup${opts.trialDate ? ` (${opts.trialDate})` : ''}`
+    : 'Did not complete signup';
+  return {
+    subject: `Signup cancelled & removed - ${opts.firstName} ${opts.lastName}`,
+    html: shell({
+      title: 'Signup Cancelled & Removed',
+      tagline: 'A never-paid member dropped off and was removed',
+      body: `
+        <p><strong>${opts.firstName} ${opts.lastName}</strong> (${opts.email}) cancelled before paying, so their record has been <strong>removed from the system</strong>. Cancellation was initiated by ${initiatedBy}.</p>
+        <div class="info-card">
+          <p style="margin:0 0 6px;"><strong>Member:</strong> ${opts.firstName} ${opts.lastName}${opts.companyName ? ` — ${opts.companyName}` : ''}</p>
+          <p style="margin:0 0 6px;"><strong>Email:</strong> ${opts.email}</p>
+          ${opts.designationLabel ? `<p style="margin:0 0 6px;"><strong>Interested in:</strong> ${opts.designationLabel}</p>` : ''}
+          <p style="margin:0 0 6px;"><strong>Status:</strong> ${trialLine}</p>
+          <p style="margin:0;">${seatLine}</p>
+        </div>
+        <div class="highlight">
+          <p style="margin:0;">No payment was ever collected and no Stripe wind-down is needed. They will no longer appear in the admin panel or receive onboarding emails. If they had a tentative desk/office or any building access, please free it up. This is just so you're not left in the dark — no action is required if nothing was assigned.</p>
+        </div>
+      `,
+    }),
+    text: [
+      `${opts.firstName} ${opts.lastName} (${opts.email}) cancelled before paying, so their record has been removed from the system. Cancellation was initiated by ${initiatedBy}.`,
+      '',
+      `Member:     ${opts.firstName} ${opts.lastName}${opts.companyName ? ` — ${opts.companyName}` : ''}`,
+      `Email:      ${opts.email}`,
+      opts.designationLabel ? `Interested:  ${opts.designationLabel}` : '',
+      `Status:     ${trialLine}`,
+      seatText,
+      '',
+      'No payment was ever collected and no Stripe wind-down is needed. They will no longer appear in the admin panel or receive onboarding emails. If they had a tentative desk/office or any building access, please free it up. This is just so you are not left in the dark — no action is required if nothing was assigned.',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  };
+}
+
+// Staff inboxes that receive member-lifecycle notifications (cancellations,
+// never-paid removals). Both the member-services and onboarding/manager
+// mailboxes are notified so whoever handles offboarding (inspection, key
+// return, freeing the seat) sees it.
+export const STAFF_NOTIFICATION_EMAILS = [
+  'memberservices@merrittworkspace.net',
+  'manager@merrittworkspace.net',
+];
 
 // Sender used for portal/member-services emails (access codes, general
 // notifications). Uses a descriptive display name — generic "From" names

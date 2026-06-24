@@ -6,16 +6,9 @@ import {
   getTransactionalEmailHeaders,
   PORTAL_FROM,
   PORTAL_REPLY_TO,
+  STAFF_NOTIFICATION_EMAILS,
 } from './emails';
 import { DESIGNATION_LABELS, MemberDesignation } from './types';
-
-// Staff inboxes that receive the cancellation notification. Both the
-// member-services and onboarding/manager mailboxes are notified so whoever
-// handles offboarding (inspection, key return, freeing the seat) sees it.
-const STAFF_NOTIFICATION_EMAILS = [
-  'memberservices@merrittworkspace.net',
-  'manager@merrittworkspace.net',
-];
 
 function formatEffectiveDate(effectiveDateIso: string | null): string | null {
   if (!effectiveDateIso) return null;
