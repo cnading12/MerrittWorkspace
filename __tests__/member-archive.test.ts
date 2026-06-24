@@ -84,7 +84,7 @@ function unauthReq(method = 'POST') {
 beforeEach(() => resetState());
 
 describe('member archive (POST)', () => {
-  it('archives a cancelled member, stamping archived_at + archived_by', async () => {
+  it('archives a cancelled member, stamping archived_at + archived_by and freeing the seat', async () => {
     const res = await archive(authReq(), params);
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -92,6 +92,9 @@ describe('member archive (POST)', () => {
     expect(json.archived_at).toBeTruthy();
     expect(state.lastUpdate.archived_at).toBeTruthy();
     expect(state.lastUpdate.archived_by).toBe('u-1');
+    // Desk/office are cleared so the seat reopens for the next member.
+    expect(state.lastUpdate.desk_number).toBeNull();
+    expect(state.lastUpdate.office_number).toBeNull();
   });
 
   it('refuses to archive a non-cancelled member', async () => {

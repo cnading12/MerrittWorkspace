@@ -284,6 +284,7 @@ export default function AdminMemberDetailPage({
       !confirm(
         `Archive ${m.first_name} ${m.last_name}?\n\n` +
           'They will be hidden from the member list and will no longer count toward total members. ' +
+          'Their desk/office will be freed up for reassignment. ' +
           'All of their information — documents, agreements, and payment history — is kept and can be restored later.'
       )
     )
@@ -299,7 +300,16 @@ export default function AdminMemberDetailPage({
     }
     setData((prev) =>
       prev
-        ? { ...prev, member: { ...prev.member, archived_at: json.archived_at } }
+        ? {
+            ...prev,
+            member: {
+              ...prev.member,
+              archived_at: json.archived_at,
+              // Seat is freed on archive — reflect that locally.
+              desk_number: null,
+              office_number: null,
+            },
+          }
         : prev
     );
   }

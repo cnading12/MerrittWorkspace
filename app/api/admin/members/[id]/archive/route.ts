@@ -53,9 +53,20 @@ export async function POST(
     }
 
     const archivedAt = new Date().toISOString();
+    // Archiving frees the member's seat: a desk/office is considered "taken"
+    // purely by the presence of desk_number/office_number on a member row
+    // (see the clash check in app/api/portal/assignment), so clearing them
+    // reopens the seat for the next member. The assignment isn't restored on
+    // un-archive — the seat may have been reassigned in the meantime — so the
+    // member would re-pick (or an admin re-assigns) if they ever return.
     const { error } = await sb
       .from('members')
-      .update({ archived_at: archivedAt, archived_by: adminUser.id })
+      .update({
+        archived_at: archivedAt,
+        archived_by: adminUser.id,
+        desk_number: null,
+        office_number: null,
+      })
       .eq('id', id);
     if (error) throw new Error(error.message);
 

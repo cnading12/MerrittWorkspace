@@ -85,6 +85,7 @@ export default function AdminMembersPage() {
       !confirm(
         `Archive ${m.first_name} ${m.last_name}?\n\n` +
           'They will be hidden from the member list and will no longer count toward total members. ' +
+          'Their desk/office will be freed up for reassignment. ' +
           'All of their information — documents, agreements, and payment history — is kept and can be restored later.'
       )
     )
