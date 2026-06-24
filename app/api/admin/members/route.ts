@@ -9,10 +9,20 @@ export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
     const sb = getServiceSupabase();
-    const { data: members, error } = await sb
-      .from('members')
-      .select('*')
-      .order('created_at', { ascending: false });
+
+    // Archived (former, once-paying) members are hidden from the roster by
+    // default. `?archived=only` returns just the archived members so the admin
+    // can review/restore them; `?archived=all` returns everyone.
+    const archivedParam = new URL(req.url).searchParams.get('archived');
+    let query = sb.from('members').select('*');
+    if (archivedParam === 'only') {
+      query = query.not('archived_at', 'is', null);
+    } else if (archivedParam !== 'all') {
+      query = query.is('archived_at', null);
+    }
+    const { data: members, error } = await query.order('created_at', {
+      ascending: false,
+    });
     if (error) throw new Error(error.message);
 
     // Attach trial-applicant info pulled from the linked member_applications

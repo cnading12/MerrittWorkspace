@@ -24,11 +24,17 @@ export async function GET(req: NextRequest) {
         .from('member_applications')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'pending'),
-      sb.from('members').select('id', { count: 'exact', head: true }),
+      // Counts exclude archived (former, once-paying) members so they don't
+      // inflate "total members" or the onboarding queues.
       sb
         .from('members')
         .select('id', { count: 'exact', head: true })
-        .eq('status', 'active'),
+        .is('archived_at', null),
+      sb
+        .from('members')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active')
+        .is('archived_at', null),
       sb
         .from('member_documents')
         .select('id', { count: 'exact', head: true })
@@ -41,12 +47,14 @@ export async function GET(req: NextRequest) {
         .from('members')
         .select('id', { count: 'exact', head: true })
         .eq('agreement_signed', false)
-        .neq('status', 'declined'),
+        .neq('status', 'declined')
+        .is('archived_at', null),
       sb
         .from('members')
         .select(
           'id, application_id, first_name, last_name, email, status, designation, monthly_cost_cents, required_docs_complete, agreement_signed, stripe_subscription_id, subscription_status, onboarding_unlocked, created_at, last_pinged_at'
         )
+        .is('archived_at', null)
         .order('created_at', { ascending: false })
         .limit(25),
     ]);

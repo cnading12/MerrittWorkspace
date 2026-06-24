@@ -219,15 +219,29 @@ export default function AdminMemberDetailPage({
     if (!token || !data) return;
     const m = data.member;
     const hasSub = !!m.stripe_subscription_id;
+    // Mirrors the server rule in memberRemoval.ts: a member with no successful
+    // (or refunded) charge has never paid and will be hard-deleted on cancel,
+    // not just marked cancelled. Surface that clearly so the admin knows.
+    const everPaid = data.payments.some(
+      (p) => p.status === 'succeeded' || p.status === 'refunded'
+    );
     const ok = window.confirm(
-      `Cancel membership for ${m.first_name} ${m.last_name}?\n\n` +
-        (hasSub
-          ? 'This will:\n' +
-            '• Stop future Stripe charges by scheduling a hard cancel at the end of the next calendar month.\n' +
-            "• Apply the Last Month's Membership Fee as a credit against the upcoming invoice (member is not billed for the final month).\n" +
-            '• Set the member\'s status to cancelled and record the effective date.\n\n' +
-            'This is the same flow the member sees when they cancel themselves.'
-          : 'This member has no active Stripe subscription, so only their local status will be set to cancelled.')
+      everPaid
+        ? `Cancel membership for ${m.first_name} ${m.last_name}?\n\n` +
+            (hasSub
+              ? 'This will:\n' +
+                '• Stop future Stripe charges by scheduling a hard cancel at the end of the next calendar month.\n' +
+                "• Apply the Last Month's Membership Fee as a credit against the upcoming invoice (member is not billed for the final month).\n" +
+                '• Set the member\'s status to cancelled and record the effective date.\n\n' +
+                'This is the same flow the member sees when they cancel themselves.'
+              : 'This member has no active Stripe subscription, so only their local status will be set to cancelled.')
+        : `Remove ${m.first_name} ${m.last_name}?\n\n` +
+            'This member has never paid (e.g. a trial-day signup), so cancelling will ' +
+            'REMOVE them from the system entirely:\n' +
+            '• Permanently delete their member record, login, uploaded documents, and application.\n' +
+            '• Stop any onboarding emails.\n' +
+            '• Email member services and the manager so the team knows they dropped off.\n\n' +
+            'This cannot be undone.'
     );
     if (!ok) return;
     const res = await fetch(`/api/admin/members/${id}/cancel-subscription`, {
@@ -237,6 +251,13 @@ export default function AdminMemberDetailPage({
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
       alert(json.error || 'Failed to cancel membership');
+      return;
+    }
+    if (json.deleted) {
+      alert(
+        `${m.first_name} ${m.last_name} never paid and has been removed from the system. Staff have been notified.`
+      );
+      router.push('/admin/members');
       return;
     }
     if (json.already_cancelled) {
@@ -254,6 +275,66 @@ export default function AdminMemberDetailPage({
       alert(`Membership cancelled. Effective date: ${json.cancellation_effective_date}.`);
     }
     await load(token);
+  }
+
+  async function archiveMember() {
+    if (!token || !data) return;
+    const m = data.member;
+    if (
+      !confirm(
+        `Archive ${m.first_name} ${m.last_name}?\n\n` +
+          'They will be hidden from the member list and will no longer count toward total members. ' +
+          'Their desk/office will be freed up for reassignment. ' +
+          'All of their information — documents, agreements, and payment history — is kept and can be restored later.'
+      )
+    )
+      return;
+    const res = await fetch(`/api/admin/members/${id}/archive`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(json.error || 'Failed to archive member');
+      return;
+    }
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            member: {
+              ...prev.member,
+              archived_at: json.archived_at,
+              // Seat is freed on archive — reflect that locally.
+              desk_number: null,
+              office_number: null,
+            },
+          }
+        : prev
+    );
+  }
+
+  async function restoreMember() {
+    if (!token || !data) return;
+    const m = data.member;
+    if (
+      !confirm(
+        `Restore ${m.first_name} ${m.last_name} to the member list? They will count toward total members again.`
+      )
+    )
+      return;
+    const res = await fetch(`/api/admin/members/${id}/archive`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(json.error || 'Failed to restore member');
+      return;
+    }
+    setData((prev) =>
+      prev ? { ...prev, member: { ...prev.member, archived_at: null } } : prev
+    );
   }
 
   async function deletePaymentRow(paymentId: string) {
@@ -373,6 +454,14 @@ export default function AdminMemberDetailPage({
                 LEGACY MEMBER
               </span>
             )}
+            {member.archived_at && (
+              <span
+                className="inline-flex items-center px-2 py-1 rounded text-xs font-bold tracking-wider bg-gray-700 text-white"
+                title={`Archived on ${new Date(member.archived_at).toLocaleDateString()}. Hidden from the roster and totals; data preserved.`}
+              >
+                ARCHIVED
+              </span>
+            )}
           </div>
           <p className="text-sm text-gray-600">{member.email}</p>
         </div>
@@ -466,6 +555,25 @@ export default function AdminMemberDetailPage({
           >
             Cancel membership
           </button>
+        )}
+        {member.archived_at ? (
+          <button
+            onClick={restoreMember}
+            className="text-sm border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50"
+            title="Restore this member to the active roster. They will count toward total members again."
+          >
+            Restore to members
+          </button>
+        ) : (
+          member.status === 'cancelled' && (
+            <button
+              onClick={archiveMember}
+              className="text-sm border border-gray-300 text-gray-600 rounded px-3 py-1.5 hover:bg-gray-100"
+              title="Hide this former member from the roster and totals. Keeps all their data (documents, agreements, payments) and can be restored later."
+            >
+              Archive member
+            </button>
+          )
         )}
       </section>
 

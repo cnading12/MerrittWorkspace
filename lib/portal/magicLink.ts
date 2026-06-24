@@ -18,6 +18,7 @@ import {
   PORTAL_ONBOARDING_FROM,
   PORTAL_REPLY_TO,
 } from './emails';
+import { buildCancelOnboardingUrl } from './cancelToken';
 import { getServiceSupabase } from './supabaseAdmin';
 
 export async function generateMagicLinkUrl(email: string): Promise<string | null> {
@@ -88,6 +89,9 @@ export async function sendPortalCompletionReminder(opts: {
   firstName: string;
   missingSteps: string[];
   startDateLabel?: string | null;
+  // Member id is used to build the signed one-click "cancel my signup" link.
+  // Optional so existing callers without it still send (just without the link).
+  memberId?: string | null;
 }): Promise<boolean> {
   const confirmUrl = await generateMagicLinkUrl(opts.email);
   if (!confirmUrl) return false;
@@ -95,12 +99,16 @@ export async function sendPortalCompletionReminder(opts: {
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const resend = new Resend(process.env.RESEND_API_KEY);
+  const cancelUrl = opts.memberId
+    ? buildCancelOnboardingUrl({ baseUrl, memberId: opts.memberId })
+    : null;
   const tpl = portalCompletionReminderEmail({
     firstName: opts.firstName,
     portalUrl: confirmUrl,
     loginUrl: `${baseUrl}/portal/login`,
     missingSteps: opts.missingSteps,
     startDateLabel: opts.startDateLabel ?? null,
+    cancelUrl,
   });
   try {
     await resend.emails.send({

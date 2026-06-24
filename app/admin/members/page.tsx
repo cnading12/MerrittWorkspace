@@ -46,6 +46,25 @@ export default function AdminMembersPage() {
   const [pinging, setPinging] = useState<string | null>(null);
   const [reconciling, setReconciling] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+  // When on, the list shows archived (former, once-paying) members so they can
+  // be reviewed/restored, instead of the active roster.
+  const [viewArchived, setViewArchived] = useState(false);
+
+  async function load(authToken: string, archived: boolean) {
+    setLoading(true);
+    const res = await fetch(
+      `/api/admin/members${archived ? '?archived=only' : ''}`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+    if (!res.ok) {
+      router.replace('/admin');
+      return;
+    }
+    const { members } = await res.json();
+    setMembers(members);
+    setLoading(false);
+  }
 
   useEffect(() => {
     (async () => {
@@ -55,18 +74,65 @@ export default function AdminMembersPage() {
         return;
       }
       setToken(session.access_token);
-      const res = await fetch('/api/admin/members', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+      await load(session.access_token, viewArchived);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, viewArchived]);
+
+  async function archiveMember(m: Member) {
+    if (!token) return;
+    if (
+      !confirm(
+        `Archive ${m.first_name} ${m.last_name}?\n\n` +
+          'They will be hidden from the member list and will no longer count toward total members. ' +
+          'Their desk/office will be freed up for reassignment. ' +
+          'All of their information — documents, agreements, and payment history — is kept and can be restored later.'
+      )
+    )
+      return;
+    setArchivingId(m.id);
+    try {
+      const res = await fetch(`/api/admin/members/${m.id}/archive`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        router.replace('/admin');
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Failed to archive member');
         return;
       }
-      const { members } = await res.json();
-      setMembers(members);
-      setLoading(false);
-    })();
-  }, [router]);
+      // Drop it from the current (active) view.
+      setMembers((prev) => prev.filter((mm) => mm.id !== m.id));
+    } finally {
+      setArchivingId(null);
+    }
+  }
+
+  async function restoreMember(m: Member) {
+    if (!token) return;
+    if (
+      !confirm(
+        `Restore ${m.first_name} ${m.last_name} to the member list? They will count toward total members again.`
+      )
+    )
+      return;
+    setArchivingId(m.id);
+    try {
+      const res = await fetch(`/api/admin/members/${m.id}/archive`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Failed to restore member');
+        return;
+      }
+      // Drop it from the current (archived) view.
+      setMembers((prev) => prev.filter((mm) => mm.id !== m.id));
+    } finally {
+      setArchivingId(null);
+    }
+  }
 
   async function patchMember(id: string, body: any) {
     if (!token) return;
@@ -230,10 +296,13 @@ export default function AdminMembersPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Members</h1>
+          <h1 className="text-2xl font-semibold">
+            {viewArchived ? 'Archived members' : 'Members'}
+          </h1>
           <p className="text-sm text-gray-600 mt-1">
             {filtered.length} {filtered.length === 1 ? 'member' : 'members'}
             {(search || statusFilter !== 'all') && ` (filtered from ${members.length})`}
+            {viewArchived && ' · archived (hidden from totals)'}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -281,6 +350,17 @@ export default function AdminMembersPage() {
             title="Fill in missing Invoice/receipt PDF links on past successful payments. Use this once after deploying the receipt fix to surface buttons for older charges."
           >
             {backfilling ? 'Backfilling…' : 'Backfill receipts'}
+          </button>
+          <button
+            onClick={() => setViewArchived((v) => !v)}
+            className={`border rounded px-3 py-1.5 text-sm ${
+              viewArchived
+                ? 'bg-gray-900 text-white border-gray-900 hover:bg-gray-800'
+                : 'hover:bg-gray-50'
+            }`}
+            title="Archived members are former, once-paying members who have been hidden from the roster and totals. Their data is preserved and they can be restored."
+          >
+            {viewArchived ? 'Back to active members' : 'View archived'}
           </button>
         </div>
       </div>
@@ -456,6 +536,27 @@ export default function AdminMembersPage() {
                   >
                     {pinging === m.id ? 'Pinging…' : 'Ping'}
                   </button>
+                  {viewArchived ? (
+                    <button
+                      onClick={() => restoreMember(m)}
+                      disabled={archivingId === m.id}
+                      className="text-sm border border-gray-300 rounded px-2 py-1 hover:bg-gray-50 disabled:opacity-50 col-span-2"
+                      title="Restore this member to the active roster. They will count toward total members again."
+                    >
+                      {archivingId === m.id ? 'Restoring…' : 'Restore to members'}
+                    </button>
+                  ) : (
+                    m.status === 'cancelled' && (
+                      <button
+                        onClick={() => archiveMember(m)}
+                        disabled={archivingId === m.id}
+                        className="text-sm border border-gray-300 text-gray-600 rounded px-2 py-1 hover:bg-gray-100 disabled:opacity-50 col-span-2"
+                        title="Hide this former member from the roster and totals. Keeps all their data (documents, agreements, payments) and can be restored later."
+                      >
+                        {archivingId === m.id ? 'Archiving…' : 'Archive member'}
+                      </button>
+                    )
+                  )}
                   <Link
                     href={`/admin/members/${m.id}`}
                     className="text-sm border border-gray-900 bg-gray-900 text-white rounded px-2 py-1 hover:bg-gray-800 text-center font-medium col-span-2"

@@ -79,6 +79,7 @@ export async function POST(
       firstName: member.first_name,
       missingSteps,
       startDateLabel,
+      memberId: member.id,
     });
     if (!sent) {
       return NextResponse.json(
