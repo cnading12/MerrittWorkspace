@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { readTrialFlag, readTrialDate } from '@/lib/portal/trial';
+import { isMissingArchivedColumnError } from '@/lib/portal/archive';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,42 @@ export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
     const sb = getServiceSupabase();
+
+    const RECENT_COLS =
+      'id, application_id, first_name, last_name, email, status, designation, monthly_cost_cents, required_docs_complete, agreement_signed, stripe_subscription_id, subscription_status, onboarding_unlocked, created_at, last_pinged_at';
+
+    // Member counts/lists exclude archived (former, once-paying) members so
+    // they don't inflate "total members" or the onboarding queues. If the
+    // archive migration hasn't been applied yet, the archived_at filter errors
+    // out; we then retry without it so the dashboard keeps working instead of
+    // showing all zeros.
+    const memberCount = async (
+      applyFilters: (q: any) => any = (q) => q
+    ): Promise<number> => {
+      const base = () =>
+        applyFilters(sb.from('members').select('id', { count: 'exact', head: true }));
+      let { count, error } = await base().is('archived_at', null);
+      if (error && isMissingArchivedColumnError(error)) {
+        ({ count, error } = await base());
+      }
+      return count || 0;
+    };
+    const recentMembersQuery = async () => {
+      let res = await sb
+        .from('members')
+        .select(RECENT_COLS)
+        .is('archived_at', null)
+        .order('created_at', { ascending: false })
+        .limit(25);
+      if (res.error && isMissingArchivedColumnError(res.error)) {
+        res = await sb
+          .from('members')
+          .select(RECENT_COLS)
+          .order('created_at', { ascending: false })
+          .limit(25);
+      }
+      return res;
+    };
 
     const [
       pendingApps,
@@ -24,17 +61,8 @@ export async function GET(req: NextRequest) {
         .from('member_applications')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'pending'),
-      // Counts exclude archived (former, once-paying) members so they don't
-      // inflate "total members" or the onboarding queues.
-      sb
-        .from('members')
-        .select('id', { count: 'exact', head: true })
-        .is('archived_at', null),
-      sb
-        .from('members')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'active')
-        .is('archived_at', null),
+      memberCount(),
+      memberCount((q) => q.eq('status', 'active')),
       sb
         .from('member_documents')
         .select('id', { count: 'exact', head: true })
@@ -43,20 +71,8 @@ export async function GET(req: NextRequest) {
         .from('access_code_requests')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'pending'),
-      sb
-        .from('members')
-        .select('id', { count: 'exact', head: true })
-        .eq('agreement_signed', false)
-        .neq('status', 'declined')
-        .is('archived_at', null),
-      sb
-        .from('members')
-        .select(
-          'id, application_id, first_name, last_name, email, status, designation, monthly_cost_cents, required_docs_complete, agreement_signed, stripe_subscription_id, subscription_status, onboarding_unlocked, created_at, last_pinged_at'
-        )
-        .is('archived_at', null)
-        .order('created_at', { ascending: false })
-        .limit(25),
+      memberCount((q) => q.eq('agreement_signed', false).neq('status', 'declined')),
+      recentMembersQuery(),
     ]);
 
     // Annotate recent members with trial-applicant info from their linked
@@ -113,11 +129,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       counts: {
         pendingApplications: pendingApps.count || 0,
-        totalMembers: totalMembers.count || 0,
-        activeMembers: activeMembers.count || 0,
+        // totalMembers / activeMembers / awaitingAgreements are already
+        // resolved to numbers by memberCount() (with archive-column fallback).
+        totalMembers,
+        activeMembers,
         pendingDocReviews: pendingDocs.count || 0,
         pendingAccessCodes: pendingAccessCodes.count || 0,
-        awaitingAgreements: awaitingAgreements.count || 0,
+        awaitingAgreements,
       },
       recentMembers: annotatedRecent,
     });
