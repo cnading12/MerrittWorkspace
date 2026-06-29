@@ -134,6 +134,34 @@ export default function AdminMembersPage() {
     }
   }
 
+  async function deleteMember(m: Member) {
+    if (!token) return;
+    if (
+      !confirm(
+        `Permanently delete ${m.first_name} ${m.last_name}?\n\n` +
+          'This never-paid member will be removed from the system entirely — their record, ' +
+          'login, documents, agreements, and application are deleted and their email is freed. ' +
+          'This cannot be undone. (Members who have paid cannot be deleted — archive them instead.)'
+      )
+    )
+      return;
+    setArchivingId(m.id);
+    try {
+      const res = await fetch(`/api/admin/members/${m.id}/delete`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Failed to delete member');
+        return;
+      }
+      setMembers((prev) => prev.filter((mm) => mm.id !== m.id));
+    } finally {
+      setArchivingId(null);
+    }
+  }
+
   async function patchMember(id: string, body: any) {
     if (!token) return;
     const res = await fetch(`/api/admin/members/${id}`, {
@@ -545,8 +573,8 @@ export default function AdminMembersPage() {
                     >
                       {archivingId === m.id ? 'Restoring…' : 'Restore to members'}
                     </button>
-                  ) : (
-                    m.status === 'cancelled' && (
+                  ) : m.status === 'cancelled' ? (
+                    m.has_paid ? (
                       <button
                         onClick={() => archiveMember(m)}
                         disabled={archivingId === m.id}
@@ -555,8 +583,17 @@ export default function AdminMembersPage() {
                       >
                         {archivingId === m.id ? 'Archiving…' : 'Archive member'}
                       </button>
+                    ) : (
+                      <button
+                        onClick={() => deleteMember(m)}
+                        disabled={archivingId === m.id}
+                        className="text-sm border border-red-600 bg-red-600 text-white rounded px-2 py-1 hover:bg-red-700 disabled:opacity-50 col-span-2 font-medium"
+                        title="Permanently delete this never-paid member and all their data. Frees their email. Cannot be undone."
+                      >
+                        {archivingId === m.id ? 'Deleting…' : 'Delete permanently'}
+                      </button>
                     )
-                  )}
+                  ) : null}
                   <Link
                     href={`/admin/members/${m.id}`}
                     className="text-sm border border-gray-900 bg-gray-900 text-white rounded px-2 py-1 hover:bg-gray-800 text-center font-medium col-span-2"

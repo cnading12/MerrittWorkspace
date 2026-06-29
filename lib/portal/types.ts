@@ -68,6 +68,10 @@ export interface Member {
   trial_date?: string | null;
   applied_at?: string | null;
   intended_start_date?: string | null;
+  // Read-time annotation from the admin members list API: true if the member
+  // has any successful/refunded charge. Drives Archive (paid) vs Delete
+  // (never-paid) in the admin UI.
+  has_paid?: boolean;
 }
 
 export interface MemberApplication {

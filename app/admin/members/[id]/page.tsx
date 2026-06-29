@@ -219,12 +219,9 @@ export default function AdminMemberDetailPage({
     if (!token || !data) return;
     const m = data.member;
     const hasSub = !!m.stripe_subscription_id;
-    // Mirrors the server rule in memberRemoval.ts: a member with no successful
-    // (or refunded) charge has never paid and will be hard-deleted on cancel,
-    // not just marked cancelled. Surface that clearly so the admin knows.
-    const everPaid = data.payments.some(
-      (p) => p.status === 'succeeded' || p.status === 'refunded'
-    );
+    // A member with no successful/refunded charge has never paid. Cancelling
+    // them just marks the signup cancelled (kept in the list); an admin can
+    // permanently delete them afterward with the separate Delete button.
     const ok = window.confirm(
       everPaid
         ? `Cancel membership for ${m.first_name} ${m.last_name}?\n\n` +
@@ -235,13 +232,13 @@ export default function AdminMemberDetailPage({
                 '• Set the member\'s status to cancelled and record the effective date.\n\n' +
                 'This is the same flow the member sees when they cancel themselves.'
               : 'This member has no active Stripe subscription, so only their local status will be set to cancelled.')
-        : `Remove ${m.first_name} ${m.last_name}?\n\n` +
-            'This member has never paid (e.g. a trial-day signup), so cancelling will ' +
-            'REMOVE them from the system entirely:\n' +
-            '• Permanently delete their member record, login, uploaded documents, and application.\n' +
-            '• Stop any onboarding emails.\n' +
-            '• Email member services and the manager so the team knows they dropped off.\n\n' +
-            'This cannot be undone.'
+        : `Cancel signup for ${m.first_name} ${m.last_name}?\n\n` +
+            'This member never paid (e.g. a trial-day signup). Cancelling will:\n' +
+            '• Mark them cancelled and stop onboarding reminder emails.\n' +
+            '• Free any tentative desk/office.\n' +
+            '• Email member services and the manager so the team knows.\n\n' +
+            'They stay in the list as cancelled. To remove them entirely, use the ' +
+            '"Delete permanently" button afterward.'
     );
     if (!ok) return;
     const res = await fetch(`/api/admin/members/${id}/cancel-subscription`, {
@@ -253,11 +250,13 @@ export default function AdminMemberDetailPage({
       alert(json.error || 'Failed to cancel membership');
       return;
     }
-    if (json.deleted) {
+    if (json.never_paid) {
       alert(
-        `${m.first_name} ${m.last_name} never paid and has been removed from the system. Staff have been notified.`
+        json.already_cancelled
+          ? 'This signup was already cancelled.'
+          : `${m.first_name} ${m.last_name}'s signup has been cancelled. Staff have been notified. Use "Delete permanently" to remove them entirely.`
       );
-      router.push('/admin/members');
+      await load(token);
       return;
     }
     if (json.already_cancelled) {
@@ -335,6 +334,32 @@ export default function AdminMemberDetailPage({
     setData((prev) =>
       prev ? { ...prev, member: { ...prev.member, archived_at: null } } : prev
     );
+  }
+
+  async function deleteMember() {
+    if (!token || !data) return;
+    const m = data.member;
+    if (
+      !window.confirm(
+        `Permanently delete ${m.first_name} ${m.last_name}?\n\n` +
+          'This never-paid member will be removed from the system entirely:\n' +
+          '• Permanently delete their member record, login, uploaded documents, agreements, and application.\n' +
+          '• Free their email for reuse.\n\n' +
+          'This cannot be undone. (Members who have paid cannot be deleted — archive them instead.)'
+      )
+    )
+      return;
+    const res = await fetch(`/api/admin/members/${id}/delete`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(json.error || 'Failed to delete member');
+      return;
+    }
+    alert(`${m.first_name} ${m.last_name} has been permanently deleted.`);
+    router.push('/admin/members');
   }
 
   async function deletePaymentRow(paymentId: string) {
@@ -419,9 +444,9 @@ export default function AdminMemberDetailPage({
 
   const { member, application, documents, payments, agreements } = data;
   // Mirrors the server rule in memberRemoval.ts: a member with no successful
-  // (or refunded) charge has never paid. Cancelling such a member hard-deletes
-  // them (trial-day / never-signed-up cleanup) rather than scheduling a Stripe
-  // wind-down, so we label the action "Remove member" to make that clear.
+  // (or refunded) charge has never paid. Never-paid members get a "Cancel
+  // signup" → "Delete permanently" path; paid members get the Stripe
+  // cancellation → "Archive" path.
   const everPaid = payments.some(
     (p) => p.status === 'succeeded' || p.status === 'refunded'
   );
@@ -557,20 +582,18 @@ export default function AdminMemberDetailPage({
         ) : (
           <button
             onClick={cancelMembership}
-            className={
-              everPaid
-                ? 'text-sm border rounded px-3 py-1.5 hover:bg-gray-50 text-red-600'
-                : 'text-sm border border-red-600 bg-red-600 text-white rounded px-3 py-1.5 hover:bg-red-700 font-medium'
-            }
+            className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 text-red-600"
             title={
               everPaid
                 ? "Stop the member's Stripe subscription, apply the Last Month's Fee credit, and schedule cancel at end of next calendar month"
-                : 'This member never paid (e.g. a trial-day signup). Removing permanently deletes their record, login, documents, and application, and emails staff.'
+                : 'Mark this never-paid signup cancelled (kept in the list). You can delete them permanently afterward.'
             }
           >
-            {everPaid ? 'Cancel membership' : 'Remove member (never paid)'}
+            {everPaid ? 'Cancel membership' : 'Cancel signup'}
           </button>
         )}
+        {/* Post-cancellation cleanup: paid members can be archived (soft hide,
+            recoverable); never-paid members can be permanently deleted. */}
         {member.archived_at ? (
           <button
             onClick={restoreMember}
@@ -579,8 +602,8 @@ export default function AdminMemberDetailPage({
           >
             Restore to members
           </button>
-        ) : (
-          member.status === 'cancelled' && (
+        ) : member.status === 'cancelled' ? (
+          everPaid ? (
             <button
               onClick={archiveMember}
               className="text-sm border border-gray-300 text-gray-600 rounded px-3 py-1.5 hover:bg-gray-100"
@@ -588,8 +611,16 @@ export default function AdminMemberDetailPage({
             >
               Archive member
             </button>
+          ) : (
+            <button
+              onClick={deleteMember}
+              className="text-sm border border-red-600 bg-red-600 text-white rounded px-3 py-1.5 hover:bg-red-700 font-medium"
+              title="Permanently delete this never-paid member and all their data. Frees their email. Cannot be undone."
+            >
+              Delete permanently
+            </button>
           )
-        )}
+        ) : null}
       </section>
 
       {/* Application payload */}

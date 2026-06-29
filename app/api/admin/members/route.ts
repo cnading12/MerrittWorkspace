@@ -47,7 +47,11 @@ export async function GET(req: NextRequest) {
     // back to `payload.wants_trial_day` so this works on databases where the
     // trial-day migration hasn't been applied yet.
     const annotated = await annotateWithTrialInfo(sb, members || []);
-    return NextResponse.json({ members: annotated });
+    // Annotate each member with whether they've ever paid, so the admin UI can
+    // offer the right action on cancelled members: Archive (paid, recoverable)
+    // vs Delete (never-paid, hard removal).
+    const withPaid = await annotateWithPaidFlag(sb, annotated);
+    return NextResponse.json({ members: withPaid });
   } catch (e: any) {
     const status = e instanceof PortalError ? e.status : 500;
     return NextResponse.json({ error: e.message }, { status });
@@ -58,6 +62,26 @@ type MemberRow = Record<string, any> & {
   id: string;
   application_id: string | null;
 };
+
+// Mark each member with `has_paid` = whether any successful/refunded charge
+// exists for them. One query for the whole page.
+async function annotateWithPaidFlag(
+  sb: ReturnType<typeof getServiceSupabase>,
+  members: MemberRow[]
+) {
+  if (members.length === 0) return members;
+  const memberIds = members.map((m) => m.id);
+  const { data, error } = await sb
+    .from('payment_history')
+    .select('member_id')
+    .in('member_id', memberIds)
+    .in('status', ['succeeded', 'refunded'])
+    .gt('amount_cents', 0);
+  const paidIds = new Set(
+    error ? [] : (data || []).map((r: any) => r.member_id).filter(Boolean)
+  );
+  return members.map((m) => ({ ...m, has_paid: paidIds.has(m.id) }));
+}
 
 async function annotateWithTrialInfo(
   sb: ReturnType<typeof getServiceSupabase>,
