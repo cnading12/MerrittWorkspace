@@ -1,20 +1,24 @@
-// Removal of never-paid members on cancellation.
+// Lifecycle helpers for never-paid members (typically trial-day applicants).
 //
-// Policy (see the admin request that introduced this): members who signed up
-// but never paid anything — typically trial-day applicants — should be removed
-// from the system entirely when they cancel (client- or admin-side), rather
-// than lingering as `status='cancelled'` rows and crowding the admin panel.
-// Members who actually paid are KEPT (their cancellation goes through the
-// normal Stripe wind-down elsewhere). Either way, staff are emailed so nobody
-// is left in the dark about who dropped off.
+// Two distinct actions, deliberately decoupled:
+//
+//   • CANCEL — the member (via the reminder email's cancel link) OR an admin
+//     marks the signup cancelled. The member STAYS in the system as a
+//     `status='cancelled'` row so the team can see who dropped off; staff are
+//     emailed. Nothing is deleted.
+//
+//   • DELETE — admin-only. Permanently removes the member and all their data
+//     (documents, agreements, payment history, application, login). This is the
+//     cleanup step after a never-paid member has cancelled. Members who ever
+//     paid are KEPT/archived instead, never deleted, so their financial records
+//     are preserved.
 //
 // "Never paid anything" = no successful or refunded charge has ever been
-// recorded for the member. A fully-refunded member is treated as having paid
-// (and is kept), erring toward preserving data — deletion is irreversible.
+// recorded for the member. A fully-refunded member is treated as having paid.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import {
-  membershipRemovedStaffEmail,
+  neverPaidCancelledStaffEmail,
   getTransactionalEmailHeaders,
   PORTAL_FROM,
   PORTAL_REPLY_TO,
@@ -35,6 +39,8 @@ export interface RemovableMember {
   office_number: string | null;
   application_id: string | null;
   stripe_subscription_id: string | null;
+  status?: string;
+  cancellation_effective_date?: string | null;
 }
 
 // Has this member ever actually paid? True if any payment_history row records a
@@ -53,17 +59,110 @@ export async function memberHasEverPaid(
     .limit(1);
   if (error) {
     // Fail safe: if we can't tell, assume they paid so we never delete a member
-    // we shouldn't. The caller will fall back to the normal cancel flow.
+    // we shouldn't.
     console.error('memberHasEverPaid lookup failed for', memberId, error);
     return true;
   }
   return !!(data && data.length > 0);
 }
 
-// Best-effort cancel of any Stripe subscription attached to a never-paid
-// member before we delete them locally. A never-paid member usually has no
-// live subscription, but if subscription creation succeeded and no invoice
-// ever cleared, we still want it stopped in Stripe so it can't bill later.
+async function loadApplication(
+  sb: SupabaseClient<any, any, any>,
+  applicationId: string | null,
+): Promise<{ wants_trial_day?: boolean | null; trial_date?: string | null; payload?: Record<string, unknown> | null } | null> {
+  if (!applicationId) return null;
+  const { data } = await sb
+    .from('member_applications')
+    .select('wants_trial_day, trial_date, payload')
+    .eq('id', applicationId)
+    .maybeSingle();
+  return data ?? null;
+}
+
+async function notifyStaffOfNeverPaidCancellation(opts: {
+  member: RemovableMember;
+  cancelledBy: 'member' | 'admin';
+  application: { wants_trial_day?: boolean | null; trial_date?: string | null; payload?: Record<string, unknown> | null } | null;
+}): Promise<void> {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY not set — skipping never-paid cancellation staff email');
+    return;
+  }
+  const { member, cancelledBy, application } = opts;
+  const designationLabel = member.designation
+    ? DESIGNATION_LABELS[member.designation as keyof typeof DESIGNATION_LABELS] ?? null
+    : null;
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const tpl = neverPaidCancelledStaffEmail({
+      firstName: member.first_name,
+      lastName: member.last_name,
+      email: member.email,
+      companyName: member.company_name,
+      designationLabel,
+      deskNumber: member.desk_number,
+      officeNumber: member.office_number,
+      cancelledBy,
+      wasTrialApplicant: readTrialFlag(application),
+      trialDate: readTrialDate(application),
+    });
+    await resend.emails.send({
+      from: PORTAL_FROM,
+      to: STAFF_NOTIFICATION_EMAILS,
+      replyTo: PORTAL_REPLY_TO,
+      subject: tpl.subject,
+      html: tpl.html,
+      text: tpl.text,
+      headers: getTransactionalEmailHeaders(),
+    });
+  } catch (e) {
+    // Never let a mail failure block the cancellation itself.
+    console.error('Failed to send never-paid cancellation staff notification', member.id, e);
+  }
+}
+
+/**
+ * Mark a never-paid member's signup as cancelled (member- or admin-initiated)
+ * and notify staff. The member is KEPT in the system as a cancelled row — an
+ * admin can later permanently delete them with {@link deleteMemberCompletely}.
+ *
+ * Idempotent: if the member is already cancelled, this is a no-op and does not
+ * re-notify staff (so repeated clicks on the email link don't re-send).
+ */
+export async function cancelNeverPaidMember(opts: {
+  sb: SupabaseClient<any, any, any>;
+  member: RemovableMember;
+  cancelledBy: 'member' | 'admin';
+}): Promise<{ alreadyCancelled: boolean }> {
+  const { sb, member, cancelledBy } = opts;
+
+  if (member.status === 'cancelled') {
+    return { alreadyCancelled: true };
+  }
+
+  const nowIso = new Date().toISOString();
+  // Never-paid members have no billing period, so cancellation is effective
+  // immediately (today).
+  const todayIso = nowIso.slice(0, 10);
+  await sb
+    .from('members')
+    .update({
+      status: 'cancelled',
+      cancellation_notice_received_at: nowIso,
+      cancellation_effective_date: member.cancellation_effective_date ?? todayIso,
+    })
+    .eq('id', member.id);
+
+  const application = await loadApplication(sb, member.application_id);
+  await notifyStaffOfNeverPaidCancellation({ member, cancelledBy, application });
+
+  return { alreadyCancelled: false };
+}
+
+// Best-effort cancel of any Stripe subscription attached to a member before we
+// delete them. A never-paid member usually has no live subscription, but if
+// subscription creation succeeded and no invoice ever cleared, we still want it
+// stopped in Stripe so it can't bill later.
 async function cancelStripeSubscriptionBestEffort(
   subscriptionId: string | null,
 ): Promise<void> {
@@ -79,14 +178,16 @@ async function cancelStripeSubscriptionBestEffort(
   }
 }
 
-// Permanently delete a member and everything tied to them. Order matters:
-//   1. Storage objects (not covered by SQL cascades).
-//   2. Linked applications + payment_history (their FKs are ON DELETE SET NULL,
-//      so without this they'd be orphaned, not removed).
-//   3. The member row (cascades documents, agreements, access-code requests,
-//      flex bookings, subscription-creation-failure rows).
-//   4. The auth.users login (frees the email for reuse).
-async function hardDeleteMember(
+/**
+ * Permanently delete a member and everything tied to them. Order matters:
+ *   1. Storage objects (not covered by SQL cascades).
+ *   2. Linked applications + payment_history (their FKs are ON DELETE SET NULL,
+ *      so without this they'd be orphaned, not removed).
+ *   3. The member row (cascades documents, agreements, access-code requests,
+ *      flex bookings, subscription-creation-failure rows).
+ *   4. The auth.users login (frees the email for reuse).
+ */
+export async function hardDeleteMember(
   sb: SupabaseClient<any, any, any>,
   member: RemovableMember,
 ): Promise<void> {
@@ -107,8 +208,6 @@ async function hardDeleteMember(
   }
 
   // 2. Delete rows whose FK would otherwise null-orphan instead of cascade.
-  //    Applications can be linked either by the member's application_id or by
-  //    member_id on the application; clear both.
   try {
     await sb.from('payment_history').delete().eq('member_id', member.id);
   } catch (e) {
@@ -139,80 +238,16 @@ async function hardDeleteMember(
   }
 }
 
-async function notifyStaffOfRemoval(opts: {
-  member: RemovableMember;
-  cancelledBy: 'member' | 'admin';
-  application: { wants_trial_day?: boolean | null; trial_date?: string | null; payload?: Record<string, unknown> | null } | null;
-}): Promise<void> {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY not set — skipping member-removed staff email');
-    return;
-  }
-  const { member, cancelledBy, application } = opts;
-  const designationLabel = member.designation
-    ? DESIGNATION_LABELS[member.designation as keyof typeof DESIGNATION_LABELS] ?? null
-    : null;
-  try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const tpl = membershipRemovedStaffEmail({
-      firstName: member.first_name,
-      lastName: member.last_name,
-      email: member.email,
-      companyName: member.company_name,
-      designationLabel,
-      deskNumber: member.desk_number,
-      officeNumber: member.office_number,
-      cancelledBy,
-      wasTrialApplicant: readTrialFlag(application),
-      trialDate: readTrialDate(application),
-    });
-    await resend.emails.send({
-      from: PORTAL_FROM,
-      to: STAFF_NOTIFICATION_EMAILS,
-      replyTo: PORTAL_REPLY_TO,
-      subject: tpl.subject,
-      html: tpl.html,
-      text: tpl.text,
-      headers: getTransactionalEmailHeaders(),
-    });
-  } catch (e) {
-    // Never let a mail failure block the removal itself.
-    console.error('Failed to send member-removed staff notification', member.id, e);
-  }
-}
-
 /**
- * Remove a never-paid member as part of a cancellation: stop any stray Stripe
- * subscription, email staff so they're aware, then hard-delete the member and
- * all their data.
- *
- * Callers should only invoke this after confirming the member has never paid
- * (via {@link memberHasEverPaid}); paid members must go through the normal
- * cancellation wind-down instead.
+ * Admin-only: permanently delete a member. Stops any stray Stripe subscription
+ * first, then hard-deletes. No staff email — staff were already notified at
+ * cancellation time, and the admin is performing this deliberately.
  */
-export async function removeUnpaidMember(opts: {
+export async function deleteMemberCompletely(opts: {
   sb: SupabaseClient<any, any, any>;
   member: RemovableMember;
-  cancelledBy: 'member' | 'admin';
 }): Promise<void> {
-  const { sb, member, cancelledBy } = opts;
-
-  // Pull the linked application so the staff email can note "trial-day signup"
-  // before we delete it.
-  let application:
-    | { wants_trial_day?: boolean | null; trial_date?: string | null; payload?: Record<string, unknown> | null }
-    | null = null;
-  if (member.application_id) {
-    const { data } = await sb
-      .from('member_applications')
-      .select('wants_trial_day, trial_date, payload')
-      .eq('id', member.application_id)
-      .maybeSingle();
-    application = data ?? null;
-  }
-
+  const { sb, member } = opts;
   await cancelStripeSubscriptionBestEffort(member.stripe_subscription_id);
-  // Notify staff before deletion so the email is built from live data.
-  await notifyStaffOfRemoval({ member, cancelledBy, application });
   await hardDeleteMember(sb, member);
 }

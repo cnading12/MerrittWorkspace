@@ -653,12 +653,11 @@ export function membershipCancelledStaffEmail(opts: {
 }
 
 // Staff-facing notification that a never-paid member (e.g. a trial-day signup)
-// cancelled before completing onboarding and has been REMOVED from the system
-// entirely. Unlike the cancellation notice above, there's no Stripe wind-down,
-// final-month credit, or future end date — the record is gone — so the team is
-// told only what they need for offboarding (free the seat, recover any access
-// device) and for their own awareness that someone dropped off.
-export function membershipRemovedStaffEmail(opts: {
+// cancelled before ever paying. The member is KEPT in the admin panel marked
+// "cancelled" so the team can see who dropped off; an admin can permanently
+// delete them there when ready. There's no Stripe wind-down or final-month
+// credit (no payment was ever collected).
+export function neverPaidCancelledStaffEmail(opts: {
   firstName: string;
   lastName: string;
   email: string;
@@ -688,12 +687,12 @@ export function membershipRemovedStaffEmail(opts: {
     ? `Trial-day signup${opts.trialDate ? ` (${opts.trialDate})` : ''}`
     : 'Did not complete signup';
   return {
-    subject: `Signup cancelled & removed - ${opts.firstName} ${opts.lastName}`,
+    subject: `Signup cancelled - ${opts.firstName} ${opts.lastName}`,
     html: shell({
-      title: 'Signup Cancelled & Removed',
-      tagline: 'A never-paid member dropped off and was removed',
+      title: 'Signup Cancelled',
+      tagline: 'A never-paid member cancelled before signing up',
       body: `
-        <p><strong>${opts.firstName} ${opts.lastName}</strong> (${opts.email}) cancelled before paying, so their record has been <strong>removed from the system</strong>. Cancellation was initiated by ${initiatedBy}.</p>
+        <p><strong>${opts.firstName} ${opts.lastName}</strong> (${opts.email}) cancelled before ever paying. Cancellation was initiated by ${initiatedBy}.</p>
         <div class="info-card">
           <p style="margin:0 0 6px;"><strong>Member:</strong> ${opts.firstName} ${opts.lastName}${opts.companyName ? ` — ${opts.companyName}` : ''}</p>
           <p style="margin:0 0 6px;"><strong>Email:</strong> ${opts.email}</p>
@@ -702,12 +701,12 @@ export function membershipRemovedStaffEmail(opts: {
           <p style="margin:0;">${seatLine}</p>
         </div>
         <div class="highlight">
-          <p style="margin:0;">No payment was ever collected and no Stripe wind-down is needed. They will no longer appear in the admin panel or receive onboarding emails. If they had a tentative desk/office or any building access, please free it up. This is just so you're not left in the dark — no action is required if nothing was assigned.</p>
+          <p style="margin:0;">No payment was ever collected, so there's no Stripe wind-down. They now appear in the admin panel marked <strong>cancelled</strong> and will no longer receive onboarding reminder emails. When you're ready, an admin can permanently delete them from the admin panel to fully remove them. If they had a tentative desk/office, it has been freed.</p>
         </div>
       `,
     }),
     text: [
-      `${opts.firstName} ${opts.lastName} (${opts.email}) cancelled before paying, so their record has been removed from the system. Cancellation was initiated by ${initiatedBy}.`,
+      `${opts.firstName} ${opts.lastName} (${opts.email}) cancelled before ever paying. Cancellation was initiated by ${initiatedBy}.`,
       '',
       `Member:     ${opts.firstName} ${opts.lastName}${opts.companyName ? ` — ${opts.companyName}` : ''}`,
       `Email:      ${opts.email}`,
@@ -715,7 +714,7 @@ export function membershipRemovedStaffEmail(opts: {
       `Status:     ${trialLine}`,
       seatText,
       '',
-      'No payment was ever collected and no Stripe wind-down is needed. They will no longer appear in the admin panel or receive onboarding emails. If they had a tentative desk/office or any building access, please free it up. This is just so you are not left in the dark — no action is required if nothing was assigned.',
+      'No payment was ever collected, so there is no Stripe wind-down. They now appear in the admin panel marked cancelled and will no longer receive onboarding reminder emails. When you are ready, an admin can permanently delete them from the admin panel to fully remove them.',
     ]
       .filter(Boolean)
       .join('\n'),

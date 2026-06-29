@@ -135,11 +135,22 @@ function makeSupabase(store: ReturnType<typeof makeStore>) {
       },
     };
   }
+  function updateBuilder(table: string, fields: any) {
+    return {
+      eq(col: string, val: any) {
+        tableRows(table).forEach((r) => {
+          if (r[col] === val) Object.assign(r, fields);
+        });
+        return Promise.resolve({ data: null, error: null });
+      },
+    };
+  }
   return {
     from(table: string) {
       return {
         select: () => selectBuilder(table),
         delete: () => deleteBuilder(table),
+        update: (fields: any) => updateBuilder(table, fields),
       };
     },
     storage: {
@@ -165,7 +176,8 @@ function makeSupabase(store: ReturnType<typeof makeStore>) {
 
 import {
   memberHasEverPaid,
-  removeUnpaidMember,
+  cancelNeverPaidMember,
+  deleteMemberCompletely,
 } from '@/lib/portal/memberRemoval';
 
 describe('memberHasEverPaid', () => {
@@ -207,17 +219,48 @@ describe('memberHasEverPaid', () => {
   });
 });
 
-describe('removeUnpaidMember', () => {
+describe('cancelNeverPaidMember', () => {
+  it('marks the member cancelled and KEEPS them (no deletion)', async () => {
+    const store = makeStore();
+    const sb = makeSupabase(store);
+
+    const result = await cancelNeverPaidMember({
+      sb,
+      member: store.members[0],
+      cancelledBy: 'member',
+    });
+
+    expect(result.alreadyCancelled).toBe(false);
+    // Still present, now cancelled — nothing deleted.
+    expect(store.members).toHaveLength(1);
+    expect(store.members[0].status).toBe('cancelled');
+    expect(store.members[0].cancellation_effective_date).toBeTruthy();
+    expect(store.member_applications).toHaveLength(1);
+    expect(store.deletedUsers).toEqual([]);
+  });
+
+  it('is a no-op when already cancelled', async () => {
+    const store = makeStore();
+    store.members[0].status = 'cancelled';
+    const sb = makeSupabase(store);
+
+    const result = await cancelNeverPaidMember({
+      sb,
+      member: store.members[0],
+      cancelledBy: 'admin',
+    });
+    expect(result.alreadyCancelled).toBe(true);
+    expect(store.members).toHaveLength(1);
+  });
+});
+
+describe('deleteMemberCompletely', () => {
   it('hard-deletes the member, their docs, application, payments, and login', async () => {
     const store = makeStore();
     store.payment_history.push({ member_id: 'm-1', status: 'failed', amount_cents: 50000 });
     const sb = makeSupabase(store);
 
-    await removeUnpaidMember({
-      sb,
-      member: store.members[0],
-      cancelledBy: 'admin',
-    });
+    await deleteMemberCompletely({ sb, member: store.members[0] });
 
     expect(store.members).toHaveLength(0);
     expect(store.member_applications).toHaveLength(0);
