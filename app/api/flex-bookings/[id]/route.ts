@@ -43,12 +43,18 @@ export async function DELETE(
       return NextResponse.json({ booking });
     }
 
-    const flexId = process.env.FLEX_CALENDAR_ID;
-    if (booking.google_event_id && flexId) {
+    // Delete the event from whichever calendar it was created on. Newer
+    // bookings record this on the row (the wellness calendar); legacy rows
+    // predate that column and live on the old flex calendar.
+    const eventCalendarId =
+      booking.google_calendar_id ||
+      process.env.WELLNESS_CALENDAR_ID ||
+      process.env.FLEX_CALENDAR_ID;
+    if (booking.google_event_id && eventCalendarId) {
       try {
         const auth = getGoogleAuth();
         await google.calendar({ version: 'v3', auth }).events.delete({
-          calendarId: flexId,
+          calendarId: eventCalendarId,
           eventId: booking.google_event_id,
           sendUpdates: 'none',
         });
