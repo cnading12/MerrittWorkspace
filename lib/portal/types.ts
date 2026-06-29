@@ -129,6 +129,18 @@ export interface AccessCodeRequest {
   notes: string | null;
 }
 
+// One manually-entered seat occupant for the admin seating chart. The other
+// occupancy source is the members table itself (desk_number/office_number).
+export interface SeatingManualAssignment {
+  id: string;
+  space_type: 'desk' | 'office';
+  space_number: string;
+  occupant_name: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PaymentHistoryRow {
   id: string;
   member_id: string | null;

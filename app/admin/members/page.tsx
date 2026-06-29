@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import type { Member } from '@/lib/portal/types';
 import { DESIGNATION_LABELS } from '@/lib/portal/types';
 import { shouldShowTrialBadge } from '@/lib/portal/trial';
+import SeatingChart from './SeatingChart';
 import {
   compareMembersByPriority,
   formatAppliedAgo,
@@ -306,6 +307,7 @@ export default function AdminMembersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <SeatingChart members={members} token={token} />
           <input
             type="text"
             placeholder="Search name or email…"
