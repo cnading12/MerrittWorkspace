@@ -83,6 +83,24 @@ function unauthReq(method = 'POST') {
 
 beforeEach(() => resetState());
 
+describe('isMissingArchivedColumnError', () => {
+  it('detects the Postgres undefined-column error (42703)', async () => {
+    const { isMissingArchivedColumnError } = await import('@/lib/portal/archive');
+    expect(isMissingArchivedColumnError({ code: '42703' })).toBe(true);
+    expect(
+      isMissingArchivedColumnError({
+        message: 'column members.archived_at does not exist',
+      })
+    ).toBe(true);
+  });
+
+  it('ignores unrelated errors and null', async () => {
+    const { isMissingArchivedColumnError } = await import('@/lib/portal/archive');
+    expect(isMissingArchivedColumnError(null)).toBe(false);
+    expect(isMissingArchivedColumnError({ code: '23505', message: 'duplicate key' })).toBe(false);
+  });
+});
+
 describe('member archive (POST)', () => {
   it('archives a cancelled member, stamping archived_at + archived_by and freeing the seat', async () => {
     const res = await archive(authReq(), params);

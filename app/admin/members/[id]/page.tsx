@@ -418,6 +418,13 @@ export default function AdminMemberDetailPage({
   if (!data) return null;
 
   const { member, application, documents, payments, agreements } = data;
+  // Mirrors the server rule in memberRemoval.ts: a member with no successful
+  // (or refunded) charge has never paid. Cancelling such a member hard-deletes
+  // them (trial-day / never-signed-up cleanup) rather than scheduling a Stripe
+  // wind-down, so we label the action "Remove member" to make that clear.
+  const everPaid = payments.some(
+    (p) => p.status === 'succeeded' || p.status === 'refunded'
+  );
 
   return (
     <div className="space-y-6">
@@ -550,10 +557,18 @@ export default function AdminMemberDetailPage({
         ) : (
           <button
             onClick={cancelMembership}
-            className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 text-red-600"
-            title="Stop the member's Stripe subscription, apply the Last Month's Fee credit, and schedule cancel at end of next calendar month"
+            className={
+              everPaid
+                ? 'text-sm border rounded px-3 py-1.5 hover:bg-gray-50 text-red-600'
+                : 'text-sm border border-red-600 bg-red-600 text-white rounded px-3 py-1.5 hover:bg-red-700 font-medium'
+            }
+            title={
+              everPaid
+                ? "Stop the member's Stripe subscription, apply the Last Month's Fee credit, and schedule cancel at end of next calendar month"
+                : 'This member never paid (e.g. a trial-day signup). Removing permanently deletes their record, login, documents, and application, and emails staff.'
+            }
           >
-            Cancel membership
+            {everPaid ? 'Cancel membership' : 'Remove member (never paid)'}
           </button>
         )}
         {member.archived_at ? (
