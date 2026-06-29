@@ -179,14 +179,18 @@ export default function FlexSpacePage() {
 
   const remainingMinutes = Math.max(0, allowedMinutes - usedMinutes);
   const todayIso = new Date().toISOString().slice(0, 10);
+  // Members can book at most 60 days out (enforced server-side too).
+  const maxDateIso = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-semibold text-gray-900">Flex Space</h1>
         <p className="text-sm text-gray-500">
-          Reserve the church building for up to 4 hours per week. Available
-          weekdays 9:00 AM – 4:30 PM Mountain Time.
+          Reserve the church building for up to 4 hours per week, up to 60 days
+          in advance. Available weekdays 9:00 AM – 4:30 PM Mountain Time.
         </p>
       </header>
 
@@ -249,6 +253,7 @@ export default function FlexSpacePage() {
               type="date"
               required
               min={todayIso}
+              max={maxDateIso}
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="mt-1 w-full border rounded px-3 py-2 text-base"

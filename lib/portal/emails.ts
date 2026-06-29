@@ -422,6 +422,68 @@ export function flexBookingConfirmedEmail(opts: {
   };
 }
 
+// Staff-facing notification that a coworking member reserved the shared flex /
+// wellness space. Goes out alongside the member's confirmation so whoever
+// manages the wellness calendar sees the booking immediately and can spot any
+// conflict with a wellness reservation.
+export function flexBookingStaffEmail(opts: {
+  memberName: string;
+  memberEmail: string;
+  eventTitle: string;
+  startLocal: string;
+  endLocal: string;
+  durationMinutes: number;
+  bookingId: string;
+}) {
+  const fmtHours = (m: number) => {
+    const hrs = m / 60;
+    return Number.isInteger(hrs) ? `${hrs}` : hrs.toFixed(1);
+  };
+  const dur = fmtHours(opts.durationMinutes);
+  const safeTitle = escapeHtml(opts.eventTitle);
+  const safeName = escapeHtml(opts.memberName);
+
+  return {
+    subject: `Flex space booked - ${opts.memberName} - ${opts.startLocal}`,
+    html: shell({
+      title: 'Flex Space Booked',
+      tagline: 'A coworking member reserved the shared space',
+      body: `
+        <p>A coworking member has reserved the flex / wellness space. This event has been added to the <strong>wellness calendar</strong>.</p>
+        <div class="info-card">
+          <h3 style="margin-top:0;">Booking</h3>
+          <p><strong>Member:</strong> ${safeName} &lt;${escapeHtml(opts.memberEmail)}&gt;</p>
+          <p><strong>Event:</strong> ${safeTitle}</p>
+          <p><strong>Starts:</strong> ${opts.startLocal}</p>
+          <p><strong>Ends:</strong> ${opts.endLocal}</p>
+          <p><strong>Duration:</strong> ${dur} hour${dur === '1' ? '' : 's'}</p>
+          <p style="margin:0;"><strong>Booking ID:</strong> ${escapeHtml(opts.bookingId)}</p>
+        </div>
+        <div class="highlight">
+          <p style="margin:0;">This reservation was checked against the wellness calendar before it was created, so it should not conflict with any existing wellness booking. It is labeled <strong>[Coworking Member]</strong> on the calendar to distinguish it from wellness reservations.</p>
+        </div>
+      `,
+    }),
+    text: [
+      'A coworking member has reserved the flex / wellness space. This event has been added to the wellness calendar.',
+      '',
+      `Member:     ${opts.memberName} <${opts.memberEmail}>`,
+      `Event:      ${opts.eventTitle}`,
+      `Starts:     ${opts.startLocal}`,
+      `Ends:       ${opts.endLocal}`,
+      `Duration:   ${dur} hour${dur === '1' ? '' : 's'}`,
+      `Booking ID: ${opts.bookingId}`,
+      '',
+      'This reservation was checked against the wellness calendar before it was created, so it should not conflict with any existing wellness booking. It is labeled [Coworking Member] on the calendar to distinguish it from wellness reservations.',
+      '',
+      '--',
+      'Merritt Workspace',
+      '2246 Irving Street, Denver, CO 80211',
+      'memberservices@merrittworkspace.net',
+    ].join('\n'),
+  };
+}
+
 export function accessCodeRequestedAdminEmail(opts: {
   firstName: string;
   lastName: string;

@@ -2,14 +2,17 @@
 //
 // Flow:
 //   1. Validate the proposed window (within Mon–Fri 9:00–16:30 MT, future,
-//      30 min – 4 hr).
+//      no more than 60 days out, 30 min – 4 hr).
 //   2. Confirm the member is still under their 4-hour weekly cap.
-//   3. Ask Google freebusy whether the wellness or flex calendars are
+//   3. Ask Google freebusy whether the wellness or legacy flex calendars are
 //      already busy.
-//   4. Insert a pending row, then create the Google Calendar event. If the
-//      calendar write fails we delete the pending row so the weekly-hours
-//      math stays accurate.
-//   5. Mark the row confirmed with the event id and send a Resend email.
+//   4. Insert a pending row, then create the Google Calendar event directly on
+//      the shared wellness calendar (labeled "[Coworking Member]" so wellness
+//      staff can tell it apart from a wellness reservation). If the calendar
+//      write fails we delete the pending row so the weekly-hours math stays
+//      accurate.
+//   5. Mark the row confirmed with the event id + calendar id, then send Resend
+//      confirmation emails to both the member and staff.
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { Resend } from 'resend';
@@ -19,9 +22,11 @@ import { checkFreebusy } from '@/lib/calendar/freebusy';
 import { getWeeklyMinutes } from '@/lib/bookings/weekly-hours';
 import {
   flexBookingConfirmedEmail,
+  flexBookingStaffEmail,
   getTransactionalEmailHeaders,
   PORTAL_FROM,
   PORTAL_REPLY_TO,
+  STAFF_NOTIFICATION_EMAILS,
 } from '@/lib/portal/emails';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +36,12 @@ const MAX_WEEKLY_MINUTES = 240;
 const MIN_BOOKING_MINUTES = 30;
 const MAX_BOOKING_MINUTES = 240;
 const MAX_EVENT_TITLE_LENGTH = 120;
+// Members can reserve the space at most this far in advance.
+const MAX_ADVANCE_DAYS = 60;
+const MAX_ADVANCE_MS = MAX_ADVANCE_DAYS * 24 * 60 * 60 * 1000;
+// Google Calendar colorId used to make coworking flex reservations visually
+// distinct from wellness bookings on the shared calendar (6 = Tangerine).
+const COWORKING_EVENT_COLOR_ID = '6';
 
 // Flex hours: weekdays 9:00 AM – 4:30 PM Mountain Time.
 const FLEX_OPEN_MINUTES = 9 * 60;
@@ -123,6 +134,12 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    if (start.getTime() > Date.now() + MAX_ADVANCE_MS) {
+      return NextResponse.json(
+        { error: `Bookings can only be made up to ${MAX_ADVANCE_DAYS} days in advance.` },
+        { status: 400 }
+      );
+    }
 
     const durationMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
     if (
@@ -175,17 +192,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Coworking flex reservations now live directly on the wellness calendar
+    // so they share one source of truth with wellness bookings and can never
+    // silently double-book the space.
     const wellnessId = process.env.WELLNESS_CALENDAR_ID;
     const flexId = process.env.FLEX_CALENDAR_ID;
-    if (!flexId) {
+    if (!wellnessId) {
       return NextResponse.json(
-        { error: 'Server misconfigured: FLEX_CALENDAR_ID missing' },
+        { error: 'Server misconfigured: WELLNESS_CALENDAR_ID missing' },
         { status: 500 }
       );
     }
+    const bookingCalendarId = wellnessId;
 
-    // Conflict check across both calendars.
-    const calendarIds = [flexId, ...(wellnessId ? [wellnessId] : [])];
+    // Conflict check across the wellness calendar (now the source of truth)
+    // plus the legacy flex calendar, so any reservation still living on the
+    // old calendar continues to block overlapping times during the transition.
+    const calendarIds = [wellnessId, ...(flexId ? [flexId] : [])];
     const { busy } = await checkFreebusy(start, end, calendarIds);
     if (busy) {
       return NextResponse.json(
@@ -221,18 +244,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create the Google Calendar event on the flex calendar.
+    // Create the Google Calendar event on the wellness calendar.
     let eventId: string | null = null;
     try {
       const auth = getGoogleAuth();
       const calendar = google.calendar({ version: 'v3', auth });
       const memberLabel = `${member.first_name} ${member.last_name}`.trim();
       const ev = await calendar.events.insert({
-        calendarId: flexId,
+        calendarId: bookingCalendarId,
         requestBody: {
-          summary: `Flex Space — ${eventTitle} (${memberLabel || member.email})`,
+          // "[Coworking Member]" prefix + a distinct color make this clearly
+          // distinguishable from wellness reservations on the shared calendar.
+          summary: `[Coworking Member] ${eventTitle} — ${memberLabel || member.email}`,
+          colorId: COWORKING_EVENT_COLOR_ID,
           description: [
-            'Merritt Workspace flex space reservation.',
+            'Coworking member flex space reservation (booked via the Merritt Workspace member portal).',
             `Event: ${eventTitle}`,
             `Member: ${memberLabel} <${member.email}>`,
             `Booking ID: ${inserted.id}`,
@@ -258,7 +284,11 @@ export async function POST(req: NextRequest) {
 
     const { data: confirmed, error: updateErr } = await sb
       .from('flex_bookings')
-      .update({ google_event_id: eventId, status: 'confirmed' })
+      .update({
+        google_event_id: eventId,
+        google_calendar_id: bookingCalendarId,
+        status: 'confirmed',
+      })
       .eq('id', inserted.id)
       .select('*')
       .single();
@@ -269,7 +299,7 @@ export async function POST(req: NextRequest) {
       try {
         const auth = getGoogleAuth();
         await google.calendar({ version: 'v3', auth }).events.delete({
-          calendarId: flexId,
+          calendarId: bookingCalendarId,
           eventId: eventId!,
           sendUpdates: 'none',
         });
@@ -298,6 +328,10 @@ export async function POST(req: NextRequest) {
           cancelUrl: `${baseUrl}/portal/flex-space`,
         });
         const resend = new Resend(process.env.RESEND_API_KEY);
+        const memberLabel =
+          `${member.first_name} ${member.last_name}`.trim() || member.email;
+
+        // Client confirmation.
         await resend.emails.send({
           from: PORTAL_FROM,
           to: member.email,
@@ -307,6 +341,28 @@ export async function POST(req: NextRequest) {
           text: tpl.text,
           headers: getTransactionalEmailHeaders(),
           tags: [{ name: 'category', value: 'flex_booking_confirmation' }],
+        });
+
+        // Staff notification — so whoever manages the wellness calendar sees
+        // the coworking reservation right away.
+        const staffTpl = flexBookingStaffEmail({
+          memberName: memberLabel,
+          memberEmail: member.email,
+          eventTitle,
+          startLocal: formatLocal(start),
+          endLocal: formatLocal(end),
+          durationMinutes,
+          bookingId: confirmed.id,
+        });
+        await resend.emails.send({
+          from: PORTAL_FROM,
+          to: STAFF_NOTIFICATION_EMAILS,
+          replyTo: PORTAL_REPLY_TO,
+          subject: staffTpl.subject,
+          html: staffTpl.html,
+          text: staffTpl.text,
+          headers: getTransactionalEmailHeaders(),
+          tags: [{ name: 'category', value: 'flex_booking_staff_notification' }],
         });
       } catch (e) {
         console.error('flex booking email failed', e);
