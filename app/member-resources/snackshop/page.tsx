@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from 'react';
-import { ShoppingCart, Coffee, Cookie, Zap, CheckCircle, AlertCircle, Loader2, Plus, Minus, CreditCard } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { ShoppingCart, Coffee, Cookie, Zap, CheckCircle, AlertCircle, Loader2, Plus, Minus, CreditCard, User, Sparkles } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
+import { SNACK_PRODUCTS } from '@/lib/snackshop/products';
 
 interface OrderForm {
     customer_name: string;
@@ -19,28 +22,18 @@ interface CartItem {
     quantity: number;
 }
 
-// Static product data - no database needed
-const PRODUCTS = [
-    // Beverages
-    { id: '1', name: 'Celsius Energy Drink', price: 2.50, category: 'beverages', image: '/images/snackshop/drinks/celsius.avif' },
-    { id: '2', name: 'Chocolate Milk', price: 3.00, category: 'beverages', image: '/images/snackshop/drinks/chocolate-milk.webp' },
-    { id: '3', name: 'IZZE Sparkling Juice', price: 2.25, category: 'beverages', image: '/images/snackshop/drinks/izze.avif' },
-    { id: '4', name: 'Naked Smoothie', price: 3.50, category: 'beverages', image: '/images/snackshop/drinks/naked.avif' },
-    { id: '5', name: 'Premium Soda', price: 2.00, category: 'beverages', image: '/images/snackshop/drinks/soda.avif' },
-    { id: '6', name: 'Herbal Tea', price: 1.50, category: 'beverages', image: '/images/snackshop/drinks/tea.avif' },
-    { id: '7', name: 'Spring Water', price: 3.00, category: 'beverages', image: '/images/snackshop/drinks/Water.webp' },
-    // Snacks
-    { id: '8', name: 'CLIF Energy Bar', price: 2.75, category: 'snacks', image: '/images/snackshop/snacks/cliff.avif' },
-    { id: '9', name: 'KIND Nut Bar', price: 2.50, category: 'snacks', image: '/images/snackshop/snacks/kind.avif' },
-    { id: '10', name: 'Nature Valley Granola Bar', price: 1.75, category: 'snacks', image: '/images/snackshop/snacks/nature-valley.avif' },
-    { id: '11', name: 'Trail Mix', price: 3.25, category: 'snacks', image: '/images/snackshop/snacks/trail-mix.avif' },
-    // Meals
-    { id: '12', name: 'Cereal Bowl', price: 3.50, category: 'meals', image: '/images/snackshop/soup/cereal.avif' },
-    { id: '13', name: 'Instant Oatmeal', price: 2.75, category: 'meals', image: '/images/snackshop/soup/oatmeal.avif' },
-    { id: '14', name: 'Quaker Instant Meal', price: 3.00, category: 'meals', image: '/images/snackshop/soup/quaker.avif' },
-    { id: '15', name: 'Instant Ramen', price: 2.25, category: 'meals', image: '/images/snackshop/soup/ramen.avif' },
-    { id: '16', name: 'Kraft Mac n Cheese Bowl', price: 2.50, category: 'meals', image: '/images/snackshop/soup/Mac n cheese.jpeg' },
-];
+// Lightweight view of the signed-in member, loaded from /api/portal/me.
+interface MemberLite {
+    first_name: string | null;
+    last_name: string | null;
+    email: string;
+    office_number: string | null;
+    desk_number: string | null;
+}
+
+// Product catalog comes from the shared module so the prices the storefront
+// shows always match what the server charges. See lib/snackshop/products.ts.
+const PRODUCTS = SNACK_PRODUCTS;
 
 const CATEGORIES = [
     { value: 'all', label: 'All Items', icon: ShoppingCart },
@@ -62,6 +55,42 @@ export default function SimpleSnackshopPage() {
         office_number: '',
         notes: ''
     });
+
+    // Member context (null = guest). When signed in, name/email/office are
+    // pulled from the member's profile so they never re-enter them.
+    const [member, setMember] = useState<MemberLite | null>(null);
+    const [token, setToken] = useState<string | null>(null);
+
+    const memberHasLocation = Boolean(member?.office_number || member?.desk_number);
+
+    // On mount, detect a portal session and prefill from the member profile.
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) return;
+                const res = await fetch('/api/portal/me', {
+                    headers: { Authorization: `Bearer ${session.access_token}` },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!mounted || !data?.member) return;
+                const m: MemberLite = data.member;
+                setMember(m);
+                setToken(session.access_token);
+                setOrderForm(prev => ({
+                    ...prev,
+                    customer_name: `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim(),
+                    customer_email: m.email ?? '',
+                    office_number: m.office_number || m.desk_number || '',
+                }));
+            } catch {
+                // Treat any failure as a guest — the guest flow always works.
+            }
+        })();
+        return () => { mounted = false; };
+    }, []);
 
     const filteredProducts = PRODUCTS.filter(product =>
         selectedCategory === 'all' || product.category === selectedCategory
@@ -154,7 +183,79 @@ export default function SimpleSnackshopPage() {
         return cart.reduce((total, item) => total + item.quantity, 0);
     };
 
-    const handlePayWithCard = async () => {
+    // Entry point for the "Pay" button. Members charge their saved card in one
+    // click; guests use the hosted Stripe Checkout exactly as before.
+    const handlePay = () => {
+        if (member) {
+            handleMemberPay();
+        } else {
+            startHostedCheckout(false);
+        }
+    };
+
+    // One-click checkout for signed-in members. Falls back to hosted Checkout
+    // when the member has no saved card yet or the bank requires auth.
+    const handleMemberPay = async () => {
+        if (cart.length === 0) {
+            setError('Please select at least one item');
+            return;
+        }
+        if (!memberHasLocation && !orderForm.office_number.trim()) {
+            setError('Please enter your office or desk number for pickup.');
+            return;
+        }
+
+        setSubmitting(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const response = await fetch('/api/snackshop/member-checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    cart_items: cart.map(i => ({ id: i.id, quantity: i.quantity })),
+                    office_number: orderForm.office_number.trim(),
+                    notes: orderForm.notes.trim(),
+                }),
+            });
+
+            const result = await response.json();
+
+            // No card on file yet, or the bank wants authentication: send them
+            // to hosted Checkout, which saves the card for next time.
+            if (result?.requires_setup || result?.requires_action) {
+                await startHostedCheckout(true);
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(result?.error || 'Payment failed');
+            }
+
+            if (result?.success) {
+                const total = (result.total_cents / 100).toFixed(2);
+                setSuccess(
+                    `Paid $${total} with your card on file. Order ${result.order_id} is ready for pickup in the kitchen — a receipt is on its way to your email.`
+                );
+                setCart([]);
+                if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        } catch (error: any) {
+            console.error('❌ Member payment error:', error);
+            setError(error.message || 'Failed to process payment. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    // Hosted Stripe Checkout. Used for guests (withAuth=false) and as the
+    // member fallback (withAuth=true) — the auth header lets the server attach
+    // the order to the member's Stripe customer and save the card.
+    const startHostedCheckout = async (withAuth: boolean) => {
         if (cart.length === 0) {
             setError('Please select at least one item');
             return;
@@ -180,11 +281,12 @@ export default function SimpleSnackshopPage() {
                 total_amount: calculateTotal()
             };
 
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (withAuth && token) headers['Authorization'] = `Bearer ${token}`;
+
             const response = await fetch('/api/create-checkout-session', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers,
                 body: JSON.stringify(orderData)
             });
 
@@ -195,7 +297,7 @@ export default function SimpleSnackshopPage() {
             }
 
             console.log('✅ Stripe session created, redirecting...');
-            
+
             // Redirect to Stripe Checkout
             if (result.url) {
                 window.location.href = result.url;
@@ -206,7 +308,6 @@ export default function SimpleSnackshopPage() {
         } catch (error: any) {
             console.error('❌ Payment initiation error:', error);
             setError(error.message || 'Failed to initialize payment. Please try again.');
-        } finally {
             setSubmitting(false);
         }
     };
@@ -355,6 +456,36 @@ export default function SimpleSnackshopPage() {
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-24">
                             <h2 className="text-xl font-bold text-gray-900 mb-4">Complete Your Purchase</h2>
 
+                            {/* Guests: nudge them toward the portal (goal: migrate members online). */}
+                            {!member && (
+                                <div className="mb-6 p-4 rounded-lg border border-burnt-orange-200 bg-gradient-to-br from-burnt-orange-50 to-white">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Sparkles className="w-4 h-4 text-burnt-orange-600" />
+                                        <span className="font-semibold text-burnt-orange-900">Members check out in one click</span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-3">
+                                        It&apos;s where all our new members are. Pay with a card on file, skip
+                                        re-typing your name and office, avoid fees, and see every purchase in
+                                        your portal.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        <Link
+                                            href="/portal/login"
+                                            className="text-sm font-medium text-burnt-orange-700 hover:text-burnt-orange-800 underline"
+                                        >
+                                            Member sign in
+                                        </Link>
+                                        <span className="text-gray-300">·</span>
+                                        <Link
+                                            href="/portal/existing-member"
+                                            className="text-sm font-medium text-burnt-orange-700 hover:text-burnt-orange-800 underline"
+                                        >
+                                            Already a member? Move your account online
+                                        </Link>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Cart Items with Quantities */}
                             {cart.length > 0 && (
                                 <div className="mb-6 p-4 bg-burnt-orange-50 rounded-lg">
@@ -375,41 +506,82 @@ export default function SimpleSnackshopPage() {
                             )}
 
                             <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={orderForm.customer_name}
-                                        onChange={(e) => setOrderForm(prev => ({ ...prev, customer_name: e.target.value }))}
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
-                                        placeholder="Enter your full name"
-                                    />
-                                </div>
+                                {member ? (
+                                    <>
+                                        {/* Signed-in member: identity comes from their profile,
+                                            so we don't ask for it again. */}
+                                        <div className="p-4 bg-burnt-orange-50 rounded-lg border border-burnt-orange-200">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <User className="w-4 h-4 text-burnt-orange-600" />
+                                                <span className="font-semibold text-burnt-orange-900">
+                                                    {orderForm.customer_name || member.email}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-burnt-orange-800">{member.email}</p>
+                                            {memberHasLocation && (
+                                                <p className="text-sm text-burnt-orange-800 mt-1">
+                                                    Pickup: <strong>{orderForm.office_number}</strong>
+                                                </p>
+                                            )}
+                                        </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                                    <input
-                                        type="email"
-                                        required
-                                        value={orderForm.customer_email}
-                                        onChange={(e) => setOrderForm(prev => ({ ...prev, customer_email: e.target.value }))}
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
-                                        placeholder="your.email@company.com"
-                                    />
-                                </div>
+                                        {/* Only ask for a location if it's missing from their profile. */}
+                                        {!memberHasLocation && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Office/Desk Number *</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    placeholder="e.g., Office 12 or Desk A4"
+                                                    value={orderForm.office_number}
+                                                    onChange={(e) => setOrderForm(prev => ({ ...prev, office_number: e.target.value }))}
+                                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                                                />
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    We&apos;ll save this to your profile so you won&apos;t be asked again.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={orderForm.customer_name}
+                                                onChange={(e) => setOrderForm(prev => ({ ...prev, customer_name: e.target.value }))}
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                                                placeholder="Enter your full name"
+                                            />
+                                        </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Office/Desk Number *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        placeholder="e.g., Office 12 or Desk A4"
-                                        value={orderForm.office_number}
-                                        onChange={(e) => setOrderForm(prev => ({ ...prev, office_number: e.target.value }))}
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
-                                    />
-                                </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                                            <input
+                                                type="email"
+                                                required
+                                                value={orderForm.customer_email}
+                                                onChange={(e) => setOrderForm(prev => ({ ...prev, customer_email: e.target.value }))}
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                                                placeholder="your.email@company.com"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Office/Desk Number *</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="e.g., Office 12 or Desk A4"
+                                                value={orderForm.office_number}
+                                                onChange={(e) => setOrderForm(prev => ({ ...prev, office_number: e.target.value }))}
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                                            />
+                                        </div>
+                                    </>
+                                )}
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
@@ -424,16 +596,28 @@ export default function SimpleSnackshopPage() {
 
                                 {/* Payment Options */}
                                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-4">
-                                    <h4 className="font-semibold text-blue-800 mb-3">💳 Pay Now</h4>
+                                    <h4 className="font-semibold text-blue-800 mb-3">
+                                        {member ? '⚡ One-Click Checkout' : '💳 Pay Now'}
+                                    </h4>
+                                    {member && (
+                                        <p className="text-xs text-blue-700 mb-3">
+                                            Paid instantly with your card on file — no fees, nothing to re-enter.
+                                            Every purchase shows up in your portal.
+                                        </p>
+                                    )}
                                     <div className="space-y-2">
                                         <button
                                             type="button"
-                                            onClick={() => handlePayWithCard()}
+                                            onClick={() => handlePay()}
                                             disabled={submitting || cart.length === 0}
                                             className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                                         >
-                                            <CreditCard className="w-4 h-4 mr-2" />
-                                            Pay Securely - {cart.length > 0 ? `${calculateTotal().toFixed(2)}` : '$0.00'}
+                                            {submitting ? (
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            ) : (
+                                                <CreditCard className="w-4 h-4 mr-2" />
+                                            )}
+                                            {member ? 'Pay' : 'Pay Securely'} - {cart.length > 0 ? `$${calculateTotal().toFixed(2)}` : '$0.00'}
                                         </button>
                                     </div>
                                 </div>
