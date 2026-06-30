@@ -287,9 +287,17 @@ function PortalDashboard() {
               ` · $${(member.monthly_cost_cents / 100).toFixed(2)}/mo`}
           </p>
         </div>
-        <button onClick={signOut} className="text-sm text-gray-500 hover:text-gray-900">
-          Sign out
-        </button>
+        <div className="flex items-center gap-4">
+          <a
+            href="/portal/activity"
+            className="text-sm font-medium text-burnt-orange-600 hover:text-burnt-orange-700"
+          >
+            My Activity →
+          </a>
+          <button onClick={signOut} className="text-sm text-gray-500 hover:text-gray-900">
+            Sign out
+          </button>
+        </div>
       </div>
 
       <ProgressBar member={member} />
