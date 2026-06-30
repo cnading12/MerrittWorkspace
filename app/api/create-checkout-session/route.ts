@@ -2,10 +2,40 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { getUserFromRequest } from '@/lib/portal/auth';
+import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil', // Updated to latest version
 });
+
+// If the request carries a portal session (Authorization: Bearer <token>),
+// resolve the member so we can attach the order to their Stripe customer and
+// save the card for future one-click checkouts. Returns nulls for guests —
+// the guest checkout flow is completely unchanged.
+async function resolveMemberContext(
+  request: NextRequest,
+): Promise<{ memberId: string | null; stripeCustomerId: string | null }> {
+  try {
+    const user = await getUserFromRequest(request);
+    if (!user) return { memberId: null, stripeCustomerId: null };
+    const sb = getServiceSupabase();
+    const { data: member } = await sb
+      .from('members')
+      .select('id, stripe_customer_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!member) return { memberId: null, stripeCustomerId: null };
+    return {
+      memberId: member.id as string,
+      stripeCustomerId: (member.stripe_customer_id as string | null) ?? null,
+    };
+  } catch (err) {
+    // Never let auth resolution break checkout — fall back to guest behavior.
+    console.error('resolveMemberContext failed, treating as guest:', err);
+    return { memberId: null, stripeCustomerId: null };
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,14 +86,15 @@ export async function POST(request: NextRequest) {
     // Generate a temporary order ID for metadata
     const tempOrderId = `MW${Date.now().toString().slice(-8)}`;
 
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
+    // Resolve member context (guest → all nulls, unchanged flow).
+    const { memberId, stripeCustomerId } = await resolveMemberContext(request);
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/order-confirmation?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/member-resources/snackshop?canceled=true`,
-      customer_email: customer_email,
       metadata: {
         order_type: 'snackshop', // IMPORTANT: Identifies this as a snackshop order for webhook
         order_id: tempOrderId,
@@ -71,7 +102,8 @@ export async function POST(request: NextRequest) {
         customer_email,
         office_number,
         notes: notes || '',
-        cart_items: JSON.stringify(cart_items)
+        cart_items: JSON.stringify(cart_items),
+        ...(memberId ? { member_id: memberId } : {}),
       },
       // Add shipping address collection if needed
       billing_address_collection: 'required',
@@ -81,7 +113,20 @@ export async function POST(request: NextRequest) {
           message: 'Your items will be ready for pickup in the kitchen after payment!'
         }
       }
-    });
+    };
+
+    if (stripeCustomerId) {
+      // Signed-in member without a saved card yet: attach the order to their
+      // Stripe customer and save the card so the next purchase is one-click.
+      sessionParams.customer = stripeCustomerId;
+      sessionParams.payment_intent_data = { setup_future_usage: 'off_session' };
+    } else {
+      // Guest (or member with no Stripe customer): unchanged behavior.
+      sessionParams.customer_email = customer_email;
+    }
+
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     console.log('✅ Stripe session created:', session.id);
 

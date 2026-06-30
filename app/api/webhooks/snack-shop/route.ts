@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import { Resend } from 'resend';
 import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
+import { recordSnackOrder } from '@/lib/snackshop/orders';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
@@ -112,6 +113,32 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       payment_status: 'completed',
       timestamp: new Date().toISOString()
     };
+
+    // Persist the order so it shows up in the member portal history and is
+    // available for reconciliation. Idempotent: a duplicate webhook delivery
+    // is a no-op. Done before emails so the record survives email failures.
+    try {
+      await recordSnackOrder({
+        memberId: session.metadata?.member_id || null,
+        orderNumber: order_id,
+        customerName: customer_name,
+        customerEmail: customer_email,
+        officeNumber: office_number || null,
+        notes: notes || null,
+        items: parsedCartItems,
+        totalCents: session.amount_total ?? Math.round(totalAmount * 100),
+        currency: session.currency || 'usd',
+        paymentMethod: 'card',
+        isMemberOrder: Boolean(session.metadata?.member_id),
+        stripeSessionId: session.id,
+        stripePaymentIntentId:
+          typeof session.payment_intent === 'string' ? session.payment_intent : null,
+        paidAt: new Date().toISOString(),
+      });
+    } catch (dbError) {
+      console.error('⚠️ Failed to persist snackshop order (continuing):', dbError);
+      // Don't throw - emails + Stripe success matter more than the record.
+    }
 
     console.log('📧 Sending confirmation emails for paid snackshop order...');
 
