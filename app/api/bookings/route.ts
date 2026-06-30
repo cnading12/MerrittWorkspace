@@ -1,7 +1,6 @@
 // app/api/bookings/route.ts - FULLY DATABASE-FREE VERSION WITH BETTER ERROR HANDLING
 import { NextRequest, NextResponse } from 'next/server';
 import { googleCalendarAPI } from '@/lib/google-calendar';
-import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,97 +66,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // **MEMBER BOOKING FLOW**
+    // **MEMBER BOOKING FLOW** — now requires portal login.
+    // Free/included member bookings are handled by the authenticated
+    // /api/bookings/member route so membership can be verified and the
+    // monthly included-hours allotment enforced. This public endpoint no
+    // longer issues free bookings to anyone self-selecting "member".
     if (bookingData.is_member_booking === true) {
-      console.log('🎯 Processing MEMBER booking...');
-
-      // Generate booking ID
-      const bookingId = `MH-MEMBER-${Date.now()}`;
-
-      // Create simplified booking object
-      const simplifiedBooking: SimpleBooking = {
-        id: bookingId,
-        room_id: null,
-        customer_name: bookingData.customer_name,
-        customer_email: bookingData.customer_email,
-        booking_date: bookingData.booking_date,
-        start_time: bookingData.start_time,
-        end_time: endTime,
-        duration_hours: bookingData.duration_hours,
-        attendees: bookingData.attendees,
-        purpose: bookingData.purpose || '',
-        total_amount: 0,
-        company: bookingData.company || '',
-        customer_phone: bookingData.customer_phone || '',
-        payment_status: 'completed',
-        status: 'confirmed',
-        confirmation_sent: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        is_member_booking: true
-      };
-
-      // ✅ IMMEDIATELY create Google Calendar event
-      console.log('📅 Creating Google Calendar event for MEMBER booking...');
-      let calendarEventId = null;
-      try {
-        calendarEventId = await googleCalendarAPI.createBookingEvent(simplifiedBooking as any);
-        if (calendarEventId) {
-          console.log('✅ MEMBER BOOKING: Calendar event created:', calendarEventId);
-        } else {
-          throw new Error('Calendar event creation returned null');
-        }
-      } catch (calendarError) {
-        console.error('❌ CRITICAL: Failed to create calendar event:', calendarError);
-        return NextResponse.json(
-          { error: 'Failed to create calendar event. Please try again or contact support.' },
-          { status: 500 }
-        );
-      }
-
-      // Send confirmation emails
-      console.log('📧 Sending confirmation emails...');
-      try {
-        await sendMemberBookingConfirmationEmail({
-          to: bookingData.customer_email,
-          customerName: bookingData.customer_name,
-          booking: simplifiedBooking as any,
-          roomName: 'Conference Room',
-          isMemberBooking: true,
-          memberHoursUsed: bookingData.duration_hours
-        });
-        console.log('✅ MEMBER BOOKING: Confirmation emails sent');
-      } catch (emailError) {
-        console.error('⚠️ Email sending failed:', emailError);
-        // Don't fail the booking if emails fail
-      }
-
-      // Encode booking data for success page
-      const bookingDataEncoded = Buffer.from(JSON.stringify({
-        ...simplifiedBooking,
-        calendar_event_created: true,
-        calendar_event_id: calendarEventId
-      })).toString('base64');
-
-      return NextResponse.json({
-        success: true,
-        redirect_to: `/booking-success/member?data=${bookingDataEncoded}`,
-        booking: {
-          id: bookingId,
-          customer_name: bookingData.customer_name,
-          customer_email: bookingData.customer_email,
-          booking_date: bookingData.booking_date,
-          start_time: bookingData.start_time,
-          end_time: endTime,
-          duration_hours: bookingData.duration_hours,
-          calendar_event_created: true,
-          calendar_event_id: calendarEventId,
-          is_member_booking: true,
-          status: 'confirmed',
-          payment_status: 'completed'
+      return NextResponse.json(
+        {
+          error: 'Please sign in to your member portal to book with your included hours.',
+          requires_login: true,
         },
-        message: 'Member booking confirmed! Calendar event created successfully.'
-      });
+        { status: 401 }
+      );
     }
 
     // **PAID BOOKING FLOW** - NO DATABASE, STORE IN STRIPE METADATA

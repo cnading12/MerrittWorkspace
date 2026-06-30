@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import { googleCalendarAPI } from '@/lib/google-calendar';
 import { sendMemberBookingConfirmationEmail, sendNonMemberConferenceRoomOnboardingEmail } from '@/lib/resend';
+import { recordConferenceBooking } from '@/lib/bookings/conference-orders';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
@@ -122,6 +123,48 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       }
     }
 
+    // Persist the booking (idempotent) so it appears in the portal history and
+    // counts toward the member's allotment. For a member paying overage via
+    // the hosted-checkout fallback, member_id / included_hours / billed_hours
+    // are present in metadata; for a guest booking they're absent.
+    try {
+      const memberId = session.metadata?.member_id || null;
+      const durationNum = parseFloat(duration_hours || '1') || 0;
+      const includedHours = session.metadata?.included_hours
+        ? parseFloat(session.metadata.included_hours)
+        : 0;
+      const billedHours = session.metadata?.billed_hours
+        ? parseFloat(session.metadata.billed_hours)
+        : durationNum;
+      await recordConferenceBooking({
+        memberId,
+        bookingRef: booking_id,
+        customerName: customer_name || '',
+        customerEmail: customer_email,
+        customerPhone: customer_phone || null,
+        company: company || null,
+        bookingDate: booking_date || '',
+        startTime: start_time || '',
+        endTime: end_time || '',
+        durationHours: durationNum,
+        includedHours,
+        billedHours,
+        attendees: attendees ? parseInt(attendees) : null,
+        purpose: purpose || null,
+        totalCents: session.amount_total ?? Math.round(parseFloat(total_amount || '0') * 100),
+        currency: session.currency || 'usd',
+        isMemberBooking: Boolean(memberId),
+        paymentStatus: 'paid',
+        googleEventId: calendar_event_id || null,
+        stripeSessionId: session.id,
+        stripePaymentIntentId:
+          typeof session.payment_intent === 'string' ? session.payment_intent : null,
+        paidAt: new Date().toISOString(),
+      });
+    } catch (dbError) {
+      console.error('⚠️ Failed to persist conference booking (continuing):', dbError);
+    }
+
     // Send confirmation emails
     console.log('📧 Sending confirmation emails for PAID booking...');
     try {
@@ -140,18 +183,21 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
     // Non-members renting the conference room get the same kind of practical
     // day-of onboarding info as trial-day applicants so they can show up and
-    // get to work without needing to ask.
-    try {
-      console.log('📧 Sending non-member conference room onboarding email...');
-      await sendNonMemberConferenceRoomOnboardingEmail({
-        to: customer_email,
-        customerName: customer_name || 'Customer',
-        booking: booking as any,
-        roomName: room_name || 'Conference Room',
-      });
-      console.log('✅ Non-member onboarding email sent');
-    } catch (onboardingError) {
-      console.error('⚠️ Failed to send non-member onboarding email:', onboardingError);
+    // get to work without needing to ask. Existing members (paying overage)
+    // already know the building, so we skip it for them.
+    if (!session.metadata?.member_id) {
+      try {
+        console.log('📧 Sending non-member conference room onboarding email...');
+        await sendNonMemberConferenceRoomOnboardingEmail({
+          to: customer_email,
+          customerName: customer_name || 'Customer',
+          booking: booking as any,
+          roomName: room_name || 'Conference Room',
+        });
+        console.log('✅ Non-member onboarding email sent');
+      } catch (onboardingError) {
+        console.error('⚠️ Failed to send non-member onboarding email:', onboardingError);
+      }
     }
 
     console.log('✅✅✅ PAID BOOKING COMPLETE: Payment confirmed, calendar updated, emails sent');

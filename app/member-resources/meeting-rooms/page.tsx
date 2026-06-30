@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, Monitor, Wifi, Coffee, MapPin, CheckCircle, XCircle, Loader2, AlertCircle, CreditCard, Gift } from 'lucide-react';
+import { Calendar, Clock, Users, Monitor, Wifi, Coffee, MapPin, CheckCircle, XCircle, Loader2, AlertCircle, CreditCard, Gift, Sparkles } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { formatTime, calculateEndTime } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 interface BookingForm {
   name: string;
@@ -22,6 +23,20 @@ interface BookingForm {
 interface TimeSlot {
   time_slot: string;
   is_available: boolean;
+}
+
+interface MemberLite {
+  first_name: string | null;
+  last_name: string | null;
+  email: string;
+  phone: string | null;
+  company_name: string | null;
+}
+
+interface HoursSummary {
+  included: number;
+  used: number;
+  remaining: number;
 }
 
 const HOURLY_RATE = 25; // Conference room rate per hour
@@ -94,12 +109,79 @@ export default function MeetingRoomsPage() {
     bookingType: null
   });
 
+  // Member context (null = guest). When signed in, identity is pulled from the
+  // profile and the member gets their tiered included hours.
+  const [member, setMember] = useState<MemberLite | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [hours, setHours] = useState<HoursSummary | null>(null);
+
   useEffect(() => {
     // Set minimum date to today
     const today = new Date().toISOString().split('T')[0];
     setSelectedDate(today);
     setBookingForm(prev => ({ ...prev, date: today }));
   }, []);
+
+  // Detect a portal session, prefill identity, and load the member's monthly
+  // included-hours summary.
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const [meRes, hoursRes] = await Promise.all([
+          fetch('/api/portal/me', { headers: { Authorization: `Bearer ${session.access_token}` } }),
+          fetch('/api/bookings/member', { headers: { Authorization: `Bearer ${session.access_token}` } }),
+        ]);
+        if (!mounted) return;
+        if (meRes.ok) {
+          const data = await meRes.json();
+          const m: MemberLite = data.member;
+          if (m) {
+            setMember(m);
+            setToken(session.access_token);
+            setBookingForm(prev => ({
+              ...prev,
+              name: `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim(),
+              email: m.email ?? '',
+              phone: m.phone ?? '',
+              company: m.company_name ?? '',
+              bookingType: 'member',
+            }));
+          }
+        }
+        if (hoursRes.ok) {
+          const h = await hoursRes.json();
+          setHours({ included: h.included, used: h.used, remaining: h.remaining });
+        }
+      } catch {
+        // Treat any failure as a guest — the guest flow always works.
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const refreshMemberHours = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/bookings/member', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const h = await res.json();
+        setHours({ included: h.included, used: h.used, remaining: h.remaining });
+      }
+    } catch {
+      // non-fatal
+    }
+  };
+
+  // Free vs billable split for the currently-selected duration.
+  const memberCost = (() => {
+    if (!member || !hours) return null;
+    const included = Math.max(0, Math.min(bookingForm.duration, hours.remaining));
+    const billed = Math.max(0, bookingForm.duration - included);
+    return { included, billed, billedDollars: billed * HOURLY_RATE };
+  })();
 
   useEffect(() => {
     if (selectedDate) {
@@ -156,9 +238,11 @@ export default function MeetingRoomsPage() {
 
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time);
-    setBookingForm(prev => ({ ...prev, time }));
+    // Members skip the member-vs-paid chooser: their booking handles included
+    // hours and any overage automatically.
+    setBookingForm(prev => ({ ...prev, time, bookingType: member ? 'member' : prev.bookingType }));
     setShowBookingOptions(true);
-    setShowBookingForm(false);
+    setShowBookingForm(Boolean(member));
     setError(null);
   };
 
@@ -175,8 +259,76 @@ export default function MeetingRoomsPage() {
     return HOURLY_RATE * duration;
   };
 
+  const resetAfterBooking = () => {
+    setShowBookingForm(false);
+    setShowBookingOptions(false);
+    setSelectedTime('');
+    setBookingForm(prev => ({ ...prev, purpose: '' }));
+    loadAvailableSlots();
+  };
+
+  // Authenticated member booking: included hours are free, overage is charged
+  // to the card on file (or hosted-checkout fallback).
+  const handleMemberBooking = async () => {
+    setSubmitting(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const res = await fetch('/api/bookings/member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          booking_date: selectedDate,
+          start_time: selectedTime,
+          duration_hours: bookingForm.duration,
+          attendees: bookingForm.attendees,
+          purpose: bookingForm.purpose || '',
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Failed to create booking');
+
+      // Overage with no saved card / 3DS: go pay on hosted Checkout.
+      if (data.requires_checkout && data.checkout_url) {
+        window.location.href = data.checkout_url;
+        return;
+      }
+      // Fully covered by included hours: nice member success page.
+      if (data.free && data.redirect_to) {
+        window.location.href = data.redirect_to;
+        return;
+      }
+      // Overage charged to the card on file in one click.
+      if (data.charged) {
+        const billed = (data.charged_cents / 100).toFixed(2);
+        setSuccessMessage(`Booking confirmed! ${data.included_hours} included hour${data.included_hours === 1 ? '' : 's'} + ${data.billed_hours} hour${data.billed_hours === 1 ? '' : 's'} over your allotment at $${HOURLY_RATE}/hr = $${billed} charged to your card on file. A calendar invite and receipt are on the way.`);
+        await refreshMemberHours();
+        resetAfterBooking();
+        return;
+      }
+      if (data.redirect_to) {
+        window.location.href = data.redirect_to;
+        return;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create booking. Please try again.';
+      setError(errorMessage.includes('available')
+        ? 'This time slot is no longer available. Please select a different time.'
+        : errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Signed-in members use the authenticated booking flow.
+    if (member && bookingForm.bookingType === 'member') {
+      return handleMemberBooking();
+    }
 
     setSubmitting(true);
     setError(null);
@@ -338,15 +490,15 @@ Your time slot is temporarily reserved.`);
               <div className="space-y-4">
                 <div className="flex items-center">
                   <Gift className="w-6 h-6 text-orange-600 mr-3" />
-                  <span className="text-lg">Simple member booking process</span>
+                  <span className="text-lg">Included hours every month with your membership</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-green-600 mr-3" />
-                  <span className="text-lg">No payment required for members</span>
+                  <span className="text-lg">One-click booking — nothing to re-enter</span>
                 </div>
                 <div className="flex items-center">
                   <CreditCard className="w-6 h-6 text-blue-600 mr-3" />
-                  <span className="text-lg">Easy online payment for non-members</span>
+                  <span className="text-lg">Easy online payment for guests &amp; trial days</span>
                 </div>
               </div>
             </div>
@@ -354,10 +506,13 @@ Your time slot is temporarily reserved.`);
               <h3 className="text-xl font-semibold text-orange-900 mb-4">Pricing</h3>
               <div className="space-y-2">
                 <p className="text-orange-800">
-                  <strong>Members:</strong> FREE booking
+                  <strong>Members:</strong> included hours each month
                 </p>
-                <p className="text-orange-800">
-                  <strong>Non-members:</strong> ${HOURLY_RATE}/hour
+                <p className="text-sm text-orange-700">
+                  Dedicated desk: 4 hrs · Private office: 8–20 hrs / month. Extra time billed at ${HOURLY_RATE}/hr.
+                </p>
+                <p className="text-orange-800 pt-1">
+                  <strong>Guests &amp; non-members:</strong> ${HOURLY_RATE}/hour
                 </p>
                 <p className="text-sm text-orange-600 mt-2">
                   Minimum 1 hour • Maximum 4 hours per session
@@ -436,53 +591,95 @@ Your time slot is temporarily reserved.`);
           {/* Booking Type Selection */}
           {showBookingOptions && (
             <div className="mb-8">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Choose Booking Type</h3>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Member Booking */}
-                <div
-                  className={`p-6 border-2 rounded-xl cursor-pointer transition ${
-                    bookingForm.bookingType === 'member'
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-200 hover:border-green-300'
-                  }`}
-                  onClick={() => handleBookingTypeSelection('member')}
-                >
-                  <div className="flex items-center mb-4">
-                    <Gift className="w-8 h-8 text-green-600 mr-3" />
-                    <h4 className="text-lg font-semibold text-gray-900">Member Booking</h4>
-                  </div>
-                  <p className="text-gray-600 mb-4">
-                    Simple booking for members. No payment required!
-                  </p>
-                  <div className="bg-green-100 p-3 rounded-lg">
-                    <p className="text-green-800 font-medium">✓ Free with membership</p>
-                    <p className="text-sm text-green-700">Duration: {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
-                  </div>
-                </div>
-
-                {/* Paid Booking */}
-                <div
-                  className={`p-6 border-2 rounded-xl cursor-pointer transition ${
-                    bookingForm.bookingType === 'paid'
-                      ? 'border-orange-500 bg-orange-50'
-                      : 'border-gray-200 hover:border-orange-300'
-                  }`}
-                  onClick={() => handleBookingTypeSelection('paid')}
-                >
-                  <div className="flex items-center mb-4">
-                    <CreditCard className="w-8 h-8 text-orange-600 mr-3" />
-                    <h4 className="text-lg font-semibold text-gray-900">Pay Online</h4>
-                  </div>
-                  <p className="text-gray-600 mb-4">
-                    Pay securely online. Not a member yet?
-                  </p>
-                  <div className="bg-orange-100 p-3 rounded-lg">
-                    <p className="text-orange-800 font-medium">${calculatePrice(bookingForm.duration)} total</p>
-                    <p className="text-sm text-orange-700">Duration: {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
+              {member ? (
+                /* Signed-in member: one unified booking. Included hours are
+                   free; overage is charged to the card on file. */
+                <div className="mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Your Member Booking</h3>
+                  <div className="p-6 border-2 border-green-500 bg-green-50 rounded-xl">
+                    <div className="flex items-center mb-3">
+                      <Sparkles className="w-7 h-7 text-green-600 mr-3" />
+                      <h4 className="text-lg font-semibold text-gray-900">
+                        Booking as {bookingForm.name || member.email}
+                      </h4>
+                    </div>
+                    {hours ? (
+                      <p className="text-sm text-green-800 mb-3">
+                        You have <strong>{hours.remaining}</strong> of {hours.included} included hour{hours.included === 1 ? '' : 's'} left this month.
+                      </p>
+                    ) : (
+                      <p className="text-sm text-green-800 mb-3">Loading your included hours…</p>
+                    )}
+                    {memberCost && (
+                      <div className="bg-white/70 p-3 rounded-lg border border-green-200">
+                        {memberCost.billed === 0 ? (
+                          <p className="text-green-800 font-medium">
+                            ✓ Free — covered by your included hours ({memberCost.included} hr{memberCost.included === 1 ? '' : 's'})
+                          </p>
+                        ) : (
+                          <>
+                            <p className="text-gray-800 font-medium">
+                              {memberCost.included} hr{memberCost.included === 1 ? '' : 's'} included
+                              {' + '}{memberCost.billed} hr{memberCost.billed === 1 ? '' : 's'} over your allotment
+                            </p>
+                            <p className="text-orange-700 font-semibold mt-1">
+                              ${memberCost.billedDollars.toFixed(2)} charged to your card on file
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              ) : (
+                /* Guest: keep the two-card chooser, but the member card now
+                   nudges sign-in instead of offering a free-for-all booking. */
+                <>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Choose Booking Type</h3>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Member sign-in nudge */}
+                    <Link
+                      href="/portal/login"
+                      className="block p-6 border-2 border-gray-200 hover:border-green-400 rounded-xl transition"
+                    >
+                      <div className="flex items-center mb-4">
+                        <Gift className="w-8 h-8 text-green-600 mr-3" />
+                        <h4 className="text-lg font-semibold text-gray-900">Member Booking</h4>
+                      </div>
+                      <p className="text-gray-600 mb-4">
+                        Members get included hours each month and book in one click — no
+                        re-typing, no fees on included time.
+                      </p>
+                      <div className="bg-green-100 p-3 rounded-lg">
+                        <p className="text-green-800 font-medium">Sign in to book with your hours →</p>
+                        <p className="text-sm text-green-700 mt-1">Already a member? Move your account online.</p>
+                      </div>
+                    </Link>
+
+                    {/* Paid Booking */}
+                    <div
+                      className={`p-6 border-2 rounded-xl cursor-pointer transition ${
+                        bookingForm.bookingType === 'paid'
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-orange-300'
+                      }`}
+                      onClick={() => handleBookingTypeSelection('paid')}
+                    >
+                      <div className="flex items-center mb-4">
+                        <CreditCard className="w-8 h-8 text-orange-600 mr-3" />
+                        <h4 className="text-lg font-semibold text-gray-900">Pay Online</h4>
+                      </div>
+                      <p className="text-gray-600 mb-4">
+                        Guest, tour, or trial day? Pay securely online — no account needed.
+                      </p>
+                      <div className="bg-orange-100 p-3 rounded-lg">
+                        <p className="text-orange-800 font-medium">${calculatePrice(bookingForm.duration)} total</p>
+                        <p className="text-sm text-orange-700">Duration: {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Duration Selection */}
               <div className="mt-6">
@@ -515,9 +712,10 @@ Your time slot is temporarily reserved.`);
                     <input
                       type="text"
                       required
+                      readOnly={Boolean(member)}
                       value={bookingForm.name}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 ${member ? 'bg-gray-100 text-gray-600' : ''}`}
                     />
                   </div>
 
@@ -526,9 +724,10 @@ Your time slot is temporarily reserved.`);
                     <input
                       type="email"
                       required
+                      readOnly={Boolean(member)}
                       value={bookingForm.email}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 ${member ? 'bg-gray-100 text-gray-600' : ''}`}
                     />
                   </div>
 
@@ -589,9 +788,18 @@ Your time slot is temporarily reserved.`);
                     <p><strong>Date:</strong> {new Date(selectedDate).toLocaleDateString()}</p>
                     <p><strong>Time:</strong> {formatTime(selectedTime)} - {formatTime(calculateEndTime(selectedTime, bookingForm.duration))}</p>
                     <p><strong>Duration:</strong> {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
-                    <p><strong>Type:</strong> {bookingForm.bookingType === 'member' ? 'Member Booking' : 'Paid Booking'}</p>
+                    <p><strong>Type:</strong> {member ? 'Member Booking' : 'Paid Booking'}</p>
+                    {member && memberCost && memberCost.billed > 0 && (
+                      <p className="text-xs text-gray-500">
+                        {memberCost.included} hr included · {memberCost.billed} hr @ ${HOURLY_RATE}/hr
+                      </p>
+                    )}
                     <p className="text-lg font-semibold text-orange-600 pt-2">
-                      Total: {bookingForm.bookingType === 'member' ? 'FREE' : `$${calculatePrice(bookingForm.duration)}`}
+                      Total: {member
+                        ? (memberCost
+                            ? (memberCost.billed === 0 ? 'FREE (included)' : `$${memberCost.billedDollars.toFixed(2)}`)
+                            : '—')
+                        : `$${calculatePrice(bookingForm.duration)}`}
                     </p>
                   </div>
                 </div>
@@ -606,8 +814,10 @@ Your time slot is temporarily reserved.`);
                       <Loader2 className="w-5 h-5 animate-spin inline mr-2" />
                       Creating Booking...
                     </>
-                  ) : bookingForm.bookingType === 'member' ? (
-                    'Confirm Member Booking'
+                  ) : member ? (
+                    memberCost && memberCost.billed > 0
+                      ? `Confirm & Pay $${memberCost.billedDollars.toFixed(2)}`
+                      : 'Confirm Booking'
                   ) : (
                     'Proceed to Payment'
                   )}

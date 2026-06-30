@@ -12,50 +12,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { requireMember, PortalError } from '@/lib/portal/auth';
-import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { priceCart } from '@/lib/snackshop/products';
 import { recordSnackOrder } from '@/lib/snackshop/orders';
 import { sendSnackOrderConfirmationEmails } from '@/lib/snackshop/emails';
+import { ensureStripeCustomer, findDefaultCard } from '@/lib/stripe/savedCard';
 
 export const dynamic = 'force-dynamic';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
 });
-
-// Ensure the member has a Stripe customer, creating + persisting one if not.
-async function ensureStripeCustomer(member: {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  stripe_customer_id: string | null;
-}): Promise<string> {
-  if (member.stripe_customer_id) return member.stripe_customer_id;
-
-  const customer = await stripe.customers.create({
-    email: member.email,
-    name: `${member.first_name} ${member.last_name}`.trim(),
-    metadata: { member_id: member.id },
-  });
-
-  const sb = getServiceSupabase();
-  await sb.from('members').update({ stripe_customer_id: customer.id }).eq('id', member.id);
-  return customer.id;
-}
-
-// Find a saved card to charge: prefer the customer's default, else the most
-// recently attached card. Returns null when there's nothing on file.
-async function findDefaultCard(customerId: string): Promise<string | null> {
-  const customer = await stripe.customers.retrieve(customerId);
-  if (!customer.deleted) {
-    const defaultPm = customer.invoice_settings?.default_payment_method;
-    if (typeof defaultPm === 'string' && defaultPm) return defaultPm;
-    if (defaultPm && typeof defaultPm === 'object') return defaultPm.id;
-  }
-  const cards = await stripe.paymentMethods.list({ customer: customerId, type: 'card', limit: 1 });
-  return cards.data[0]?.id ?? null;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -90,7 +56,7 @@ export async function POST(req: NextRequest) {
     const customerEmail = member.email;
     const orderId = `MW${Date.now().toString().slice(-8)}`;
 
-    const customerId = await ensureStripeCustomer({
+    const customerId = await ensureStripeCustomer(stripe, {
       id: member.id,
       email: member.email,
       first_name: member.first_name,
@@ -98,7 +64,7 @@ export async function POST(req: NextRequest) {
       stripe_customer_id: member.stripe_customer_id,
     });
 
-    const paymentMethodId = await findDefaultCard(customerId);
+    const paymentMethodId = await findDefaultCard(stripe, customerId);
     if (!paymentMethodId) {
       // No card on file yet — let the client fall back to hosted Checkout,
       // which will save the card so the next purchase is one-click.

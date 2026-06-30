@@ -22,7 +22,13 @@ export async function POST(request: NextRequest) {
       attendees,
       total_amount,
       purpose,
-      calendar_event_id
+      calendar_event_id,
+      // Optional member-overage fields. Present only when a signed-in member
+      // is paying for hours beyond their included allotment via the hosted
+      // checkout fallback; absent (undefined) for guest bookings.
+      member_id,
+      included_hours,
+      billed_hours
     } = await request.json();
 
     console.log('🔷 Creating Stripe checkout session for meeting room:', {
@@ -86,7 +92,10 @@ export async function POST(request: NextRequest) {
         attendees: attendees?.toString() || '1',
         total_amount: total_amount?.toString() || '0',
         purpose: purpose || '',
-        calendar_event_id: calendar_event_id || ''
+        calendar_event_id: calendar_event_id || '',
+        ...(member_id ? { member_id: String(member_id) } : {}),
+        ...(included_hours !== undefined ? { included_hours: String(included_hours) } : {}),
+        ...(billed_hours !== undefined ? { billed_hours: String(billed_hours) } : {})
       },
       billing_address_collection: 'required',
       custom_text: {
