@@ -2518,6 +2518,13 @@ function WorkspaceAssignmentSection({
     : `Add the desk you're taking using the format DD# (for example, DD4). ` +
       `Desks run from DD${DD_MIN} to DD${DD_MAX}, and a desk that's already ` +
       `claimed can't be selected. Member services will confirm and update building records.`;
+  // Physical marking policy: a claimed desk must never look empty, or trial-day
+  // visitors and other members will assume it's up for grabs.
+  const markingPolicy =
+    `Once you've claimed your desk, please leave something on it to mark it as ` +
+    `yours — anything from a business card or sticky note to your full setup ` +
+    `(monitor, keyboard, personal items). An empty desk looks available, so a ` +
+    `marker is what tells other members and visitors it's taken.`;
   const placeholder = isOffice ? 'e.g. 12 or 12B' : 'e.g. DD4';
   const fieldLabel = isOffice ? 'Office number' : 'Desk number';
   const currentLabel = isOffice ? 'Current office:' : 'Current desk:';
@@ -2559,7 +2566,13 @@ function WorkspaceAssignmentSection({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Save failed');
       onMemberChange(data.member);
-      setStatus({ kind: 'ok', text: 'Saved! Member services has been notified.' });
+      setStatus({
+        kind: 'ok',
+        text:
+          isDesk && deskValue
+            ? "Saved! Member services has been notified. Don't forget to leave something on your desk to mark it as yours."
+            : 'Saved! Member services has been notified.',
+      });
     } catch (e: any) {
       setStatus({ kind: 'err', text: e.message });
     } finally {
@@ -2571,6 +2584,11 @@ function WorkspaceAssignmentSection({
     <section className="bg-white border rounded-lg p-6">
       <h3 className="font-semibold text-gray-900 mb-1">{labelTitle}</h3>
       <p className="text-sm text-gray-600 mb-4">{helper}</p>
+      {isDesk && (
+        <div className="mb-4 rounded border border-orange-200 bg-orange-50 p-3 text-sm text-orange-900">
+          <span className="font-semibold">Mark your desk:</span> {markingPolicy}
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-end gap-3">
         <div className="flex-1">
           <label className="block text-xs font-medium text-gray-700 mb-1">
