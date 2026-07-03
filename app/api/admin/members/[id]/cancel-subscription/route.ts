@@ -4,6 +4,7 @@ import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { sendCancellationEmailsOnce } from '@/lib/portal/cancellationEmails';
 import { memberHasEverPaid, cancelNeverPaidMember } from '@/lib/portal/memberRemoval';
+import { getCurrentPeriodEndUnix } from '@/lib/portal/stripeSubscription';
 
 export const dynamic = 'force-dynamic';
 
@@ -142,7 +143,7 @@ export async function POST(
       });
     }
 
-    const currentPeriodEndUnix = (sub as any).current_period_end as number | undefined;
+    const currentPeriodEndUnix = getCurrentPeriodEndUnix(sub);
     if (!currentPeriodEndUnix) {
       return NextResponse.json(
         { error: 'Subscription has no current period.' },
@@ -224,7 +225,7 @@ export async function POST(
     return NextResponse.json({
       ok: true,
       cancel_at: updated.cancel_at,
-      current_period_end: (updated as any).current_period_end ?? null,
+      current_period_end: getCurrentPeriodEndUnix(updated),
       cancellation_effective_date: effectiveDateIso,
       last_month_credit_invoice_item_id: credit.id,
     });

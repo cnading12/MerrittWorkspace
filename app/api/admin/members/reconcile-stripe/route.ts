@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
+import { getCurrentPeriodEndUnix } from '@/lib/portal/stripeSubscription';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
@@ -147,10 +148,7 @@ async function reconcileMember(
 
   const nextSubId = primary?.id ?? null;
   const nextStatus = primary?.status ?? null;
-  const cpe =
-    primary && (primary as any).current_period_end
-      ? ((primary as any).current_period_end as number)
-      : null;
+  const cpe = primary ? getCurrentPeriodEndUnix(primary) : null;
   const nextChargeDate = cpe
     ? new Date(cpe * 1000).toISOString().slice(0, 10)
     : null;
