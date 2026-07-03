@@ -900,6 +900,33 @@ describe('cancel-subscription', () => {
     expect(state.lastMemberUpdate.cancellation_notice_received_at).toBeTruthy();
   });
 
+  it('reads current_period_end from subscription items (basil API shape)', async () => {
+    state.member.stripe_subscription_id = 'sub_test123';
+    state.member.monthly_cost_cents = 50000;
+    // On Stripe API ≥ 2025-03-31.basil, current_period_end lives on the
+    // subscription items, not the subscription itself. An active sub in this
+    // shape must still cancel cleanly — not 400 "no current period".
+    mockStripeSubscriptionRetrieve.mockResolvedValueOnce({
+      id: 'sub_test123',
+      status: 'active',
+      customer: 'cus_test123',
+      cancel_at: null,
+      cancel_at_period_end: false,
+      metadata: {},
+      items: {
+        data: [{ id: 'si_test123', current_period_end: 1775347200 }],
+      },
+    });
+
+    const res = await cancelSubscription(
+      makeAuthReq('http://localhost/api/portal/cancel-subscription')
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.ok).toBe(true);
+    expect(json.cancellation_effective_date).toBe('2026-04-30');
+  });
+
   it('is idempotent when subscription is already cancelled', async () => {
     state.member.stripe_subscription_id = 'sub_test123';
     state.member.monthly_cost_cents = 50000;

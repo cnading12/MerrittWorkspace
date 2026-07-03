@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { sendCancellationEmailsOnce } from '@/lib/portal/cancellationEmails';
+import { getCurrentPeriodEndUnix } from '@/lib/portal/stripeSubscription';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
     // subscription into the next billing period. For monthly subs anchored
     // to the 1st, this is "1st of next calendar month, 00:00 UTC". The
     // "final month" is the calendar month that contains this date.
-    const currentPeriodEndUnix = (sub as any).current_period_end as number | undefined;
+    const currentPeriodEndUnix = getCurrentPeriodEndUnix(sub);
     if (!currentPeriodEndUnix) {
       return NextResponse.json(
         { error: 'Subscription has no current period — contact us to cancel.' },
@@ -198,7 +199,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       cancel_at: updated.cancel_at,
-      current_period_end: (updated as any).current_period_end ?? null,
+      current_period_end: getCurrentPeriodEndUnix(updated),
       cancellation_effective_date: effectiveDateIso,
       last_month_credit_invoice_item_id: credit.id,
     });

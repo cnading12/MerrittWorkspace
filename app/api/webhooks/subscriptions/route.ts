@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { Resend } from 'resend';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { getMembershipProductId } from '@/lib/portal/stripeProduct';
+import { getCurrentPeriodEndUnix } from '@/lib/portal/stripeSubscription';
 import {
   getTransactionalEmailHeaders,
   subscriptionPaymentReceiptEmail,
@@ -431,7 +432,7 @@ export async function POST(req: NextRequest) {
         const sub = event.data.object as Stripe.Subscription;
         const memberId = sub.metadata?.member_id;
         if (!memberId) break;
-        const cpe = (sub as any).current_period_end as number | undefined;
+        const cpe = getCurrentPeriodEndUnix(sub) ?? undefined;
         // On delete, clear the subscription pointer so admin views don't
         // keep treating a canceled subscription's ID as auto-pay on file.
         // The subscription_status will be 'canceled' here either way.
