@@ -879,13 +879,17 @@ describe('cancel-subscription', () => {
 
     // Verify the subscription was updated with a hard cancel_at, not
     // cancel_at_period_end (which would have ended access too early).
+    // Stripe rejects requests passing both parameters together, so the
+    // update must send cancel_at only.
     expect(mockStripeSubscriptionUpdate).toHaveBeenCalledWith(
       'sub_test123',
       expect.objectContaining({
         cancel_at: expectedCancelAt,
-        cancel_at_period_end: false,
         proration_behavior: 'none',
       })
+    );
+    expect(mockStripeSubscriptionUpdate.mock.calls[0][1]).not.toHaveProperty(
+      'cancel_at_period_end'
     );
 
     // Verify local member record reflects the cancellation tracking fields.
