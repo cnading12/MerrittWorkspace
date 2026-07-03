@@ -889,7 +889,7 @@ function generateTrialDayEmailHTML(data: { firstName: string; trialDate: string;
               <h3>When you arrive</h3>
               <ul>
                 <li>No front desk — just let yourself in through the main entrance during building hours (8:00 AM – 6:00 PM).</li>
-                <li>Pick any open desk in the dedicated-desk or flex area and settle in.</li>
+                <li>Pick any open desk in the dedicated-desk or flex area and settle in. An open desk is one that's <strong>completely empty</strong> — desks with anything on them (even just a business card or sticky note) belong to a member.</li>
                 <li>Feel free to explore: kitchen, snack shop, meeting rooms, phone booths, and bathrooms are all available for your use.</li>
               </ul>
             </div>`;
@@ -1048,7 +1048,9 @@ everything you need on the day of your trial.
     : `WHEN YOU ARRIVE
 - No front desk — just let yourself in through the main entrance during
   building hours (8:00 AM – 6:00 PM).
-- Pick any open desk in the dedicated-desk or flex area and settle in.
+- Pick any open desk in the dedicated-desk or flex area and settle in. An
+  open desk is one that's completely empty — desks with anything on them
+  (even just a business card or sticky note) belong to a member.
 - Feel free to explore: kitchen, snack shop, meeting rooms, phone booths,
   and bathrooms are all available for your use.`;
 

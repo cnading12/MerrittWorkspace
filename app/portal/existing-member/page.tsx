@@ -357,6 +357,14 @@ export default function ExistingMemberMigrationPage() {
               If you&apos;re unsure, leave a best guess — staff can adjust it
               on the admin side.
             </p>
+            {selectedPlan.needs === 'desk' && (
+              <p className="text-xs text-gray-500 mt-1">
+                Reminder: please keep something on your desk that marks it as
+                yours — anything from a business card or sticky note to your
+                full setup. An empty desk looks available to visitors and
+                other members.
+              </p>
+            )}
           </div>
         </section>
 
