@@ -152,9 +152,10 @@ export async function POST(req: NextRequest) {
     // Step 2: hard-cancel at the end of the final calendar month.
     let updated: Stripe.Subscription;
     try {
+      // Note: only cancel_at, never combined with cancel_at_period_end —
+      // Stripe rejects requests that pass both parameters together.
       updated = await stripe.subscriptions.update(member.stripe_subscription_id, {
         cancel_at: finalMonthEndUnix,
-        cancel_at_period_end: false,
         proration_behavior: 'none',
         metadata: {
           ...(sub.metadata || {}),
