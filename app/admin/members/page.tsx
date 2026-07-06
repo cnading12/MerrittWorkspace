@@ -522,7 +522,7 @@ export default function AdminMembersPage() {
                   />
                   <input
                     type="text"
-                    placeholder="Office #"
+                    placeholder="Office # (e.g. 104)"
                     defaultValue={m.office_number || ''}
                     onBlur={(e) => {
                       const v = e.target.value.trim();
@@ -533,7 +533,7 @@ export default function AdminMembersPage() {
                   />
                   <input
                     type="text"
-                    placeholder="Desk #"
+                    placeholder="Desk # (e.g. DD4)"
                     defaultValue={m.desk_number || ''}
                     onBlur={(e) => {
                       const v = e.target.value.trim();

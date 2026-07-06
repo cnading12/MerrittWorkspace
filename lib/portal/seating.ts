@@ -1,6 +1,6 @@
 // Reference data and merge logic for the admin seating chart.
 //
-// The building has a fixed set of seats. Dedicated desks are DD1–DD25 (see
+// The building has a fixed set of seats. Dedicated desks are DD1–DD26 (see
 // desks.ts, the same range members self-assign in the portal). Private offices
 // are numbered 100–112, 114, and a single office 120 in the wellness space
 // (office 113 does not exist; 120 is not shown on the floor-plan image but is a
@@ -63,7 +63,7 @@ export interface OccupancyEntry {
   conflict?: SpaceOccupant;
 }
 
-// Canonical desk labels DD1..DD25, in order.
+// Canonical desk labels DD1..DD26, in order.
 export const DESK_SPACES: string[] = Array.from(
   { length: DD_MAX - DD_MIN + 1 },
   (_, i) => `DD${DD_MIN + i}`

@@ -4,7 +4,7 @@ import { normalizeDeskNumber, DD_MIN, DD_MAX } from '@/lib/portal/desks';
 // Guards the dedicated-desk number rules enforced in both the portal UI
 // (app/portal/page.tsx WorkspaceAssignmentSection) and the assignment API
 // (app/api/portal/assignment/route.ts): members must enter "DD#" within the
-// DD1–DD25 range. Uniqueness is enforced separately at the database layer.
+// DD1–DD26 range. Uniqueness is enforced separately at the database layer.
 
 describe('normalizeDeskNumber', () => {
   it('accepts a well-formed DD number', () => {
@@ -32,11 +32,11 @@ describe('normalizeDeskNumber', () => {
     if (!r.ok) expect(r.error).toMatch(/DD#/);
   });
 
-  it('rejects numbers outside DD1–DD25', () => {
-    for (const input of ['DD0', 'DD26', 'DD100']) {
+  it('rejects numbers outside DD1–DD26', () => {
+    for (const input of ['DD0', 'DD27', 'DD100']) {
       const r = normalizeDeskNumber(input);
       expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.error).toMatch(/between DD1 and DD25/);
+      if (!r.ok) expect(r.error).toMatch(/between DD1 and DD26/);
     }
   });
 
