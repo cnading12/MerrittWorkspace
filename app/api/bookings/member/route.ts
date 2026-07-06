@@ -39,10 +39,18 @@ function calculateEndTime(startTime: string, durationHours: number): string {
   return date.toTimeString().slice(0, 5);
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 export async function GET(req: NextRequest) {
   try {
     const member = await requireMember(req);
-    const summary = await getMemberHoursSummary(member);
+    // Optional ?date=YYYY-MM-DD returns the summary for that date's month, so
+    // the booking UI can show the allotment the selected date draws from.
+    const forDate = req.nextUrl.searchParams.get('date');
+    const summary = await getMemberHoursSummary(
+      member,
+      forDate && DATE_RE.test(forDate) ? forDate : undefined,
+    );
     return NextResponse.json({
       ...summary,
       hourly_rate: HOURLY_RATE_DOLLARS,
@@ -71,6 +79,12 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+    if (!DATE_RE.test(bookingDate)) {
+      return NextResponse.json(
+        { error: 'Invalid booking date. Expected YYYY-MM-DD.' },
+        { status: 400 },
+      );
+    }
     if (!Number.isInteger(durationHours) || durationHours < 1 || durationHours > 4) {
       return NextResponse.json({ error: 'Duration must be between 1 and 4 hours.' }, { status: 400 });
     }
@@ -91,8 +105,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // How much of this booking is free vs billable.
-    const summary = await getMemberHoursSummary(member);
+    // How much of this booking is free vs billable. The allotment is checked
+    // against the month the booking falls in, so already-made future bookings
+    // in that month count and a member can't stack free hours past their
+    // monthly limit by booking ahead.
+    const summary = await getMemberHoursSummary(member, bookingDate);
     const split = splitDuration(durationHours, summary.remaining);
     const bookingRef = `MH-MEMBER-${Date.now()}`;
 
