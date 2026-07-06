@@ -860,3 +860,213 @@ export function getTransactionalEmailHeaders(opts?: {
     'X-Entity-Ref-ID': id,
   };
 }
+
+// ------------------------------------------------------------------
+// Monthly dues summary (staff only — never sent to members).
+// Sent on the 7th of each month, after the 1st-of-month subscription
+// charges have run and ACH payments have had time to clear.
+// ------------------------------------------------------------------
+
+export type DuesSummaryEmailEntry = {
+  memberName: string;
+  email: string;
+  amount: string; // pre-formatted, e.g. "1,250.00"
+  description: string;
+  date: string; // pre-formatted display date, may be ''
+};
+
+export type DuesSummaryMissingEntry = {
+  memberName: string;
+  email: string;
+  expectedAmount: string | null; // pre-formatted, null if unknown
+};
+
+function duesTableHtml(
+  entries: DuesSummaryEmailEntry[],
+  dateHeader: string
+): string {
+  const rows = entries
+    .map(
+      (e) => `
+            <tr>
+              <td style="padding:8px 10px;border-bottom:1px solid #e5e5e5;">${e.memberName}<br/><span style="color:#666;font-size:12px;">${e.email}</span></td>
+              <td style="padding:8px 10px;border-bottom:1px solid #e5e5e5;text-align:right;white-space:nowrap;">$${e.amount}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid #e5e5e5;white-space:nowrap;">${e.date}</td>
+            </tr>`
+    )
+    .join('');
+  return `
+          <table style="width:100%;border-collapse:collapse;margin:10px 0;">
+            <thead>
+              <tr>
+                <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #ccc;">Member</th>
+                <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #ccc;">Amount</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #ccc;">${dateHeader}</th>
+              </tr>
+            </thead>
+            <tbody>${rows}
+            </tbody>
+          </table>`;
+}
+
+function duesTableText(entries: DuesSummaryEmailEntry[]): string {
+  return entries
+    .map(
+      (e) =>
+        `  - ${e.memberName}${e.email ? ` (${e.email})` : ''} — $${e.amount}${e.date ? ` — ${e.date}` : ''}`
+    )
+    .join('\n');
+}
+
+export function monthlyDuesSummaryEmail(opts: {
+  monthLabel: string; // e.g. "July 2026"
+  totalCollected: string; // pre-formatted, e.g. "5,400.00"
+  paid: DuesSummaryEmailEntry[];
+  failed: DuesSummaryEmailEntry[];
+  pending: DuesSummaryEmailEntry[];
+  refunded: DuesSummaryEmailEntry[];
+  noCharge: DuesSummaryMissingEntry[];
+}) {
+  const { monthLabel, totalCollected, paid, failed, pending, refunded, noCharge } = opts;
+  const problemCount = failed.length + noCharge.length;
+
+  const subject =
+    problemCount > 0
+      ? `⚠️ Monthly Dues Summary — ${monthLabel}: ${failed.length} failed, ${noCharge.length} missing, ${paid.length} paid`
+      : `Monthly Dues Summary — ${monthLabel}: ${paid.length} paid, $${totalCollected} collected`;
+
+  // --- Failed payments: the section staff must never miss. Rendered in
+  // red at the very top when present; replaced by a green all-clear when
+  // there is nothing to chase.
+  const failedHtml = failed.length
+    ? `
+        <div style="background:#fdecea;border-left:4px solid #dc3545;padding:20px;border-radius:8px;margin:20px 0;">
+          <h3 style="margin-top:0;color:#b02a37;">🚨 Failed payments — action required (${failed.length})</h3>
+          <p style="margin:0 0 6px;">These members' dues were <strong>NOT collected</strong>. Please follow up with each member and retry the charge from Stripe.</p>
+          ${duesTableHtml(failed, 'Attempted')}
+        </div>`
+    : `
+        <div style="background:#e8f5e8;border-left:4px solid #28a745;padding:16px 20px;border-radius:8px;margin:20px 0;">
+          <p style="margin:0;"><strong>✅ No failed payments this month.</strong></p>
+        </div>`;
+
+  const noChargeHtml = noCharge.length
+    ? `
+        <div class="highlight">
+          <h3 style="margin-top:0;color:#ad4a00;">⚠️ No charge recorded (${noCharge.length})</h3>
+          <p style="margin:0 0 6px;">These members have an active subscription on file but <strong>no dues charge appeared this month</strong> — the charge may never have been attempted. Please verify each one in Stripe.</p>
+          <ul style="margin:6px 0 0;padding-left:20px;">
+            ${noCharge
+              .map(
+                (m) =>
+                  `<li>${m.memberName}${m.email ? ` (${m.email})` : ''}${m.expectedAmount ? ` — expected $${m.expectedAmount}/mo` : ''}</li>`
+              )
+              .join('')}
+          </ul>
+        </div>`
+    : '';
+
+  const pendingHtml = pending.length
+    ? `
+        <div class="info-card">
+          <h3 style="margin-top:0;">⏳ Still processing (${pending.length})</h3>
+          <p style="margin:0 0 6px;">These payments (typically ACH) had not settled when this summary was generated. They should clear within a few business days — if they are still outstanding next week, check Stripe.</p>
+          ${duesTableHtml(pending, 'Initiated')}
+        </div>`
+    : '';
+
+  const refundedHtml = refunded.length
+    ? `
+        <div class="info-card">
+          <h3 style="margin-top:0;">↩️ Refunded this month (${refunded.length})</h3>
+          ${duesTableHtml(refunded, 'Date')}
+        </div>`
+    : '';
+
+  const paidHtml = paid.length
+    ? `
+        <h3 style="margin:24px 0 4px;">Payments received (${paid.length}) — $${totalCollected} total</h3>
+        ${duesTableHtml(paid, 'Paid on')}`
+    : `
+        <div style="background:#fdecea;border-left:4px solid #dc3545;padding:16px 20px;border-radius:8px;margin:20px 0;">
+          <p style="margin:0;"><strong>No successful dues payments were recorded this month.</strong> If charges were expected, check Stripe and the webhook configuration.</p>
+        </div>`;
+
+  const html = shell({
+    title: 'Monthly Dues Summary',
+    tagline: monthLabel,
+    body: `
+        <p>Here is the membership dues summary for <strong>${monthLabel}</strong>. Monthly charges run on the 1st; this report is generated on the 7th so ACH payments have had time to clear.</p>
+        <div class="info-card">
+          <h3 style="margin-top:0;">At a glance</h3>
+          <p><strong>Collected:</strong> $${totalCollected} (${paid.length} payment${paid.length === 1 ? '' : 's'})</p>
+          <p><strong>Failed:</strong> ${failed.length}</p>
+          ${noCharge.length ? `<p><strong>No charge recorded:</strong> ${noCharge.length}</p>` : ''}
+          ${pending.length ? `<p><strong>Still processing:</strong> ${pending.length}</p>` : ''}
+          ${refunded.length ? `<p><strong>Refunded:</strong> ${refunded.length}</p>` : ''}
+        </div>
+        ${failedHtml}
+        ${noChargeHtml}
+        ${pendingHtml}
+        ${refundedHtml}
+        ${paidHtml}
+        <p style="font-size:13px;color:#666;margin-top:24px;">This is an automated internal summary for Merritt Workspace staff. Members do not receive this email. Full payment details are available in Stripe and the admin panel.</p>
+      `,
+  });
+
+  const textSections: string[] = [
+    [
+      `MONTHLY DUES SUMMARY — ${monthLabel}`,
+      'Charges run on the 1st; this report is generated on the 7th so ACH payments have had time to clear.',
+    ].join('\n'),
+    [
+      'AT A GLANCE',
+      `  Collected: $${totalCollected} (${paid.length} payment${paid.length === 1 ? '' : 's'})`,
+      `  Failed: ${failed.length}`,
+      noCharge.length ? `  No charge recorded: ${noCharge.length}` : '',
+      pending.length ? `  Still processing: ${pending.length}` : '',
+      refunded.length ? `  Refunded: ${refunded.length}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    failed.length
+      ? [
+          `!!! FAILED PAYMENTS — ACTION REQUIRED (${failed.length}) !!!`,
+          "These members' dues were NOT collected. Follow up with each member and retry the charge from Stripe.",
+          duesTableText(failed),
+        ].join('\n')
+      : 'No failed payments this month.',
+    noCharge.length
+      ? [
+          `NO CHARGE RECORDED (${noCharge.length})`,
+          'Active subscription on file but no dues charge appeared this month — verify in Stripe.',
+          noCharge
+            .map(
+              (m) =>
+                `  - ${m.memberName}${m.email ? ` (${m.email})` : ''}${m.expectedAmount ? ` — expected $${m.expectedAmount}/mo` : ''}`
+            )
+            .join('\n'),
+        ].join('\n')
+      : '',
+    pending.length
+      ? [
+          `STILL PROCESSING (${pending.length})`,
+          'Not yet settled (typically ACH); should clear within a few business days.',
+          duesTableText(pending),
+        ].join('\n')
+      : '',
+    refunded.length
+      ? [`REFUNDED THIS MONTH (${refunded.length})`, duesTableText(refunded)].join('\n')
+      : '',
+    paid.length
+      ? [
+          `PAYMENTS RECEIVED (${paid.length}) — $${totalCollected} TOTAL`,
+          duesTableText(paid),
+        ].join('\n')
+      : 'NO SUCCESSFUL DUES PAYMENTS WERE RECORDED THIS MONTH. If charges were expected, check Stripe and the webhook configuration.',
+    'Automated internal summary for Merritt Workspace staff — members do not receive this email.',
+  ];
+  const text = textSections.filter(Boolean).join('\n\n');
+
+  return { subject, html, text };
+}
