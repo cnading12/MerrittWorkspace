@@ -122,18 +122,15 @@ export default function MeetingRoomsPage() {
     setBookingForm(prev => ({ ...prev, date: today }));
   }, []);
 
-  // Detect a portal session, prefill identity, and load the member's monthly
-  // included-hours summary.
+  // Detect a portal session and prefill identity. The included-hours summary
+  // loads in the effect below once we have a token and a selected date.
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const [meRes, hoursRes] = await Promise.all([
-          fetch('/api/portal/me', { headers: { Authorization: `Bearer ${session.access_token}` } }),
-          fetch('/api/bookings/member', { headers: { Authorization: `Bearer ${session.access_token}` } }),
-        ]);
+        const meRes = await fetch('/api/portal/me', { headers: { Authorization: `Bearer ${session.access_token}` } });
         if (!mounted) return;
         if (meRes.ok) {
           const data = await meRes.json();
@@ -151,10 +148,6 @@ export default function MeetingRoomsPage() {
             }));
           }
         }
-        if (hoursRes.ok) {
-          const h = await hoursRes.json();
-          setHours({ included: h.included, used: h.used, remaining: h.remaining });
-        }
       } catch {
         // Treat any failure as a guest — the guest flow always works.
       }
@@ -162,10 +155,16 @@ export default function MeetingRoomsPage() {
     return () => { mounted = false; };
   }, []);
 
-  const refreshMemberHours = async () => {
-    if (!token) return;
+  // Included hours are a per-calendar-month allotment, so the summary is
+  // fetched for the month of the selected booking date — booking three weeks
+  // out shows (and draws from) that month's remaining hours, which already
+  // reflect any other future bookings.
+  const refreshMemberHours = async (authToken?: string | null, forDate?: string) => {
+    const t = authToken ?? token;
+    if (!t) return;
     try {
-      const res = await fetch('/api/bookings/member', { headers: { Authorization: `Bearer ${token}` } });
+      const qs = forDate ? `?date=${forDate}` : '';
+      const res = await fetch(`/api/bookings/member${qs}`, { headers: { Authorization: `Bearer ${t}` } });
       if (res.ok) {
         const h = await res.json();
         setHours({ included: h.included, used: h.used, remaining: h.remaining });
@@ -174,6 +173,21 @@ export default function MeetingRoomsPage() {
       // non-fatal
     }
   };
+
+  useEffect(() => {
+    if (token) refreshMemberHours(token, selectedDate || undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, selectedDate]);
+
+  // "this month" vs the named month when the selected date falls in a later
+  // month — the allotment shown is the one that date's booking draws from.
+  const hoursMonthLabel = (() => {
+    if (!selectedDate) return 'this month';
+    const nowMonth = new Date().toISOString().slice(0, 7);
+    if (selectedDate.slice(0, 7) === nowMonth) return 'this month';
+    const [y, m] = selectedDate.split('-').map(Number);
+    return `in ${new Date(y, m - 1, 1).toLocaleString('en-US', { month: 'long' })}`;
+  })();
 
   // Free vs billable split for the currently-selected duration.
   const memberCost = (() => {
@@ -304,7 +318,7 @@ export default function MeetingRoomsPage() {
       if (data.charged) {
         const billed = (data.charged_cents / 100).toFixed(2);
         setSuccessMessage(`Booking confirmed! ${data.included_hours} included hour${data.included_hours === 1 ? '' : 's'} + ${data.billed_hours} hour${data.billed_hours === 1 ? '' : 's'} over your allotment at $${HOURLY_RATE}/hr = $${billed} charged to your card on file. A calendar invite and receipt are on the way.`);
-        await refreshMemberHours();
+        await refreshMemberHours(token, selectedDate || undefined);
         resetAfterBooking();
         return;
       }
@@ -605,7 +619,7 @@ Your time slot is temporarily reserved.`);
                     </div>
                     {hours ? (
                       <p className="text-sm text-green-800 mb-3">
-                        You have <strong>{hours.remaining}</strong> of {hours.included} included hour{hours.included === 1 ? '' : 's'} left this month.
+                        You have <strong>{hours.remaining}</strong> of {hours.included} included hour{hours.included === 1 ? '' : 's'} left {hoursMonthLabel}.
                       </p>
                     ) : (
                       <p className="text-sm text-green-800 mb-3">Loading your included hours…</p>

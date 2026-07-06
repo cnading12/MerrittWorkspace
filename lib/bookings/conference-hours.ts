@@ -30,17 +30,17 @@ export function monthlyIncludedHours(designation: string | null | undefined): nu
   return INCLUDED_MONTHLY_HOURS[designation] ?? 0;
 }
 
-// Current Mountain-Time calendar month as date-string bounds [start, nextStart).
-// booking_date is a plain date, so string comparison against these is correct
-// and naturally "resets on the 1st".
-export function denverMonthBounds(now: Date = new Date()): { start: string; nextStart: string } {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: MT_TZ,
-    year: 'numeric',
-    month: '2-digit',
-  }).formatToParts(now);
-  const year = Number(parts.find((p) => p.type === 'year')!.value);
-  const month = Number(parts.find((p) => p.type === 'month')!.value);
+export interface MonthBounds {
+  start: string;
+  nextStart: string;
+}
+
+// Calendar-month date-string bounds [start, nextStart) for the month
+// containing the given plain date (YYYY-MM-DD). booking_date is a plain date,
+// so string comparison against these is correct and naturally "resets on
+// the 1st".
+export function monthBoundsForDate(dateStr: string): MonthBounds {
+  const [year, month] = dateStr.split('-').map(Number);
   const start = `${year}-${String(month).padStart(2, '0')}-01`;
   const nextYear = month === 12 ? year + 1 : year;
   const nextMonth = month === 12 ? 1 : month + 1;
@@ -48,14 +48,29 @@ export function denverMonthBounds(now: Date = new Date()): { start: string; next
   return { start, nextStart };
 }
 
-// Hours a member has already drawn from this month's allotment. Only the
-// `included_hours` portion counts — billed overage hours don't reduce the
-// allotment. Cancelled bookings are excluded so cancelling frees the time.
-export async function getUsedIncludedHoursThisMonth(
+// Current Mountain-Time calendar month as date-string bounds [start, nextStart).
+export function denverMonthBounds(now: Date = new Date()): MonthBounds {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: MT_TZ,
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(now);
+  const year = parts.find((p) => p.type === 'year')!.value;
+  const month = parts.find((p) => p.type === 'month')!.value;
+  return monthBoundsForDate(`${year}-${month}-01`);
+}
+
+// Hours a member has drawn from the allotment of the given calendar month.
+// Every non-cancelled booking dated in that month counts — including bookings
+// that haven't happened yet, so future reservations reduce the allotment the
+// moment they're made. Only the `included_hours` portion counts — billed
+// overage hours don't reduce the allotment. Cancelled bookings are excluded
+// so cancelling frees the time.
+export async function getUsedIncludedHoursForMonth(
   memberId: string,
-  now: Date = new Date(),
+  bounds: MonthBounds,
 ): Promise<number> {
-  const { start, nextStart } = denverMonthBounds(now);
+  const { start, nextStart } = bounds;
   const sb = getServiceSupabase();
   const { data, error } = await sb
     .from('conference_bookings')
@@ -70,16 +85,22 @@ export async function getUsedIncludedHoursThisMonth(
 
 export interface HoursSummary {
   included: number; // monthly allotment for this member
-  used: number; // already drawn this month
+  used: number; // already drawn (or reserved by future bookings) that month
   remaining: number; // allotment left
 }
 
+// Allotment summary for the month containing `forDate` (YYYY-MM-DD), or the
+// current Mountain-Time month when omitted. When validating a booking, pass
+// the booking's date so the check runs against the month the booking actually
+// draws from — a reservation two months out competes with the other
+// reservations already made for that month, not with this month's usage.
 export async function getMemberHoursSummary(
   member: { id: string; designation: string | null },
-  now: Date = new Date(),
+  forDate?: string | null,
 ): Promise<HoursSummary> {
+  const bounds = forDate ? monthBoundsForDate(forDate) : denverMonthBounds();
   const included = monthlyIncludedHours(member.designation);
-  const used = await getUsedIncludedHoursThisMonth(member.id, now);
+  const used = await getUsedIncludedHoursForMonth(member.id, bounds);
   return { included, used, remaining: Math.max(0, included - used) };
 }
 
