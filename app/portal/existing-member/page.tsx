@@ -331,7 +331,7 @@ export default function ExistingMemberMigrationPage() {
                   required
                   value={deskNumber}
                   onChange={(e) => setDeskNumber(e.target.value)}
-                  placeholder="e.g. 12"
+                  placeholder="e.g. DD4"
                   className="mt-1 w-full border rounded px-3 py-2 sm:w-48"
                 />
               </>
@@ -352,8 +352,8 @@ export default function ExistingMemberMigrationPage() {
             )}
             <p className="text-xs text-gray-500 mt-1">
               {selectedPlan.needs === 'desk'
-                ? 'Dedicated desks are numbered 1–25.'
-                : 'Offices are numbered 101–120.'}{' '}
+                ? 'Dedicated desks are numbered DD1–DD26.'
+                : 'Offices are numbered 100–114 (there is no 113).'}{' '}
               If you&apos;re unsure, leave a best guess — staff can adjust it
               on the admin side.
             </p>

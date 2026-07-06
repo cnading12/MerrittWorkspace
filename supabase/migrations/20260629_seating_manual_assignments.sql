@@ -1,6 +1,6 @@
 -- Manual seating assignments for the admin seating chart.
 --
--- The admin seating chart shows who sits at every desk (DD1–DD25) and office
+-- The admin seating chart shows who sits at every desk (DD1–DD26) and office
 -- (100–112, 114, 120). The primary source is the members table itself
 -- (members.desk_number / members.office_number), which already exists. This
 -- table is the SECOND source: people who have not yet transitioned to the

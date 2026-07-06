@@ -23,6 +23,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { planForMembershipType } from '@/lib/portal/pricing';
+import { normalizeDeskNumber } from '@/lib/portal/desks';
 import { PORTAL_ONBOARDING_FROM, PORTAL_REPLY_TO } from '@/lib/portal/emails';
 
 export const dynamic = 'force-dynamic';
@@ -94,13 +95,22 @@ export async function POST(request: NextRequest) {
     // private-office members must declare an office number. This matches
     // how the admin members list expects the assignment columns to be set.
     const officeNumber = normalizeAssignment(body.office_number);
-    const deskNumber = normalizeAssignment(body.desk_number);
+    let deskNumber = normalizeAssignment(body.desk_number);
     const designation = plan.designation;
     if (designation === 'dedicated_desk' && !deskNumber) {
       return NextResponse.json(
         { error: 'Please enter your desk number.' },
         { status: 400 }
       );
+    }
+    if (designation === 'dedicated_desk' && deskNumber) {
+      // Canonicalize to the building-wide DD# convention (e.g. "dd04" → "DD4")
+      // so the seating chart and uniqueness checks match across sources.
+      const result = normalizeDeskNumber(deskNumber);
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+      deskNumber = result.value;
     }
     if (
       (designation === 'private_office_single' ||

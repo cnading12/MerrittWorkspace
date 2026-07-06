@@ -46,10 +46,10 @@ function manual(
 }
 
 describe('canonical space sets', () => {
-  it('covers DD1–DD25', () => {
-    expect(DESK_SPACES).toHaveLength(25);
+  it('covers DD1–DD26', () => {
+    expect(DESK_SPACES).toHaveLength(26);
     expect(DESK_SPACES[0]).toBe('DD1');
-    expect(DESK_SPACES[24]).toBe('DD25');
+    expect(DESK_SPACES[25]).toBe('DD26');
   });
 
   it('lists offices 100–112, 114, 120 and omits 113', () => {
@@ -79,7 +79,7 @@ describe('canonicalizeSpaceNumber', () => {
 describe('buildOccupancy', () => {
   it('shows every desk, with Vacant where unassigned', () => {
     const entries = buildOccupancy('desk', DESK_SPACES, [], []);
-    expect(entries).toHaveLength(25);
+    expect(entries).toHaveLength(26);
     expect(entries.every((e) => e.occupant === null)).toBe(true);
   });
 

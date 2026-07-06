@@ -2525,7 +2525,7 @@ function WorkspaceAssignmentSection({
     `yours — anything from a business card or sticky note to your full setup ` +
     `(monitor, keyboard, personal items). An empty desk looks available, so a ` +
     `marker is what tells other members and visitors it's taken.`;
-  const placeholder = isOffice ? 'e.g. 12 or 12B' : 'e.g. DD4';
+  const placeholder = isOffice ? 'e.g. 104' : 'e.g. DD4';
   const fieldLabel = isOffice ? 'Office number' : 'Desk number';
   const currentLabel = isOffice ? 'Current office:' : 'Current desk:';
   const currentValue = isOffice ? member.office_number : member.desk_number;

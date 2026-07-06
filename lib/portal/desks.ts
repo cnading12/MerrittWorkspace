@@ -1,12 +1,12 @@
 // Validation helpers for dedicated-desk numbers.
 //
 // Dedicated-desk members self-assign a desk in the portal. We require the
-// "DD#" format (e.g. DD4) within the building's range of DD1–DD25, and the
+// "DD#" format (e.g. DD4) within the building's range of DD1–DD26, and the
 // desk must not already be claimed by another member. Both the portal UI and
 // the assignment API import these helpers so client + server stay in sync.
 
 export const DD_MIN = 1;
-export const DD_MAX = 25;
+export const DD_MAX = 26;
 
 // Member services contact, surfaced when a desk is taken or invalid so the
 // member can flag a mistake.
@@ -20,7 +20,7 @@ export type DeskValidationResult =
 
 // Normalize and validate a dedicated-desk number. Accepts a case-insensitive
 // "DD" prefix (with or without surrounding/inner whitespace and leading
-// zeros), e.g. "dd04" → "DD4", and enforces the DD1–DD25 range. The returned
+// zeros), e.g. "dd04" → "DD4", and enforces the DD1–DD26 range. The returned
 // `value` is the canonical form used for storage and uniqueness checks.
 export function normalizeDeskNumber(raw: string): DeskValidationResult {
   const trimmed = (raw || '').trim();

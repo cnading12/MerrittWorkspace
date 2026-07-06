@@ -532,7 +532,7 @@ export default function SimpleSnackshopPage() {
                                                 <input
                                                     type="text"
                                                     required
-                                                    placeholder="e.g., Office 12 or Desk A4"
+                                                    placeholder="e.g., Office 104 or Desk DD4"
                                                     value={orderForm.office_number}
                                                     onChange={(e) => setOrderForm(prev => ({ ...prev, office_number: e.target.value }))}
                                                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
@@ -574,7 +574,7 @@ export default function SimpleSnackshopPage() {
                                             <input
                                                 type="text"
                                                 required
-                                                placeholder="e.g., Office 12 or Desk A4"
+                                                placeholder="e.g., Office 104 or Desk DD4"
                                                 value={orderForm.office_number}
                                                 onChange={(e) => setOrderForm(prev => ({ ...prev, office_number: e.target.value }))}
                                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
