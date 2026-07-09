@@ -2,8 +2,10 @@
 //
 // Dedicated-desk members self-assign a desk in the portal. We require the
 // "DD#" format (e.g. DD4) within the building's range of DD1–DD26, and the
-// desk must not already be claimed by another member. Both the portal UI and
-// the assignment API import these helpers so client + server stay in sync.
+// desk must not already be occupied on the seating chart — whether it was
+// claimed by another member in the portal or entered manually by staff (see
+// deskClaims.ts for the occupancy check). Both the portal UI and the
+// assignment API import these helpers so client + server stay in sync.
 
 export const DD_MIN = 1;
 export const DD_MAX = 26;
