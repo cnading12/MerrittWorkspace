@@ -27,6 +27,9 @@ export const INCLUDED_MONTHLY_HOURS: Record<string, number> = {
   private_office_single: 8,
   private_office_double: 12,
   private_office_large: 20,
+  // Day-pass members don't get a monthly allotment — they get a per-DAY
+  // allotment (DAY_PASS_INCLUDED_HOURS_PER_DAY) on days they hold a
+  // confirmed pass. See the day-pass branch in getMemberHoursSummary.
   one_day_dedicated_desk: 0,
   flex: 0,
   // Office members have no personal allotment — they draw from their
@@ -34,6 +37,17 @@ export const INCLUDED_MONTHLY_HOURS: Record<string, number> = {
   office_member: 0,
   other: 0,
 };
+
+// One Day Dedicated Desk policy: 1 hour of conference-room time per day,
+// only on days the member holds a confirmed day pass, with NO paid overage
+// beyond it (the booking route enforces the hard cap).
+export const DAY_PASS_INCLUDED_HOURS_PER_DAY = 1;
+
+export function isDayPassDesignation(
+  designation: string | null | undefined
+): boolean {
+  return designation === 'one_day_dedicated_desk';
+}
 
 export function monthlyIncludedHours(designation: string | null | undefined): number {
   if (!designation) return 0;
@@ -86,6 +100,27 @@ export function denverMonthBounds(now: Date = new Date()): MonthBounds {
   return monthBoundsForDate(`${year}-${month}-01`);
 }
 
+// Today's Mountain-Time calendar date as YYYY-MM-DD.
+export function denverTodayIso(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: MT_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const get = (t: string) => parts.find((p) => p.type === t)!.value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+// Single-day date-string bounds [start, nextStart) for a plain date. Used by
+// the day-pass allotment, which resets per DAY instead of per month.
+export function dayBoundsForDate(dateStr: string): MonthBounds {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const next = new Date(Date.UTC(year, month - 1, day + 1));
+  const nextStart = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
+  return { start: dateStr, nextStart };
+}
+
 // Hours one or more members have drawn from the allotment of the given
 // calendar month. Every non-cancelled booking dated in that month counts —
 // including bookings that haven't happened yet, so future reservations reduce
@@ -122,6 +157,10 @@ export interface HoursSummary {
   pooled?: boolean;
   office_number?: string;
   pool_size?: number; // how many members share the pool
+  // Present for day-pass members: the allotment above is per-DAY (for the
+  // requested date), and it only exists on days with a confirmed day pass.
+  daily?: boolean;
+  has_day_pass?: boolean;
 }
 
 // Occupants of an office share a canonical key: office numbers are free text
@@ -172,6 +211,32 @@ export async function getMemberHoursSummary(
   member: { id: string; designation: string | null; office_number?: string | null },
   forDate?: string | null,
 ): Promise<HoursSummary> {
+  // Day-pass members: the allotment is per DAY, not per month, and only
+  // exists on days the member holds a confirmed day pass. No pass for the
+  // date → 0 included hours (and the booking route rejects the booking
+  // outright rather than offering billed overage).
+  if (isDayPassDesignation(member.designation)) {
+    const date = forDate || denverTodayIso();
+    const sb = getServiceSupabase();
+    const { data: pass, error } = await sb
+      .from('day_passes')
+      .select('id')
+      .eq('member_id', member.id)
+      .eq('pass_date', date)
+      .eq('status', 'confirmed')
+      .maybeSingle();
+    if (error) throw new Error(`day-pass lookup failed: ${error.message}`);
+    const included = pass ? DAY_PASS_INCLUDED_HOURS_PER_DAY : 0;
+    const used = await getUsedIncludedHoursForMonth(member.id, dayBoundsForDate(date));
+    return {
+      included,
+      used,
+      remaining: Math.max(0, included - used),
+      daily: true,
+      has_day_pass: !!pass,
+    };
+  }
+
   const bounds = forDate ? monthBoundsForDate(forDate) : denverMonthBounds();
 
   const officeNumber = member.office_number || null;

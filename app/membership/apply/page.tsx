@@ -94,7 +94,7 @@ const membershipPlans: PlanDef[] = [
     description: 'Single-day dedicated desk pass. A one-time $30 charge — no recurring subscription.',
     category: 'Day Pass',
     recurrence: 'one_time',
-    features: ['One-time $30 charge', 'Full day of access', 'High-speed WiFi', 'Kitchen access', 'Printing access']
+    features: ['One-time $30 charge', 'Full day of access', '1 hour of conference room time', 'High-speed WiFi', 'Kitchen access', 'Printing access']
   },
   {
     id: 'private_office_single',

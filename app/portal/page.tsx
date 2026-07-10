@@ -61,6 +61,7 @@ function PortalDashboard() {
     | { kind: 'success'; ach: boolean }
     | { kind: 'processing' }
     | { kind: 'canceled' }
+    | { kind: 'day_pass' }
     | null
   >(null);
   // When set, the Documents tab opens the signed Fee Agreement in editable
@@ -115,7 +116,8 @@ function PortalDashboard() {
     if (loading) return;
     const subscribed = searchParams?.get('subscribed') === '1';
     const canceled = searchParams?.get('canceled') === '1';
-    if (!subscribed && !canceled) return;
+    const dayPass = searchParams?.get('day_pass') === '1';
+    if (!subscribed && !canceled && !dayPass) return;
     handledCheckoutReturn.current = true;
 
     // Strip the query string from the URL so a refresh doesn't replay
@@ -124,6 +126,25 @@ function PortalDashboard() {
 
     if (canceled) {
       setPaymentBanner({ kind: 'canceled' });
+      return;
+    }
+
+    // Return from an additional day-pass purchase: the member is already
+    // onboarded, so no polling for unlock — just confirm and refresh data
+    // once so the new pass/payment shows up.
+    if (dayPass) {
+      setPaymentBanner({ kind: 'day_pass' });
+      setTab('payments');
+      (async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          try {
+            await loadPortalData(session.access_token);
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      })();
       return;
     }
 
@@ -363,6 +384,34 @@ function PortalDashboard() {
                     receive a receipt by email shortly.
                   </>
                 )}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setPaymentBanner(null)}
+            className="text-green-700 hover:text-green-900 flex-shrink-0"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {paymentBanner?.kind === 'day_pass' && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="bg-green-50 border-2 border-green-400 text-green-900 rounded-lg p-4 flex items-start justify-between gap-3"
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
+              ✓
+            </div>
+            <div>
+              <div className="font-semibold text-base">Day pass purchased!</div>
+              <div className="text-sm mt-1">
+                Your new day pass is confirmed — see the Payment tab for your
+                passes and receipt. We look forward to seeing you!
               </div>
             </div>
           </div>
@@ -2135,10 +2184,20 @@ function PaymentsTab({
       )}
 
       <section className="bg-white border rounded p-6">
-        <h2 className="font-semibold text-gray-900 mb-2">Monthly membership</h2>
+        <h2 className="font-semibold text-gray-900 mb-2">
+          {oneTime ? 'Day pass' : 'Monthly membership'}
+        </h2>
         {member.monthly_cost_cents == null ? (
           <p className="text-sm text-gray-500">
             Your administrator hasn&apos;t assigned a monthly cost yet.
+          </p>
+        ) : oneTime && hasInitialPayment ? (
+          <p className="text-sm text-gray-700">
+            Day passes are{' '}
+            <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>{' '}
+            each — a one-time charge per day (plus a 3.5% processing fee when
+            paying by card). Buy as many as you need below; no new application
+            required.
           </p>
         ) : !member.stripe_subscription_id ? (
           member.is_legacy_member ? (
@@ -2334,13 +2393,17 @@ function PaymentsTab({
             )}
           </div>
         ) : hasInitialPayment ? (
-          <div className="mt-4 bg-blue-50 border border-blue-300 text-blue-900 rounded p-3 text-sm">
-            <strong>We&apos;ve received your initial payment.</strong> Your
-            subscription is being finalized — please don&apos;t pay again. If
-            this section hasn&apos;t updated within an hour, email{' '}
-            memberservices@merrittworkspace.net and we&apos;ll set up auto-pay
-            against the payment you already made (no second charge).
-          </div>
+          oneTime ? (
+            <DayPassSection />
+          ) : (
+            <div className="mt-4 bg-blue-50 border border-blue-300 text-blue-900 rounded p-3 text-sm">
+              <strong>We&apos;ve received your initial payment.</strong> Your
+              subscription is being finalized — please don&apos;t pay again. If
+              this section hasn&apos;t updated within an hour, email{' '}
+              memberservices@merrittworkspace.net and we&apos;ll set up auto-pay
+              against the payment you already made (no second charge).
+            </div>
+          )
         ) : (
           <>
             {member.agreement_signed && (
@@ -2483,6 +2546,169 @@ function PaymentsTab({
           </>
         )}
       </section>
+    </div>
+  );
+}
+
+// Day-pass management for One Day Dedicated Desk members who've completed
+// onboarding: shows the passes they hold and lets them buy more for future
+// dates without going through the application process again. Each purchase
+// goes through Stripe Checkout; the webhook records the pass.
+function DayPassSection() {
+  interface DayPassRow {
+    id: string;
+    pass_date: string;
+    amount_cents: number;
+    status: string;
+    created_at: string;
+  }
+  const [passes, setPasses] = useState<DayPassRow[]>([]);
+  const [today, setToday] = useState<string>('');
+  const [maxDate, setMaxDate] = useState<string>('');
+  const [priceCents, setPriceCents] = useState<number>(3000);
+  const [passDate, setPassDate] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [buying, setBuying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) return;
+        const res = await fetch('/api/portal/day-pass', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setPasses(data.passes || []);
+        setToday(data.today || '');
+        setMaxDate(data.max_purchase_date || '');
+        setPriceCents(data.price_cents || 3000);
+        setPassDate(data.today || '');
+      } catch (e) {
+        console.error('Failed to load day passes', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  async function buyPass() {
+    setError(null);
+    if (!passDate) {
+      setError('Pick the date you want to come in.');
+      return;
+    }
+    setBuying(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await fetch('/api/portal/day-pass', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ pass_date: passDate }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not start checkout.');
+      window.location.href = data.url;
+    } catch (e: any) {
+      setError(e.message);
+      setBuying(false);
+    }
+  }
+
+  const formatPassDate = (iso: string) =>
+    new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="bg-gray-50 border border-gray-200 rounded p-3 text-xs text-gray-700 space-y-1">
+        <p className="font-semibold text-gray-900">What a day pass includes</p>
+        <p>
+          A dedicated desk for the day, plus{' '}
+          <span className="font-semibold">1 hour of conference-room time</span>{' '}
+          on the day of your pass. Flex space access is not included with day
+          passes — it&apos;s a recurring-membership perk.
+        </p>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 mb-2">Your passes</h3>
+        {loading ? (
+          <p className="text-sm text-gray-500">Loading…</p>
+        ) : passes.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            No passes on file yet — your first pass will appear here shortly
+            after payment.
+          </p>
+        ) : (
+          <ul className="divide-y border rounded">
+            {passes.map((p) => {
+              const upcoming = p.pass_date >= today && p.status === 'confirmed';
+              return (
+                <li key={p.id} className="px-3 py-2 flex items-center justify-between text-sm">
+                  <span className="text-gray-900">{formatPassDate(p.pass_date)}</span>
+                  <span
+                    className={
+                      p.status === 'refunded'
+                        ? 'inline-flex items-center rounded-full bg-amber-100 text-amber-900 px-2 py-0.5 text-xs font-medium'
+                        : upcoming
+                          ? 'inline-flex items-center rounded-full bg-green-100 text-green-800 px-2 py-0.5 text-xs font-medium'
+                          : 'text-xs text-gray-500'
+                    }
+                  >
+                    {p.status === 'refunded' ? 'Refunded' : upcoming ? 'Upcoming' : 'Used'}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      <div className="border rounded p-4 bg-white">
+        <h3 className="text-sm font-semibold text-gray-900 mb-2">
+          Buy another day pass — {formatUsd(priceCents)}
+        </h3>
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Which day are you coming in?
+            </label>
+            <input
+              type="date"
+              min={today || undefined}
+              max={maxDate || undefined}
+              value={passDate}
+              onChange={(e) => setPassDate(e.target.value)}
+              className="border rounded px-3 py-2 text-sm"
+            />
+          </div>
+          <button
+            onClick={buyPass}
+            disabled={buying || loading}
+            className="bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50 text-sm"
+          >
+            {buying ? 'Opening checkout…' : 'Buy day pass'}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-gray-500">
+          One-time charge per pass (plus a 3.5% processing fee when paying by
+          card). No new application needed — you&apos;re already onboarded.
+        </p>
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      </div>
     </div>
   );
 }

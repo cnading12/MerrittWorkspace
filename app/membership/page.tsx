@@ -47,6 +47,7 @@ const membershipPlans = [
     features: [
       'One-time $30 charge',
       'Full day of access',
+      '1 hour of conference room time',
       'High-speed WiFi',
       'Full kitchen with coffee',
       'Printing access',

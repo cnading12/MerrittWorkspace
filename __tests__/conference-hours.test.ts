@@ -26,6 +26,14 @@ function chainableQuery(table: string) {
   }
   q.then = (resolve: any) =>
     resolve(resultsByTable[table] ?? { data: [], error: null });
+  q.maybeSingle = async () => {
+    queryLog.push({ table, method: 'maybeSingle', args: [] });
+    const res = resultsByTable[table] ?? { data: [], error: null };
+    return {
+      data: Array.isArray(res.data) ? res.data[0] ?? null : res.data,
+      error: res.error,
+    };
+  };
   return q;
 }
 
@@ -40,9 +48,11 @@ vi.mock('@/lib/portal/supabaseAdmin', () => ({
 
 import {
   monthBoundsForDate,
+  dayBoundsForDate,
   denverMonthBounds,
   monthlyIncludedHours,
   isOfficePooledDesignation,
+  isDayPassDesignation,
   splitDuration,
   getMemberHoursSummary,
 } from '@/lib/bookings/conference-hours';
@@ -57,6 +67,9 @@ function setBookings(rows: any[] | null, error: any = null) {
 }
 function setMembers(rows: any[] | null, error: any = null) {
   resultsByTable['members'] = { data: rows, error };
+}
+function setDayPasses(rows: any[] | null, error: any = null) {
+  resultsByTable['day_passes'] = { data: rows, error };
 }
 
 describe('monthBoundsForDate', () => {
@@ -218,6 +231,77 @@ describe('getMemberHoursSummary (office shared pool)', () => {
     // Pool falls back to the caller: their own designation anchors the
     // allotment and their own bookings still count.
     expect(summary).toMatchObject({ included: 20, used: 3, remaining: 17, pool_size: 1 });
+  });
+});
+
+describe('getMemberHoursSummary (day-pass daily allotment)', () => {
+  // One Day Dedicated Desk members: 1 included hour per day, only on days
+  // they hold a confirmed pass, checked against that DAY's bookings rather
+  // than a monthly pool.
+  const dayPassMember = { id: 'mem-day', designation: 'one_day_dedicated_desk' };
+
+  it('grants 1 hour on a day with a confirmed pass', async () => {
+    setDayPasses([{ id: 'pass-1' }]);
+    setBookings([]);
+    const summary = await getMemberHoursSummary(dayPassMember, '2026-07-15');
+    expect(summary).toEqual({
+      included: 1,
+      used: 0,
+      remaining: 1,
+      daily: true,
+      has_day_pass: true,
+    });
+  });
+
+  it('grants nothing on a day without a pass', async () => {
+    setDayPasses([]);
+    setBookings([]);
+    const summary = await getMemberHoursSummary(dayPassMember, '2026-07-15');
+    expect(summary).toEqual({
+      included: 0,
+      used: 0,
+      remaining: 0,
+      daily: true,
+      has_day_pass: false,
+    });
+  });
+
+  it("counts that day's existing booking against the daily hour", async () => {
+    setDayPasses([{ id: 'pass-1' }]);
+    setBookings([{ included_hours: 1 }]);
+    const summary = await getMemberHoursSummary(dayPassMember, '2026-07-15');
+    expect(summary).toMatchObject({ included: 1, used: 1, remaining: 0 });
+  });
+
+  it('queries usage bounded to the single booking day, not the month', async () => {
+    setDayPasses([{ id: 'pass-1' }]);
+    setBookings([]);
+    await getMemberHoursSummary(dayPassMember, '2026-07-31');
+    const gte = queryLog.find((c) => c.table === 'conference_bookings' && c.method === 'gte');
+    const lt = queryLog.find((c) => c.table === 'conference_bookings' && c.method === 'lt');
+    expect(gte?.args[1]).toBe('2026-07-31');
+    expect(lt?.args[1]).toBe('2026-08-01');
+  });
+
+  it('throws when the pass lookup fails rather than assuming no pass', async () => {
+    setDayPasses(null, { message: 'pass boom' });
+    await expect(getMemberHoursSummary(dayPassMember, '2026-07-15')).rejects.toThrow(/pass boom/);
+  });
+});
+
+describe('dayBoundsForDate', () => {
+  it('bounds a date to itself and the next day, across month ends', () => {
+    expect(dayBoundsForDate('2026-07-15')).toEqual({ start: '2026-07-15', nextStart: '2026-07-16' });
+    expect(dayBoundsForDate('2026-07-31')).toEqual({ start: '2026-07-31', nextStart: '2026-08-01' });
+    expect(dayBoundsForDate('2026-12-31')).toEqual({ start: '2026-12-31', nextStart: '2027-01-01' });
+  });
+});
+
+describe('isDayPassDesignation', () => {
+  it('matches only the one-day desk designation', () => {
+    expect(isDayPassDesignation('one_day_dedicated_desk')).toBe(true);
+    expect(isDayPassDesignation('dedicated_desk')).toBe(false);
+    expect(isDayPassDesignation(null)).toBe(false);
   });
 });
 

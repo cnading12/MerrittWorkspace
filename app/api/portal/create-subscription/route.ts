@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { isOneTimeDesignation } from '@/lib/portal/pricing';
+import { denverTodayIso } from '@/lib/bookings/conference-hours';
 import {
   billingCycleAnchorAfter,
   calculateProratedFirstMonthCents,
@@ -201,6 +202,10 @@ export async function POST(req: NextRequest) {
           base_cents: String(member.monthly_cost_cents),
           cc_fee_cents: String(ccFeeCents),
           selected_payment_method: selectedMethod,
+          // The fee agreement anchors a day pass to the purchase day; the
+          // webhook records it in day_passes so conference-room hours (1
+          // hr per pass day) and staff records know when they're coming in.
+          pass_date: denverTodayIso(),
         },
       });
 
