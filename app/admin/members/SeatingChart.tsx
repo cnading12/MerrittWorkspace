@@ -78,13 +78,18 @@ export default function SeatingChart({
   const seatingMembers: SeatingMember[] = useMemo(
     () =>
       members
-        .filter((m) => !m.archived_at)
+        // Declined office-member requests never held the seat; everyone else
+        // (including cancelled members still in their notice period) keeps
+        // showing until archived, matching how seats free up elsewhere.
+        .filter((m) => !m.archived_at && m.status !== 'declined')
         .map((m) => ({
           id: m.id,
           first_name: m.first_name,
           last_name: m.last_name,
           desk_number: m.desk_number,
           office_number: m.office_number,
+          designation: m.designation,
+          status: m.status,
         })),
     [members]
   );
@@ -360,6 +365,10 @@ function OccupancyRow({
   const occ = entry.occupant;
   const conflict = entry.conflict;
   const label = `${entry.spaceType === 'desk' ? 'Desk' : 'Office'} ${entry.spaceNumber}`;
+  // Everyone to list: all portal occupants (offices can hold several people),
+  // or the manual occupant when nobody from the portal claims the space.
+  const occupantList: typeof entry.occupants =
+    entry.occupants.length > 0 ? entry.occupants : occ ? [occ] : [];
 
   return (
     <li
@@ -369,23 +378,62 @@ function OccupancyRow({
     >
       <span className="font-mono text-sm font-semibold text-gray-700 w-16 shrink-0">
         {entry.spaceNumber}
+        {occupantList.length > 1 && (
+          <span
+            className="ml-1 text-[10px] font-bold text-teal-700 bg-teal-50 border border-teal-200 rounded px-1 py-0.5 align-middle"
+            title={`${occupantList.length} people share this ${entry.spaceType}`}
+          >
+            ×{occupantList.length}
+          </span>
+        )}
       </span>
 
       <div className="min-w-0 flex-1">
-        {occ ? (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-gray-900 truncate">
-              {occ.name}
-            </span>
-            <SourceBadge source={occ.source} />
-            {occ.memberId && (
-              <Link
-                href={`/admin/members/${occ.memberId}`}
-                className="text-xs text-blue-600 hover:underline"
+        {occupantList.length > 0 ? (
+          <div className="space-y-0.5">
+            {occupantList.map((person, i) => (
+              <div
+                key={person.memberId || person.manualId || i}
+                className="flex items-center gap-2 flex-wrap"
               >
-                profile
-              </Link>
-            )}
+                <span className="text-sm font-medium text-gray-900 truncate">
+                  {person.name}
+                </span>
+                {person.role === 'primary' && (
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gray-900 text-white"
+                    title="Pays for this office"
+                  >
+                    Primary
+                  </span>
+                )}
+                {person.role === 'member' && (
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-teal-100 text-teal-800"
+                    title="Additional occupant — the office's primary member pays for the space"
+                  >
+                    Office member
+                  </span>
+                )}
+                {person.pending && (
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 text-amber-800"
+                    title="Awaiting admin approval"
+                  >
+                    Pending
+                  </span>
+                )}
+                <SourceBadge source={person.source} />
+                {person.memberId && (
+                  <Link
+                    href={`/admin/members/${person.memberId}`}
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    profile
+                  </Link>
+                )}
+              </div>
+            ))}
           </div>
         ) : (
           <span className="text-sm text-gray-400 italic">Vacant</span>

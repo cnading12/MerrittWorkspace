@@ -14,6 +14,11 @@
 //
 // When a portal member and a manual entry both claim the same space we flag a
 // conflict rather than silently picking one — the admin needs to resolve it.
+//
+// Offices are multi-occupant: one paying "primary" member plus any number of
+// $0 "office members" can legitimately share an office, so every portal
+// claimant of a space is kept (OccupancyEntry.occupants, primary first)
+// rather than only the first writer.
 
 import { DD_MIN, DD_MAX, normalizeDeskNumber } from './desks';
 
@@ -32,12 +37,17 @@ export interface ManualAssignment {
 
 // The minimal shape of a member needed to build occupancy. Keeps this module
 // decoupled from the full Member type so it can be unit-tested in isolation.
+// designation/status are optional so existing callers/tests keep working;
+// when present they drive the primary/office-member roles and pending flags
+// on multi-occupant offices.
 export interface SeatingMember {
   id: string;
   first_name: string;
   last_name: string;
   desk_number: string | null;
   office_number: string | null;
+  designation?: string | null;
+  status?: string | null;
 }
 
 export type OccupancySource = 'portal' | 'manual';
@@ -49,16 +59,26 @@ export interface SpaceOccupant {
   memberId?: string;
   // Present for manual occupants so the UI can edit/delete the row.
   manualId?: string;
+  // For office occupants: 'primary' pays for the office, 'member' is an
+  // additional occupant ($0/mo office member). Absent for desks/manual rows.
+  role?: 'primary' | 'member';
+  // True while an office member is awaiting admin approval.
+  pending?: boolean;
 }
 
 export interface OccupancyEntry {
   spaceType: SpaceType;
   // Canonical space label, e.g. "DD4" or "101".
   spaceNumber: string;
-  // The occupant shown for this space. Vacant spaces have occupant === null.
-  // When there's a conflict this is the portal occupant (the source of truth
-  // for billing) and `conflict` holds the competing manual entry.
+  // The headline occupant for this space (offices: the primary member).
+  // Vacant spaces have occupant === null. When there's a conflict this is
+  // the portal occupant (the source of truth for billing) and `conflict`
+  // holds the competing manual entry.
   occupant: SpaceOccupant | null;
+  // EVERY portal occupant of this space, primary first. Offices can hold
+  // several people (one paying primary + office members); desks normally
+  // have one but a double-claim shows up here instead of being hidden.
+  occupants: SpaceOccupant[];
   // Set when both a portal member and a manual entry claim this space.
   conflict?: SpaceOccupant;
 }
@@ -108,22 +128,38 @@ export function buildOccupancy(
   members: SeatingMember[],
   manual: ManualAssignment[]
 ): OccupancyEntry[] {
-  // Index portal occupants by canonical space number.
-  const portalBySpace = new Map<string, SpaceOccupant>();
+  // Index ALL portal occupants by canonical space number. Offices are
+  // legitimately multi-occupant (one paying primary + any number of office
+  // members), so every claimant is kept and sorted primary-first.
+  const portalBySpace = new Map<string, SpaceOccupant[]>();
   for (const m of members) {
     const raw = spaceType === 'desk' ? m.desk_number : m.office_number;
     const key = canonicalizeSpaceNumber(spaceType, raw);
     if (!key) continue;
-    // First writer wins for the primary slot; additional members on the same
-    // space are surfaced as conflicts below.
-    if (!portalBySpace.has(key)) {
-      portalBySpace.set(key, {
-        name: fullName(m),
-        source: 'portal',
-        memberId: m.id,
-      });
+    const occupant: SpaceOccupant = {
+      name: fullName(m),
+      source: 'portal',
+      memberId: m.id,
+    };
+    if (spaceType === 'office') {
+      if ((m.designation || '').startsWith('private_office')) {
+        occupant.role = 'primary';
+      } else if (m.designation === 'office_member') {
+        occupant.role = 'member';
+      }
     }
+    if (m.status === 'pending') occupant.pending = true;
+    const list = portalBySpace.get(key);
+    if (list) list.push(occupant);
+    else portalBySpace.set(key, [occupant]);
   }
+  // Primary first, then confirmed office members, then pending ones; stable
+  // by name within each group so the list reads predictably.
+  const rank = (o: SpaceOccupant) =>
+    (o.role === 'primary' ? 0 : o.role === 'member' ? 2 : 1) + (o.pending ? 3 : 0);
+  portalBySpace.forEach((list) => {
+    list.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+  });
 
   // Index manual occupants by canonical space number.
   const manualBySpace = new Map<string, SpaceOccupant>();
@@ -153,17 +189,24 @@ export function buildOccupancy(
   const order = [...canonicalSpaces, ...extras];
 
   return order.map((spaceNumber) => {
-    const portal = portalBySpace.get(spaceNumber);
+    const portal = portalBySpace.get(spaceNumber) || [];
     const manualOcc = manualBySpace.get(spaceNumber);
 
-    if (portal && manualOcc) {
-      // Both sources claim it — portal is the primary, manual is the conflict.
-      return { spaceType, spaceNumber, occupant: portal, conflict: manualOcc };
+    if (portal.length > 0 && manualOcc) {
+      // Both sources claim it — portal is the headline, manual is the conflict.
+      return {
+        spaceType,
+        spaceNumber,
+        occupant: portal[0],
+        occupants: portal,
+        conflict: manualOcc,
+      };
     }
     return {
       spaceType,
       spaceNumber,
-      occupant: portal || manualOcc || null,
+      occupant: portal[0] || manualOcc || null,
+      occupants: portal,
     };
   });
 }

@@ -145,6 +145,82 @@ describe('buildOccupancy', () => {
   });
 });
 
+describe('buildOccupancy — multi-occupant offices', () => {
+  // Office 110: Priya pays (primary), Omar is an approved office member,
+  // Nia's request is still pending.
+  const officeMembers = [
+    member('m-omar', 'Omar', 'Diaz', {
+      office_number: '110',
+      designation: 'office_member',
+      status: 'active',
+    }),
+    member('m-priya', 'Priya', 'Shah', {
+      office_number: '110',
+      designation: 'private_office_large',
+      status: 'active',
+    }),
+    member('m-nia', 'Nia', 'Bell', {
+      office_number: ' 110 ',
+      designation: 'office_member',
+      status: 'pending',
+    }),
+  ];
+
+  it('lists every occupant of an office, primary first', () => {
+    const entries = buildOccupancy('office', OFFICE_SPACES, officeMembers, []);
+    const o110 = entries.find((e) => e.spaceNumber === '110')!;
+    expect(o110.occupants.map((o) => o.name)).toEqual([
+      'Priya Shah',
+      'Omar Diaz',
+      'Nia Bell',
+    ]);
+    expect(o110.occupants[0]).toMatchObject({ role: 'primary' });
+    expect(o110.occupants[1]).toMatchObject({ role: 'member' });
+    expect(o110.occupants[2]).toMatchObject({ role: 'member', pending: true });
+    // The headline occupant is the primary.
+    expect(o110.occupant).toMatchObject({ name: 'Priya Shah', role: 'primary' });
+  });
+
+  it('keeps single-occupant entries working with an occupants array of one', () => {
+    const members = [member('m1', 'Ada', 'Lovelace', { desk_number: 'DD4' })];
+    const entries = buildOccupancy('desk', DESK_SPACES, members, []);
+    const dd4 = entries.find((e) => e.spaceNumber === 'DD4')!;
+    expect(dd4.occupants).toHaveLength(1);
+    expect(dd4.occupants[0].name).toBe('Ada Lovelace');
+  });
+
+  it('a manual occupant does not appear in occupants (portal-only) but stays the headline when alone', () => {
+    const entries = buildOccupancy('office', OFFICE_SPACES, [], [
+      manual('a1', 'office', '101', 'Grace Hopper'),
+    ]);
+    const o101 = entries.find((e) => e.spaceNumber === '101')!;
+    expect(o101.occupants).toHaveLength(0);
+    expect(o101.occupant?.name).toBe('Grace Hopper');
+  });
+
+  it('still flags a manual conflict on a multi-occupant office', () => {
+    const entries = buildOccupancy('office', OFFICE_SPACES, officeMembers, [
+      manual('a1', 'office', '110', 'Walk-in Person'),
+    ]);
+    const o110 = entries.find((e) => e.spaceNumber === '110')!;
+    expect(o110.occupants).toHaveLength(3);
+    expect(o110.conflict).toMatchObject({ name: 'Walk-in Person', source: 'manual' });
+  });
+
+  it('no longer hides a second portal claimant of the same desk', () => {
+    const members = [
+      member('m1', 'Ada', 'Lovelace', { desk_number: 'DD4' }),
+      member('m2', 'Alan', 'Turing', { desk_number: 'dd4' }),
+    ];
+    const entries = buildOccupancy('desk', DESK_SPACES, members, []);
+    const dd4 = entries.find((e) => e.spaceNumber === 'DD4')!;
+    expect(dd4.occupants.map((o) => o.name).sort()).toEqual([
+      'Ada Lovelace',
+      'Alan Turing',
+    ]);
+  });
+});
+
 describe('validateManualAssignment', () => {
   it('rejects an invalid space type', () => {
     const r = validateManualAssignment({
