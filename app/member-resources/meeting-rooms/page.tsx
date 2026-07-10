@@ -37,6 +37,10 @@ interface HoursSummary {
   included: number;
   used: number;
   remaining: number;
+  // Present when the hours are an office-wide shared pool (private offices
+  // can have multiple occupants who all draw from one allotment).
+  pooled?: boolean;
+  office_number?: string;
 }
 
 const HOURLY_RATE = 25; // Conference room rate per hour
@@ -167,7 +171,13 @@ export default function MeetingRoomsPage() {
       const res = await fetch(`/api/bookings/member${qs}`, { headers: { Authorization: `Bearer ${t}` } });
       if (res.ok) {
         const h = await res.json();
-        setHours({ included: h.included, used: h.used, remaining: h.remaining });
+        setHours({
+          included: h.included,
+          used: h.used,
+          remaining: h.remaining,
+          pooled: h.pooled,
+          office_number: h.office_number,
+        });
       }
     } catch {
       // non-fatal
@@ -619,7 +629,17 @@ Your time slot is temporarily reserved.`);
                     </div>
                     {hours ? (
                       <p className="text-sm text-green-800 mb-3">
-                        You have <strong>{hours.remaining}</strong> of {hours.included} included hour{hours.included === 1 ? '' : 's'} left {hoursMonthLabel}.
+                        {hours.pooled ? (
+                          <>
+                            Your office has <strong>{hours.remaining}</strong> of{' '}
+                            {hours.included} included hour{hours.included === 1 ? '' : 's'} left {hoursMonthLabel} — shared by
+                            everyone in Office {hours.office_number}.
+                          </>
+                        ) : (
+                          <>
+                            You have <strong>{hours.remaining}</strong> of {hours.included} included hour{hours.included === 1 ? '' : 's'} left {hoursMonthLabel}.
+                          </>
+                        )}
                       </p>
                     ) : (
                       <p className="text-sm text-green-800 mb-3">Loading your included hours…</p>
@@ -634,7 +654,7 @@ Your time slot is temporarily reserved.`);
                           <>
                             <p className="text-gray-800 font-medium">
                               {memberCost.included} hr{memberCost.included === 1 ? '' : 's'} included
-                              {' + '}{memberCost.billed} hr{memberCost.billed === 1 ? '' : 's'} over your allotment
+                              {' + '}{memberCost.billed} hr{memberCost.billed === 1 ? '' : 's'} over {hours?.pooled ? "your office's" : 'your'} allotment
                             </p>
                             <p className="text-orange-700 font-semibold mt-1">
                               ${memberCost.billedDollars.toFixed(2)} charged to your card on file

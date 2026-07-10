@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import OfficeMemberDashboard from './OfficeMemberDashboard';
 import type { Member, MemberDocument, PaymentHistoryRow } from '@/lib/portal/types';
 import { DESIGNATION_LABELS } from '@/lib/portal/types';
 import {
@@ -267,6 +268,14 @@ function PortalDashboard() {
         </button>
       </div>
     );
+  }
+
+  // Office members (occupants of an office someone else pays for) have no
+  // documents, agreements, or payments to walk through — they get a focused
+  // dashboard with their approval status and member perks instead of the
+  // onboarding pipeline below.
+  if (member.designation === 'office_member') {
+    return <OfficeMemberDashboard member={member} onSignOut={signOut} />;
   }
 
   const onboardingLocked = !member.onboarding_unlocked;
