@@ -9,6 +9,7 @@ import {
 } from '@/lib/portal/emails';
 import { DESIGNATION_LABELS, type MemberDesignation } from '@/lib/portal/types';
 import { normalizeDeskNumber, deskTakenMessage } from '@/lib/portal/desks';
+import { findDeskClaim } from '@/lib/portal/deskClaims';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,16 +64,13 @@ export async function POST(req: NextRequest) {
         if (!result.ok) {
           return NextResponse.json({ error: result.error }, { status: 400 });
         }
-        // Reject desks already claimed by another member. Case-insensitive so
-        // legacy values like "dd4" still collide with "DD4".
-        const { data: clash, error: clashErr } = await sb
-          .from('members')
-          .select('id')
-          .ilike('desk_number', result.value)
-          .neq('id', member.id)
-          .limit(1);
-        if (clashErr) throw new Error(clashErr.message);
-        if (clash && clash.length > 0) {
+        // Reject desks that are already occupied on the seating chart — whether
+        // claimed by another portal member OR manually entered by staff for
+        // someone who isn't on the portal yet. Both sources count as taken.
+        const claim = await findDeskClaim(sb, result.value, {
+          excludeMemberId: member.id,
+        });
+        if (claim) {
           return NextResponse.json(
             { error: deskTakenMessage(result.value) },
             { status: 409 },

@@ -23,7 +23,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { planForMembershipType } from '@/lib/portal/pricing';
-import { normalizeDeskNumber } from '@/lib/portal/desks';
+import { normalizeDeskNumber, deskTakenMessage } from '@/lib/portal/desks';
+import { findDeskClaim, manualOccupantMatchesName } from '@/lib/portal/deskClaims';
 import { PORTAL_ONBOARDING_FROM, PORTAL_REPLY_TO } from '@/lib/portal/emails';
 
 export const dynamic = 'force-dynamic';
@@ -126,6 +127,28 @@ export async function POST(request: NextRequest) {
 
     const email = (body.email as string).trim().toLowerCase();
     const sb = getServiceSupabase();
+
+    // A desk that's already occupied on the seating chart can't be claimed,
+    // whether it's held by a portal member or staff charted someone there
+    // manually. One exception: a manual entry under the applicant's own name —
+    // staff chart not-yet-migrated members, and that entry is exactly who is
+    // migrating right now. Checked before any account/member rows are created.
+    if (designation === 'dedicated_desk' && deskNumber) {
+      const claim = await findDeskClaim(sb, deskNumber);
+      const isOwnManualEntry =
+        claim?.source === 'manual' &&
+        manualOccupantMatchesName(
+          claim.occupantName,
+          body.first_name as string,
+          body.last_name as string,
+        );
+      if (claim && !isOwnManualEntry) {
+        return NextResponse.json(
+          { error: deskTakenMessage(deskNumber) },
+          { status: 409 }
+        );
+      }
+    }
 
     // 1. Ensure an auth.users row exists. If the email is already in use
     //    we surface a clear error so the user signs in instead of trying
