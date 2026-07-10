@@ -163,6 +163,41 @@ export default function AdminMembersPage() {
     }
   }
 
+  // One-click approve/decline for pending office members (people joining a
+  // private office someone else pays for).
+  const [decidingId, setDecidingId] = useState<string | null>(null);
+  async function decideOfficeMember(m: Member, decision: 'approve' | 'decline') {
+    if (!token) return;
+    const verb = decision === 'approve' ? 'Approve' : 'Decline';
+    if (
+      !confirm(
+        `${verb} ${m.first_name} ${m.last_name} as an office member of Office ${m.office_number || '?'}?` +
+          (decision === 'approve'
+            ? '\n\nThey get full member access (conference room via the office’s shared hours, snack shop, access codes) at $0/mo. They’ll be emailed.'
+            : '\n\nTheir account stays locked and they’ll be emailed.')
+      )
+    )
+      return;
+    setDecidingId(m.id);
+    try {
+      const res = await fetch(`/api/admin/members/${m.id}/office-member-decision`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(json.error || `Failed to ${decision} office member`);
+        return;
+      }
+      setMembers((prev) =>
+        prev.map((mm) => (mm.id === m.id ? { ...mm, ...json.member } : mm))
+      );
+    } finally {
+      setDecidingId(null);
+    }
+  }
+
   async function patchMember(id: string, body: any) {
     if (!token) return;
     const res = await fetch(`/api/admin/members/${id}`, {
@@ -319,6 +354,14 @@ export default function AdminMembersPage() {
 
   const statuses: StatusFilter[] = ['all', 'pending', 'approved', 'active', 'paused', 'cancelled', 'declined'];
 
+  const pendingOfficeMembers = useMemo(
+    () =>
+      members.filter(
+        (m) => m.designation === 'office_member' && m.status === 'pending' && !m.archived_at
+      ),
+    [members]
+  );
+
   if (loading) return <div className="text-gray-500">Loading…</div>;
 
   return (
@@ -395,6 +438,43 @@ export default function AdminMembersPage() {
         </div>
       </div>
 
+      {!viewArchived && pendingOfficeMembers.length > 0 && (
+        <div className="bg-teal-50 border-2 border-teal-300 rounded-lg p-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <div className="font-semibold text-teal-900">
+                {pendingOfficeMembers.length} office member{' '}
+                {pendingOfficeMembers.length === 1 ? 'request' : 'requests'} awaiting
+                approval
+              </div>
+              <div className="text-sm text-teal-800 mt-0.5">
+                People asking to join a private office someone else pays for. Approve
+                or decline right on their card below.
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setStatusFilter('pending');
+                setSearch('');
+              }}
+              className="text-sm border border-teal-600 bg-teal-600 text-white rounded px-3 py-1.5 hover:bg-teal-700"
+            >
+              Show pending
+            </button>
+          </div>
+          <ul className="mt-3 space-y-1 text-sm text-teal-900">
+            {pendingOfficeMembers.map((m) => (
+              <li key={m.id}>
+                <span className="font-medium">
+                  {m.first_name} {m.last_name}
+                </span>{' '}
+                → Office {m.office_number || '?'} · {m.email}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <div className="bg-white border rounded p-6 text-sm text-gray-500">
           No members match the current filters.
@@ -443,6 +523,14 @@ export default function AdminMembersPage() {
                         title="Existing member who self-migrated into the portal. Billing may still be on the manual/accountant track until they set up Stripe auto-pay."
                       >
                         LEGACY
+                      </span>
+                    )}
+                    {m.designation === 'office_member' && (
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold tracking-wider bg-teal-600 text-white"
+                        title={`Occupant of Office ${m.office_number || '?'} — the office's primary member pays for the space; this person is $0/mo and shares the office's conference hours.`}
+                      >
+                        OFFICE MEMBER{m.office_number ? ` · ${m.office_number}` : ''}
                       </span>
                     )}
                   </div>
@@ -542,16 +630,37 @@ export default function AdminMembersPage() {
                     }}
                     className="border rounded px-2 py-1 text-sm"
                   />
-                  <button
-                    onClick={() =>
-                      patchMember(m.id, {
-                        status: m.status === 'active' ? 'paused' : 'active',
-                      })
-                    }
-                    className="text-sm border rounded px-2 py-1 hover:bg-gray-50"
-                  >
-                    {m.status === 'active' ? 'Pause' : 'Activate'}
-                  </button>
+                  {m.designation === 'office_member' && m.status === 'pending' ? (
+                    <>
+                      <button
+                        onClick={() => decideOfficeMember(m, 'approve')}
+                        disabled={decidingId === m.id}
+                        className="text-sm border border-teal-600 bg-teal-600 text-white rounded px-2 py-1 hover:bg-teal-700 disabled:opacity-50 font-medium"
+                        title={`Approve ${m.first_name} as an office member of Office ${m.office_number || '?'} — unlocks booking, snack shop, and access codes at $0/mo.`}
+                      >
+                        {decidingId === m.id ? 'Working…' : '✓ Approve'}
+                      </button>
+                      <button
+                        onClick={() => decideOfficeMember(m, 'decline')}
+                        disabled={decidingId === m.id}
+                        className="text-sm border border-red-300 text-red-700 rounded px-2 py-1 hover:bg-red-50 disabled:opacity-50"
+                        title="Decline this office-member request. Their account stays locked."
+                      >
+                        Decline
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        patchMember(m.id, {
+                          status: m.status === 'active' ? 'paused' : 'active',
+                        })
+                      }
+                      className="text-sm border rounded px-2 py-1 hover:bg-gray-50"
+                    >
+                      {m.status === 'active' ? 'Pause' : 'Activate'}
+                    </button>
+                  )}
                   <button
                     onClick={() => pingMember(m)}
                     disabled={!canPing || pinging === m.id}

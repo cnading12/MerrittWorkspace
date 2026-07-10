@@ -22,7 +22,8 @@ type PlanId =
   | 'dedicated_desk'
   | 'private_office_single'
   | 'private_office_double'
-  | 'private_office_large';
+  | 'private_office_large'
+  | 'office_member';
 
 interface PlanDef {
   id: PlanId;
@@ -60,6 +61,14 @@ const PLANS: PlanDef[] = [
     monthly: 1200,
     needs: 'office',
     blurb: 'Larger office for established teams.',
+  },
+  {
+    id: 'office_member',
+    label: 'Office Member — joining an existing office',
+    monthly: 0,
+    needs: 'office',
+    blurb:
+      'You work in a private office that a colleague or your company already pays for. Free account — staff approves your request.',
   },
 ];
 
@@ -163,17 +172,18 @@ export default function ExistingMemberMigrationPage() {
         Existing member account setup
       </h1>
       <p className="text-sm text-gray-600 mb-6">
-        If you joined Merritt Workspace before our online portal existed,
-        use this form to set up your account. We&apos;ll just need a few
-        details. Setting up auto-pay is <strong>optional</strong> — you can
-        keep paying however you do today and add auto-pay later.
+        Use this form if you joined Merritt Workspace before our online
+        portal existed, <strong>or</strong> if you&apos;re joining an office
+        that a colleague or your company already pays for. We&apos;ll just
+        need a few details.
       </p>
 
       <div className="bg-orange-50 border border-orange-200 rounded p-4 text-sm text-gray-700 mb-6">
         <p className="font-semibold text-orange-900 mb-1">What this is not</p>
         <p>
-          This is <em>only</em> for members who already have an active membership.
-          If you&apos;re new to Merritt Workspace, please use the{' '}
+          This is <em>only</em> for people who already have a membership or a
+          seat in an existing private office. If you&apos;re new to Merritt
+          Workspace, please use the{' '}
           <Link href="/membership/apply" className="text-orange-700 underline">
             standard application form
           </Link>{' '}
@@ -311,7 +321,7 @@ export default function ExistingMemberMigrationPage() {
                   <div className="flex items-baseline justify-between gap-3">
                     <div className="font-medium text-gray-900">{p.label}</div>
                     <div className="text-sm text-gray-700">
-                      ${p.monthly}/mo
+                      {p.monthly === 0 ? 'Free' : `$${p.monthly}/mo`}
                     </div>
                   </div>
                   <div className="text-xs text-gray-500">{p.blurb}</div>
@@ -338,7 +348,10 @@ export default function ExistingMemberMigrationPage() {
             ) : (
               <>
                 <label className="block text-sm font-medium text-gray-700">
-                  Your office number <span className="text-red-500">*</span>
+                  {planId === 'office_member'
+                    ? 'The office you work in'
+                    : 'Your office number'}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -370,20 +383,36 @@ export default function ExistingMemberMigrationPage() {
 
         <section className="bg-gray-50 border border-gray-200 rounded p-4 text-sm text-gray-700 space-y-2">
           <p className="font-semibold text-gray-900">After you submit</p>
-          <ol className="list-decimal pl-5 space-y-1">
-            <li>You&apos;ll be signed straight into your member portal.</li>
-            <li>
-              Sign your Member Agreement, Terms &amp; Conditions, and Fee
-              Agreement (uploading photo ID / proof of address is{' '}
-              <strong>not required</strong> for existing members).
-            </li>
-            <li>
-              <strong>Optional:</strong> set up Stripe auto-pay so future
-              payments are charged automatically on the 1st of each month. If
-              you skip this, your billing continues however it currently works
-              — no first/last month, no proration.
-            </li>
-          </ol>
+          {planId === 'office_member' ? (
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>You&apos;ll be signed straight into your member portal.</li>
+              <li>
+                Our staff gets a heads-up and approves your request — usually
+                same day. You&apos;ll get an email the moment you&apos;re in.
+              </li>
+              <li>
+                Once approved you can book the conference room (using your
+                office&apos;s shared included hours), shop the snack shop, and
+                request a building access code. <strong>There is no charge</strong>{' '}
+                — your office&apos;s primary member covers the space.
+              </li>
+            </ol>
+          ) : (
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>You&apos;ll be signed straight into your member portal.</li>
+              <li>
+                Sign your Member Agreement, Terms &amp; Conditions, and Fee
+                Agreement (uploading photo ID / proof of address is{' '}
+                <strong>not required</strong> for existing members).
+              </li>
+              <li>
+                <strong>Optional:</strong> set up Stripe auto-pay so future
+                payments are charged automatically on the 1st of each month. If
+                you skip this, your billing continues however it currently works
+                — no first/last month, no proration.
+              </li>
+            </ol>
+          )}
         </section>
 
         <label className="flex items-start gap-2 text-sm text-gray-700">
@@ -394,8 +423,9 @@ export default function ExistingMemberMigrationPage() {
             className="mt-1"
           />
           <span>
-            I confirm I am an existing Merritt Workspace member and I agree to
-            the{' '}
+            {planId === 'office_member'
+              ? 'I confirm I work out of the private office listed above and I agree to the '
+              : 'I confirm I am an existing Merritt Workspace member and I agree to the '}
             <a href="/terms" target="_blank" className="text-orange-700 underline">
               Terms &amp; Conditions
             </a>{' '}

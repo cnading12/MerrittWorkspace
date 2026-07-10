@@ -65,6 +65,26 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const member = await requireMember(req);
+
+    // Office members joining an existing office start as `pending` until an
+    // admin approves them; booking (and drawing on the office's shared
+    // hours) unlocks with approval. Declined members never unlock.
+    if (member.status === 'pending') {
+      return NextResponse.json(
+        {
+          error:
+            'Your membership is awaiting approval. Conference-room booking unlocks as soon as staff approves your account — you will get an email.',
+        },
+        { status: 403 },
+      );
+    }
+    if (member.status === 'declined') {
+      return NextResponse.json(
+        { error: 'Your membership request was declined. Contact member services if you believe this is a mistake.' },
+        { status: 403 },
+      );
+    }
+
     const body = await req.json();
 
     const bookingDate: string = body?.booking_date;

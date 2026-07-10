@@ -48,6 +48,13 @@ export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
     label: 'Private Office — Large',
     monthly_cost_cents: 120000,
   },
+  // Additional occupant of a private office someone else pays for. The
+  // office's primary member carries the full cost, so office members are $0.
+  office_member: {
+    designation: 'office_member',
+    label: 'Office Member',
+    monthly_cost_cents: 0,
+  },
 };
 
 export function isOneTimeDesignation(

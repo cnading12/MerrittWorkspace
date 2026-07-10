@@ -14,8 +14,29 @@ export type MemberDesignation =
   | 'private_office_single'
   | 'private_office_double'
   | 'private_office_large'
+  // A non-paying occupant of a private office that someone else (the
+  // office's primary member) pays for. Linked to the office through the
+  // same office_number column. Joins via the existing-member flow and
+  // stays status='pending' until an admin approves them.
+  | 'office_member'
   | 'flex'
   | 'other';
+
+// Designations whose conference-room hours come from a per-office shared
+// pool rather than a personal allotment. See lib/bookings/conference-hours.ts.
+export const OFFICE_DESIGNATIONS: MemberDesignation[] = [
+  'private_office_single',
+  'private_office_double',
+  'private_office_large',
+  'office_member',
+];
+
+// The designations that PAY for (and therefore anchor) a private office.
+export const PRIMARY_OFFICE_DESIGNATIONS: MemberDesignation[] = [
+  'private_office_single',
+  'private_office_double',
+  'private_office_large',
+];
 
 export interface Member {
   id: string;
@@ -180,6 +201,7 @@ export const DESIGNATION_LABELS: Record<MemberDesignation, string> = {
   private_office_single: 'Private Office — Single',
   private_office_double: 'Private Office — Double',
   private_office_large: 'Private Office — Large',
+  office_member: 'Office Member',
   flex: 'Flex',
   other: 'Other',
 };
