@@ -27,6 +27,21 @@ export async function POST(req: NextRequest) {
   try {
     const member = await requireMember(req);
 
+    // Office members joining an existing office start as `pending` until an
+    // admin approves them; member checkout unlocks with approval. (They can
+    // still buy as a guest through the public flow in the meantime.)
+    if (member.status === 'pending' || member.status === 'declined') {
+      return NextResponse.json(
+        {
+          error:
+            member.status === 'pending'
+              ? 'Your membership is awaiting approval — member checkout unlocks once staff approves your account.'
+              : 'Your membership request was declined. Contact member services if you believe this is a mistake.',
+        },
+        { status: 403 },
+      );
+    }
+
     const body = await req.json();
     const rawCart = Array.isArray(body?.cart_items) ? body.cart_items : [];
     const notes: string = typeof body?.notes === 'string' ? body.notes.trim() : '';

@@ -1,26 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Guards the conference-room included-hours accounting in
-// lib/bookings/conference-hours.ts. The critical behavior: the allotment is
-// checked against the calendar month the BOOKING falls in, so future
-// bookings draw down that month's hours the moment they're made and a member
-// can't stack free hours past their monthly limit by booking ahead
-// (e.g. a dedicated-desk member with 4 included hours booking 8 free hours
-// spread over next month).
+// lib/bookings/conference-hours.ts. The critical behaviors:
+//   • The allotment is checked against the calendar month the BOOKING falls
+//     in, so future bookings draw down that month's hours the moment they're
+//     made and a member can't stack free hours past their monthly limit by
+//     booking ahead (e.g. a dedicated-desk member with 4 included hours
+//     booking 8 free hours spread over next month).
+//   • Private-office hours are POOLED: every occupant of an office (the
+//     paying primary plus any $0 office members) draws from one shared
+//     allotment anchored by the primary's designation.
 
-// Chainable Supabase mock that records the filters applied to the query.
-const queryLog: Array<{ method: string; args: any[] }> = [];
-let queryResult: { data: any[] | null; error: any } = { data: [], error: null };
+// Chainable Supabase mock that records the filters applied to each query and
+// returns a per-table result.
+const queryLog: Array<{ table?: string; method: string; args: any[] }> = [];
+let resultsByTable: Record<string, { data: any[] | null; error: any }> = {};
 
-function chainableQuery() {
+function chainableQuery(table: string) {
   const q: any = {};
-  for (const method of ['select', 'eq', 'neq', 'gte', 'lt']) {
+  for (const method of ['select', 'eq', 'neq', 'gte', 'lt', 'in', 'not']) {
     q[method] = (...args: any[]) => {
-      queryLog.push({ method, args });
+      queryLog.push({ table, method, args });
       return q;
     };
   }
-  q.then = (resolve: any) => resolve(queryResult);
+  q.then = (resolve: any) =>
+    resolve(resultsByTable[table] ?? { data: [], error: null });
   return q;
 }
 
@@ -28,7 +33,7 @@ vi.mock('@/lib/portal/supabaseAdmin', () => ({
   getServiceSupabase: () => ({
     from: (table: string) => {
       queryLog.push({ method: 'from', args: [table] });
-      return chainableQuery();
+      return chainableQuery(table);
     },
   }),
 }));
@@ -37,14 +42,22 @@ import {
   monthBoundsForDate,
   denverMonthBounds,
   monthlyIncludedHours,
+  isOfficePooledDesignation,
   splitDuration,
   getMemberHoursSummary,
 } from '@/lib/bookings/conference-hours';
 
 beforeEach(() => {
   queryLog.length = 0;
-  queryResult = { data: [], error: null };
+  resultsByTable = {};
 });
+
+function setBookings(rows: any[] | null, error: any = null) {
+  resultsByTable['conference_bookings'] = { data: rows, error };
+}
+function setMembers(rows: any[] | null, error: any = null) {
+  resultsByTable['members'] = { data: rows, error };
+}
 
 describe('monthBoundsForDate', () => {
   it('bounds a mid-month date to its own calendar month', () => {
@@ -83,7 +96,7 @@ describe('denverMonthBounds', () => {
   });
 });
 
-describe('getMemberHoursSummary', () => {
+describe('getMemberHoursSummary (personal allotment)', () => {
   const member = { id: 'mem-1', designation: 'dedicated_desk' };
 
   function appliedBounds() {
@@ -101,7 +114,7 @@ describe('getMemberHoursSummary', () => {
     // Member already reserved 4 included hours next month (two future
     // bookings). A dedicated-desk member has a 4-hour allotment, so a new
     // next-month booking has nothing left to draw on.
-    queryResult = { data: [{ included_hours: 2 }, { included_hours: 2 }], error: null };
+    setBookings([{ included_hours: 2 }, { included_hours: 2 }]);
     const summary = await getMemberHoursSummary(member, '2026-08-20');
     expect(summary).toEqual({ included: 4, used: 4, remaining: 0 });
 
@@ -111,14 +124,100 @@ describe('getMemberHoursSummary', () => {
   });
 
   it('a booking month with no usage has the full allotment even if the current month is spent', async () => {
-    queryResult = { data: [], error: null };
+    setBookings([]);
     const summary = await getMemberHoursSummary(member, '2026-08-05');
     expect(summary).toEqual({ included: 4, used: 0, remaining: 4 });
   });
 
   it('throws when the usage query fails rather than treating usage as zero', async () => {
-    queryResult = { data: null, error: { message: 'boom' } };
+    setBookings(null, { message: 'boom' });
     await expect(getMemberHoursSummary(member, '2026-08-05')).rejects.toThrow(/boom/);
+  });
+});
+
+describe('getMemberHoursSummary (office shared pool)', () => {
+  // Office 110: Priya pays for a large office (20 hrs), Omar and Nia are
+  // $0 office members inside it.
+  const primary = {
+    id: 'mem-priya',
+    designation: 'private_office_large',
+    office_number: '110',
+  };
+  const officeMember = {
+    id: 'mem-omar',
+    designation: 'office_member',
+    office_number: '110',
+  };
+
+  function occupantRows() {
+    return [
+      { id: 'mem-priya', designation: 'private_office_large', status: 'active', office_number: '110', archived_at: null },
+      { id: 'mem-omar', designation: 'office_member', status: 'active', office_number: ' 110 ', archived_at: null },
+      { id: 'mem-nia', designation: 'office_member', status: 'active', office_number: '110', archived_at: null },
+      // Different office — must not join the pool.
+      { id: 'mem-other', designation: 'private_office_single', status: 'active', office_number: '104', archived_at: null },
+      // Former occupant — no longer holds a seat.
+      { id: 'mem-gone', designation: 'office_member', status: 'cancelled', office_number: '110', archived_at: null },
+    ];
+  }
+
+  it('an office member draws from the office allotment set by the primary', async () => {
+    setMembers(occupantRows());
+    setBookings([]);
+    const summary = await getMemberHoursSummary(officeMember, '2026-08-05');
+    expect(summary).toMatchObject({
+      included: 20,
+      used: 0,
+      remaining: 20,
+      pooled: true,
+      office_number: '110',
+      pool_size: 3,
+    });
+  });
+
+  it("sums every occupant's bookings against the shared pool", async () => {
+    setMembers(occupantRows());
+    // Usage across the pool: primary 8h + office member 4h = 12h used.
+    setBookings([{ included_hours: 8 }, { included_hours: 4 }]);
+    const summary = await getMemberHoursSummary(primary, '2026-08-05');
+    expect(summary).toMatchObject({ included: 20, used: 12, remaining: 8, pooled: true });
+
+    // The usage query must cover ALL current occupants — not just the caller.
+    const inCall = queryLog.find(
+      (c) => c.table === 'conference_bookings' && c.method === 'in'
+    );
+    expect(inCall?.args[1]).toEqual(
+      expect.arrayContaining(['mem-priya', 'mem-omar', 'mem-nia'])
+    );
+    expect(inCall?.args[1]).not.toContain('mem-other');
+    expect(inCall?.args[1]).not.toContain('mem-gone');
+  });
+
+  it('an office member with no primary on the portal has a 0-hour pool (paid booking still possible)', async () => {
+    setMembers([
+      { id: 'mem-omar', designation: 'office_member', status: 'active', office_number: '110', archived_at: null },
+    ]);
+    setBookings([]);
+    const summary = await getMemberHoursSummary(officeMember, '2026-08-05');
+    expect(summary).toMatchObject({ included: 0, used: 0, remaining: 0, pooled: true });
+  });
+
+  it('members without an office number keep their personal allotment', async () => {
+    setBookings([]);
+    const summary = await getMemberHoursSummary(
+      { id: 'mem-solo', designation: 'private_office_single', office_number: null },
+      '2026-08-05'
+    );
+    expect(summary).toEqual({ included: 8, used: 0, remaining: 8 });
+  });
+
+  it('always counts the requesting member in the pool even if the occupants query misses them', async () => {
+    setMembers([]);
+    setBookings([{ included_hours: 3 }]);
+    const summary = await getMemberHoursSummary(primary, '2026-08-05');
+    // Pool falls back to the caller: their own designation anchors the
+    // allotment and their own bookings still count.
+    expect(summary).toMatchObject({ included: 20, used: 3, remaining: 17, pool_size: 1 });
   });
 });
 
@@ -138,5 +237,18 @@ describe('monthlyIncludedHours', () => {
     expect(monthlyIncludedHours('flex')).toBe(0);
     expect(monthlyIncludedHours(null)).toBe(0);
     expect(monthlyIncludedHours('mystery')).toBe(0);
+  });
+
+  it('gives office members no personal hours — theirs come from the office pool', () => {
+    expect(monthlyIncludedHours('office_member')).toBe(0);
+  });
+});
+
+describe('isOfficePooledDesignation', () => {
+  it('pools private offices and office members, nothing else', () => {
+    expect(isOfficePooledDesignation('private_office_large')).toBe(true);
+    expect(isOfficePooledDesignation('office_member')).toBe(true);
+    expect(isOfficePooledDesignation('dedicated_desk')).toBe(false);
+    expect(isOfficePooledDesignation(null)).toBe(false);
   });
 });
