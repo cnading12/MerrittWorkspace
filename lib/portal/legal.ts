@@ -631,7 +631,11 @@ Member, as named above. By signing this CoWork Space Agreement (CSA), the
 Member fully acknowledges and hereby agrees to be bound by the financial
 terms and conditions as stated in this Agreement and the accompanying
 CoWork Space Terms and Conditions. *Please note* This is a one-time, single-day
-day pass. It does not renew and is not a recurring membership.`
+day pass. It does not renew and is not a recurring membership. The pass
+includes use of a dedicated desk for the purchased day and up to one (1)
+hour of conference room time on that day. Flex space access is not
+included. Additional single-day passes may be purchased through the member
+portal without submitting a new application.`
     : `This page shall act as a binding agreement between Merritt Workspace and the
 Member, as named above. By signing this CoWork Space Agreement (CSA), the
 Member fully acknowledges and hereby agrees to be bound by the financial

@@ -47,6 +47,18 @@ const COWORKING_EVENT_COLOR_ID = '6';
 const FLEX_OPEN_MINUTES = 9 * 60;
 const FLEX_CLOSE_MINUTES = 16 * 60 + 30;
 
+// Flex space is a perk of recurring memberships — one-day desk passes don't
+// include it. The portal page shows a friendly notice when it sees this code.
+const DAY_PASS_FLEX_ERROR = {
+  error:
+    'Flex space access is not included with a One Day Dedicated Desk pass. It is available with recurring memberships.',
+  code: 'day_pass_no_flex',
+};
+
+function isDayPassMember(member: { designation?: string | null }): boolean {
+  return member.designation === 'one_day_dedicated_desk';
+}
+
 function getGoogleAuth() {
   if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
     throw new Error('Missing Google Calendar credentials');
@@ -98,6 +110,9 @@ function formatLocal(d: Date) {
 export async function POST(req: NextRequest) {
   try {
     const member = await requireMember(req);
+    if (isDayPassMember(member)) {
+      return NextResponse.json(DAY_PASS_FLEX_ERROR, { status: 403 });
+    }
     const body = await req.json();
     const { start_time, end_time, event_title } = body || {};
 
@@ -382,6 +397,9 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const member = await requireMember(req);
+    if (isDayPassMember(member)) {
+      return NextResponse.json(DAY_PASS_FLEX_ERROR, { status: 403 });
+    }
     const sb = getServiceSupabase();
     const { data, error } = await sb
       .from('flex_bookings')

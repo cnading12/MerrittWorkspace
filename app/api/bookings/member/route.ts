@@ -20,6 +20,8 @@ import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
 import {
   getMemberHoursSummary,
   splitDuration,
+  isDayPassDesignation,
+  DAY_PASS_INCLUDED_HOURS_PER_DAY,
   HOURLY_RATE_DOLLARS,
 } from '@/lib/bookings/conference-hours';
 import { recordConferenceBooking } from '@/lib/bookings/conference-orders';
@@ -132,6 +134,32 @@ export async function POST(req: NextRequest) {
     const summary = await getMemberHoursSummary(member, bookingDate);
     const split = splitDuration(durationHours, summary.remaining);
     const bookingRef = `MH-MEMBER-${Date.now()}`;
+
+    // Day-pass members: conference-room access exists only on days they hold
+    // a confirmed day pass, and is hard-capped at 1 hour that day — no billed
+    // overage.
+    if (isDayPassDesignation(member.designation)) {
+      if (!summary.has_day_pass) {
+        return NextResponse.json(
+          {
+            error:
+              'Conference-room booking with a One Day Dedicated Desk pass is only available on days you hold a pass. Buy a day pass for that date from your portal (Payment tab) first.',
+          },
+          { status: 403 },
+        );
+      }
+      if (split.billedHours > 0) {
+        return NextResponse.json(
+          {
+            error:
+              summary.remaining > 0
+                ? `Your day pass includes ${DAY_PASS_INCLUDED_HOURS_PER_DAY} hour of conference-room time per day — you have ${summary.remaining} hour left for that date. Please shorten the booking.`
+                : `Your day pass includes ${DAY_PASS_INCLUDED_HOURS_PER_DAY} hour of conference-room time per day, and you've already used it for that date.`,
+          },
+          { status: 403 },
+        );
+      }
+    }
 
     // Shape used by the Google Calendar + email helpers.
     const calendarBooking = {

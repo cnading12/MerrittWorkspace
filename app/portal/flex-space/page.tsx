@@ -49,6 +49,9 @@ export default function FlexSpacePage() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Set when the member's plan doesn't include flex space (e.g. one-day desk
+  // passes) — the API answers 403 and we show a notice instead of the form.
+  const [accessBlocked, setAccessBlocked] = useState<string | null>(null);
   const [bookings, setBookings] = useState<FlexBooking[]>([]);
   const [usedMinutes, setUsedMinutes] = useState(0);
   const [allowedMinutes, setAllowedMinutes] = useState(240);
@@ -79,6 +82,13 @@ export default function FlexSpacePage() {
       const res = await fetch('/api/flex-bookings', {
         headers: { Authorization: `Bearer ${authToken}` },
       });
+      if (res.status === 403) {
+        const data = await res.json().catch(() => ({}));
+        setAccessBlocked(
+          data.error || 'Flex space access is not included with your membership.'
+        );
+        return;
+      }
       if (!res.ok) throw new Error('Failed to load bookings');
       const data = await res.json();
       setBookings(data.bookings || []);
@@ -175,6 +185,28 @@ export default function FlexSpacePage() {
 
   if (!token || loading) {
     return <div className="text-gray-500">Loading…</div>;
+  }
+
+  if (accessBlocked) {
+    return (
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-semibold text-gray-900">Flex Space</h1>
+        </header>
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-5 text-sm text-amber-900 space-y-2">
+          <p className="font-semibold">Not included with your day pass</p>
+          <p>{accessBlocked}</p>
+          <p>
+            Interested in flex space and other member perks? A recurring
+            membership includes them — email{' '}
+            <a className="underline" href="mailto:memberservices@merrittworkspace.net">
+              memberservices@merrittworkspace.net
+            </a>{' '}
+            and we&apos;ll help you upgrade.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const remainingMinutes = Math.max(0, allowedMinutes - usedMinutes);

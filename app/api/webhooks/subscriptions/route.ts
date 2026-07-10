@@ -37,6 +37,60 @@ function getResend(): Resend | null {
 //
 // Set STRIPE_SUBSCRIPTION_WEBHOOK_SECRET in your env.
 
+// Record a purchased day pass for a One Day Dedicated Desk member.
+// Idempotent: upserts on (member_id, pass_date), so Stripe webhook retries
+// can't double-insert. Conflicts overwrite (not skip) so re-buying a date
+// whose earlier pass was refunded re-confirms the pass with the new charge.
+async function recordDayPass(
+  sb: ReturnType<typeof getServiceSupabase>,
+  opts: {
+    memberId: string;
+    passDate: string | null | undefined;
+    checkoutSessionId: string;
+    paymentIntentId: string | null;
+    amountCents: number;
+  }
+) {
+  if (!opts.passDate || !/^\d{4}-\d{2}-\d{2}$/.test(opts.passDate)) {
+    console.warn('day pass purchase missing/invalid pass_date metadata', opts);
+    return;
+  }
+  const { error } = await sb.from('day_passes').upsert(
+    {
+      member_id: opts.memberId,
+      pass_date: opts.passDate,
+      amount_cents: opts.amountCents,
+      stripe_checkout_session_id: opts.checkoutSessionId,
+      stripe_payment_intent_id: opts.paymentIntentId,
+      status: 'confirmed',
+    },
+    { onConflict: 'member_id,pass_date' }
+  );
+  if (error) {
+    console.error('Failed to record day pass', error);
+  }
+}
+
+// The Charge receipt_url stands in for an invoice PDF on payment-mode
+// Checkout charges (they never produce a Stripe Invoice).
+async function getReceiptUrl(
+  stripe: Stripe,
+  paymentIntentId: string
+): Promise<string | null> {
+  try {
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
+      expand: ['latest_charge'],
+    });
+    const charge = pi.latest_charge;
+    if (charge && typeof charge !== 'string') {
+      return charge.receipt_url || null;
+    }
+  } catch (err) {
+    console.error('Failed to retrieve receipt_url for checkout PaymentIntent', err);
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-08-27.basil' as any,
@@ -96,6 +150,50 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+
+        // Additional day-pass purchase by an already-onboarded One Day
+        // Dedicated Desk member (app/api/portal/day-pass). No member-state
+        // changes — just record the pass and the payment.
+        if (session.metadata?.order_type === 'day_pass') {
+          const dayPassMemberId = session.metadata.member_id;
+          if (!dayPassMemberId) break;
+          const paymentIntentId = (session.payment_intent as string) || null;
+          const baseCents = Number(session.metadata.base_cents || 0);
+
+          await recordDayPass(sb, {
+            memberId: dayPassMemberId,
+            passDate: session.metadata.pass_date,
+            checkoutSessionId: session.id,
+            paymentIntentId,
+            amountCents: baseCents || (session.amount_total as number) || 0,
+          });
+
+          // Record the charge in payment_history (idempotent on the
+          // PaymentIntent, since Stripe retries webhooks on non-2xx).
+          if (paymentIntentId && session.payment_status === 'paid') {
+            const { data: existing } = await sb
+              .from('payment_history')
+              .select('id')
+              .eq('stripe_payment_intent_id', paymentIntentId)
+              .maybeSingle();
+            if (!existing) {
+              await sb.from('payment_history').insert({
+                member_id: dayPassMemberId,
+                stripe_invoice_id: null,
+                stripe_payment_intent_id: paymentIntentId,
+                amount_cents:
+                  (session.amount_total as number | null) ?? baseCents,
+                currency: session.currency || 'usd',
+                status: 'succeeded',
+                description: `One-day dedicated desk — pass for ${session.metadata.pass_date || 'unspecified date'}`,
+                invoice_pdf_url: await getReceiptUrl(stripe, paymentIntentId),
+                paid_at: new Date().toISOString(),
+              });
+            }
+          }
+          break;
+        }
+
         if (session.metadata?.order_type !== 'membership_subscription') break;
         const memberId = session.metadata.member_id;
         if (!memberId) break;
@@ -369,6 +467,23 @@ export async function POST(req: NextRequest) {
           })
           .eq('id', memberId);
 
+        // A completed one-time (day pass) signup also mints the member's
+        // first day pass, anchored to the purchase day the fee agreement
+        // named. Conference-room hours key off this row.
+        const isOneTimeSignup = session.metadata?.one_time === '1';
+        if (isOneTimeSignup) {
+          await recordDayPass(sb, {
+            memberId,
+            passDate: session.metadata?.pass_date,
+            checkoutSessionId: session.id,
+            paymentIntentId: (session.payment_intent as string) || null,
+            amountCents:
+              Number(session.metadata?.base_cents || 0) ||
+              (session.amount_total as number) ||
+              0,
+          });
+        }
+
         // Record the upfront Checkout charge in payment_history. Checkout in
         // `payment` mode produces a PaymentIntent, not an Invoice, so the
         // invoice.* branch below never fires for it — without this, the
@@ -393,22 +508,7 @@ export async function POST(req: NextRequest) {
             // Charge's `receipt_url` is the equivalent member-facing PDF
             // (publicly accessible, no auth) — save it so the admin/portal
             // "Invoice" button works for the initial signup charge too.
-            let receiptUrl: string | null = null;
-            try {
-              const pi = await stripe.paymentIntents.retrieve(
-                paymentIntentId,
-                { expand: ['latest_charge'] }
-              );
-              const charge = pi.latest_charge;
-              if (charge && typeof charge !== 'string') {
-                receiptUrl = charge.receipt_url || null;
-              }
-            } catch (err) {
-              console.error(
-                'Failed to retrieve receipt_url for checkout PaymentIntent',
-                err
-              );
-            }
+            const receiptUrl = await getReceiptUrl(stripe, paymentIntentId);
             await sb.from('payment_history').insert({
               member_id: memberId,
               stripe_invoice_id: null,
@@ -625,6 +725,12 @@ export async function POST(req: NextRequest) {
         if (!charge.amount_refunded || charge.amount_refunded <= 0) break;
         await sb
           .from('payment_history')
+          .update({ status: 'refunded' })
+          .eq('stripe_payment_intent_id', piId);
+        // If the charge bought a day pass, retire the pass too so it stops
+        // granting building/conference access for its date.
+        await sb
+          .from('day_passes')
           .update({ status: 'refunded' })
           .eq('stripe_payment_intent_id', piId);
         break;
