@@ -9,6 +9,7 @@ import { DESIGNATION_LABELS } from '@/lib/portal/types';
 import { shouldShowTrialBadge } from '@/lib/portal/trial';
 import SeatingChart from './SeatingChart';
 import {
+  compareMembersByNewest,
   compareMembersByPriority,
   formatAppliedAgo,
   formatLastPingAgo,
@@ -342,6 +343,9 @@ export default function AdminMembersPage() {
     });
     if (sortMode === 'priority') {
       return [...list].sort(compareMembersByPriority);
+    }
+    if (sortMode === 'newest') {
+      return [...list].sort(compareMembersByNewest);
     }
     if (sortMode === 'office') {
       return [...list].sort((a, b) => compareAssignments(a.office_number, b.office_number));

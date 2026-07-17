@@ -48,6 +48,23 @@ export function compareMembersByPriority(
   return aApplied - bApplied;
 }
 
+// "Newest" sort for the admin members list: most recently joined first, using
+// the membership start date (fee agreement start date, falling back to the
+// application's preferred start date upstream). Members without a start date
+// fall to the bottom; more recent application date breaks ties.
+export function compareMembersByNewest(
+  a: PrioritizableMember,
+  b: PrioritizableMember
+): number {
+  const aStart = a.intended_start_date ? timeOrZero(a.intended_start_date) : -Infinity;
+  const bStart = b.intended_start_date ? timeOrZero(b.intended_start_date) : -Infinity;
+  if (aStart !== bStart) return bStart - aStart;
+
+  const aApplied = timeOrZero(a.applied_at || a.created_at);
+  const bApplied = timeOrZero(b.applied_at || b.created_at);
+  return bApplied - aApplied;
+}
+
 // Returns a short "applied X ago" label, or null if the timestamp is missing.
 export function formatAppliedAgo(value: string | null | undefined): string | null {
   if (!value) return null;
