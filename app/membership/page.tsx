@@ -23,7 +23,7 @@ const membershipPlans = [
       'High-speed WiFi',
       'Access to 4 private phone booths',
       'Full kitchen with coffee',
-      '2 hours meeting room credits/month',
+      '4 hours meeting room credits/month',
       'Mail and package handling',
       'Event space access until 4:30 PM',
       'Pet-friendly workspace',
@@ -72,7 +72,7 @@ const membershipPlans = [
       'Professional business address',
       '24/7 building access',
       'High-speed WiFi',
-      '4 hours meeting room credits/month',
+      '8 hours meeting room credits/month',
       'Mail handling service',
       'Personal storage solutions',
       'Dedicated phone line option',
@@ -99,7 +99,7 @@ const membershipPlans = [
       'Professional business address',
       '24/7 building access',
       'High-speed WiFi',
-      '6 hours meeting room credits/month',
+      '12 hours meeting room credits/month',
       'Mail and package handling',
       'Team collaboration area',
       'Multiple storage solutions',
@@ -127,7 +127,7 @@ const membershipPlans = [
       'Professional business address',
       '24/7 building access',
       'High-speed WiFi',
-      'Unlimited meeting room access',
+      '20 hours meeting room credits/month',
       'Mail and package handling',
       'Multiple dedicated phone lines',
       'Team collaboration areas',
@@ -429,10 +429,10 @@ export default function MembershipPage() {
                   </tr>
                   <tr className="border-b border-gray-200">
                     <td className="p-4 font-medium text-gray-900">Meeting Room Credits</td>
-                    <td className="p-4 text-center text-gray-600">2 hrs/mo</td>
                     <td className="p-4 text-center text-gray-600">4 hrs/mo</td>
-                    <td className="p-4 text-center text-gray-600">6 hrs/mo</td>
-                    <td className="p-4 text-center text-gray-600">Unlimited</td>
+                    <td className="p-4 text-center text-gray-600">8 hrs/mo</td>
+                    <td className="p-4 text-center text-gray-600">12 hrs/mo</td>
+                    <td className="p-4 text-center text-gray-600">20 hrs/mo</td>
                   </tr>
                   <tr className="border-b border-gray-200 bg-gray-50">
                     <td className="p-4 font-medium text-gray-900">Business Address</td>

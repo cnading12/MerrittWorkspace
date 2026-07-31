@@ -23,6 +23,9 @@ export async function POST(request: NextRequest) {
       total_amount,
       purpose,
       calendar_event_id,
+      // Storage path of the guest's uploaded photo ID (required for guest
+      // bookings, absent for member overage checkouts).
+      id_document_path,
       // Optional member-overage fields. Present only when a signed-in member
       // is paying for hours beyond their included allotment via the hosted
       // checkout fallback; absent (undefined) for guest bookings.
@@ -93,6 +96,7 @@ export async function POST(request: NextRequest) {
         total_amount: total_amount?.toString() || '0',
         purpose: purpose || '',
         calendar_event_id: calendar_event_id || '',
+        ...(id_document_path ? { id_document_path: String(id_document_path) } : {}),
         ...(member_id ? { member_id: String(member_id) } : {}),
         ...(included_hours !== undefined ? { included_hours: String(included_hours) } : {}),
         ...(billed_hours !== undefined ? { billed_hours: String(billed_hours) } : {})

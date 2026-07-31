@@ -30,6 +30,9 @@ export interface RecordConferenceBookingInput {
   stripeSessionId?: string | null;
   stripePaymentIntentId?: string | null;
   paidAt?: string | null;
+  // Storage path of the photo ID a guest attached when booking (null for
+  // member bookings — their photo_id lives in member_documents).
+  idDocumentPath?: string | null;
 }
 
 /**
@@ -64,6 +67,7 @@ export async function recordConferenceBooking(
     google_event_id: input.googleEventId ?? null,
     stripe_session_id: input.stripeSessionId ?? null,
     stripe_payment_intent_id: input.stripePaymentIntentId ?? null,
+    id_document_path: input.idDocumentPath ?? null,
     paid_at: input.paidAt ?? (input.paymentStatus === 'pending' ? null : new Date().toISOString()),
   };
 

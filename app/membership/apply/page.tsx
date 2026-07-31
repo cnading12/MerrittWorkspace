@@ -85,7 +85,7 @@ const membershipPlans: PlanDef[] = [
     description: 'Your own dedicated desk in our collaborative coworking environment.',
     category: 'Shared Workspace',
     recurrence: 'monthly',
-    features: ['24/7 access', 'High-speed WiFi', 'Printing access', 'Kitchen access', '2 meeting room hours/month']
+    features: ['24/7 access', 'High-speed WiFi', 'Printing access', 'Kitchen access', '4 meeting room hours/month']
   },
   {
     id: 'one_day_dedicated_desk',
@@ -103,7 +103,7 @@ const membershipPlans: PlanDef[] = [
     description: 'Private lockable office for individual professionals',
     category: 'Private Office',
     recurrence: 'monthly',
-    features: ['24/7 access', 'Lockable office', 'Window view', 'High-speed WiFi', '4 meeting room hours/month']
+    features: ['24/7 access', 'Lockable office', 'Window view', 'High-speed WiFi', '8 meeting room hours/month']
   },
   {
     id: 'private_office_double',
@@ -112,7 +112,7 @@ const membershipPlans: PlanDef[] = [
     description: 'Private office space perfect for small teams',
     category: 'Private Office',
     recurrence: 'monthly',
-    features: ['24/7 access', 'Lockable office', 'Space for 2 desks', 'Window view', '6 meeting room hours/month']
+    features: ['24/7 access', 'Lockable office', 'Space for 2 desks', 'Window view', '12 meeting room hours/month']
   },
   {
     id: 'private_office_large',
@@ -121,7 +121,7 @@ const membershipPlans: PlanDef[] = [
     description: 'Spacious office for established teams',
     category: 'Private Office',
     recurrence: 'monthly',
-    features: ['24/7 access', 'Large lockable office', 'Space for 4+ desks', 'Conference table', '10 meeting room hours/month']
+    features: ['24/7 access', 'Large lockable office', 'Space for 4+ desks', 'Conference table', '20 meeting room hours/month']
   }
 ];
 

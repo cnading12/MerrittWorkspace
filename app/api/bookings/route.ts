@@ -1,8 +1,16 @@
-// app/api/bookings/route.ts - FULLY DATABASE-FREE VERSION WITH BETTER ERROR HANDLING
+// app/api/bookings/route.ts - guest (non-member) paid bookings.
+// Booking data lives in Google Calendar + Stripe metadata until the webhook
+// persists it; the only thing written up-front is the guest's photo ID,
+// which goes to the member-documents storage bucket.
 import { NextRequest, NextResponse } from 'next/server';
 import { googleCalendarAPI } from '@/lib/google-calendar';
+import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
+
+// Same limit the portal enforces on member photo_id uploads
+// (app/api/portal/documents/route.ts).
+const MAX_ID_FILE_BYTES = 10 * 1024 * 1024;
 
 // Helper type for bookings (no database needed)
 interface SimpleBooking {
@@ -29,8 +37,33 @@ interface SimpleBooking {
 
 export async function POST(request: NextRequest) {
   try {
-    const bookingData = await request.json();
-    console.log('📥 Received booking data:', bookingData);
+    // Guests submit multipart/form-data so the ID photo rides along with the
+    // booking fields; plain JSON is still accepted for backward compatibility
+    // (it can no longer complete a paid booking — the ID is required).
+    let bookingData: Record<string, any>;
+    let idFile: File | null = null;
+
+    const contentType = request.headers.get('content-type') || '';
+    if (contentType.includes('multipart/form-data')) {
+      const form = await request.formData();
+      const fields: Record<string, any> = {};
+      form.forEach((value, key) => {
+        if (key !== 'id_document') fields[key] = value;
+      });
+      bookingData = fields;
+      const maybeFile = form.get('id_document');
+      idFile = maybeFile instanceof File && maybeFile.size > 0 ? maybeFile : null;
+      // Numeric fields arrive as strings in form data.
+      if (bookingData.duration_hours) bookingData.duration_hours = parseFloat(bookingData.duration_hours);
+      if (bookingData.attendees) bookingData.attendees = parseInt(bookingData.attendees, 10);
+      if (bookingData.total_amount) bookingData.total_amount = parseFloat(bookingData.total_amount);
+      if (bookingData.is_member_booking !== undefined) {
+        bookingData.is_member_booking = bookingData.is_member_booking === 'true';
+      }
+    } else {
+      bookingData = await request.json();
+    }
+    console.log('📥 Received booking data:', { ...bookingData, has_id_document: Boolean(idFile) });
 
     // Validate required fields
     const requiredFields = [
@@ -92,8 +125,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Non-members must attach a photo ID — the same photo_id requirement
+    // members satisfy in the portal, with the same validation rules.
+    if (!idFile) {
+      return NextResponse.json(
+        { error: 'A photo of your government-issued ID is required to book as a non-member.' },
+        { status: 400 }
+      );
+    }
+    if (idFile.size > MAX_ID_FILE_BYTES) {
+      return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 });
+    }
+
     // Generate booking ID
     const bookingId = `MH-PAID-${Date.now()}`;
+
+    // Store the ID photo before holding the slot; if anything downstream
+    // fails the file is removed again. Path prefix guest-bookings/ can never
+    // collide with a member id, so the member self-read storage policies
+    // don't expose it — only admins (service role) can view it.
+    const sb = getServiceSupabase();
+    const ext = idFile.name.split('.').pop() || 'bin';
+    const idDocumentPath = `guest-bookings/${bookingId}/photo_id-${Date.now()}.${ext}`;
+    const idBytes = new Uint8Array(await idFile.arrayBuffer());
+    const { error: idUploadErr } = await sb.storage
+      .from('member-documents')
+      .upload(idDocumentPath, idBytes, { contentType: idFile.type, upsert: false });
+    if (idUploadErr) {
+      console.error('❌ Guest ID upload failed:', idUploadErr);
+      return NextResponse.json(
+        { error: 'Failed to upload your ID. Please try again.' },
+        { status: 500 }
+      );
+    }
+    const removeIdDocument = async () => {
+      const { error: rmErr } = await sb.storage.from('member-documents').remove([idDocumentPath]);
+      if (rmErr) console.error('⚠️ Failed to clean up guest ID upload:', rmErr);
+    };
 
     // Create booking object (no database save)
     const booking: SimpleBooking = {
@@ -130,6 +198,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (calendarError) {
       console.error('⚠️ Calendar event creation failed:', calendarError);
+      await removeIdDocument();
       return NextResponse.json(
         { 
           error: 'Failed to create calendar event. Please check your Google Calendar configuration.',
@@ -161,7 +230,8 @@ export async function POST(request: NextRequest) {
           attendees: booking.attendees,
           total_amount: booking.total_amount,
           purpose: booking.purpose,
-          calendar_event_id: calendarEventId
+          calendar_event_id: calendarEventId,
+          id_document_path: idDocumentPath
         })
       });
 
@@ -176,7 +246,8 @@ export async function POST(request: NextRequest) {
           console.log('🗑️ Cancelling calendar event due to Stripe error...');
           await googleCalendarAPI.cancelBookingEvent(calendarEventId);
         }
-        
+        await removeIdDocument();
+
         throw new Error(errorData.error || 'Failed to create payment session');
       }
 
@@ -200,6 +271,7 @@ export async function POST(request: NextRequest) {
         console.log('🗑️ Cancelling calendar event due to Stripe error...');
         await googleCalendarAPI.cancelBookingEvent(calendarEventId);
       }
+      await removeIdDocument();
 
       return NextResponse.json({
         success: false,

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Dedicated Desk $200/mo | Coworking Space Sloan's Lake Denver",
-  description: "Dedicated desk in Denver's Sloan's Lake — $200/month. 24/7 access, high-speed WiFi, 2hr meeting room credits, free coffee & tea. 3 min to I-25. Pet-friendly workspace.",
+  description: "Dedicated desk in Denver's Sloan's Lake — $200/month. 24/7 access, high-speed WiFi, 4hr meeting room credits, free coffee & tea. 3 min to I-25. Pet-friendly workspace.",
   keywords: [
     "dedicated desk Denver",
     "coworking space Sloan's Lake",
