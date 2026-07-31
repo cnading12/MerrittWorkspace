@@ -634,6 +634,22 @@ export default function AdminMembersPage() {
                     }}
                     className="border rounded px-2 py-1 text-sm"
                   />
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    placeholder="Free conf hrs/mo (override)"
+                    defaultValue={m.conference_hours_override ?? ''}
+                    onBlur={(e) => {
+                      const raw = e.target.value.trim();
+                      const v = raw === '' ? null : Math.max(0, Math.floor(Number(raw)));
+                      if (raw !== '' && Number.isNaN(v)) return;
+                      if (v !== (m.conference_hours_override ?? null))
+                        patchMember(m.id, { conference_hours_override: v });
+                    }}
+                    className="border rounded px-2 py-1 text-sm"
+                    title="Overrides this member's free conference-room hours per month, regardless of designation. Leave blank for the normal designation-based hours. Use for special cases (e.g. approved non-members who may book the room)."
+                  />
                   {m.designation === 'office_member' && m.status === 'pending' ? (
                     <>
                       <button

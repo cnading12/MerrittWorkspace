@@ -11,6 +11,10 @@
 // designation (single 8 / double 12 / large 20). Usage by any occupant
 // counts against the shared pool. Members without an office keep their
 // personal allotment.
+//
+// A per-member admin override (members.conference_hours_override) replaces
+// all of the above with a fixed personal monthly allotment — used for rare
+// special cases like approved non-members who may book the room.
 
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 
@@ -207,10 +211,28 @@ async function getOfficeOccupants(officeNumber: string): Promise<
 // pool: the allotment comes from the highest-tier occupant (in practice the
 // paying primary), and usage sums every occupant's bookings. Everyone else
 // keeps their personal allotment.
+//
+// An admin-set conference_hours_override (members table) beats everything:
+// the member gets exactly that many free hours per calendar month as a
+// PERSONAL allotment, regardless of designation, day-pass rules, or office
+// pooling. It exists for special cases (e.g. approved non-members given
+// portal access to book the room) that don't warrant their own designation.
 export async function getMemberHoursSummary(
-  member: { id: string; designation: string | null; office_number?: string | null },
+  member: {
+    id: string;
+    designation: string | null;
+    office_number?: string | null;
+    conference_hours_override?: number | null;
+  },
   forDate?: string | null,
 ): Promise<HoursSummary> {
+  if (member.conference_hours_override != null) {
+    const bounds = forDate ? monthBoundsForDate(forDate) : denverMonthBounds();
+    const included = Math.max(0, Number(member.conference_hours_override) || 0);
+    const used = await getUsedIncludedHoursForMonth(member.id, bounds);
+    return { included, used, remaining: Math.max(0, included - used) };
+  }
+
   // Day-pass members: the allotment is per DAY, not per month, and only
   // exists on days the member holds a confirmed day pass. No pass for the
   // date → 0 included hours (and the booking route rejects the booking

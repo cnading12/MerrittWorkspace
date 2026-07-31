@@ -69,6 +69,11 @@ export interface Member {
   access_code_issued_at: string | null;
   office_number: string | null;
   desk_number: string | null;
+  // Admin-set monthly free conference-room hours. NULL = use the normal
+  // designation-based allotment. Set for rare special cases (e.g. approved
+  // non-members given portal access to book the conference room) instead of
+  // creating a designation for them. See lib/bookings/conference-hours.ts.
+  conference_hours_override: number | null;
   last_pinged_at: string | null;
   // Soft-archive: set when a former (cancelled, once-paying) member is removed
   // from the active roster. Archived members keep all their data (documents,
