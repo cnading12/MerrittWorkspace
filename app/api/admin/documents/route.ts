@@ -10,12 +10,15 @@ export const dynamic = 'force-dynamic';
 //   - Submitted applications (member_applications): the original membership
 //     application form so reference info (housing, gym, emergency contact) can
 //     be pulled up months later.
-// All three kinds come back with a unified `view_url` field so the admin
+//   - Guest booking IDs (conference_bookings.id_document_path): the photo ID
+//     non-members attach when renting the conference room.
+// All kinds come back with a unified `view_url` field so the admin
 // Documents page can render them side by side.
 //
 // ?status=submitted|approved|rejected|all — applies to uploaded files only.
-// Agreements and applications are always included unless their respective
-// ?include_agreements=0 / ?include_applications=0 flag is set.
+// Agreements, applications, and guest IDs are always included unless their
+// respective ?include_agreements=0 / ?include_applications=0 /
+// ?include_guest_ids=0 flag is set.
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
@@ -24,6 +27,7 @@ export async function GET(req: NextRequest) {
     const status = url.searchParams.get('status') || 'submitted';
     const includeAgreements = url.searchParams.get('include_agreements') !== '0';
     const includeApplications = url.searchParams.get('include_applications') !== '0';
+    const includeGuestIds = url.searchParams.get('include_guest_ids') !== '0';
 
     // Uploaded files
     let query = sb
@@ -99,7 +103,29 @@ export async function GET(req: NextRequest) {
       }));
     }
 
-    return NextResponse.json({ documents, agreements, applications });
+    // Photo IDs attached to non-member conference-room bookings.
+    let guestIds: any[] = [];
+    if (includeGuestIds) {
+      const { data: guestData, error: guestErr } = await sb
+        .from('conference_bookings')
+        .select(
+          'id, booking_ref, customer_name, customer_email, booking_date, start_time, end_time, payment_status, created_at, id_document_path'
+        )
+        .not('id_document_path', 'is', null)
+        .order('created_at', { ascending: false });
+      if (guestErr) throw new Error(guestErr.message);
+
+      guestIds = await Promise.all(
+        (guestData || []).map(async (b: any) => {
+          const { data: signed } = await sb.storage
+            .from('member-documents')
+            .createSignedUrl(b.id_document_path, 3600);
+          return { ...b, view_url: signed?.signedUrl || null };
+        })
+      );
+    }
+
+    return NextResponse.json({ documents, agreements, applications, guest_ids: guestIds });
   } catch (e: any) {
     const status = e instanceof PortalError ? e.status : 500;
     return NextResponse.json({ error: e.message }, { status });

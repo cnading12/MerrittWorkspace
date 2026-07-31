@@ -113,6 +113,10 @@ export default function MeetingRoomsPage() {
     bookingType: null
   });
 
+  // Non-members must attach a photo ID (same requirement members satisfy in
+  // the portal documents flow). 10MB cap mirrors the server-side limit.
+  const [idFile, setIdFile] = useState<File | null>(null);
+
   // Member context (null = guest). When signed in, identity is pulled from the
   // profile and the member gets their tiered included hours.
   const [member, setMember] = useState<MemberLite | null>(null);
@@ -354,6 +358,12 @@ export default function MeetingRoomsPage() {
       return handleMemberBooking();
     }
 
+    // Guests must attach a photo ID before we hold the slot.
+    if (bookingForm.bookingType === 'paid' && !idFile) {
+      setError('Please attach a photo of your government-issued ID to book as a non-member.');
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
     setSuccessMessage(null);
@@ -362,35 +372,34 @@ export default function MeetingRoomsPage() {
       const endTime = calculateEndTime(selectedTime, bookingForm.duration);
       const totalAmount = bookingForm.bookingType === 'member' ? 0 : calculatePrice(bookingForm.duration);
 
-      // Prepare booking data
-      const bookingPayload: any = {
-        customer_name: bookingForm.name,
-        customer_email: bookingForm.email,
-        customer_phone: bookingForm.phone || '',
-        company: bookingForm.company || '',
-        booking_date: selectedDate,
-        start_time: selectedTime,
-        duration_hours: bookingForm.duration,
-        attendees: bookingForm.attendees,
-        purpose: bookingForm.purpose || '',
-        is_member_booking: bookingForm.bookingType === 'member'
-      };
+      // Prepare booking data. Sent as multipart form data so the ID photo
+      // rides along with the booking fields.
+      const bookingPayload = new FormData();
+      bookingPayload.append('customer_name', bookingForm.name);
+      bookingPayload.append('customer_email', bookingForm.email);
+      bookingPayload.append('customer_phone', bookingForm.phone || '');
+      bookingPayload.append('company', bookingForm.company || '');
+      bookingPayload.append('booking_date', selectedDate);
+      bookingPayload.append('start_time', selectedTime);
+      bookingPayload.append('duration_hours', String(bookingForm.duration));
+      bookingPayload.append('attendees', String(bookingForm.attendees));
+      bookingPayload.append('purpose', bookingForm.purpose || '');
+      bookingPayload.append('is_member_booking', String(bookingForm.bookingType === 'member'));
 
       // Add payment info only for paid bookings
       if (bookingForm.bookingType !== 'member') {
-        bookingPayload.room_id = 'conference-room'; // Static ID since we only have one room
-        bookingPayload.total_amount = totalAmount;
+        bookingPayload.append('room_id', 'conference-room'); // Static ID since we only have one room
+        bookingPayload.append('total_amount', String(totalAmount));
+        if (idFile) bookingPayload.append('id_document', idFile);
       }
 
-      console.log('Submitting booking:', bookingPayload);
+      console.log('Submitting booking for:', bookingForm.email);
 
-      // Create booking via API route
+      // Create booking via API route (no Content-Type header — the browser
+      // sets the multipart boundary itself)
       const response = await fetch('/api/bookings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookingPayload),
+        body: bookingPayload,
       });
 
       const data = await response.json();
@@ -448,6 +457,7 @@ Your time slot is temporarily reserved.`);
       setShowBookingForm(false);
       setShowBookingOptions(false);
       setSelectedTime('');
+      setIdFile(null);
       setBookingForm(prev => ({
         ...prev,
         name: '',
@@ -785,6 +795,31 @@ Your time slot is temporarily reserved.`);
                           onChange={(e) => setBookingForm(prev => ({ ...prev, phone: e.target.value }))}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                         />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Photo ID *</label>
+                        <input
+                          type="file"
+                          required
+                          accept="image/*,.pdf"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            if (file && file.size > 10 * 1024 * 1024) {
+                              setError('ID file is too large (max 10MB). Please choose a smaller file.');
+                              setIdFile(null);
+                              e.target.value = '';
+                              return;
+                            }
+                            setError(null);
+                            setIdFile(file);
+                          }}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-orange-100 file:text-orange-800 file:font-medium hover:file:bg-orange-200"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          A photo of your government-issued ID (driver's license or passport) is
+                          required for non-member bookings. Max 10MB.
+                        </p>
                       </div>
                     </>
                   )}

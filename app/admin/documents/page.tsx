@@ -58,13 +58,29 @@ interface Application {
   member: MemberRef | null;
 }
 
-type Row = UploadedDoc | SignedAgreement | Application;
+interface GuestBookingId {
+  kind: 'guest_id';
+  id: string;
+  booking_ref: string;
+  customer_name: string;
+  customer_email: string;
+  booking_date: string;
+  start_time: string;
+  end_time: string;
+  payment_status: string;
+  created_at: string;
+  id_document_path: string;
+  view_url: string | null;
+}
+
+type Row = UploadedDoc | SignedAgreement | Application | GuestBookingId;
 
 type Filter =
   | 'all'
   | 'uploads'
   | 'agreements'
   | 'applications'
+  | 'guest IDs'
   | 'submitted'
   | 'approved'
   | 'rejected';
@@ -80,6 +96,7 @@ export default function AdminDocumentsPage() {
   const [uploads, setUploads] = useState<UploadedDoc[]>([]);
   const [agreements, setAgreements] = useState<SignedAgreement[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [guestIds, setGuestIds] = useState<GuestBookingId[]>([]);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
@@ -108,6 +125,9 @@ export default function AdminDocumentsPage() {
       );
       setApplications(
         (data.applications || []).map((a: any) => ({ ...a, kind: 'application' as const }))
+      );
+      setGuestIds(
+        (data.guest_ids || []).map((g: any) => ({ ...g, kind: 'guest_id' as const }))
       );
       setLoading(false);
     },
@@ -184,24 +204,15 @@ export default function AdminDocumentsPage() {
   const rows: Row[] = [
     ...uploads.filter((u) => {
       if (filter === 'all' || filter === 'uploads') return true;
-      if (filter === 'agreements' || filter === 'applications') return false;
+      if (filter === 'agreements' || filter === 'applications' || filter === 'guest IDs') return false;
       return u.status === filter;
     }),
     ...agreements.filter(() => filter === 'all' || filter === 'agreements'),
     ...applications.filter(() => filter === 'all' || filter === 'applications'),
+    ...guestIds.filter(() => filter === 'all' || filter === 'guest IDs'),
   ].sort((a, b) => {
-    const aDate =
-      a.kind === 'upload'
-        ? a.created_at
-        : a.kind === 'agreement'
-        ? a.signed_at
-        : a.created_at;
-    const bDate =
-      b.kind === 'upload'
-        ? b.created_at
-        : b.kind === 'agreement'
-        ? b.signed_at
-        : b.created_at;
+    const aDate = a.kind === 'agreement' ? a.signed_at : a.created_at;
+    const bDate = b.kind === 'agreement' ? b.signed_at : b.created_at;
     return bDate.localeCompare(aDate);
   });
 
@@ -223,7 +234,7 @@ export default function AdminDocumentsPage() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {(['all', 'uploads', 'agreements', 'applications', 'submitted', 'approved', 'rejected'] as Filter[]).map(
+          {(['all', 'uploads', 'agreements', 'applications', 'guest IDs', 'submitted', 'approved', 'rejected'] as Filter[]).map(
             (s) => (
               <button
                 key={s}
@@ -268,6 +279,9 @@ export default function AdminDocumentsPage() {
                   }
                 />
               );
+            }
+            if (row.kind === 'guest_id') {
+              return <GuestIdCard key={`g-${row.id}`} guest={row} />;
             }
             return (
               <ApplicationCard
@@ -465,6 +479,48 @@ function ApplicationCard({
           >
             View application
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GuestIdCard({ guest }: { guest: GuestBookingId }) {
+  return (
+    <div className="bg-white border-2 border-purple-200 rounded-lg p-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-800 uppercase tracking-wide">
+              Guest booking ID
+            </span>
+            <span className="font-medium text-gray-900">Photo ID</span>
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium capitalize bg-gray-100 text-gray-700">
+              {guest.payment_status}
+            </span>
+          </div>
+          <div className="text-sm text-gray-700">
+            {guest.customer_name} ({guest.customer_email})
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            Conference room {new Date(`${guest.booking_date}T00:00:00`).toLocaleDateString()}
+            {' '}{guest.start_time}–{guest.end_time}
+            {' · '}{guest.booking_ref}
+            {' · Uploaded '}
+            {new Date(guest.created_at).toLocaleString()}
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
+          {guest.view_url && (
+            <a
+              href={guest.view_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 text-center"
+            >
+              View
+            </a>
+          )}
         </div>
       </div>
     </div>

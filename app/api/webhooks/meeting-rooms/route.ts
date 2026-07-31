@@ -5,6 +5,7 @@ import Stripe from 'stripe';
 import { googleCalendarAPI } from '@/lib/google-calendar';
 import { sendMemberBookingConfirmationEmail, sendNonMemberConferenceRoomOnboardingEmail } from '@/lib/resend';
 import { recordConferenceBooking } from '@/lib/bookings/conference-orders';
+import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
@@ -160,6 +161,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         stripePaymentIntentId:
           typeof session.payment_intent === 'string' ? session.payment_intent : null,
         paidAt: new Date().toISOString(),
+        idDocumentPath: session.metadata?.id_document_path || null,
       });
     } catch (dbError) {
       console.error('⚠️ Failed to persist conference booking (continuing):', dbError);
@@ -257,6 +259,19 @@ async function handleCheckoutSessionExpired(session: Stripe.Checkout.Session) {
       console.log('🗑️ Cancelling calendar event due to expired session:', calendarEventId);
       await googleCalendarAPI.cancelBookingEvent(calendarEventId);
       console.log('✅ Calendar event cancelled for expired session');
+    }
+
+    // The guest never paid, so don't keep the photo ID they uploaded when
+    // the booking was created.
+    const idDocumentPath = session.metadata?.id_document_path;
+    if (idDocumentPath) {
+      console.log('🗑️ Removing guest ID upload for expired session:', idDocumentPath);
+      const { error: rmErr } = await getServiceSupabase()
+        .storage.from('member-documents')
+        .remove([idDocumentPath]);
+      if (rmErr) {
+        console.error('⚠️ Failed to remove guest ID upload:', rmErr);
+      }
     }
 
   } catch (error) {
