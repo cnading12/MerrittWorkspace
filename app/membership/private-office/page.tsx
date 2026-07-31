@@ -26,7 +26,7 @@ export default function PrivateOfficePage() {
       features: [
         'Private lockable office',
         'Professional business address',
-        '4 hours meeting room credits/month',
+        '8 hours meeting room credits/month',
         'Mail handling service',
         'Pet-friendly (dogs welcome)',
         'Personal storage solutions',
@@ -50,7 +50,7 @@ export default function PrivateOfficePage() {
       features: [
         'Private lockable office with 2 desks',
         'Professional business address',
-        '6 hours meeting room credits/month',
+        '12 hours meeting room credits/month',
         'Mail and package handling',
         'Pet-friendly team space',
         'Multiple storage solutions',
@@ -75,7 +75,7 @@ export default function PrivateOfficePage() {
       features: [
         'Large private office (4-8 desks)',
         'Professional business address',
-        'Unlimited meeting room access',
+        '20 hours meeting room credits/month',
         'Mail and package handling',
         'Multiple dedicated phone lines',
         'Team collaboration areas',

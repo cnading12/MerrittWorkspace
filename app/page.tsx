@@ -395,7 +395,7 @@ export default function ImprovedHomePage() {
                         'High-speed WiFi',
                         'Personal storage',
                         'Kitchen access',
-                        '2 hours meeting room credits',
+                        '4 hours meeting room credits',
                         'FREE flex space access (until 4:30 PM)',
                         'Host workshops & meetings for free',
                         'All-you-can-drink coffee & tea'
@@ -416,9 +416,9 @@ export default function ImprovedHomePage() {
               <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">Private Office Rentals in Denver</h3>
               <div className="grid md:grid-cols-3 gap-6">
                 {[
-                  { name: 'Single Office', price: 500, people: '1 person', hours: '4 hours credits' },
-                  { name: 'Double Office', price: 700, people: '2 people', hours: '6 hours credits' },
-                  { name: 'Large Office', price: 1200, people: '4-8 people', hours: 'Unlimited credits' }
+                  { name: 'Single Office', price: 500, people: '1 person', hours: '8 hours credits' },
+                  { name: 'Double Office', price: 700, people: '2 people', hours: '12 hours credits' },
+                  { name: 'Large Office', price: 1200, people: '4-8 people', hours: '20 hours credits' }
                 ].map((office, i) => (
                   <div key={i} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition border-2 border-transparent hover:border-orange-500">
                     <h4 className="text-xl font-bold text-gray-900 mb-2">{office.name}</h4>

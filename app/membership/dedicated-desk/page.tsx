@@ -35,7 +35,7 @@ export default function DedicatedDeskPage() {
     {
       icon: Calendar,
       title: 'Meeting Credits',
-      description: '2 free hours of conference room time per month'
+      description: '4 free hours of conference room time per month'
     },
     {
       icon: Mail,
@@ -179,7 +179,7 @@ export default function DedicatedDeskPage() {
                     </li>
                     <li className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700">2 hours monthly conference room credits</span>
+                      <span className="text-gray-700">4 hours monthly conference room credits</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
