@@ -148,6 +148,86 @@ describe('getMemberHoursSummary (personal allotment)', () => {
   });
 });
 
+describe('getMemberHoursSummary (admin conference_hours_override)', () => {
+  // Special-case accounts (e.g. approved non-members given portal access to
+  // book the room) get an explicit per-member monthly allotment instead of a
+  // new designation. The override is a PERSONAL monthly allotment that beats
+  // designation, day-pass rules, and office pooling.
+
+  it('grants free hours to a designation that normally has none', async () => {
+    setBookings([]);
+    const summary = await getMemberHoursSummary(
+      { id: 'mem-guest', designation: 'other', conference_hours_override: 4 },
+      '2026-08-05'
+    );
+    expect(summary).toEqual({ included: 4, used: 0, remaining: 4 });
+  });
+
+  it('works with no designation at all and counts monthly usage', async () => {
+    setBookings([{ included_hours: 3 }]);
+    const summary = await getMemberHoursSummary(
+      { id: 'mem-guest', designation: null, conference_hours_override: 4 },
+      '2026-08-05'
+    );
+    expect(summary).toEqual({ included: 4, used: 3, remaining: 1 });
+  });
+
+  it('beats the day-pass daily rules — monthly allotment, no pass required', async () => {
+    setBookings([]);
+    const summary = await getMemberHoursSummary(
+      { id: 'mem-day', designation: 'one_day_dedicated_desk', conference_hours_override: 2 },
+      '2026-07-15'
+    );
+    // No daily/has_day_pass flags → the booking route treats it as a normal
+    // monthly allotment instead of enforcing the day-pass hard cap.
+    expect(summary).toEqual({ included: 2, used: 0, remaining: 2 });
+  });
+
+  it('beats office pooling — the override is personal', async () => {
+    setBookings([]);
+    const summary = await getMemberHoursSummary(
+      {
+        id: 'mem-omar',
+        designation: 'office_member',
+        office_number: '110',
+        conference_hours_override: 6,
+      },
+      '2026-08-05'
+    );
+    expect(summary).toEqual({ included: 6, used: 0, remaining: 6 });
+  });
+
+  it('an explicit 0 means zero free hours even for a designation with an allotment', async () => {
+    setBookings([]);
+    const summary = await getMemberHoursSummary(
+      { id: 'mem-1', designation: 'dedicated_desk', conference_hours_override: 0 },
+      '2026-08-05'
+    );
+    expect(summary).toEqual({ included: 0, used: 0, remaining: 0 });
+  });
+
+  it('null override falls through to the designation-based allotment', async () => {
+    setBookings([]);
+    const summary = await getMemberHoursSummary(
+      { id: 'mem-1', designation: 'dedicated_desk', conference_hours_override: null },
+      '2026-08-05'
+    );
+    expect(summary).toEqual({ included: 4, used: 0, remaining: 4 });
+  });
+
+  it('checks usage against the month of the booking date', async () => {
+    setBookings([]);
+    await getMemberHoursSummary(
+      { id: 'mem-guest', designation: 'other', conference_hours_override: 4 },
+      '2026-08-15'
+    );
+    const gte = queryLog.find((c) => c.table === 'conference_bookings' && c.method === 'gte');
+    const lt = queryLog.find((c) => c.table === 'conference_bookings' && c.method === 'lt');
+    expect(gte?.args[1]).toBe('2026-08-01');
+    expect(lt?.args[1]).toBe('2026-09-01');
+  });
+});
+
 describe('getMemberHoursSummary (office shared pool)', () => {
   // Office 110: Priya pays for a large office (20 hrs), Omar and Nia are
   // $0 office members inside it.

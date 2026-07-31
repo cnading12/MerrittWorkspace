@@ -20,7 +20,6 @@ import { sendMemberBookingConfirmationEmail } from '@/lib/resend';
 import {
   getMemberHoursSummary,
   splitDuration,
-  isDayPassDesignation,
   DAY_PASS_INCLUDED_HOURS_PER_DAY,
   HOURLY_RATE_DOLLARS,
 } from '@/lib/bookings/conference-hours';
@@ -137,8 +136,10 @@ export async function POST(req: NextRequest) {
 
     // Day-pass members: conference-room access exists only on days they hold
     // a confirmed day pass, and is hard-capped at 1 hour that day — no billed
-    // overage.
-    if (isDayPassDesignation(member.designation)) {
+    // overage. Keyed off summary.daily (not the designation alone) so an
+    // admin-set conference_hours_override grants a normal monthly allotment
+    // even on a day-pass designation.
+    if (summary.daily) {
       if (!summary.has_day_pass) {
         return NextResponse.json(
           {

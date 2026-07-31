@@ -503,6 +503,15 @@ export default function AdminMemberDetailPage({
           {member.monthly_cost_cents != null && (
             <div>${(member.monthly_cost_cents / 100).toFixed(2)}/mo</div>
           )}
+          {member.conference_hours_override != null && (
+            <div
+              className="text-amber-700 font-medium"
+              title="Admin-set override: this member gets this many free conference-room hours per month regardless of designation. Edit it on the Members list page."
+            >
+              {member.conference_hours_override} free conf hr
+              {member.conference_hours_override === 1 ? '' : 's'}/mo (override)
+            </div>
+          )}
         </div>
       </div>
 

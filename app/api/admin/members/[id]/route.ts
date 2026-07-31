@@ -12,6 +12,8 @@ const ALLOWED_FIELDS = [
   'access_code',
   'office_number',
   'desk_number',
+  // Monthly free conference-hours override (null = designation-based).
+  'conference_hours_override',
 ] as const;
 
 export async function GET(
@@ -203,6 +205,15 @@ export async function PATCH(
     }
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ error: 'No allowed fields' }, { status: 400 });
+    }
+    if ('conference_hours_override' in update) {
+      const v = update.conference_hours_override;
+      if (v !== null && (!Number.isInteger(v) || v < 0)) {
+        return NextResponse.json(
+          { error: 'conference_hours_override must be null or a whole number ≥ 0' },
+          { status: 400 },
+        );
+      }
     }
     const sb = getServiceSupabase();
     const { data, error } = await sb
