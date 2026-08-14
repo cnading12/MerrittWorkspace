@@ -1,13 +1,24 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle, AlertCircle, Loader2, User, Briefcase, Calendar, Phone, Shield, CreditCard, Home, Dumbbell, Plus, Minus } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
 
 type HousingReferenceType = '' | 'mortgage' | 'landlord';
 type MembershipReferenceType = '' | 'gym' | 'workspace';
-type PlanId = 'dedicated_desk' | 'one_day_dedicated_desk' | 'private_office_single' | 'private_office_double' | 'private_office_large';
+type PlanId = 'dedicated_desk' | 'private_dedicated_desk' | 'one_day_dedicated_desk' | 'private_office_single' | 'private_office_double' | 'private_office_large';
+
+// Live dedicated-desk availability from /api/desk-availability. The shared
+// coworking floor holds a fixed number of desks; once every one is spoken for
+// we stop selling floor-plan desks and offer a private dedicated desk — a desk
+// in a lockable office we've converted into a dedicated-desk area — instead.
+interface DeskAvailability {
+  capacity: number;
+  taken: number | null;
+  remaining: number | null;
+  isFull: boolean;
+}
 
 interface SelectedPlan {
   plan_id: PlanId;
@@ -75,8 +86,15 @@ interface PlanDef {
   category: string;
   recurrence: 'monthly' | 'one_time';
   features: string[];
+  // Only offered once every desk on the shared coworking floor is spoken for.
+  // Hidden entirely until then — we don't advertise the private tier while we
+  // still have floor desks to sell.
+  onlyWhenDesksFull?: boolean;
 }
 
+// Prices here must match lib/portal/pricing.ts and the PLAN_CATALOG in
+// app/api/membership-application/route.ts, which prices the submission
+// server-side.
 const membershipPlans: PlanDef[] = [
   {
     id: 'dedicated_desk',
@@ -86,6 +104,24 @@ const membershipPlans: PlanDef[] = [
     category: 'Shared Workspace',
     recurrence: 'monthly',
     features: ['24/7 access', 'High-speed WiFi', 'Printing access', 'Kitchen access', '4 meeting room hours/month']
+  },
+  {
+    id: 'private_dedicated_desk',
+    name: 'Private Dedicated Desk',
+    price: 300,
+    description: 'Your own dedicated desk inside a private, lockable office area — not on the shared coworking floor.',
+    category: 'Private Area',
+    recurrence: 'monthly',
+    onlyWhenDesksFull: true,
+    features: [
+      'Private, lockable office area — outside the shared community space',
+      'Your own dedicated desk within that area',
+      '24/7 access',
+      'High-speed WiFi',
+      'Printing access',
+      'Kitchen access',
+      '4 meeting room hours/month',
+    ]
   },
   {
     id: 'one_day_dedicated_desk',
@@ -166,6 +202,24 @@ export default function MembershipApplicationPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deskAvailability, setDeskAvailability] = useState<DeskAvailability | null>(null);
+
+  // How full the dedicated-desk floor is. Best-effort: a failed or in-flight
+  // check leaves this null, which shows the standard plans.
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/desk-availability')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d && !d.unavailable) setDeskAvailability(d as DeskAvailability);
+      })
+      .catch(() => {
+        /* leave availability unknown — the standard plans stay on offer */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [application, setApplication] = useState<MembershipApplication>({
     first_name: '',
@@ -232,6 +286,25 @@ export default function MembershipApplicationPage() {
 
   const adjustQuantity = (planId: PlanId, delta: number) =>
     setQuantity(planId, getQuantity(planId) + delta);
+
+  // Once every desk on the shared floor is spoken for, the $200 floor-plan
+  // desk can no longer be applied for and the $300 private dedicated desk
+  // takes its place. Stays null while loading or if the check fails, which
+  // keeps the normal offering on screen and the private tier hidden.
+  const desksFull = deskAvailability?.isFull === true;
+  const visiblePlans = useMemo(
+    () => membershipPlans.filter((p) => !p.onlyWhenDesksFull || desksFull),
+    [desksFull]
+  );
+
+  // If availability lands after someone already added a floor desk to their
+  // application, take it back off — they can't be sold one.
+  useEffect(() => {
+    if (desksFull && getQuantity('dedicated_desk') > 0) setQuantity('dedicated_desk', 0);
+    // setQuantity/getQuantity are re-created every render; depending on them
+    // would loop. The only input that matters here is `desksFull`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [desksFull]);
 
   const totals = useMemo(() => {
     let monthlyCents = 0;
@@ -429,17 +502,39 @@ export default function MembershipApplicationPage() {
                 Need more than one office or dedicated desk? Set the quantity for each plan you want — your charges below will roll up into one combined total.
               </p>
 
+              {desksFull && (
+                <div className="mb-4 rounded-lg border-2 border-amber-300 bg-amber-50 p-4">
+                  <p className="text-sm font-semibold text-amber-900">
+                    All {deskAvailability?.capacity ?? 25} dedicated desks on our shared floor are taken.
+                  </p>
+                  <p className="mt-1 text-sm text-amber-900">
+                    We&apos;re still accepting dedicated desk members — we&apos;re converting private
+                    offices into dedicated desk areas. A <strong>Private Dedicated Desk</strong> is
+                    your own desk inside a private, lockable office area outside the shared community
+                    space, at $300/month instead of $200.
+                  </p>
+                </div>
+              )}
+
               <div className="grid md:grid-cols-2 gap-4">
-                {membershipPlans.map((plan) => {
+                {visiblePlans.map((plan) => {
                   const quantity = getQuantity(plan.id);
                   const isSelected = quantity > 0;
+                  // The floor-plan desk stays visible when we're full so the
+                  // $200 → $300 difference is explained rather than silently
+                  // swapped, but it can't be added to an application.
+                  const soldOut = plan.id === 'dedicated_desk' && desksFull;
                   return (
                     <div
                       key={plan.id}
                       className={`border-2 rounded-lg p-4 transition relative ${
-                        isSelected
-                          ? 'border-orange-500 bg-orange-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                        soldOut
+                          ? 'border-gray-200 bg-gray-50 opacity-70'
+                          : isSelected
+                            ? 'border-orange-500 bg-orange-50'
+                            : plan.onlyWhenDesksFull
+                              ? 'border-orange-300 hover:border-orange-400'
+                              : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       <div className="flex items-start justify-between mb-3">
@@ -447,6 +542,11 @@ export default function MembershipApplicationPage() {
                           <h4 className="font-semibold text-gray-900">{plan.name}</h4>
                           <p className="text-sm text-gray-600 mb-2">{plan.description}</p>
                           <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{plan.category}</span>
+                          {plan.onlyWhenDesksFull && (
+                            <span className="ml-2 text-xs bg-orange-100 px-2 py-1 rounded text-orange-800 font-medium">
+                              Private &amp; lockable
+                            </span>
+                          )}
                         </div>
                         <div className="text-right">
                           {plan.recurrence === 'one_time' ? (
@@ -471,6 +571,14 @@ export default function MembershipApplicationPage() {
                         ))}
                       </div>
 
+                      {soldOut ? (
+                        <div className="pt-3 border-t border-gray-200 text-sm text-gray-700">
+                          <span className="font-semibold text-gray-900">Fully occupied.</span>{' '}
+                          Every desk on the shared floor is spoken for, so this plan
+                          can&apos;t be selected right now. Choose the Private Dedicated Desk
+                          instead to join as a dedicated desk member today.
+                        </div>
+                      ) : (
                       <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                         <span className="text-sm font-medium text-gray-700">
                           {plan.recurrence === 'one_time' ? 'Days' : 'Quantity'}
@@ -504,8 +612,9 @@ export default function MembershipApplicationPage() {
                           </button>
                         </div>
                       </div>
+                      )}
 
-                      {isSelected && (
+                      {isSelected && !soldOut && (
                         <div className="mt-3 text-sm text-orange-700 font-medium text-right">
                           Subtotal: ${(plan.price * quantity).toLocaleString()}
                           {plan.recurrence === 'monthly' ? '/month' : ' one-time'}

@@ -17,6 +17,11 @@ export const dynamic = 'force-dynamic';
 // designation. Office members pick an office; dedicated-desk members pick a
 // desk. Other designations can edit neither — flex/trial members don't have
 // a fixed seat, and admins still control the field via the admin panel.
+//
+// Private dedicated desks are the notable exception: they sit in an office
+// we've converted into a dedicated-desk area, and WHICH office depends on
+// which rooms are free and how we're laying them out. Member services makes
+// that call, so those members can't self-assign — see the message below.
 function allowedFields(designation: MemberDesignation | null): {
   desk: boolean;
   office: boolean;
@@ -44,7 +49,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            'Your membership type does not include a fixed desk or office assignment. Contact member services if you have questions.',
+            member.designation === 'private_dedicated_desk'
+              ? 'Member services assigns private dedicated desk areas. Call or email us and we\'ll confirm your room.'
+              : 'Your membership type does not include a fixed desk or office assignment. Contact member services if you have questions.',
         },
         { status: 400 },
       );

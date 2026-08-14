@@ -35,6 +35,8 @@ import { listAvailableDesks, formatDeskList } from './deskAvailability';
 const SPACE_SUMMARY: Record<MemberDesignation, string> = {
   dedicated_desk: '1 dedicated desk in the shared coworking space',
   one_day_dedicated_desk: '1 dedicated desk for a single day (day pass)',
+  private_dedicated_desk:
+    '1 dedicated desk in a private, lockable office area (outside the shared coworking floor)',
   private_office_single: 'Private office — 1 desk',
   private_office_double: 'Private office — 2 desks',
   private_office_large: 'Private office — 4 to 8 desks',
@@ -59,6 +61,11 @@ function seatTypeFor(designation: MemberDesignation | null): 'desk' | 'office' |
     case 'dedicated_desk':
     case 'one_day_dedicated_desk':
       return 'desk';
+    // Private dedicated desks sit in a converted office, so their seat is
+    // recorded in office_number and assigned by member services. Reporting
+    // 'office' here also keeps the free-DD-number list out of their welcome
+    // email — those desks are not theirs to pick.
+    case 'private_dedicated_desk':
     case 'private_office_single':
     case 'private_office_double':
     case 'private_office_large':

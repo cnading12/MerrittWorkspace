@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from 'react';
 import { Check, Clock, Wifi, Shield, Coffee, Users, Calendar, MapPin, Phone, Mail, Heart, ArrowRight, Briefcase, TrendingUp, Zap } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
@@ -101,11 +102,47 @@ export default function DedicatedDeskPage() {
   ];
 
 
+  // Once every desk on the shared floor is spoken for we keep welcoming
+  // dedicated desk members, but at the private rate in a converted office.
+  // Nothing about that is shown until then. See lib/portal/deskAvailability.ts.
+  const [desksFull, setDesksFull] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/desk-availability')
+      .then(r => r.json())
+      .then(d => {
+        if (!cancelled && d && !d.unavailable) setDesksFull(d.isFull === true);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <main className="min-h-screen bg-gray-50 pt-16">
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {desksFull && (
+            <div className="mb-10 rounded-xl border-2 border-amber-300 bg-amber-50 p-6 text-center">
+              <p className="text-lg font-bold text-amber-900 mb-2">
+                Our shared dedicated desks are fully occupied.
+              </p>
+              <p className="text-amber-900 max-w-3xl mx-auto">
+                We&apos;re still accepting dedicated desk members. New members are placed in a{' '}
+                <strong>Private Dedicated Desk</strong> — your own dedicated desk inside a private,
+                lockable office area outside the shared community space — at{' '}
+                <strong>$300/month</strong> instead of $200. Everything else below is included
+                exactly the same.
+              </p>
+              <Link
+                href="/membership/apply"
+                className="mt-4 inline-flex items-center justify-center gap-2 bg-amber-700 hover:bg-amber-800 text-white py-3 px-6 rounded-lg font-semibold transition"
+              >
+                Apply for a Private Dedicated Desk
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
+          )}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Dedicated Desk
