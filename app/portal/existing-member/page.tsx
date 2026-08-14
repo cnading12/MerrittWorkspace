@@ -17,6 +17,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { DESK_RANGE_LABEL } from '@/lib/portal/desks';
 
 type PlanId =
   | 'dedicated_desk'
@@ -365,7 +366,7 @@ export default function ExistingMemberMigrationPage() {
             )}
             <p className="text-xs text-gray-500 mt-1">
               {selectedPlan.needs === 'desk'
-                ? 'Dedicated desks are numbered DD1–DD26.'
+                ? `Dedicated desks are numbered ${DESK_RANGE_LABEL}.`
                 : 'Offices are numbered 100–114 (there is no 113).'}{' '}
               If you&apos;re unsure, leave a best guess — staff can adjust it
               on the admin side.

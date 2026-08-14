@@ -1,14 +1,41 @@
 // Validation helpers for dedicated-desk numbers.
 //
 // Dedicated-desk members self-assign a desk in the portal. We require the
-// "DD#" format (e.g. DD4) within the building's range of DD1–DD26, and the
-// desk must not already be occupied on the seating chart — whether it was
-// claimed by another member in the portal or entered manually by staff (see
-// deskClaims.ts for the occupancy check). Both the portal UI and the
-// assignment API import these helpers so client + server stay in sync.
+// "DD#" format (e.g. DD4) within the building's range of DD1–DD26 minus the
+// retired numbers below, and the desk must not already be occupied on the
+// seating chart — whether it was claimed by another member in the portal or
+// entered manually by staff (see deskClaims.ts for the occupancy check). Both
+// the portal UI and the assignment API import these helpers so client +
+// server stay in sync.
 
 export const DD_MIN = 1;
 export const DD_MAX = 26;
+
+// Numbers inside the DD range that have no desk behind them. DD5 sat awkwardly
+// between two other desks and was pulled off the floor; the remaining desks
+// keep their existing labels (DD4 and DD6 were not renumbered), so DD5 is
+// simply retired and can never be claimed. Same idea as office 113, which
+// doesn't exist either — see seating.ts.
+export const REMOVED_DESK_NUMBERS: readonly number[] = [5];
+
+// Every dedicated desk that actually exists, in order: the DD_MIN–DD_MAX range
+// with the retired numbers taken out. 25 desks today (DD1–DD26 without DD5).
+export const DESK_NUMBERS: readonly number[] = Array.from(
+  { length: DD_MAX - DD_MIN + 1 },
+  (_, i) => DD_MIN + i
+).filter((n) => !REMOVED_DESK_NUMBERS.includes(n));
+
+// Total number of dedicated desks in the building.
+export const DESK_COUNT = DESK_NUMBERS.length;
+
+// Human-readable description of the valid desk numbers, e.g.
+// "DD1–DD26 (there is no DD5)". Shared by the portal and onboarding copy so a
+// future removal only has to be recorded in REMOVED_DESK_NUMBERS.
+export const DESK_RANGE_LABEL = `DD${DD_MIN}–DD${DD_MAX}${
+  REMOVED_DESK_NUMBERS.length
+    ? ` (there is no ${REMOVED_DESK_NUMBERS.map((n) => `DD${n}`).join(' or ')})`
+    : ''
+}`;
 
 // Member services contact, surfaced when a desk is taken or invalid so the
 // member can flag a mistake.
@@ -22,8 +49,9 @@ export type DeskValidationResult =
 
 // Normalize and validate a dedicated-desk number. Accepts a case-insensitive
 // "DD" prefix (with or without surrounding/inner whitespace and leading
-// zeros), e.g. "dd04" → "DD4", and enforces the DD1–DD26 range. The returned
-// `value` is the canonical form used for storage and uniqueness checks.
+// zeros), e.g. "dd04" → "DD4", enforces the DD1–DD26 range, and rejects the
+// retired numbers that no longer have a desk. The returned `value` is the
+// canonical form used for storage and uniqueness checks.
 export function normalizeDeskNumber(raw: string): DeskValidationResult {
   const trimmed = (raw || '').trim();
   if (!trimmed) {
@@ -45,6 +73,14 @@ export function normalizeDeskNumber(raw: string): DeskValidationResult {
     return {
       ok: false,
       error: `Desk number must be between DD${DD_MIN} and DD${DD_MAX}.`,
+    };
+  }
+  if (REMOVED_DESK_NUMBERS.includes(n)) {
+    return {
+      ok: false,
+      error:
+        `There is no desk DD${n} — it was removed from the floor. Dedicated ` +
+        `desks are numbered ${DESK_RANGE_LABEL}.`,
     };
   }
   return { ok: true, value: `DD${n}` };

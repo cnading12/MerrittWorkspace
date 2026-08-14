@@ -59,7 +59,8 @@ export async function POST(req: NextRequest) {
         // Allow clearing the desk so a member can correct a mistake.
         update.desk_number = null;
       } else {
-        // Enforce the DD# format and DD1–DD26 range.
+        // Enforce the DD# format and the DD1–DD26 range (minus retired desks
+        // like DD5, which no longer exists).
         const result = normalizeDeskNumber(raw);
         if (!result.ok) {
           return NextResponse.json({ error: result.error }, { status: 400 });
