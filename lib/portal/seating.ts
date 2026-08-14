@@ -19,7 +19,9 @@
 // Offices are multi-occupant: one paying "primary" member plus any number of
 // $0 "office members" can legitimately share an office, so every portal
 // claimant of a space is kept (OccupancyEntry.occupants, primary first)
-// rather than only the first writer.
+// rather than only the first writer. An office with no primary can instead
+// hold several "private dedicated desk" members — an empty office converted
+// into a dedicated-desk area once the 25 floor desks filled up.
 
 import { DESK_NUMBERS, normalizeDeskNumber } from './desks';
 
@@ -61,8 +63,11 @@ export interface SpaceOccupant {
   // Present for manual occupants so the UI can edit/delete the row.
   manualId?: string;
   // For office occupants: 'primary' pays for the office, 'member' is an
-  // additional occupant ($0/mo office member). Absent for desks/manual rows.
-  role?: 'primary' | 'member';
+  // additional occupant ($0/mo office member), and 'private_desk' is a
+  // dedicated-desk member seated in an office we converted into a
+  // dedicated-desk area (they pay for their desk, not the room). Absent for
+  // desks/manual rows.
+  role?: 'primary' | 'member' | 'private_desk';
   // True while an office member is awaiting admin approval.
   pending?: boolean;
 }
@@ -145,6 +150,8 @@ export function buildOccupancy(
         occupant.role = 'primary';
       } else if (m.designation === 'office_member') {
         occupant.role = 'member';
+      } else if (m.designation === 'private_dedicated_desk') {
+        occupant.role = 'private_desk';
       }
     }
     if (m.status === 'pending') occupant.pending = true;
@@ -155,7 +162,11 @@ export function buildOccupancy(
   // Primary first, then confirmed office members, then pending ones; stable
   // by name within each group so the list reads predictably.
   const rank = (o: SpaceOccupant) =>
-    (o.role === 'primary' ? 0 : o.role === 'member' ? 2 : 1) + (o.pending ? 3 : 0);
+    (o.role === 'primary'
+      ? 0
+      : o.role === 'member' || o.role === 'private_desk'
+        ? 2
+        : 1) + (o.pending ? 3 : 0);
   portalBySpace.forEach((list) => {
     list.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
   });

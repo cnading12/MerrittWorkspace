@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from 'react';
 import { MapPin, Wifi, Shield, Phone, Coffee, Users, Calendar, CheckCircle, Building2, Clock, Mail, Heart, ArrowRight, Zap, TrendingUp } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
@@ -56,6 +57,36 @@ const membershipPlans = [
     ideal_for: 'Travelers, drop-ins, and anyone wanting to try the space',
     category: 'shared',
     link: '/membership/apply'
+  },
+  // Only shown once every desk on the shared floor is spoken for — see
+  // PRIVATE_DESK_PLAN_ID below and lib/portal/deskAvailability.ts. Until then
+  // we don't advertise it at all.
+  {
+    id: 'private_dedicated_desk',
+    name: 'Private Dedicated Desk',
+    price: 300,
+    description: 'Your own dedicated desk inside a private, lockable office area — outside the shared community space.',
+    capacity: '1 person',
+    privacy: 'Private Area',
+    image: '/images/private-offices/single.webp',
+    blurDataURL: 'data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAACQAQCdASoKAA0ABUB8JZQC7ABpDmAAj/vsp3SQ/qO4OdwA',
+    color: 'burnt-orange',
+    badge: 'Private & Lockable',
+    features: [
+      'Private, lockable office area — outside the shared community space',
+      'Your own dedicated desk within that area',
+      '24/7 building access',
+      'High-speed WiFi',
+      '4 hours meeting room credits/month',
+      'Full kitchen with coffee',
+      'Mail and package handling',
+      'Access to 4 private phone booths',
+      'Pet-friendly workspace',
+      'Community networking events'
+    ],
+    ideal_for: 'Members who want a dedicated desk with real privacy and a door that locks',
+    category: 'shared',
+    link: '/membership/dedicated-desk'
   },
   {
     id: 'private_office_single',
@@ -199,14 +230,39 @@ const processSteps = [
   }
 ];
 
+// The dedicated desk inside a converted private office. Hidden from the
+// public catalog until every desk on the shared floor is spoken for.
+const PRIVATE_DESK_PLAN_ID = 'private_dedicated_desk';
+
 export default function MembershipPage() {
-  const sharedPlans = membershipPlans.filter(plan => plan.category === 'shared');
+  // Best-effort availability check. Unknown (fetch in flight or failed) shows
+  // the normal catalog: standard dedicated desk on offer, private tier hidden.
+  const [desksFull, setDesksFull] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/desk-availability')
+      .then(r => r.json())
+      .then(d => {
+        if (!cancelled && d && !d.unavailable) setDesksFull(d.isFull === true);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const sharedPlans = membershipPlans.filter(
+    plan => plan.category === 'shared' && (plan.id !== PRIVATE_DESK_PLAN_ID || desksFull)
+  );
   const privatePlans = membershipPlans.filter(plan => plan.category === 'private');
 
-  const renderPlanCard = (plan: typeof membershipPlans[number]) => (
+  const renderPlanCard = (plan: typeof membershipPlans[number]) => {
+    // Every floor-plan desk is taken. The card stays up — with the price it
+    // has always shown — so the private alternative reads as an explanation
+    // rather than an unannounced price rise.
+    const soldOut = plan.id === 'dedicated_desk' && desksFull;
+    return (
     <div
       key={plan.id}
-      className={`bg-white rounded-xl shadow-lg border-2 overflow-hidden hover:shadow-2xl transition group flex flex-col ${plan.id === 'dedicated_desk' ? 'border-burnt-orange-400' : 'border-gray-200'}`}
+      className={`bg-white rounded-xl shadow-lg border-2 overflow-hidden hover:shadow-2xl transition group flex flex-col ${soldOut ? 'border-gray-200' : plan.id === 'dedicated_desk' || plan.id === PRIVATE_DESK_PLAN_ID ? 'border-burnt-orange-400' : 'border-gray-200'}`}
     >
       {/* Image */}
       <div className="relative h-48 overflow-hidden">
@@ -218,7 +274,11 @@ export default function MembershipPage() {
           blurDataURL={plan.blurDataURL}
           className="object-cover group-hover:scale-105 transition duration-300"
         />
-        {plan.badge ? (
+        {soldOut ? (
+          <div className="absolute top-4 right-4 bg-gray-900 text-white px-3 py-1 rounded-full text-xs font-semibold">
+            Fully Occupied
+          </div>
+        ) : plan.badge ? (
           <div className="absolute top-4 right-4 bg-burnt-orange-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
             {plan.badge}
           </div>
@@ -242,6 +302,14 @@ export default function MembershipPage() {
         )}
 
         <p className="text-gray-600 mb-4">{plan.description}</p>
+
+        {soldOut && (
+          <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            <strong>All of our dedicated desks are currently taken.</strong> We&apos;re still
+            welcoming dedicated desk members — see the Private Dedicated Desk option, your own
+            desk in a private, lockable area.
+          </div>
+        )}
 
         <div className="space-y-2 mb-4 text-sm text-gray-600">
           <div className="flex items-center gap-2">
@@ -276,16 +344,19 @@ export default function MembershipPage() {
           >
             Learn More
           </Link>
-          <Link
-            href="/membership/apply"
-            className="w-full border-2 border-burnt-orange-600 text-burnt-orange-600 hover:bg-burnt-orange-600 hover:text-white py-3 px-4 rounded-lg font-semibold transition text-center block"
-          >
-            Apply Now
-          </Link>
+          {!soldOut && (
+            <Link
+              href="/membership/apply"
+              className="w-full border-2 border-burnt-orange-600 text-burnt-orange-600 hover:bg-burnt-orange-600 hover:text-white py-3 px-4 rounded-lg font-semibold transition text-center block"
+            >
+              Apply Now
+            </Link>
+          )}
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <main className="min-h-screen bg-gray-50 pt-16">

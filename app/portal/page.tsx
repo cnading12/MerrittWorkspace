@@ -2712,10 +2712,25 @@ function DayPassSection() {
   );
 }
 
+// What the desk dropdown needs to know: which DD numbers are still open, and
+// how full the building is. Served by /api/portal/available-desks.
+type DeskOptions = {
+  desks: string[];
+  capacity: number;
+  taken: number;
+  remaining: number;
+  isFull: boolean;
+};
+
 // Member-editable spot for declaring which dedicated desk they're taking or
 // which private office they'd like. The desk/office number is the same field
 // admins manage in the admin panel — saving here updates `members` directly
 // and emails member services so they can confirm the seat is available.
+//
+// Desk members choose from a dropdown of desks that are actually free rather
+// than typing a DD number: a desk someone else already holds must never be
+// selectable. The list comes from the server, which applies the same occupancy
+// rules the save endpoint enforces.
 function WorkspaceAssignmentSection({
   member,
   onMemberChange,
@@ -2730,18 +2745,52 @@ function WorkspaceAssignmentSection({
     designation === 'private_office_large';
   const isDesk =
     designation === 'dedicated_desk' || designation === 'one_day_dedicated_desk';
+  // Private dedicated desks live in an office we converted into a
+  // dedicated-desk area. Which room that is depends on what's free and how
+  // we're laying it out, so member services assigns it — nothing to edit here.
+  const isPrivateDesk = designation === 'private_dedicated_desk';
   const editable = isOffice || isDesk;
 
   const initial = isOffice ? member.office_number || '' : member.desk_number || '';
   const [value, setValue] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const [options, setOptions] = useState<DeskOptions | null>(null);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
 
   // Keep the input in sync if the member record refreshes (e.g. admin override).
   useEffect(() => {
     setValue(initial);
   }, [initial]);
 
+  // Load the pickable desks. Re-runs whenever the member's own desk changes so
+  // the list reflects the seat they just took (or gave up).
+  useEffect(() => {
+    if (!isDesk) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch('/api/portal/available-desks', {
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Could not load desk availability');
+        if (cancelled) return;
+        setOptions(data);
+        setOptionsError(null);
+      } catch (e: any) {
+        if (!cancelled) setOptionsError(e.message);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isDesk, member.desk_number]);
+
+  if (isPrivateDesk) {
+    return <PrivateDeskAssignmentSection member={member} />;
+  }
   if (!editable) {
     return null;
   }
@@ -2749,9 +2798,9 @@ function WorkspaceAssignmentSection({
   const labelTitle = isOffice ? 'Your Office' : 'Your Dedicated Desk';
   const helper = isOffice
     ? "Tell us which office you'd like. Member services will confirm availability and finalize your assignment."
-    : `Add the desk you're taking using the format DD# (for example, DD4). ` +
-      `Desks are numbered ${DESK_RANGE_LABEL}, and a desk that's already ` +
-      `claimed can't be selected. Member services will confirm and update building records.`;
+    : `Pick your desk from the list below — it only shows desks that are ` +
+      `currently open, so whatever you choose is yours. Desks are numbered ` +
+      `${DESK_RANGE_LABEL}. Member services will confirm and update building records.`;
   // Physical marking policy: a claimed desk must never look empty, or trial-day
   // visitors and other members will assume it's up for grabs.
   const markingPolicy =
@@ -2767,6 +2816,15 @@ function WorkspaceAssignmentSection({
   const trimmed = value.trim();
   const baseline = (currentValue || '').trim();
   const dirty = trimmed !== baseline;
+
+  // Desks offered in the dropdown: everything currently open, plus the
+  // member's own desk if for any reason the server didn't list it (e.g. a
+  // legacy value outside DD1–DD26 that an admin set by hand), so selecting it
+  // is never silently lost.
+  const openDesks = options?.desks ?? [];
+  const deskChoices =
+    baseline && !openDesks.includes(baseline) ? [baseline, ...openDesks] : openDesks;
+  const noDesksOpen = !!options && deskChoices.length === 0;
 
   async function save() {
     // Validate the DD# format up front so desk members get instant feedback
@@ -2823,19 +2881,65 @@ function WorkspaceAssignmentSection({
           <span className="font-semibold">Mark your desk:</span> {markingPolicy}
         </div>
       )}
+      {isDesk && options && (
+        <p className="mb-4 text-xs text-gray-600">
+          <span className="font-semibold">
+            {options.taken} of {options.capacity}
+          </span>{' '}
+          dedicated desks are spoken for
+          {options.remaining > 0
+            ? ` · ${options.remaining} still available`
+            : ' · the shared floor is fully committed'}
+          .
+        </p>
+      )}
+      {isDesk && noDesksOpen && (
+        <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          Every dedicated desk is currently taken, so there&apos;s nothing to
+          choose from right now. Member services will place you as soon as a
+          desk opens up — please get in touch using the details below.
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-end gap-3">
         <div className="flex-1">
           <label className="block text-xs font-medium text-gray-700 mb-1">
             {fieldLabel}
           </label>
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={placeholder}
-            maxLength={32}
-            className="w-full border rounded px-3 py-2 text-sm"
-          />
+          {isDesk ? (
+            <select
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              disabled={!options || (noDesksOpen && !baseline)}
+              className="w-full border rounded px-3 py-2 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
+            >
+              <option value="">
+                {optionsError
+                  ? "— Couldn't load desks —"
+                  : !options
+                    ? 'Loading available desks…'
+                    : noDesksOpen
+                      ? 'No desks currently open'
+                      : baseline
+                        ? '— None (give up my desk) —'
+                        : '— Select a desk —'}
+              </option>
+              {deskChoices.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                  {d === baseline ? ' (your current desk)' : ''}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={placeholder}
+              maxLength={32}
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+          )}
         </div>
         <button
           onClick={save}
@@ -2859,9 +2963,14 @@ function WorkspaceAssignmentSection({
           {status.text}
         </p>
       )}
-      {isDesk && status?.kind === 'err' && (
+      {isDesk && optionsError && (
+        <p className="mt-2 text-sm text-red-700">
+          Couldn&apos;t load the list of open desks: {optionsError}
+        </p>
+      )}
+      {isDesk && (status?.kind === 'err' || noDesksOpen || optionsError) && (
         <p className="mt-1 text-xs text-gray-600">
-          Think there&apos;s a mistake? Call member services at{' '}
+          Need a hand? Call member services at{' '}
           <a
             href={`tel:${MEMBER_SERVICES_PHONE_TEL}`}
             className="text-orange-700 hover:underline"
@@ -2878,6 +2987,54 @@ function WorkspaceAssignmentSection({
           .
         </p>
       )}
+    </section>
+  );
+}
+
+// Private dedicated desk members don't pick anything. Their desk sits in an
+// office we've converted into a dedicated-desk area, and member services
+// assigns the room — so this panel just reports where they stand.
+function PrivateDeskAssignmentSection({ member }: { member: Member }) {
+  const room = (member.office_number || '').trim();
+  return (
+    <section className="bg-white border rounded-lg p-6">
+      <h3 className="font-semibold text-gray-900 mb-1">Your Private Desk Area</h3>
+      <p className="text-sm text-gray-600 mb-4">
+        Your dedicated desk is in a private, lockable office area rather than on
+        the shared coworking floor. Member services assigns the room, so
+        there&apos;s nothing to choose here.
+      </p>
+      {room ? (
+        <div className="rounded border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+          You&apos;re assigned to{' '}
+          <span className="font-mono font-semibold">Office {room}</span>. Your
+          desk is inside that room — it locks, and it&apos;s outside the shared
+          community area.
+        </div>
+      ) : (
+        <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          Member services is preparing your private desk area and will confirm
+          your room shortly. Everything else in your onboarding can continue in
+          the meantime.
+        </div>
+      )}
+      <p className="mt-3 text-xs text-gray-600">
+        Questions about your room? Call member services at{' '}
+        <a
+          href={`tel:${MEMBER_SERVICES_PHONE_TEL}`}
+          className="text-orange-700 hover:underline"
+        >
+          {MEMBER_SERVICES_PHONE_DISPLAY}
+        </a>{' '}
+        or email{' '}
+        <a
+          href={`mailto:${MEMBER_SERVICES_EMAIL}`}
+          className="text-orange-700 hover:underline break-all"
+        >
+          {MEMBER_SERVICES_EMAIL}
+        </a>
+        .
+      </p>
     </section>
   );
 }

@@ -21,11 +21,25 @@ export interface MembershipPlan {
   one_time?: boolean;
 }
 
+// Dedicated-desk rates. A desk on the shared coworking floor is the standard
+// rate; once all 25 floor desks are spoken for we convert empty private
+// offices into dedicated-desk areas and sell those at the private rate, which
+// is higher because the space is private and lockable. Exported so the
+// application form and its API can quote the same numbers.
+// See lib/portal/deskAvailability.ts for what "spoken for" means.
+export const DEDICATED_DESK_MONTHLY_CENTS = 20000;
+export const PRIVATE_DEDICATED_DESK_MONTHLY_CENTS = 30000;
+
 export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
   dedicated_desk: {
     designation: 'dedicated_desk',
     label: 'Dedicated Desk',
-    monthly_cost_cents: 20000,
+    monthly_cost_cents: DEDICATED_DESK_MONTHLY_CENTS,
+  },
+  private_dedicated_desk: {
+    designation: 'private_dedicated_desk',
+    label: 'Private Dedicated Desk',
+    monthly_cost_cents: PRIVATE_DEDICATED_DESK_MONTHLY_CENTS,
   },
   one_day_dedicated_desk: {
     designation: 'one_day_dedicated_desk',

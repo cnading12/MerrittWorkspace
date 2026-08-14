@@ -211,6 +211,73 @@ describe('buildOccupancy — multi-occupant offices', () => {
     expect(o110.conflict).toMatchObject({ name: 'Walk-in Person', source: 'manual' });
   });
 
+  // Once the 25 floor desks fill up we convert empty offices into
+  // dedicated-desk areas. Those occupants pay for a desk, not the room, so the
+  // office has no primary and everyone in it is flagged as a private desk.
+  it('flags private dedicated desk members inside a converted office', () => {
+    const entries = buildOccupancy(
+      'office',
+      OFFICE_SPACES,
+      [
+        member('m-b', 'Bea', 'Nolan', {
+          office_number: '107',
+          designation: 'private_dedicated_desk',
+          status: 'active',
+        }),
+        member('m-a', 'Ari', 'Cole', {
+          office_number: '107',
+          designation: 'private_dedicated_desk',
+          status: 'active',
+        }),
+      ],
+      []
+    );
+    const o107 = entries.find((e) => e.spaceNumber === '107')!;
+    expect(o107.occupants).toHaveLength(2);
+    expect(o107.occupants.every((o) => o.role === 'private_desk')).toBe(true);
+    // No primary member, so the headline is just the first occupant by name.
+    expect(o107.occupant?.name).toBe('Ari Cole');
+  });
+
+  it('ranks a private desk member below the office primary', () => {
+    const entries = buildOccupancy(
+      'office',
+      OFFICE_SPACES,
+      [
+        member('m-desk', 'Ari', 'Cole', {
+          office_number: '107',
+          designation: 'private_dedicated_desk',
+          status: 'active',
+        }),
+        member('m-primary', 'Zoe', 'West', {
+          office_number: '107',
+          designation: 'private_office_single',
+          status: 'active',
+        }),
+      ],
+      []
+    );
+    const o107 = entries.find((e) => e.spaceNumber === '107')!;
+    expect(o107.occupants.map((o) => o.role)).toEqual(['primary', 'private_desk']);
+  });
+
+  it('never puts a private desk member on the dedicated-desk floor plan', () => {
+    // Their seat lives in office_number, so the DD chart must stay untouched.
+    const entries = buildOccupancy(
+      'desk',
+      DESK_SPACES,
+      [
+        member('m-desk', 'Ari', 'Cole', {
+          office_number: '107',
+          designation: 'private_dedicated_desk',
+        }),
+      ],
+      []
+    );
+    expect(entries.every((e) => e.occupant === null)).toBe(true);
+    expect(entries).toHaveLength(DESK_SPACES.length);
+  });
+
   it('no longer hides a second portal claimant of the same desk', () => {
     const members = [
       member('m1', 'Ada', 'Lovelace', { desk_number: 'DD4' }),

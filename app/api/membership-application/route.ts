@@ -28,6 +28,10 @@ const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 // lockstep with app/membership/apply/page.tsx and lib/portal/pricing.ts.
 const PLAN_CATALOG: Record<string, { label: string; price_cents: number; recurrence: 'monthly' | 'one_time' }> = {
   dedicated_desk:          { label: 'Dedicated Desk',             price_cents: 20000,  recurrence: 'monthly'  },
+  // A dedicated desk in a private, lockable office area rather than on the
+  // shared coworking floor. Only offered on the application form once all 25
+  // floor desks are spoken for — see lib/portal/deskAvailability.ts.
+  private_dedicated_desk:  { label: 'Private Dedicated Desk',     price_cents: 30000,  recurrence: 'monthly'  },
   one_day_dedicated_desk:  { label: 'One Day Dedicated Desk',     price_cents: 3000,   recurrence: 'one_time' },
   private_office_single:   { label: 'Private Office — Single',    price_cents: 50000,  recurrence: 'monthly'  },
   private_office_double:   { label: 'Private Office — Double',    price_cents: 70000,  recurrence: 'monthly'  },
@@ -116,6 +120,25 @@ export async function POST(request: NextRequest) {
     // Itemize the applicant's selected plans server-side so the totals stored
     // and emailed are authoritative — never trust the numbers the client sent.
     const itemized = itemizeSelectedPlans(applicationData.selected_plans, applicationData.membership_type);
+
+    // Applications for a shared floor desk are still accepted when all 25 are
+    // spoken for — we may convert an office and take them on as a private
+    // dedicated desk instead — but staff must not approve one at the $200 rate
+    // believing a floor desk is waiting. The form hides that option once we're
+    // full; this catches a stale page, and flags it for the reviewer either
+    // way. Best-effort: an availability failure never blocks an application.
+    let deskFloorFull = false;
+    if (itemized.lines.some((l) => l.plan_id === 'dedicated_desk')) {
+      try {
+        const { getServiceSupabase } = await import('@/lib/portal/supabaseAdmin');
+        const { getDeskCapacity } = await import('@/lib/portal/deskAvailability');
+        deskFloorFull = (await getDeskCapacity(getServiceSupabase())).isFull;
+      } catch (e) {
+        console.error('Could not check dedicated-desk availability for application', e);
+      }
+    }
+    applicationData.dedicated_desk_floor_full = deskFloorFull;
+
     // Make these available to email helpers below by attaching them onto the
     // applicationData object passed through.
     applicationData.itemized_lines = itemized.lines;
@@ -609,6 +632,14 @@ function generateManagerEmailHTML(data: {
           </div>
           ` : ''}
 
+          ${app.dedicated_desk_floor_full ? `
+          <div style="background: #fdecea; border: 2px solid #c62828; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="margin: 0 0 6px 0; color: #b71c1c;">⚠️ Dedicated desks are FULL</h3>
+            <p style="margin: 0;">This application includes a <strong>shared-floor Dedicated Desk ($200/mo)</strong>, but every one of our dedicated desks is already spoken for — including members who have paid but not yet picked a desk number.</p>
+            <p style="margin: 6px 0 0 0; font-size: 13px;">Do not approve this at the $200 shared rate expecting a desk on the floor plan. If you want to take them on, convert an empty private office into a dedicated-desk area and approve them as a <strong>Private Dedicated Desk ($300/mo)</strong>.</p>
+          </div>
+          ` : ''}
+
           <div class="alert">
             <h3 style="margin-top: 0;">Application Summary</h3>
             <p><strong>Applicant:</strong> ${app.first_name} ${app.last_name}</p>
@@ -755,7 +786,14 @@ function generateManagerEmailText(data: {
   return `
 NEW MEMBERSHIP APPLICATION
 
-${app.wants_trial_day ? `*** TRIAL DAY REQUESTED ***
+${app.dedicated_desk_floor_full ? `*** DEDICATED DESKS ARE FULL ***
+This application includes a shared-floor Dedicated Desk ($200/mo), but every
+dedicated desk is already spoken for (including members who have paid but not
+yet picked a desk number). Do not approve at the $200 shared rate expecting a
+desk on the floor plan — convert an empty private office and approve them as a
+Private Dedicated Desk ($300/mo) instead.
+
+` : ''}${app.wants_trial_day ? `*** TRIAL DAY REQUESTED ***
 Trial date: ${app.trial_date ? new Date(app.trial_date).toLocaleDateString() : 'not specified'}
 A trial-day info email has been sent to the applicant directly.
 

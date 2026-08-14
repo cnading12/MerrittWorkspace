@@ -50,6 +50,15 @@ export default function SeatingChart({
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  // Building-wide dedicated-desk capacity. Read from the server rather than
+  // counted off the `members` prop, because that list reflects whichever
+  // roster view the admin is on (it can be filtered to archived members only).
+  const [deskCapacity, setDeskCapacity] = useState<{
+    capacity: number;
+    taken: number | null;
+    remaining: number | null;
+    isFull: boolean;
+  } | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -66,6 +75,14 @@ export default function SeatingChart({
       setError(e.message || 'Failed to load seating');
     } finally {
       setLoading(false);
+    }
+    // Best-effort: the chart is still useful without the capacity headline.
+    try {
+      const res = await fetch('/api/desk-availability');
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && !json.unavailable) setDeskCapacity(json);
+    } catch {
+      /* leave the headline off */
     }
   }, [token]);
 
@@ -229,6 +246,24 @@ export default function SeatingChart({
                   </span>
                 )}
               </p>
+              {deskCapacity && deskCapacity.taken !== null && (
+                // "Spoken for" also counts paid dedicated-desk members who
+                // haven't picked a DD number yet, so this can exceed the number
+                // of desks showing an occupant above. At capacity we stop
+                // selling floor desks and sell private dedicated desks instead.
+                <p
+                  className={`text-xs mt-0.5 ${
+                    deskCapacity.isFull ? 'text-amber-700 font-medium' : 'text-gray-500'
+                  }`}
+                >
+                  {deskCapacity.taken}/{deskCapacity.capacity} dedicated desks
+                  spoken for (includes paid members who haven&apos;t picked a desk
+                  yet)
+                  {deskCapacity.isFull
+                    ? ' · FULL — new desk applicants are offered a private dedicated desk'
+                    : ` · ${deskCapacity.remaining} left to sell`}
+                </p>
+              )}
             </div>
             <button
               onClick={() => setOpen(false)}
@@ -413,6 +448,14 @@ function OccupancyRow({
                     title="Additional occupant — the office's primary member pays for the space"
                   >
                     Office member
+                  </span>
+                )}
+                {person.role === 'private_desk' && (
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-orange-100 text-orange-800"
+                    title="Dedicated desk member seated in this office — pays for a private dedicated desk, not the room"
+                  >
+                    Private desk
                   </span>
                 )}
                 {person.pending && (

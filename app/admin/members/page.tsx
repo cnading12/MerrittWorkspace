@@ -537,6 +537,19 @@ export default function AdminMembersPage() {
                         OFFICE MEMBER{m.office_number ? ` · ${m.office_number}` : ''}
                       </span>
                     )}
+                    {m.designation === 'private_dedicated_desk' && (
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold tracking-wider bg-orange-700 text-white"
+                        title={
+                          m.office_number
+                            ? `Dedicated desk in Office ${m.office_number}, a private office converted into a dedicated-desk area. Set their room in the Office field.`
+                            : 'Dedicated desk in a private office converted into a dedicated-desk area. No room assigned yet — set one in the Office field.'
+                        }
+                      >
+                        PRIVATE DESK
+                        {m.office_number ? ` · ${m.office_number}` : ' · NO ROOM'}
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-gray-600">{m.email}</div>
                   {(appliedAgo || m.intended_start_date || canPing) && (

@@ -28,6 +28,11 @@ export const HOURLY_RATE_CENTS = 2500;
 // Everything else (one-day desk, flex, other) gets none.
 export const INCLUDED_MONTHLY_HOURS: Record<string, number> = {
   dedicated_desk: 4,
+  // A private dedicated desk is the same product in a private room, so it
+  // carries the same personal allotment. Deliberately NOT pooled per office:
+  // two private-desk members can share a converted office and each keeps
+  // their own hours.
+  private_dedicated_desk: 4,
   private_office_single: 8,
   private_office_double: 12,
   private_office_large: 20,
