@@ -1,10 +1,11 @@
 // Reference data and merge logic for the admin seating chart.
 //
-// The building has a fixed set of seats. Dedicated desks are DD1–DD26 (see
-// desks.ts, the same range members self-assign in the portal). Private offices
-// are numbered 100–112, 114, and a single office 120 in the wellness space
-// (office 113 does not exist; 120 is not shown on the floor-plan image but is a
-// real, listable office).
+// The building has a fixed set of seats. Dedicated desks are DD1–DD26 minus
+// DD5, which was removed from the floor (see desks.ts, the same set members
+// self-assign in the portal) — 25 desks in total. Private offices are numbered
+// 100–112, 114, and a single office 120 in the wellness space (office 113 does
+// not exist; 120 is not shown on the floor-plan image but is a real, listable
+// office).
 //
 // Occupancy is built by overlaying two sources onto this fixed set of spaces:
 //   1. Portal members  — members.desk_number / members.office_number (read-only
@@ -20,7 +21,7 @@
 // claimant of a space is kept (OccupancyEntry.occupants, primary first)
 // rather than only the first writer.
 
-import { DD_MIN, DD_MAX, normalizeDeskNumber } from './desks';
+import { DESK_NUMBERS, normalizeDeskNumber } from './desks';
 
 export type SpaceType = 'desk' | 'office';
 
@@ -83,11 +84,9 @@ export interface OccupancyEntry {
   conflict?: SpaceOccupant;
 }
 
-// Canonical desk labels DD1..DD26, in order.
-export const DESK_SPACES: string[] = Array.from(
-  { length: DD_MAX - DD_MIN + 1 },
-  (_, i) => `DD${DD_MIN + i}`
-);
+// Canonical desk labels DD1..DD26, in order, skipping the retired numbers —
+// DD5 was removed from the floor, so it never appears on the chart.
+export const DESK_SPACES: string[] = DESK_NUMBERS.map((n) => `DD${n}`);
 
 // Canonical office labels. 100–112 (contiguous), 114, and the wellness-space
 // office 120. Office 113 intentionally omitted — it does not exist.

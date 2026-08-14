@@ -18,8 +18,7 @@ import {
 import { formatUsd, isOneTimeDesignation } from '@/lib/portal/pricing';
 import {
   normalizeDeskNumber,
-  DD_MIN,
-  DD_MAX,
+  DESK_RANGE_LABEL,
   MEMBER_SERVICES_PHONE_DISPLAY,
   MEMBER_SERVICES_PHONE_TEL,
   MEMBER_SERVICES_EMAIL,
@@ -2751,7 +2750,7 @@ function WorkspaceAssignmentSection({
   const helper = isOffice
     ? "Tell us which office you'd like. Member services will confirm availability and finalize your assignment."
     : `Add the desk you're taking using the format DD# (for example, DD4). ` +
-      `Desks run from DD${DD_MIN} to DD${DD_MAX}, and a desk that's already ` +
+      `Desks are numbered ${DESK_RANGE_LABEL}, and a desk that's already ` +
       `claimed can't be selected. Member services will confirm and update building records.`;
   // Physical marking policy: a claimed desk must never look empty, or trial-day
   // visitors and other members will assume it's up for grabs.

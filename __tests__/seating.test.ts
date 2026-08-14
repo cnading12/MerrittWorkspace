@@ -46,10 +46,14 @@ function manual(
 }
 
 describe('canonical space sets', () => {
-  it('covers DD1–DD26', () => {
-    expect(DESK_SPACES).toHaveLength(26);
+  it('covers DD1–DD26 and omits the removed DD5', () => {
+    expect(DESK_SPACES).toHaveLength(25);
     expect(DESK_SPACES[0]).toBe('DD1');
-    expect(DESK_SPACES[25]).toBe('DD26');
+    expect(DESK_SPACES[24]).toBe('DD26');
+    expect(DESK_SPACES).not.toContain('DD5');
+    // Neighbours keep their original labels — nothing was renumbered.
+    expect(DESK_SPACES).toContain('DD4');
+    expect(DESK_SPACES).toContain('DD6');
   });
 
   it('lists offices 100–112, 114, 120 and omits 113', () => {
@@ -79,7 +83,7 @@ describe('canonicalizeSpaceNumber', () => {
 describe('buildOccupancy', () => {
   it('shows every desk, with Vacant where unassigned', () => {
     const entries = buildOccupancy('desk', DESK_SPACES, [], []);
-    expect(entries).toHaveLength(26);
+    expect(entries).toHaveLength(25);
     expect(entries.every((e) => e.occupant === null)).toBe(true);
   });
 
@@ -247,6 +251,13 @@ describe('validateManualAssignment', () => {
       occupant_name: 'X',
     });
     expect(bad.ok).toBe(false);
+    // DD5 is in range but no longer exists — staff can't chart someone there.
+    const removed = validateManualAssignment({
+      space_type: 'desk',
+      space_number: 'DD5',
+      occupant_name: 'X',
+    });
+    expect(removed.ok).toBe(false);
     const good = validateManualAssignment({
       space_type: 'desk',
       space_number: 'dd4',
