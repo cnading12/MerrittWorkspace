@@ -10,6 +10,10 @@ import {
   PORTAL_FROM,
   PORTAL_REPLY_TO,
 } from '@/lib/portal/emails';
+import {
+  sendSignupEmailsOnce,
+  checkoutFactsFromMetadata,
+} from '@/lib/portal/signupEmails';
 
 export const dynamic = 'force-dynamic';
 
@@ -456,7 +460,7 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        await sb
+        const { data: signedUpMember } = await sb
           .from('members')
           .update({
             stripe_customer_id: customerId,
@@ -465,7 +469,11 @@ export async function POST(req: NextRequest) {
             onboarding_unlocked: true,
             status: 'active',
           })
-          .eq('id', memberId);
+          .eq('id', memberId)
+          .select(
+            'id, first_name, last_name, email, phone, company_name, designation, monthly_cost_cents, desk_number, office_number, access_code, is_legacy_member'
+          )
+          .maybeSingle();
 
         // A completed one-time (day pass) signup also mints the member's
         // first day pass, anchored to the purchase day the fee agreement
@@ -523,6 +531,25 @@ export async function POST(req: NextRequest) {
               paid_at: new Date().toISOString(),
             });
           }
+        }
+
+        // This is the moment the member OFFICIALLY signs up: the portal is
+        // unlocked and they're active. Welcome the member and tell the
+        // management team. Both sends are claimed at-most-once inside the
+        // helper, so Stripe's webhook retries can't duplicate them, and the
+        // helper never throws — email must not fail the webhook.
+        if (signedUpMember) {
+          await sendSignupEmailsOnce({
+            member: signedUpMember as any,
+            facts: checkoutFactsFromMetadata(
+              session.metadata as Record<string, string> | null
+            ),
+          });
+        } else {
+          console.error(
+            'Signup emails skipped: member row not returned after checkout update',
+            memberId
+          );
         }
         break;
       }
