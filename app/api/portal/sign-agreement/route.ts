@@ -3,6 +3,7 @@ import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { DOCUMENT_VERSION, parseStartDate, startDateBounds } from '@/lib/portal/legal';
 import { isOneTimeDesignation } from '@/lib/portal/pricing';
+import { sendSignupEmailsOnce } from '@/lib/portal/signupEmails';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,10 +118,36 @@ export async function POST(req: NextRequest) {
       member.is_legacy_member &&
       !member.onboarding_unlocked
     ) {
-      await sb
+      const { data: unlocked } = await sb
         .from('members')
         .update({ onboarding_unlocked: true })
-        .eq('id', member.id);
+        .eq('id', member.id)
+        .select(
+          'id, first_name, last_name, email, phone, company_name, designation, monthly_cost_cents, desk_number, office_number, access_code, is_legacy_member'
+        )
+        .maybeSingle();
+
+      // For a legacy member this IS the moment they officially finish the
+      // portal — there's no Stripe checkout to hang the welcome/notification
+      // emails off (auto-pay is optional for them). Sends are claimed
+      // at-most-once, so if they DO set up auto-pay later the webhook's call
+      // is a no-op rather than a duplicate.
+      if (unlocked) {
+        await sendSignupEmailsOnce({
+          member: unlocked as any,
+          facts: {
+            oneTime: false,
+            legacySetup: true,
+            initialTotalCents: null,
+            proratedFirstMonthCents: null,
+            lastMonthDepositCents: null,
+            ccFeeCents: null,
+            billingCycleAnchor: null,
+            startDateIso: null,
+            selectedPaymentMethod: null,
+          },
+        });
+      }
     }
 
     const { data: updatedMember } = await sb

@@ -783,6 +783,346 @@ export function neverPaidCancelledStaffEmail(opts: {
   };
 }
 
+// ------------------------------------------------------------------
+// Signup completed — the member finished the onboarding portal
+// (documents + agreements + payment) and is now officially a member.
+// Two emails go out at this moment: a welcome/orientation email to the
+// member, and a notification to the management team.
+// ------------------------------------------------------------------
+
+// The building's WiFi, kept here so the welcome email and the portal's
+// Onboarding tab quote the same credentials.
+export const WIFI_NETWORK = 'merrittcowork';
+export const WIFI_PASSWORD = 'Merritt23X';
+
+// Staffed/unlocked hours. Outside this window the front door is locked and a
+// personal access code is required — the single most-asked new-member question.
+export const BUILDING_OPEN_HOURS = '8:00 AM – 6:00 PM, Monday through Friday';
+
+export function signupCompletedMemberEmail(opts: {
+  firstName: string;
+  designationLabel: string;
+  // Plain-English "what you signed up for", e.g. "1 dedicated desk in the
+  // shared coworking space" or "Private office — 2 desks".
+  spaceSummary: string;
+  // "$200.00 per month" / "$30.00 one-time (single day pass)".
+  costLine: string;
+  // Amount actually charged at signup, already formatted with its
+  // explanation. Null when nothing was collected upfront (legacy members).
+  initialChargeLabel: string | null;
+  // When the first/next recurring charge runs, e.g. "September 1, 2026".
+  nextChargeLabel: string | null;
+  startDateLabel: string | null;
+  // 'desk' for dedicated-desk members, 'office' for private offices, null
+  // for designations with no fixed seat.
+  seatType: 'desk' | 'office' | null;
+  seatNumber: string | null;
+  // Free DD numbers, rendered only when a desk member hasn't picked one yet.
+  availableDesksLabel: string | null;
+  // e.g. "4 hours of conference-room time per month".
+  conferenceHoursLine: string | null;
+  portalUrl: string;
+}) {
+  const seatPicked = !!opts.seatNumber;
+  const seatRow = opts.seatType
+    ? `<p style="margin:0 0 6px;"><strong>${opts.seatType === 'office' ? 'Your office' : 'Your desk'}:</strong> ${
+        seatPicked
+          ? escapeHtml(opts.seatNumber!)
+          : '<span style="color:#ad4a00;">Not selected yet — see below</span>'
+      }</p>`
+    : '';
+
+  // Action block: the one thing a brand-new member still has to do.
+  const deskActionHtml =
+    opts.seatType === 'desk' && !seatPicked
+      ? `<div class="highlight">
+          <h3 style="margin:0 0 10px;">✅ First thing to do: claim your desk</h3>
+          <p style="margin:0 0 10px;">Desks are numbered <strong>DD1 through DD26</strong>. Sign in to your member portal, open the <strong>Onboarding</strong> tab, and enter the desk number you're taking.</p>
+          ${
+            opts.availableDesksLabel
+              ? `<p style="margin:0 0 10px;"><strong>Currently available:</strong> ${opts.availableDesksLabel}</p>`
+              : `<p style="margin:0 0 10px;">Every desk is currently spoken for — email <a href="mailto:memberservices@merrittworkspace.net">memberservices@merrittworkspace.net</a> and we'll sort out your seat.</p>`
+          }
+          <p style="margin:0;">Once you've claimed it, <strong>please leave something on the desk</strong> — a business card, a sticky note, or your full setup. An empty desk looks available to other members and trial visitors, so a marker is what tells everyone it's yours.</p>
+        </div>`
+      : opts.seatType === 'office' && !seatPicked
+        ? `<div class="highlight">
+          <h3 style="margin:0 0 10px;">✅ First thing to do: confirm your office</h3>
+          <p style="margin:0;">Sign in to your member portal, open the <strong>Onboarding</strong> tab, and tell us which office number you'd like. Member services will confirm availability and finalize the assignment.</p>
+        </div>`
+        : '';
+
+  const deskActionText =
+    opts.seatType === 'desk' && !seatPicked
+      ? [
+          'FIRST THING TO DO: CLAIM YOUR DESK',
+          "  Desks are numbered DD1 through DD26. Sign in to your member portal, open the Onboarding tab, and enter the desk number you're taking.",
+          opts.availableDesksLabel
+            ? `  Currently available: ${opts.availableDesksLabel}`
+            : "  Every desk is currently spoken for — email memberservices@merrittworkspace.net and we'll sort out your seat.",
+          "  Once you've claimed it, please leave something on the desk (a business card, a sticky note, or your full setup). An empty desk looks available to other members and trial visitors.",
+          '',
+        ].join('\n')
+      : opts.seatType === 'office' && !seatPicked
+        ? [
+            'FIRST THING TO DO: CONFIRM YOUR OFFICE',
+            '  Sign in to your member portal, open the Onboarding tab, and tell us which office number you would like. Member services will confirm availability and finalize the assignment.',
+            '',
+          ].join('\n')
+        : '';
+
+  return {
+    subject: `Welcome to Merritt Workspace, ${opts.firstName} — you're all set`,
+    html: shell({
+      title: 'Welcome to Merritt Workspace',
+      tagline: 'Your membership is complete',
+      body: `
+        <p>Hi ${escapeHtml(opts.firstName)},</p>
+        <p>You're officially a Merritt Workspace member — your paperwork is signed, your payment is set up, and the space is yours. Here's everything you need to get settled in.</p>
+
+        <div class="info-card">
+          <h3 style="margin-top:0;">Your membership</h3>
+          <p style="margin:0 0 6px;"><strong>Membership:</strong> ${escapeHtml(opts.designationLabel)}</p>
+          <p style="margin:0 0 6px;"><strong>What's included:</strong> ${escapeHtml(opts.spaceSummary)}</p>
+          ${seatRow}
+          <p style="margin:0 0 6px;"><strong>Cost:</strong> ${escapeHtml(opts.costLine)}</p>
+          ${opts.initialChargeLabel ? `<p style="margin:0 0 6px;"><strong>Paid today:</strong> ${escapeHtml(opts.initialChargeLabel)}</p>` : ''}
+          ${opts.nextChargeLabel ? `<p style="margin:0 0 6px;"><strong>Next charge:</strong> ${escapeHtml(opts.nextChargeLabel)} (and the 1st of every month after — automatic, nothing for you to do)</p>` : ''}
+          ${opts.startDateLabel ? `<p style="margin:0;"><strong>Membership start date:</strong> ${escapeHtml(opts.startDateLabel)}</p>` : ''}
+        </div>
+
+        ${deskActionHtml}
+
+        <div class="info-card">
+          <h3 style="margin-top:0;">🔐 Building access — when you actually need a code</h3>
+          <p style="margin:0 0 8px;">The front door is <strong>unlocked ${BUILDING_OPEN_HOURS}</strong>. During those hours just walk in — no code needed.</p>
+          <p style="margin:0 0 8px;">Your personal access code is only required <strong>outside those hours: evenings, weekends, and holidays</strong>. It's included with your membership at no extra charge.</p>
+          <p style="margin:0;">Request yours from the <strong>Onboarding</strong> tab of your portal (or email member services). We'll send the code along with a short video showing how to lock and unlock the front door with the keypad. Please keep both confidential — the code is tied to your account.</p>
+        </div>
+
+        <div class="info-card">
+          <h3 style="margin-top:0;">📶 WiFi</h3>
+          <p style="margin:0 0 6px;"><strong>Network:</strong> ${WIFI_NETWORK}</p>
+          <p style="margin:0;"><strong>Password:</strong> ${WIFI_PASSWORD}</p>
+        </div>
+
+        <h3 style="margin:24px 0 8px;">Good to know</h3>
+        <ul style="margin:0 0 16px; padding-left:18px;">
+          ${opts.conferenceHoursLine ? `<li style="margin-bottom:8px;"><strong>Conference room:</strong> ${escapeHtml(opts.conferenceHoursLine)} is included. Book it from the member portal; extra hours are available at the member rate.</li>` : ''}
+          <li style="margin-bottom:8px;"><strong>Kitchen &amp; snack shop:</strong> Coffee and tea are on us. Snacks and drinks are self-serve — order what you take at <a href="https://www.merrittworkspace.net/snackshop">merrittworkspace.net/snackshop</a>.</li>
+          <li style="margin-bottom:8px;"><strong>Cubbies &amp; mail:</strong> Want a cubby, or need to send/receive mail here? Email <a href="mailto:memberservices@merrittworkspace.net">memberservices@merrittworkspace.net</a> and we'll set it up.</li>
+          <li style="margin-bottom:8px;"><strong>Flex space (the 1905 church next door):</strong> Reservable up to 14 days out, 4 hours max per booking. Weekdays 8:00 AM – 4:00 PM are free for members — email member services for your 100% discount code. After 4:00 PM and weekends, members get 20% off the standard rate.</li>
+          <li style="margin-bottom:8px;"><strong>Events:</strong> Yoga, fitness classes, workshops, and member gatherings run next door all week. Browse and sign up at <a href="https://www.merrittwellness.net/events">merrittwellness.net/events</a>.</li>
+          <li style="margin-bottom:8px;"><strong>Refer a friend:</strong> When someone you refer signs up, you get <strong>$200 off</strong> your next month's membership.</li>
+          <li style="margin-bottom:0;"><strong>Your portal:</strong> Payment history, invoices, conference-room bookings, and your access code all live at <a href="${opts.portalUrl}">${opts.portalUrl}</a>.</li>
+        </ul>
+
+        <div class="info-card">
+          <h3 style="margin-top:0;">Who to contact</h3>
+          <p style="margin:0 0 10px;"><strong>Member Services</strong> — day-to-day support: access codes, cubbies, mail, snack shop, conference room, and anything you need as a member.<br/>
+          (303) 359-8337 · <a href="mailto:memberservices@merrittworkspace.net">memberservices@merrittworkspace.net</a></p>
+          <p style="margin:0;"><strong>Manager</strong> — onboarding, tours, membership-level changes, and bigger-picture workspace matters.<br/>
+          (720) 357-9499 · <a href="mailto:manager@merrittworkspace.net">manager@merrittworkspace.net</a></p>
+        </div>
+
+        <p style="text-align:center;">
+          <a href="${opts.portalUrl}" class="button">Open my member portal</a>
+        </p>
+
+        <p>We're genuinely glad you're here. If anything is unclear or you need a hand getting settled, just reply to this email.</p>
+        <p>See you soon,<br/>— The Merritt Workspace Team</p>
+      `,
+    }),
+    text: [
+      `Hi ${opts.firstName},`,
+      '',
+      "You're officially a Merritt Workspace member — your paperwork is signed, your payment is set up, and the space is yours. Here's everything you need to get settled in.",
+      '',
+      'YOUR MEMBERSHIP',
+      `  Membership: ${opts.designationLabel}`,
+      `  What's included: ${opts.spaceSummary}`,
+      opts.seatType
+        ? `  ${opts.seatType === 'office' ? 'Your office' : 'Your desk'}: ${opts.seatNumber || 'Not selected yet — see below'}`
+        : '',
+      `  Cost: ${opts.costLine}`,
+      opts.initialChargeLabel ? `  Paid today: ${opts.initialChargeLabel}` : '',
+      opts.nextChargeLabel
+        ? `  Next charge: ${opts.nextChargeLabel} (and the 1st of every month after — automatic)`
+        : '',
+      opts.startDateLabel ? `  Membership start date: ${opts.startDateLabel}` : '',
+      '',
+      deskActionText,
+      'BUILDING ACCESS — WHEN YOU ACTUALLY NEED A CODE',
+      `  The front door is unlocked ${BUILDING_OPEN_HOURS}. During those hours just walk in — no code needed.`,
+      '  Your personal access code is only required outside those hours: evenings, weekends, and holidays. It is included with your membership at no extra charge.',
+      "  Request yours from the Onboarding tab of your portal (or email member services). We'll send the code along with a short video showing how to lock and unlock the front door with the keypad. Please keep both confidential.",
+      '',
+      'WIFI',
+      `  Network:  ${WIFI_NETWORK}`,
+      `  Password: ${WIFI_PASSWORD}`,
+      '',
+      'GOOD TO KNOW',
+      opts.conferenceHoursLine
+        ? `  - Conference room: ${opts.conferenceHoursLine} is included. Book it from the member portal; extra hours are available at the member rate.`
+        : '',
+      '  - Kitchen & snack shop: coffee and tea are on us. Snacks and drinks are self-serve — order what you take at merrittworkspace.net/snackshop.',
+      "  - Cubbies & mail: want a cubby, or need to send/receive mail here? Email memberservices@merrittworkspace.net and we'll set it up.",
+      '  - Flex space (the 1905 church next door): reservable up to 14 days out, 4 hours max per booking. Weekdays 8:00 AM - 4:00 PM are free for members (email member services for your 100% discount code). After 4:00 PM and weekends, members get 20% off.',
+      '  - Events: yoga, fitness classes, workshops, and member gatherings run next door all week. Browse and sign up at merrittwellness.net/events.',
+      "  - Refer a friend: when someone you refer signs up, you get $200 off your next month's membership.",
+      `  - Your portal: payment history, invoices, conference-room bookings, and your access code all live at ${opts.portalUrl}`,
+      '',
+      'WHO TO CONTACT',
+      '  Member Services — day-to-day support: access codes, cubbies, mail, snack shop, conference room.',
+      '    (303) 359-8337 · memberservices@merrittworkspace.net',
+      '  Manager — onboarding, tours, membership-level changes, bigger-picture matters.',
+      '    (720) 357-9499 · manager@merrittworkspace.net',
+      '',
+      "We're genuinely glad you're here. If anything is unclear or you need a hand getting settled, just reply to this email.",
+      '',
+      'See you soon,',
+      '— The Merritt Workspace Team',
+      '',
+      '--',
+      'Merritt Workspace',
+      '2246 Irving Street, Denver, CO 80211',
+      'memberservices@merrittworkspace.net',
+    ]
+      .filter((line) => line !== '')
+      .join('\n'),
+  };
+}
+
+// Management-team notification that someone finished the onboarding portal.
+// This is the "a new member officially signed up" alert — it fires at the
+// same moment the member's portal unlocks, not when they applied.
+export function signupCompletedStaffEmail(opts: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  companyName: string | null;
+  designationLabel: string;
+  spaceSummary: string;
+  costLine: string;
+  initialChargeLabel: string | null;
+  nextChargeLabel: string | null;
+  startDateLabel: string | null;
+  paymentMethodLabel: string | null;
+  seatType: 'desk' | 'office' | null;
+  seatNumber: string | null;
+  availableDesksLabel: string | null;
+  hasAccessCode: boolean;
+  isLegacyMember: boolean;
+  adminUrl: string;
+}) {
+  const fullName = `${opts.firstName} ${opts.lastName}`;
+  const seatLabel = opts.seatType === 'office' ? 'Office' : 'Desk';
+  const seatValue = opts.seatNumber || 'Not selected yet';
+
+  // What the team still has to do for this member, in the order it usually
+  // happens. Kept short so it reads as a checklist, not a wall of text.
+  const todos: string[] = [];
+  if (!opts.hasAccessCode) {
+    todos.push(
+      'Issue their 24/7 access code from POPS once they request it (they were told codes are only needed outside 8 AM – 6 PM weekdays).'
+    );
+  }
+  if (opts.seatType && !opts.seatNumber) {
+    todos.push(
+      `They have not picked a ${opts.seatType === 'office' ? 'office' : 'desk'} yet — you'll get a separate "workspace assignment updated" email when they do, then confirm the seat is really free.`
+    );
+  } else if (opts.seatNumber) {
+    todos.push(
+      `Confirm ${seatLabel.toLowerCase()} ${opts.seatNumber} is actually free and update the building records / seating chart.`
+    );
+  }
+  todos.push('Say hello on their first day and offer a walkthrough of the space.');
+
+  const todosHtml = todos.map((t) => `<li style="margin-bottom:6px;">${t}</li>`).join('');
+  const todosText = todos.map((t) => `  - ${t}`).join('\n');
+
+  return {
+    subject: `New member signed up — ${fullName} (${opts.designationLabel})`,
+    html: shell({
+      title: 'New Member Signed Up',
+      tagline: 'Onboarding portal completed',
+      body: `
+        <p><strong>${escapeHtml(fullName)}</strong> has completed the onboarding portal — documents uploaded, agreements signed, and payment set up. They are now an active member and their portal is unlocked.</p>
+
+        <div class="info-card">
+          <h3 style="margin-top:0;">Member</h3>
+          <p style="margin:0 0 6px;"><strong>Name:</strong> ${escapeHtml(fullName)}${opts.companyName ? ` — ${escapeHtml(opts.companyName)}` : ''}</p>
+          <p style="margin:0 0 6px;"><strong>Email:</strong> <a href="mailto:${escapeHtml(opts.email)}">${escapeHtml(opts.email)}</a></p>
+          ${opts.phone ? `<p style="margin:0 0 6px;"><strong>Phone:</strong> ${escapeHtml(opts.phone)}</p>` : ''}
+          <p style="margin:0;"><strong>Signed up:</strong> ${new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Denver' })} (MT)</p>
+        </div>
+
+        <div class="info-card">
+          <h3 style="margin-top:0;">What they signed up for</h3>
+          <p style="margin:0 0 6px;"><strong>Membership:</strong> ${escapeHtml(opts.designationLabel)}${opts.isLegacyMember ? ' <span style="color:#666;">(existing-member migration)</span>' : ''}</p>
+          <p style="margin:0 0 6px;"><strong>Space:</strong> ${escapeHtml(opts.spaceSummary)}</p>
+          <p style="margin:0 0 6px;"><strong>${seatLabel}:</strong> ${escapeHtml(seatValue)}</p>
+          <p style="margin:0 0 6px;"><strong>Monthly cost:</strong> ${escapeHtml(opts.costLine)}</p>
+          ${opts.initialChargeLabel ? `<p style="margin:0 0 6px;"><strong>Charged at signup:</strong> ${escapeHtml(opts.initialChargeLabel)}</p>` : ''}
+          ${opts.paymentMethodLabel ? `<p style="margin:0 0 6px;"><strong>Payment method:</strong> ${escapeHtml(opts.paymentMethodLabel)}</p>` : ''}
+          ${opts.nextChargeLabel ? `<p style="margin:0 0 6px;"><strong>Next charge:</strong> ${escapeHtml(opts.nextChargeLabel)}</p>` : ''}
+          ${opts.startDateLabel ? `<p style="margin:0;"><strong>Start date:</strong> ${escapeHtml(opts.startDateLabel)}</p>` : ''}
+        </div>
+
+        <div class="highlight">
+          <h3 style="margin:0 0 10px;">To do</h3>
+          <ul style="margin:0; padding-left:18px;">
+            ${todosHtml}
+          </ul>
+          ${
+            opts.seatType === 'desk' && !opts.seatNumber && opts.availableDesksLabel
+              ? `<p style="margin:10px 0 0;font-size:13px;color:#555;">Desks free right now: ${opts.availableDesksLabel}</p>`
+              : ''
+          }
+        </div>
+
+        <p style="margin-top:16px;">The member has been sent their own welcome email with WiFi, access-code rules, desk selection, and building info.</p>
+
+        <p style="text-align:center;">
+          <a href="${opts.adminUrl}" class="button">Open Member in Admin Panel</a>
+        </p>
+      `,
+    }),
+    text: [
+      `${fullName} has completed the onboarding portal — documents uploaded, agreements signed, and payment set up. They are now an active member and their portal is unlocked.`,
+      '',
+      'MEMBER',
+      `  Name:  ${fullName}${opts.companyName ? ` — ${opts.companyName}` : ''}`,
+      `  Email: ${opts.email}`,
+      opts.phone ? `  Phone: ${opts.phone}` : '',
+      `  Signed up: ${new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Denver' })} (MT)`,
+      '',
+      'WHAT THEY SIGNED UP FOR',
+      `  Membership:  ${opts.designationLabel}${opts.isLegacyMember ? ' (existing-member migration)' : ''}`,
+      `  Space:       ${opts.spaceSummary}`,
+      `  ${seatLabel}:${' '.repeat(Math.max(1, 13 - seatLabel.length))}${seatValue}`,
+      `  Monthly cost: ${opts.costLine}`,
+      opts.initialChargeLabel ? `  Charged at signup: ${opts.initialChargeLabel}` : '',
+      opts.paymentMethodLabel ? `  Payment method: ${opts.paymentMethodLabel}` : '',
+      opts.nextChargeLabel ? `  Next charge: ${opts.nextChargeLabel}` : '',
+      opts.startDateLabel ? `  Start date: ${opts.startDateLabel}` : '',
+      '',
+      'TO DO',
+      todosText,
+      opts.seatType === 'desk' && !opts.seatNumber && opts.availableDesksLabel
+        ? `  Desks free right now: ${opts.availableDesksLabel}`
+        : '',
+      '',
+      'The member has been sent their own welcome email with WiFi, access-code rules, desk selection, and building info.',
+      '',
+      `Open member in admin panel: ${opts.adminUrl}`,
+    ]
+      .filter((line) => line !== '')
+      .join('\n'),
+  };
+}
+
 // Staff inboxes that receive member-lifecycle notifications (cancellations,
 // never-paid removals). Both the member-services and onboarding/manager
 // mailboxes are notified so whoever handles offboarding (inspection, key

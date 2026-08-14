@@ -65,6 +65,11 @@ export interface Member {
   // is pressed multiple times. See lib/portal/cancellationEmails.ts.
   cancellation_email_member_sent_at: string | null;
   cancellation_email_staff_sent_at: string | null;
+  // Same per-recipient idempotency for the signup-completion emails (member
+  // welcome + management-team notification), sent when the member finishes the
+  // onboarding portal. See lib/portal/signupEmails.ts.
+  signup_email_member_sent_at: string | null;
+  signup_email_staff_sent_at: string | null;
   access_code: string | null;
   access_code_issued_at: string | null;
   office_number: string | null;
