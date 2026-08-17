@@ -1413,3 +1413,67 @@ export function monthlyDuesSummaryEmail(opts: {
 
   return { subject, html, text };
 }
+
+// ------------------------------------------------------------------
+// Supabase keep-alive failure (staff only — never sent to members).
+// Fired by /api/cron/supabase-keep-alive when the daily liveness read
+// fails. The likely cause is the exact thing the keep-alive exists to
+// prevent: a paused Free-plan project, which only a human can restore
+// from the Supabase dashboard. The restore steps are in the email so
+// whoever opens it can act without hunting for them.
+// ------------------------------------------------------------------
+
+export function supabaseKeepAliveFailureEmail(opts: {
+  errorMessage: string;
+  tableName: string;
+  ranAtLabel: string;
+}) {
+  const safeError = escapeHtml(opts.errorMessage);
+  return {
+    subject: '🚨 Merritt Workspace database keep-alive FAILED',
+    html: shell({
+      title: 'Database Keep-Alive Failed',
+      tagline: 'The daily Supabase liveness check could not read the database',
+      body: `
+        <p>The daily keep-alive read against <strong>${escapeHtml(
+          opts.tableName
+        )}</strong> failed at ${escapeHtml(opts.ranAtLabel)}.</p>
+        <div class="highlight">
+          <p style="margin:0;"><strong>Error:</strong> ${safeError}</p>
+        </div>
+        <p>The most likely cause is a <strong>paused Supabase project</strong>.
+        Free-plan projects are paused after about 7 days with no database
+        activity, and only a human can bring one back.</p>
+        <div class="info-card">
+          <p style="margin:0 0 6px;"><strong>What to do:</strong></p>
+          <p style="margin:0 0 6px;">1. Open the Supabase dashboard and check this project's status.</p>
+          <p style="margin:0 0 6px;">2. If it is paused, click <strong>Restore project</strong> and wait for it to come back.</p>
+          <p style="margin:0 0 6px;">3. If it is not paused, check the Supabase status page and the Vercel logs for <code>/api/cron/supabase-keep-alive</code>.</p>
+          <p style="margin:0;">4. Until it is restored, the member portal, bookings, and the snack shop are all down.</p>
+        </div>
+        <p>This alert is sent at most once per UTC day, so it will repeat
+        tomorrow if the problem is still there.</p>
+      `,
+    }),
+    text: [
+      `The daily Supabase keep-alive read against ${opts.tableName} failed at ${opts.ranAtLabel}.`,
+      '',
+      `Error: ${opts.errorMessage}`,
+      '',
+      'The most likely cause is a paused Supabase project. Free-plan projects are',
+      'paused after about 7 days with no database activity, and only a human can',
+      'bring one back.',
+      '',
+      'WHAT TO DO',
+      "1. Open the Supabase dashboard and check this project's status.",
+      '2. If it is paused, click "Restore project" and wait for it to come back.',
+      '3. If it is not paused, check the Supabase status page and the Vercel logs',
+      '   for /api/cron/supabase-keep-alive.',
+      '4. Until it is restored, the member portal, bookings, and the snack shop are',
+      '   all down.',
+      '',
+      'This alert is sent at most once per UTC day, so it will repeat tomorrow if',
+      'the problem is still there.',
+    ].join('\n'),
+  };
+}

@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/monthly-dues-summary",
       "schedule": "0 16 7 * *"
+    },
+    {
+      "path": "/api/cron/supabase-keep-alive",
+      "schedule": "0 12 * * *"
     }
   ]
 }
