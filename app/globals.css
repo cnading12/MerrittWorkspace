@@ -29,13 +29,26 @@ body {
 @layer utilities {
   /* Duplicated declarations are deliberate: browsers without svh keep the
      vh value, newer ones take svh and stop the iOS toolbar jump. */
-  /* Fills the viewport under the 5rem nav at every width. svh rather than
-     vh so the iOS toolbar collapsing does not resize the hero mid-scroll;
-     the vh line above it is the fallback for browsers without svh. */
+  /* Full viewport: the hero starts at y=0 and the transparent nav floats
+     over it. svh rather than vh so the iOS toolbar collapsing does not
+     resize the hero mid-scroll; the vh line is the fallback for browsers
+     without svh. */
   .h-hero {
-    height: calc(100vh - 5rem);
-    height: calc(100svh - 5rem);
-    min-height: 540px;
+    height: 100vh;
+    height: 100svh;
+    min-height: 560px;
+  }
+
+  /* Keeps the light nav marks legible over the bright ceiling at the top
+     of the hero photograph. Short and directional — it stops well before
+     the middle of the image. */
+  .scrim-nav {
+    background: linear-gradient(
+      to bottom,
+      rgba(26, 22, 19, 0.52) 0%,
+      rgba(26, 22, 19, 0.24) 45%,
+      rgba(26, 22, 19, 0) 100%
+    );
   }
 
   .text-balance {

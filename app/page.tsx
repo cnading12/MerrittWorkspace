@@ -22,7 +22,9 @@ export default function HomePage() {
       {/* ─── 1. Hero ─────────────────────────────────────────────────────
           Interior, not exterior. The first question a prospect asks is what
           it feels like to work here. One still, full-bleed, no carousel. */}
-      <section className="relative mt-20 h-hero w-full overflow-hidden">
+      {/* Starts at y=0 with nothing above it: the navbar is transparent over
+          this section and only takes its solid treatment on scroll. */}
+      <section className="relative h-hero w-full overflow-hidden">
         <Image
           src="/images/new-hero/desks-occupied-wide.webp"
           alt="Members working at dedicated desks on the burnt orange concrete floors at Merritt Workspace, a coworking space in Sloan's Lake, Denver"
@@ -37,9 +39,12 @@ export default function HomePage() {
         {/* Directional scrim, only under the text. */}
         <div className="absolute inset-0 scrim-bottom md:hidden" aria-hidden="true" />
         <div className="absolute inset-0 hidden scrim-left md:block" aria-hidden="true" />
+        {/* Top scrim so the transparent nav's light marks stay readable. */}
+        <div className="absolute inset-x-0 top-0 h-40 scrim-nav" aria-hidden="true" />
 
         <div className="absolute inset-0 flex items-end">
-          <div className="mx-auto w-full max-w-7xl px-5 pb-12 sm:px-8 md:pb-20 lg:pb-24">
+          {/* pt-28 keeps the headline clear of the fixed bar on short viewports. */}
+          <div className="mx-auto w-full max-w-7xl px-5 pt-28 pb-12 sm:px-8 md:pb-20 lg:pb-24">
             {/* Width in rem, not ch: a ch on this wrapper resolves against the
                 16px body font, not the display size on the h1. */}
             <div className="md:max-w-2xl lg:max-w-[52rem]">
