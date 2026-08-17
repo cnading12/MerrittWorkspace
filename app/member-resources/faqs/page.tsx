@@ -30,20 +30,25 @@ export default function FAQPage() {
       id: 'access',
       category: 'access',
       icon: Key,
-      question: 'How do I get access to the building?',
+      question: 'How do I get access to the building? Do I need an access code?',
       answer: (
         <div className="space-y-3">
           <p>Getting access to Merritt Workspace is simple:</p>
           <ul className="space-y-2 ml-4">
             <li className="flex items-start">
               <Clock className="w-4 h-4 text-burnt-orange-600 mt-1 mr-2 flex-shrink-0" />
-              <span><strong>Business Hours (8am - 6pm):</strong> The building is unlocked and open for all members</span>
+              <span><strong>Business hours — Monday through Friday, 8am – 6pm:</strong> The building is unlocked and open for all members. <strong>No access code is needed</strong> — just walk in through the main entrance.</span>
             </li>
             <li className="flex items-start">
               <Key className="w-4 h-4 text-burnt-orange-600 mt-1 mr-2 flex-shrink-0" />
-              <span><strong>24/7 Access:</strong> After your membership begins, we'll contact you within 24 hours to set up your unique access code for round-the-clock entry</span>
+              <span><strong>Late evenings, weekends, and holidays:</strong> The door is locked, so this is the <em>only</em> time you need a personal access code. It&rsquo;s included with your membership at no extra charge — request one from your member portal or email member services if you plan to come in outside business hours.</span>
             </li>
           </ul>
+          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+            <p className="text-green-800 text-sm">
+              <strong>✅ In short:</strong> if you&rsquo;re coming in on a weekday between 8am and 6pm, you don&rsquo;t need an access code at all.
+            </p>
+          </div>
         </div>
       )
     },
@@ -54,7 +59,11 @@ export default function FAQPage() {
       question: 'How do I lock and unlock the front door after hours?',
       answer: (
         <div className="space-y-4">
-          <p>Our front door uses a keypad system for secure after-hours access.</p>
+          <p>
+            Our front door uses a keypad system for secure after-hours access. You only need it
+            outside of business hours — <strong>Monday through Friday, 8am – 6pm, the door is
+            unlocked and no code is required</strong>.
+          </p>
 
           <div className="bg-gray-50 p-4 rounded-lg border">
             <h4 className="font-semibold text-gray-900 mb-2">📹 Video Tutorial</h4>
@@ -75,8 +84,10 @@ export default function FAQPage() {
           <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
             <p className="text-orange-800 mb-2"><strong>🔑 Access Code Setup</strong></p>
             <p className="text-orange-700 text-sm">
-              Your unique access code will be provided when you start your membership.
-              The code works 24/7 and is personal to your membership.
+              Your unique access code is available on request once your membership starts —
+              you only need one if you come in during the late evening or on weekends. During
+              business hours (Mon – Fri, 8am – 6pm) the building is already unlocked. The code
+              works 24/7 and is personal to your membership.
             </p>
           </div>
 

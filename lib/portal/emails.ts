@@ -307,12 +307,13 @@ export function accessCodeIssuedEmail(opts: {
       tagline: 'Your personal building entry code',
       body: `
         <p>Hi ${opts.firstName},</p>
-        <p>Here is your personal 24/7 building access code:</p>
+        <p>Here is your personal after-hours building access code:</p>
         <p style="text-align:center;">
           <span class="code">${opts.accessCode}</span>
         </p>
         <div class="highlight">
-          <p style="margin:0;"><strong>Building hours:</strong> The main entrance is unlocked from 8 AM – 6 PM Monday through Friday. Use this code outside those hours to enter the building.</p>
+          <p style="margin:0 0 8px;"><strong>You do not need this code during business hours.</strong> The main entrance is unlocked <strong>${BUILDING_OPEN_HOURS}</strong> — during those hours just walk in.</p>
+          <p style="margin:0;">Use the code only <strong>outside those hours</strong>: late evenings, weekends, and holidays.</p>
         </div>
         <p><strong>How to use the keypad:</strong> Watch this short tutorial on locking and unlocking the front door with your access code:</p>
         <p style="text-align:center;">
@@ -327,11 +328,13 @@ export function accessCodeIssuedEmail(opts: {
     text: [
       `Hi ${opts.firstName},`,
       '',
-      'Here is your personal 24/7 building access code:',
+      'Here is your personal after-hours building access code:',
       '',
       `    ${opts.accessCode}`,
       '',
-      'Building hours: The main entrance is unlocked from 8 AM - 6 PM Monday through Friday. Use this code outside those hours to enter the building.',
+      `You do NOT need this code during business hours. The main entrance is unlocked ${BUILDING_OPEN_HOURS} — during those hours just walk in.`,
+      '',
+      'Use the code only outside those hours: late evenings, weekends, and holidays.',
       '',
       'How to use the keypad: watch this short tutorial on locking and unlocking the front door with your access code:',
       `    ${ACCESS_CODE_VIDEO_URL}`,
