@@ -6,16 +6,13 @@ import Footer from '@/components/Footer';
 // whole thing renders on the server.
 
 const blur = {
-  desks: 'data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAAAQAgCdASoMAAgABABoJYgCdAEem4GphT0AAOIsQqN9qP6F/XcuJb0G2kgH8ZD+6UrjMhX6CwJGcFIMndzJyAAAAAA=',
-  counter: 'data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAAAQAgCdASoMAAgABABoJYwCdAEUU7b5ZMeAAP5JGipLwtvMzmOaeYGsDyCXlSPknRqnZ48kQzeAgAAAAAA=',
-  single: 'data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAADQAQCdASoMAAgABABoJZQCdACUiDTIAAD9PNRppzjcjFdHcviS/nQn3PJndWWbZf2eA7jN+LwAo1IMUF0ZoTuAAAA=',
+  desks: 'data:image/webp;base64,UklGRkoAAABXRUJQVlA4ID4AAADwAQCdASoMAAgABABoJQBOgCPSWW11iYAA4ixCo32o/oU8WUer/9zMuI+gODPyUZk+J4KFNw0ZO4CN3wAAAA==',
+  counter: 'data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAADwAQCdASoMAAgABABoJYwCdAELWBiJ9YAA/kkaKkuyl86TL4qnjGWWDhCFmm3EAjU8YM4CWbRjcJAAAAA=',
+  single: 'data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAACwAQCdASoMAAgABABoJZQCdACRo1cAAP081GmnONyMV0dy+JL+dCfhvw88YqEsrqYNKE9BN8QkL5btQhDbgIAA',
   team: 'data:image/webp;base64,UklGRlgAAABXRUJQVlA4IEwAAAAQAgCdASoMAAgABABoJbACdAEDoTdLkewAAPksQgkdY9d7j4T+1B0MHaF7PNj4dh8jIpteJfm/I5FiRWFWYcBIwNzYIHmHwfvSgAAA',
-  pair: 'data:image/webp;base64,UklGRlAAAABXRUJQVlA4IEQAAADQAQCdASoMAAgABABoJZACdADbIgtEsAD8M+3tPlHssr6f4V+RUjWigJ5Qwn1uh0Nn8AXDPsdpatNl8J4/1a62eaAAAA==',
-  church: 'data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAACwAQCdASoMAAgABABoJagCdADb2hjAAP7XAHDYbQW7YJBidIQeUULAvfKBF6b3h0YyERvzkqxjAUqTFkOfeQSb5t7DfgAA',
-  churchExt: 'data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAADwAQCdASoMAAgABABoJYgCdAEWtMlzLmAA/sF8tWC3n9Tw2lqWv3wJwTX59Bd1a1ViRZT9amDL6Asi/UWTkY8OzmUAgAAA',
-  conference: 'data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAADwAQCdASoMAAgABABoJYgCdAD7E7TMV4AA/onIabxXWXCkMxd5+4h3VjM0qS2yM9umZyIttx7YxhHdYrh2rxD1MIhwkAAA',
-  lockers: 'data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAAAQAgCdASoIAAwABABoJQBOgCB/R+TYMRAAAP6sAqC+04N0+03BLzh9+MnIdQ4rIPTAxseUgAA=',
-  exterior: 'data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAADQAQCdASoMAAgABABoJQBOgB6GPH3kAAD+wFtkKq5M9f/rm/mA7UgwFzP8XHZDyNkV18ROEy43hqEAAAA=',
+  church: 'data:image/webp;base64,UklGRlQAAABXRUJQVlA4IEgAAAAQAgCdASoMAAgABABoJagCdAECvetc3EAAAP7IqGrLRwmnZKbrk05eLnQUfrrNLvu883rsN2wJJGjHDWTLSNr2UZM01a0AAAA=',
+  conference: 'data:image/webp;base64,UklGRlAAAABXRUJQVlA4IEQAAADwAQCdASoMAAgABABoJbAC7ADdYysGmSAA/rZceg22u6TRvjc7gAO21l+MHJiYm8gOlUizk/lyIO1NX0WyMEavOYgAAA==',
+  exterior: 'data:image/webp;base64,UklGRkYAAABXRUJQVlA4IDoAAADQAQCdASoMAAgABABoJQBOgCKUijCLoAD+wFtkJGX2OWrDrWFF5yTcz/Fx4I5RsiuviJwmXG8NQgAA',
 };
 
 export default function HomePage() {
@@ -34,6 +31,7 @@ export default function HomePage() {
           placeholder="blur"
           blurDataURL={blur.desks}
           sizes="100vw"
+          quality={90}
           className="object-cover object-[50%_62%] md:object-center"
         />
         {/* Directional scrim, only under the text. */}
@@ -143,71 +141,72 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="mt-14 grid gap-12 sm:grid-cols-2 md:mt-20 md:grid-cols-3 md:gap-8">
-            {/* Tall */}
-            <figure className="md:pt-0">
-              <div className="relative aspect-[4/5] md:aspect-[3/4]">
+          {/* Two photographs, same landscape crop, same size. There is no
+              current photo of the two-desk office, so the tiers are set as
+              type below rather than illustrated with a room they are not. */}
+          <div className="mt-14 grid gap-8 md:mt-20 md:grid-cols-2 md:gap-10">
+            <figure>
+              <div className="relative aspect-[3/2]">
                 <Image
                   src="/images/new-hero/office-single-daylight.webp"
                   alt="Single private office with an ultrawide monitor and window light at Merritt Workspace, Denver"
                   fill
                   placeholder="blur"
                   blurDataURL={blur.single}
-                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 32vw"
+                  sizes="(max-width: 768px) 100vw, 46vw"
                   className="object-cover"
                 />
               </div>
-              <figcaption className="mt-5 border-t border-clay pt-4">
-                <h3 className="font-display text-2xl font-semibold text-ink">Single</h3>
-                <p className="mt-1 text-[15px] text-ink-60">One person · 8 hours of meeting credit</p>
-                <p className="mt-3 font-display text-3xl font-semibold tracking-tight text-ink">$500<span className="text-base font-normal text-ink-60"> /mo</span></p>
+              <figcaption className="mt-4 text-[13px] uppercase tracking-[0.14em] text-ink-60">
+                Single office
               </figcaption>
             </figure>
 
-            {/* Short and wide */}
-            <figure className="md:pt-16">
-              <div className="relative aspect-[4/3] md:aspect-[4/3]">
-                <Image
-                  src="/images/new-hero/office-large-occupied.webp"
-                  alt="Two members working at butcher block desks in a private office at Merritt Workspace, Denver"
-                  fill
-                  placeholder="blur"
-                  blurDataURL={blur.pair}
-                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 32vw"
-                  className="object-cover"
-                />
-              </div>
-              <figcaption className="mt-5 border-t border-clay pt-4">
-                <h3 className="font-display text-2xl font-semibold text-ink">Double</h3>
-                <p className="mt-1 text-[15px] text-ink-60">Two people · 12 hours of meeting credit</p>
-                <p className="mt-3 font-display text-3xl font-semibold tracking-tight text-ink">$700<span className="text-base font-normal text-ink-60"> /mo</span></p>
-              </figcaption>
-            </figure>
-
-            {/* Medium */}
-            <figure className="sm:col-span-2 md:col-span-1 md:pt-6">
-              <div className="relative aspect-[4/3] md:aspect-[1/1]">
+            <figure>
+              <div className="relative aspect-[3/2]">
                 <Image
                   src="/images/new-hero/office-large-team.webp"
-                  alt="A team of four working in a large private office on the burnt orange floors at Merritt Workspace, Denver"
+                  alt="A team working together in the large private office on the burnt orange floors at Merritt Workspace, Denver"
                   fill
                   placeholder="blur"
                   blurDataURL={blur.team}
-                  sizes="(max-width: 768px) 100vw, 32vw"
+                  sizes="(max-width: 768px) 100vw, 46vw"
                   className="object-cover"
                 />
               </div>
-              <figcaption className="mt-5 border-t border-clay pt-4">
-                <h3 className="font-display text-2xl font-semibold text-ink">Large</h3>
-                <p className="mt-1 text-[15px] text-ink-60">Four to eight people · 20 hours of meeting credit</p>
-                <p className="mt-3 font-display text-3xl font-semibold tracking-tight text-ink">$1,200<span className="text-base font-normal text-ink-60"> /mo</span></p>
+              <figcaption className="mt-4 text-[13px] uppercase tracking-[0.14em] text-ink-60">
+                Large office
               </figcaption>
             </figure>
           </div>
 
+          <div className="mt-14 grid gap-y-8 border-t border-clay pt-10 sm:grid-cols-3 sm:gap-8 md:mt-20">
+            <div>
+              <h3 className="font-display text-2xl font-semibold text-ink">Single</h3>
+              <p className="mt-1.5 text-[15px] text-ink-60">One person · 8 hours of meeting credit</p>
+              <p className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
+                $500<span className="text-base font-normal text-ink-60"> /mo</span>
+              </p>
+            </div>
+            <div>
+              <h3 className="font-display text-2xl font-semibold text-ink">Double</h3>
+              <p className="mt-1.5 text-[15px] text-ink-60">Two people · 12 hours of meeting credit</p>
+              <p className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
+                $700<span className="text-base font-normal text-ink-60"> /mo</span>
+              </p>
+            </div>
+            <div>
+              <h3 className="font-display text-2xl font-semibold text-ink">Large</h3>
+              <p className="mt-1.5 text-[15px] text-ink-60">Four to eight people · 20 hours of meeting credit</p>
+              <p className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
+                $1,200<span className="text-base font-normal text-ink-60"> /mo</span>
+              </p>
+            </div>
+          </div>
+
           <Link
             href="/membership/private-office"
-            className="mt-14 inline-block border-b border-accent pb-1 text-[15px] font-medium text-accent-deep transition hover:border-accent-deep"
+            className="mt-12 inline-block border-b border-accent pb-1 text-[15px] font-medium text-accent-deep transition hover:border-accent-deep"
           >
             See office options
           </Link>
@@ -226,6 +225,7 @@ export default function HomePage() {
             placeholder="blur"
             blurDataURL={blur.church}
             sizes="100vw"
+            quality={90}
             className="object-cover object-center"
           />
           <div className="absolute inset-0 scrim-bottom" aria-hidden="true" />
@@ -255,13 +255,14 @@ export default function HomePage() {
         {/* The after-4:30 note, set quietly against the church exterior. */}
         <div className="border-t border-clay bg-bone">
           <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-16 sm:px-8 md:grid-cols-12 md:gap-16 md:py-24">
-            <div className="relative aspect-[3/2] md:col-span-5">
+            {/* Native 1.89 ratio — a 3/2 crop clipped the church tower. */}
+            <div className="relative aspect-[189/100] md:col-span-5">
+              {/* Both buildings in one frame — the only shot that makes the
+                  shared campus legible. */}
               <Image
-                src="/images/new-hero/campus-church-corner.webp"
-                alt="Exterior of the restored 1905 church beside Merritt Workspace at 23rd and Irving in Sloan's Lake, Denver"
+                src="/images/hero/outside-hero.webp"
+                alt="The Merritt Workspace building and the restored 1905 church side by side on the same lawn at 23rd and Irving, Sloan's Lake, Denver"
                 fill
-                placeholder="blur"
-                blurDataURL={blur.churchExt}
                 sizes="(max-width: 768px) 100vw, 42vw"
                 className="object-cover"
               />
@@ -294,8 +295,8 @@ export default function HomePage() {
           icon grid lives here as prose. */}
       <section className="border-t border-clay bg-linen py-20 md:py-32">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <div className="grid gap-12 md:grid-cols-12 md:gap-16">
-            <div className="md:col-span-5 md:pt-8">
+          <div className="grid items-center gap-12 md:grid-cols-12 md:gap-16">
+            <div className="md:col-span-5">
               <p className="mb-5 text-[13px] font-medium uppercase tracking-[0.18em] text-ink-60">
                 What comes with it
               </p>
@@ -324,28 +325,14 @@ export default function HomePage() {
             <div className="md:col-span-7">
               <div className="relative aspect-[3/2]">
                 <Image
-                  src="/images/new-hero/conference-empty.webp"
-                  alt="Conference room with a 75-inch screen and glass wall on the burnt orange floors at Merritt Workspace, Denver"
+                  src="/images/new-hero/conference-meeting.webp"
+                  alt="A team meeting in the glass-walled conference room at Merritt Workspace coworking in Sloan's Lake, Denver"
                   fill
                   placeholder="blur"
                   blurDataURL={blur.conference}
                   sizes="(max-width: 768px) 100vw, 58vw"
                   className="object-cover"
                 />
-              </div>
-              {/* Offset vertical — deliberately not aligned to the grid. */}
-              <div className="mt-6 flex justify-end">
-                <div className="relative aspect-[2/3] w-1/2 max-w-[240px] md:-mt-24 md:mr-8">
-                  <Image
-                    src="/images/new-hero/lockers-numbered.webp"
-                    alt="Numbered wooden member lockers at Merritt Workspace coworking in Sloan's Lake, Denver"
-                    fill
-                    placeholder="blur"
-                    blurDataURL={blur.lockers}
-                    sizes="240px"
-                    className="object-cover"
-                  />
-                </div>
               </div>
             </div>
           </div>

@@ -29,18 +29,13 @@ body {
 @layer utilities {
   /* Duplicated declarations are deliberate: browsers without svh keep the
      vh value, newer ones take svh and stop the iOS toolbar jump. */
+  /* Fills the viewport under the 5rem nav at every width. svh rather than
+     vh so the iOS toolbar collapsing does not resize the hero mid-scroll;
+     the vh line above it is the fallback for browsers without svh. */
   .h-hero {
-    height: 78vh;
-    height: 78svh;
+    height: calc(100vh - 5rem);
+    height: calc(100svh - 5rem);
     min-height: 540px;
-  }
-
-  @media (min-width: 768px) {
-    .h-hero {
-      height: calc(100vh - 5rem);
-      height: calc(100svh - 5rem);
-      max-height: 880px;
-    }
   }
 
   .text-balance {
