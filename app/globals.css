@@ -3,66 +3,98 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #F7F4EF;
+  --foreground: #1A1613;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Helvetica, Arial, sans-serif;
-  font-weight: normal;
+  font-family: var(--font-body), Helvetica, Arial, sans-serif;
   margin: 0;
   padding: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer base {
+  /* Fraunces is variable on opsz/SOFT/WONK. Large display sizes take the
+     high optical size and a little softness; that is what keeps it warm
+     rather than stiff at 92px. */
+  .font-display {
+    font-variation-settings: 'SOFT' 20, 'WONK' 1, 'opsz' 144;
+  }
 }
 
 @layer utilities {
+  /* Duplicated declarations are deliberate: browsers without svh keep the
+     vh value, newer ones take svh and stop the iOS toolbar jump. */
+  .h-hero {
+    height: 78vh;
+    height: 78svh;
+    min-height: 540px;
+  }
+
+  @media (min-width: 768px) {
+    .h-hero {
+      height: calc(100vh - 5rem);
+      height: calc(100svh - 5rem);
+      max-height: 880px;
+    }
+  }
+
   .text-balance {
     text-wrap: balance;
   }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  /* A single-direction scrim, applied only under text — never a wash
+     across the whole photograph. Tuned against the actual photos: the
+     text blocks are tall on a 390px screen, so the ramp has to reach
+     further up than a decorative gradient would. */
+  .scrim-bottom {
+    background: linear-gradient(
+      to top,
+      rgba(26, 22, 19, 0.82) 0%,
+      rgba(26, 22, 19, 0.64) 32%,
+      rgba(26, 22, 19, 0.28) 58%,
+      rgba(26, 22, 19, 0) 82%
+    );
+  }
+
+  @media (min-width: 768px) {
+    /* Desktop text blocks are shorter and sit lower, so the ramp can
+       relax and give the photograph more room. */
+    .scrim-bottom {
+      background: linear-gradient(
+        to top,
+        rgba(26, 22, 19, 0.76) 0%,
+        rgba(26, 22, 19, 0.48) 26%,
+        rgba(26, 22, 19, 0) 62%
+      );
+    }
+  }
+
+  .scrim-left {
+    background: linear-gradient(
+      to right,
+      rgba(26, 22, 19, 0.74) 0%,
+      rgba(26, 22, 19, 0.44) 34%,
+      rgba(26, 22, 19, 0.08) 62%,
+      rgba(26, 22, 19, 0) 76%
+    );
+  }
 }
 
-/* iOS specific fixes */
+/* iOS: only the rules that still do work. The previous hooks
+   (.hero-section, .logo-wrapper, .ios-fix .text-balance, .ios-fix nav a)
+   referenced classes that no longer exist anywhere in the app, and the
+   text-balance one force-centered any text it touched. */
 @supports (-webkit-touch-callout: none) {
-  html.ios-fix {
-    /* Custom fixes for iOS */
-  }
-
-  .ios-fix .hero-section {
-    min-height: 100vh !important;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
-
-  .ios-fix .text-balance {
-    text-wrap: balance;
-    text-align: center;
-    padding: 0 1rem;
-  }
-
   .ios-fix img {
     max-width: 100%;
-    height: auto;
-  }
-
-  .ios-fix .navbar {
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-  }
-
-  .ios-fix .logo-wrapper {
-    height: 5rem !important;
-  }
-
-  .ios-fix nav a {
-    font-size: 1.1rem;
-    padding: 0 0.5rem;
   }
 }
