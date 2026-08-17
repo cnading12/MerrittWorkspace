@@ -498,7 +498,7 @@ export function accessCodeRequestedAdminEmail(opts: {
       body: `
         <p><strong>${opts.firstName} ${opts.lastName}</strong> (${opts.email}) has requested a 24/7 building access code.</p>
         <div class="info-card">
-          <p style="margin:0;">Get a code from POPS, then assign it in the admin panel.</p>
+          <p style="margin:0;">Generate on Alarm.com, then assign it in the admin panel.</p>
         </div>
         <p style="text-align:center;">
           <a href="${opts.adminUrl}" class="button">Open Admin Panel</a>
@@ -508,7 +508,7 @@ export function accessCodeRequestedAdminEmail(opts: {
     text: [
       `${opts.firstName} ${opts.lastName} (${opts.email}) has requested a 24/7 building access code.`,
       '',
-      'Get a code from POPS, then assign it in the admin panel:',
+      'Generate on Alarm.com, then assign it in the admin panel:',
       opts.adminUrl,
     ].join('\n'),
   };
@@ -1025,7 +1025,7 @@ export function signupCompletedStaffEmail(opts: {
   const todos: string[] = [];
   if (!opts.hasAccessCode) {
     todos.push(
-      'Issue their 24/7 access code from POPS once they request it (they were told codes are only needed outside 8 AM – 6 PM weekdays).'
+      'Generate on Alarm.com and issue their 24/7 access code once they request it (they were told codes are only needed outside 8 AM – 6 PM weekdays).'
     );
   }
   if (opts.seatType && !opts.seatNumber) {

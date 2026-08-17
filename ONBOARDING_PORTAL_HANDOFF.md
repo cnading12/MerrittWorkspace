@@ -18,7 +18,7 @@ ready-to-paste prompt for the next Claude Code session.
   `member-documents`).
 - `member_agreements` — signature records for member agreement + T&C.
 - `payment_history` — synced from Stripe webhooks.
-- `access_code_requests` — member request → admin fulfills with code from POPS.
+- `access_code_requests` — member request → admin fulfills with code generated on Alarm.com.
 - `admin_users` — gate for admin panel access.
 - RLS policies (members can only see their own rows; `is_admin()` helper for
   admin access).
@@ -39,7 +39,7 @@ ready-to-paste prompt for the next Claude Code session.
 - `app/admin/members/page.tsx` — list all members, set designation,
   monthly cost, pause/activate.
 - `app/admin/access-codes/page.tsx` — pending access code requests, enter code
-  from POPS, send to member via Resend.
+  generated on Alarm.com, send to member via Resend.
 
 ### API routes
 - `POST /api/portal/documents` — file upload to Supabase Storage, recomputes

@@ -131,7 +131,7 @@ create table if not exists public.payment_history (
 create index if not exists payment_history_member_idx on public.payment_history(member_id);
 
 -- ============================================================
--- access_code_requests: member asks, admin fulfills with code from POPS
+-- access_code_requests: member asks, admin fulfills with code generated on Alarm.com
 -- ============================================================
 create table if not exists public.access_code_requests (
   id uuid primary key default gen_random_uuid(),
