@@ -394,8 +394,10 @@ export default function ExistingMemberMigrationPage() {
               <li>
                 Once approved you can book the conference room (using your
                 office&apos;s shared included hours), shop the snack shop, and
-                request a building access code. <strong>There is no charge</strong>{' '}
-                — your office&apos;s primary member covers the space.
+                request a building access code (only needed for late-evening
+                and weekend entry — the building is unlocked Mon – Fri, 8:00 AM
+                – 6:00 PM). <strong>There is no charge</strong> — your
+                office&apos;s primary member covers the space.
               </li>
             </ol>
           ) : (
