@@ -106,3 +106,101 @@ body {
     max-width: 100%;
   }
 }
+
+/* ── Marketing primitives ───────────────────────────────────────────────
+   One definition per element so every page inherits the homepage language
+   instead of re-deriving it. Marketing routes only; the portal and admin
+   surfaces keep their own styles. */
+@layer components {
+  .mw-container {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+
+  .mw-eyebrow {
+    @apply text-[12px] font-medium uppercase tracking-[0.18em] text-ink-60 md:text-[13px];
+  }
+  .mw-eyebrow-light {
+    @apply text-[12px] font-medium uppercase tracking-[0.18em] text-bone/75 md:text-[13px];
+  }
+
+  .mw-h1 {
+    @apply font-display text-[2.15rem] font-semibold leading-[1] tracking-tightest sm:text-5xl md:text-6xl md:leading-[0.98] lg:text-7xl;
+  }
+  .mw-h2 {
+    @apply font-display text-[2rem] font-semibold leading-[1.02] tracking-tightest text-ink sm:text-4xl lg:text-[3.25rem];
+  }
+  .mw-h3 {
+    @apply font-display text-2xl font-semibold leading-tight tracking-tight text-ink md:text-3xl;
+  }
+
+  .mw-lead {
+    @apply text-[17px] leading-relaxed text-ink-60 md:text-xl;
+  }
+  .mw-body {
+    @apply text-[17px] leading-relaxed text-ink-60 md:text-lg;
+  }
+
+  .mw-btn {
+    @apply inline-flex min-h-[44px] items-center justify-center px-7 py-4 text-[15px] font-medium transition;
+  }
+  .mw-btn-primary {
+    @apply mw-btn bg-accent text-white hover:bg-accent-deep;
+  }
+  .mw-btn-ghost {
+    @apply mw-btn border border-ink text-ink hover:bg-ink hover:text-bone;
+  }
+
+  .mw-link {
+    @apply inline-block border-b border-accent pb-1 text-[15px] font-medium text-accent-deep transition hover:border-accent-deep;
+  }
+  .mw-inline-link {
+    @apply border-b border-accent pb-0.5 text-accent-deep transition hover:border-accent-deep;
+  }
+
+  /* Sections alternate bone and linen, separated by a hairline rather than
+     a shadow. */
+  .mw-section {
+    @apply py-20 md:py-32;
+  }
+  .mw-section-alt {
+    @apply border-t border-clay bg-linen py-20 md:py-32;
+  }
+  .mw-section-rule {
+    @apply border-t border-clay py-20 md:py-32;
+  }
+}
+
+/* Legal pages: a readable document rather than a stack of cards. */
+@layer components {
+  .mw-legal h2 {
+    @apply mt-16 mb-4 font-display text-2xl font-semibold tracking-tight text-ink first:mt-0 md:text-3xl;
+  }
+  .mw-legal h3 {
+    @apply mt-8 mb-2 text-[17px] font-semibold text-ink;
+  }
+  .mw-legal p {
+    @apply mb-4 text-[17px] leading-relaxed text-ink-60;
+  }
+  .mw-legal ul {
+    @apply mb-6 space-y-2;
+  }
+  .mw-legal li {
+    @apply relative pl-5 text-[17px] leading-relaxed text-ink-60;
+  }
+  .mw-legal strong {
+    @apply font-semibold text-ink;
+  }
+  .mw-legal a {
+    @apply border-b border-accent pb-0.5 text-accent-deep transition hover:border-accent-deep;
+  }
+}
+
+.mw-legal li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 8px;
+  height: 1px;
+  background: #DCD3C8;
+}
