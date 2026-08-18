@@ -3,6 +3,21 @@ import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import LocalBusinessSchema from "@/components/LocalBusinessSchema";
 import { Metadata } from "next";
+import { Fraunces, Inter } from "next/font/google";
+
+// Self-hosted through next/font so there is no external request and no FOUT.
+const display = Fraunces({
+  subsets: ["latin"],
+  display: "swap",
+  axes: ["SOFT", "WONK", "opsz"],
+  variable: "--font-display",
+});
+
+const body = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-body",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://merrittworkspace.net'),
@@ -40,10 +55,10 @@ export const metadata: Metadata = {
     description: "Premium coworking in Sloan's Lake with member access to our stunning 1905 church. Dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, 3 min to I-25.",
     images: [
       {
-        url: "/images/hero/outside-hero.webp",
+        url: "/images/og/home-og.jpg",
         width: 1200,
         height: 630,
-        alt: "Merritt Workspace - Historic coworking space in Sloan's Lake, Denver",
+        alt: "Members working at dedicated desks at Merritt Workspace, a coworking space in Sloan's Lake, Denver",
       },
     ],
   },
@@ -51,7 +66,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Merritt Workspace | Coworking Space in Sloan's Lake, Denver",
     description: "Premium coworking in Sloan's Lake with member access to our stunning 1905 church. Dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, 3 min to I-25.",
-    images: ["/images/hero/outside-hero.webp"],
+    images: ["/images/og/home-og.jpg"],
   },
   robots: {
     index: true,
@@ -96,7 +111,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="ios-fix">
+    <html lang="en" className={`ios-fix ${display.variable} ${body.variable}`}>
       <head>
         <LocalBusinessSchema />
         <Script
@@ -112,7 +127,7 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className="font-helvetica text-black bg-white">
+      <body className="font-sans text-ink bg-bone">
         <Navbar />
         {children}
       </body>
