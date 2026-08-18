@@ -35,6 +35,11 @@ module.exports = {
         accent: '#de5f07',
         'accent-deep': '#A8460A',
       },
+      // Bare `border` (no colour) falls back to Tailwind's cool gray-200,
+      // which reads wrong beside the warm neutrals. Default it to clay.
+      borderColor: {
+        DEFAULT: '#DCD3C8',
+      },
       fontFamily: {
         display: ['var(--font-display)', 'Georgia', 'serif'],
         sans: ['var(--font-body)', 'Helvetica', 'Arial', 'sans-serif'],

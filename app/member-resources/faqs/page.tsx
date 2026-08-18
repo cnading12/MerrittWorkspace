@@ -1,17 +1,29 @@
 "use client";
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Clock, Key, Car, Calendar, Phone, Volume2, Heart, Coffee, Mail, MapPin, Shield, Users, Wifi, FileText } from 'lucide-react';
+import { Calendar, Clock, Coffee, Key, Mail, MapPin, Phone } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
+import PageHero from '@/components/marketing/PageHero';
+import { BLUR } from '@/components/marketing/blur';
 
 interface FAQItem {
   id: string;
   question: string;
   answer: string | JSX.Element;
   category: string;
-  icon: any;
 }
+
+const CATEGORIES = [
+  { id: 'all', name: 'All questions' },
+  { id: 'access', name: 'Access & security' },
+  { id: 'amenities', name: 'Amenities' },
+  { id: 'policies', name: 'Policies' },
+  { id: 'membership', name: 'Membership & billing' },
+  { id: 'location', name: 'Location & parking' },
+  { id: 'technical', name: 'Technical' },
+  { id: 'general', name: 'General' },
+];
 
 export default function FAQPage() {
   const [openItems, setOpenItems] = useState<string[]>(['access']); // Start with first item open
@@ -29,23 +41,22 @@ export default function FAQPage() {
     {
       id: 'access',
       category: 'access',
-      icon: Key,
       question: 'How do I get access to the building? Do I need an access code?',
       answer: (
         <div className="space-y-3">
           <p>Getting access to Merritt Workspace is simple:</p>
           <ul className="space-y-2 ml-4">
             <li className="flex items-start">
-              <Clock className="w-4 h-4 text-burnt-orange-600 mt-1 mr-2 flex-shrink-0" />
+              <Clock className="w-4 h-4 text-accent-deep mt-1 mr-2 flex-shrink-0" />
               <span><strong>Business hours — Monday through Friday, 8am – 6pm:</strong> The building is unlocked and open for all members. <strong>No access code is needed</strong> — just walk in through the main entrance.</span>
             </li>
             <li className="flex items-start">
-              <Key className="w-4 h-4 text-burnt-orange-600 mt-1 mr-2 flex-shrink-0" />
+              <Key className="w-4 h-4 text-accent-deep mt-1 mr-2 flex-shrink-0" />
               <span><strong>Late evenings, weekends, and holidays:</strong> The door is locked, so this is the <em>only</em> time you need a personal access code. It&rsquo;s included with your membership at no extra charge — request one from your member portal or email member services if you plan to come in outside business hours.</span>
             </li>
           </ul>
-          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-            <p className="text-green-800 text-sm">
+          <div className="bg-linen p-3 border border-clay">
+            <p className="text-ink-60 text-sm">
               <strong>✅ In short:</strong> if you&rsquo;re coming in on a weekday between 8am and 6pm, you don&rsquo;t need an access code at all.
             </p>
           </div>
@@ -55,7 +66,6 @@ export default function FAQPage() {
     {
       id: 'door-lock',
       category: 'access',
-      icon: Key,
       question: 'How do I lock and unlock the front door after hours?',
       answer: (
         <div className="space-y-4">
@@ -65,25 +75,25 @@ export default function FAQPage() {
             unlocked and no code is required</strong>.
           </p>
 
-          <div className="bg-gray-50 p-4 rounded-lg border">
-            <h4 className="font-semibold text-gray-900 mb-2">📹 Video Tutorial</h4>
-            <p className="text-sm text-gray-700">
+          <div className="bg-linen p-4 border">
+            <h4 className="font-semibold text-ink mb-2">📹 Video Tutorial</h4>
+            <p className="text-sm text-ink-60">
               For security reasons, the keypad tutorial video is no longer hosted publicly.
               We sent it to you in the email titled <strong>&ldquo;Your Merritt Workspace Access Code&rdquo;</strong> when
               your access code was issued — please check your inbox (and spam folder) for that message.
             </p>
-            <p className="text-sm text-gray-700 mt-2">
+            <p className="text-sm text-ink-60 mt-2">
               If you can&rsquo;t find the email or have any questions, reach out to member services at{' '}
-              <a href="mailto:memberservices@merrittworkspace.net" className="text-burnt-orange-600 underline">
+              <a href="mailto:memberservices@merrittworkspace.net" className="text-accent-deep underline">
                 memberservices@merrittworkspace.net
               </a>
               .
             </p>
           </div>
 
-          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-            <p className="text-orange-800 mb-2"><strong>🔑 Access Code Setup</strong></p>
-            <p className="text-orange-700 text-sm">
+          <div className="bg-linen p-4 border border-clay">
+            <p className="text-ink-60 mb-2"><strong>🔑 Access Code Setup</strong></p>
+            <p className="text-ink-60 text-sm">
               Your unique access code is available on request once your membership starts —
               you only need one if you come in during the late evening or on weekends. During
               business hours (Mon – Fri, 8am – 6pm) the building is already unlocked. The code
@@ -91,14 +101,14 @@ export default function FAQPage() {
             </p>
           </div>
 
-          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-            <p className="text-blue-800 text-sm">
+          <div className="bg-linen p-3 border border-clay">
+            <p className="text-ink-60 text-sm">
               <strong>💡 Pro Tip:</strong> The keypad has a backlight that activates when you approach,
               making it easy to use even in low light conditions.
             </p>
           </div>
 
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-ink-60">
             If you have any issues with the keypad system, please contact our support team immediately.
           </p>
         </div>
@@ -107,23 +117,22 @@ export default function FAQPage() {
     {
       id: 'parking',
       category: 'location',
-      icon: Car,
       question: 'Where do I park?',
       answer: (
         <div className="space-y-3">
-          <p className="text-green-700 font-semibold">🎉 Parking is completely free!</p>
+          <p className="text-ink-60 font-semibold">🎉 Parking is completely free!</p>
           <div className="space-y-2">
             <div className="flex items-start">
-              <MapPin className="w-4 h-4 text-burnt-orange-600 mt-1 mr-2 flex-shrink-0" />
+              <MapPin className="w-4 h-4 text-accent-deep mt-1 mr-2 flex-shrink-0" />
               <span><strong>Parking Lot:</strong> Free spots directly in front of Merritt Workspace</span>
             </div>
             <div className="flex items-start">
-              <MapPin className="w-4 h-4 text-burnt-orange-600 mt-1 mr-2 flex-shrink-0" />
+              <MapPin className="w-4 h-4 text-accent-deep mt-1 mr-2 flex-shrink-0" />
               <span><strong>Street Parking:</strong> Free parking on both 23rd and Irving streets</span>
             </div>
           </div>
-          <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
-            <p className="text-amber-800 text-sm"><strong>⚠️ Note:</strong> Be mindful of street cleaning days when parking on the street!</p>
+          <div className="bg-linen p-3 border border-clay">
+            <p className="text-ink-60 text-sm"><strong>⚠️ Note:</strong> Be mindful of street cleaning days when parking on the street!</p>
           </div>
         </div>
       )
@@ -131,19 +140,18 @@ export default function FAQPage() {
     {
       id: 'conference-rooms',
       category: 'amenities',
-      icon: Calendar,
       question: 'How do I book a conference room?',
       answer: (
         <div className="space-y-3">
           <p>Booking our first-class meeting rooms is easy:</p>
           <div className="space-y-3">
             <div className="flex items-start">
-              <Calendar className="w-4 h-4 text-burnt-orange-600 mt-1 mr-2 flex-shrink-0" />
-              <span>Visit our <Link href="/meeting-rooms" className="text-burnt-orange-600 hover:underline font-semibold">Meeting Rooms page</Link> and click 'Book Now'</span>
+              <Calendar className="w-4 h-4 text-accent-deep mt-1 mr-2 flex-shrink-0" />
+              <span>Visit our <Link href="/meeting-rooms" className="text-accent-deep hover:underline font-semibold">Meeting Rooms page</Link> and click 'Book Now'</span>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-2">📅 Member Benefits:</h4>
-              <ul className="space-y-1 text-green-700 text-sm">
+            <div className="bg-linen p-4 border border-clay">
+              <h4 className="font-semibold text-ink-60 mb-2">📅 Member Benefits:</h4>
+              <ul className="space-y-1 text-ink-60 text-sm">
                 <li>• <strong>Two FREE hours</strong> of conference room time per month</li>
                 <li>• After free hours: $30/hour</li>
                 <li>• Easy online booking system</li>
@@ -157,15 +165,14 @@ export default function FAQPage() {
     {
       id: 'phone-calls',
       category: 'amenities',
-      icon: Phone,
       question: 'Where should I take Zoom calls and personal phone calls?',
       answer: (
         <div className="space-y-3">
           <p>We have several options for private calls:</p>
           <div className="space-y-3">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2">📞 Phone Booth Options:</h4>
-              <ul className="space-y-1 text-blue-700 text-sm">
+            <div className="bg-linen p-4 border border-clay">
+              <h4 className="font-semibold text-ink-60 mb-2">📞 Phone Booth Options:</h4>
+              <ul className="space-y-1 text-ink-60 text-sm">
                 <li>• <strong>Three dedicated phone booths</strong> - first come, first served</li>
                 <li>• No reservations required</li>
                 <li>• Perfect for Zoom calls and personal calls</li>
@@ -186,24 +193,23 @@ export default function FAQPage() {
     {
       id: 'noise-policy',
       category: 'policies',
-      icon: Volume2,
       question: 'What are your noise policies in the workspace?',
       answer: (
         <div className="space-y-3">
           <p>We maintain a productive, respectful environment for all members:</p>
           <div className="space-y-3">
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h4 className="font-semibold text-gray-800 mb-2">🤫 Open Workspace Guidelines:</h4>
-              <ul className="space-y-1 text-gray-700 text-sm">
+            <div className="bg-linen p-4 border border-clay">
+              <h4 className="font-semibold text-ink mb-2">🤫 Open Workspace Guidelines:</h4>
+              <ul className="space-y-1 text-ink-60 text-sm">
                 <li>• Keep conversations quiet and brief</li>
                 <li>• Use phone booths for all calls</li>
                 <li>• Take longer conversations to event space or outside</li>
                 <li>• Be mindful of keyboard noise and notifications</li>
               </ul>
             </div>
-            <div className="bg-burnt-orange-50 p-4 rounded-lg border border-burnt-orange-200">
-              <h4 className="font-semibold text-burnt-orange-800 mb-2">🚪 Private Office Members:</h4>
-              <p className="text-burnt-orange-700 text-sm">Please close your door when taking calls or conducting meetings to respect the open workspace atmosphere.</p>
+            <div className="bg-linen p-4 border border-clay">
+              <h4 className="font-semibold text-accent-deep mb-2">🚪 Private Office Members:</h4>
+              <p className="text-accent-deep text-sm">Please close your door when taking calls or conducting meetings to respect the open workspace atmosphere.</p>
             </div>
           </div>
         </div>
@@ -212,21 +218,20 @@ export default function FAQPage() {
     {
       id: 'pets',
       category: 'policies',
-      icon: Heart,
       question: 'Can I bring my dog to the workspace?',
       answer: (
         <div className="space-y-3">
           <p>Our pet policy varies by membership type:</p>
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-2">✅ Private Office Members</h4>
-              <ul className="space-y-1 text-green-700 text-sm">
+            <div className="bg-linen p-4 border border-clay">
+              <h4 className="font-semibold text-ink-60 mb-2">✅ Private Office Members</h4>
+              <ul className="space-y-1 text-ink-60 text-sm">
                 <li>• Dogs are welcome!</li>
                 <li>• Must stay in your private office</li>
                 <li>• Please be respectful of other members</li>
               </ul>
             </div>
-            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <div className="bg-red-50 p-4 border border-red-200">
               <h4 className="font-semibold text-red-800 mb-2">❌ Dedicated & Mobile Desk</h4>
               <p className="text-red-700 text-sm">Unfortunately, pets are not permitted in the shared workspace areas.</p>
             </div>
@@ -237,19 +242,18 @@ export default function FAQPage() {
     {
       id: 'snackshop',
       category: 'amenities',
-      icon: Coffee,
       question: 'How do I buy snacks and coffee?',
       answer: (
         <div className="space-y-3">
           <p>Our convenient Snackshop makes it easy to fuel your workday:</p>
           <div className="space-y-3">
             <div className="flex items-start">
-              <Coffee className="w-4 h-4 text-burnt-orange-600 mt-1 mr-2 flex-shrink-0" />
-              <span>Visit our <Link href="/snackshop" className="text-burnt-orange-600 hover:underline font-semibold">Snackshop page</Link> to browse and order</span>
+              <Coffee className="w-4 h-4 text-accent-deep mt-1 mr-2 flex-shrink-0" />
+              <span>Visit our <Link href="/snackshop" className="text-accent-deep hover:underline font-semibold">Snackshop page</Link> to browse and order</span>
             </div>
-            <div className="bg-burnt-orange-50 p-4 rounded-lg border border-burnt-orange-200">
-              <h4 className="font-semibold text-burnt-orange-800 mb-2">🛒 How It Works:</h4>
-              <ol className="space-y-1 text-burnt-orange-700 text-sm">
+            <div className="bg-linen p-4 border border-clay">
+              <h4 className="font-semibold text-accent-deep mb-2">🛒 How It Works:</h4>
+              <ol className="space-y-1 text-accent-deep text-sm">
                 <li>1. Browse our selection of drinks, snacks, and meals</li>
                 <li>2. Add items to your cart</li>
                 <li>3. Complete secure checkout</li>
@@ -257,11 +261,11 @@ export default function FAQPage() {
               </ol>
             </div>
             <div className="grid md:grid-cols-2 gap-3 text-sm">
-              <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                <p className="text-blue-800"><strong>Payment Options:</strong> Credit card or account credit</p>
+              <div className="bg-linen p-3 rounded border border-clay">
+                <p className="text-ink-60"><strong>Payment Options:</strong> Credit card or account credit</p>
               </div>
-              <div className="bg-green-50 p-3 rounded border border-green-200">
-                <p className="text-green-800"><strong>Fresh Options:</strong> Coffee, healthy snacks, and meals</p>
+              <div className="bg-linen p-3 rounded border border-clay">
+                <p className="text-ink-60"><strong>Fresh Options:</strong> Coffee, healthy snacks, and meals</p>
               </div>
             </div>
           </div>
@@ -271,23 +275,22 @@ export default function FAQPage() {
     {
       id: 'event-space',
       category: 'amenities',
-      icon: Users,
       question: 'Can I use the Event Space next door?',
       answer: (
         <div className="space-y-3">
           <p>Yes! Our Event Space is available to all coworking members:</p>
           <div className="space-y-3">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2">🎯 Event Space Features:</h4>
-              <ul className="space-y-1 text-blue-700 text-sm">
+            <div className="bg-linen p-4 border border-clay">
+              <h4 className="font-semibold text-ink-60 mb-2">🎯 Event Space Features:</h4>
+              <ul className="space-y-1 text-ink-60 text-sm">
                 <li>• Coffee shop area with permanent seating</li>
                 <li>• Professional projector and sound system</li>
                 <li>• Ping pong table for breaks</li>
                 <li>• Flexible meeting space</li>
               </ul>
             </div>
-            <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
-              <p className="text-amber-800 text-sm"><strong>⏰ Availability:</strong> Open to coworking members daily until 4:30 PM (first come, first served)</p>
+            <div className="bg-linen p-3 border border-clay">
+              <p className="text-ink-60 text-sm"><strong>⏰ Availability:</strong> Open to coworking members daily until 4:30 PM (first come, first served)</p>
             </div>
           </div>
         </div>
@@ -296,22 +299,21 @@ export default function FAQPage() {
     {
       id: 'wifi',
       category: 'technical',
-      icon: Wifi,
       question: 'How fast is the WiFi?',
       answer: (
         <div className="space-y-3">
           <p>We provide enterprise-grade internet throughout the building:</p>
           <div className="space-y-3">
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-2">🚀 WiFi Features:</h4>
-              <ul className="space-y-1 text-green-700 text-sm">
+            <div className="bg-linen p-4 border border-clay">
+              <h4 className="font-semibold text-ink-60 mb-2">🚀 WiFi Features:</h4>
+              <ul className="space-y-1 text-ink-60 text-sm">
                 <li>• High-speed fiber internet</li>
                 <li>• Reliable connection throughout both buildings</li>
                 <li>• Perfect for video calls and large file transfers</li>
                 <li>• Backup connection for redundancy</li>
               </ul>
             </div>
-            <p className="text-sm text-gray-600">Network details and passwords are provided during your member onboarding.</p>
+            <p className="text-sm text-ink-60">Network details and passwords are provided during your member onboarding.</p>
           </div>
         </div>
       )
@@ -319,15 +321,14 @@ export default function FAQPage() {
     {
       id: 'security',
       category: 'policies',
-      icon: Shield,
       question: 'How secure is the building?',
       answer: (
         <div className="space-y-3">
           <p>Your safety and security are our top priorities:</p>
           <div className="space-y-3">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2">🔒 Security Features:</h4>
-              <ul className="space-y-1 text-blue-700 text-sm">
+            <div className="bg-linen p-4 border border-clay">
+              <h4 className="font-semibold text-ink-60 mb-2">🔒 Security Features:</h4>
+              <ul className="space-y-1 text-ink-60 text-sm">
                 <li>• 24/7 building monitoring</li>
                 <li>• Unique access codes for each member</li>
                 <li>• Keycard access to private offices</li>
@@ -342,13 +343,12 @@ export default function FAQPage() {
     {
       id: 'cancellation-policy',
       category: 'membership',
-      icon: FileText,
       question: 'How do I cancel my membership? What is the cancellation policy?',
       answer: (
         <div className="space-y-4">
-          <div className="bg-burnt-orange-50 p-4 rounded-lg border border-burnt-orange-200">
-            <h4 className="font-semibold text-burnt-orange-800 mb-2">Quick summary</h4>
-            <ul className="space-y-1 text-burnt-orange-700 text-sm">
+          <div className="bg-linen p-4 border border-clay">
+            <h4 className="font-semibold text-accent-deep mb-2">Quick summary</h4>
+            <ul className="space-y-1 text-accent-deep text-sm">
               <li>• At sign-up you pay your <strong>first month</strong> (prorated) and <strong>last month</strong> up front.</li>
               <li>• To cancel, you must give <strong>30 days&apos; written notice</strong>.</li>
               <li>• With proper notice, you <strong>are not billed</strong> for your final month — the last month&apos;s fee you already paid covers it.</li>
@@ -356,21 +356,21 @@ export default function FAQPage() {
             </ul>
           </div>
 
-          <div className="space-y-3 text-sm text-gray-700">
+          <div className="space-y-3 text-sm text-ink-60">
             <div>
-              <p className="font-semibold text-gray-900 mb-1">How to give notice</p>
+              <p className="font-semibold text-ink mb-1">How to give notice</p>
               <p>
                 Submit written notice in any of the following ways:
               </p>
               <ul className="ml-5 list-disc space-y-1 mt-1">
                 <li>Click <strong>Cancel membership</strong> in your member portal (counts as written notice)</li>
-                <li>Email <a href="mailto:memberservices@merrittworkspace.net" className="text-burnt-orange-600 hover:underline">memberservices@merrittworkspace.net</a></li>
+                <li>Email <a href="mailto:memberservices@merrittworkspace.net" className="text-accent-deep hover:underline">memberservices@merrittworkspace.net</a></li>
                 <li>Mail a letter to Merritt Workspace, 2246 Irving St., Denver, CO 80211</li>
               </ul>
             </div>
 
             <div>
-              <p className="font-semibold text-gray-900 mb-1">Final month billing</p>
+              <p className="font-semibold text-ink mb-1">Final month billing</p>
               <p>
                 Provided you give a full 30 days&apos; notice, you will <strong>not</strong> receive
                 an invoice for your final month of membership. The Last Month&apos;s Membership Fee
@@ -379,7 +379,7 @@ export default function FAQPage() {
             </div>
 
             <div>
-              <p className="font-semibold text-gray-900 mb-1">Forfeiture for insufficient notice</p>
+              <p className="font-semibold text-ink mb-1">Forfeiture for insufficient notice</p>
               <p>
                 If you fail to provide a full 30 days&apos; written notice — including immediate
                 cancellation, abandonment of the workspace, or any cancellation effective sooner
@@ -389,7 +389,7 @@ export default function FAQPage() {
             </div>
 
             <div>
-              <p className="font-semibold text-gray-900 mb-1">Inspection &amp; additional charges</p>
+              <p className="font-semibold text-ink mb-1">Inspection &amp; additional charges</p>
               <p>
                 Beginning the day after we receive your cancellation notice and continuing through
                 your last day of membership, Merritt Workspace is entitled to inspect the
@@ -400,9 +400,9 @@ export default function FAQPage() {
               </p>
             </div>
 
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-ink-60">
               Full terms are in Section 4 of the{' '}
-              <Link href="/terms" className="text-burnt-orange-600 hover:underline font-semibold">
+              <Link href="/terms" className="text-accent-deep hover:underline font-semibold">
                 Terms &amp; Conditions
               </Link>
               .
@@ -414,15 +414,14 @@ export default function FAQPage() {
     {
       id: 'contact',
       category: 'general',
-      icon: Mail,
       question: 'Who do I contact with additional questions?',
       answer: (
         <div className="space-y-3">
           <p>We're here to help! Reach out anytime:</p>
           <div className="space-y-3">
-            <div className="bg-burnt-orange-50 p-4 rounded-lg border border-burnt-orange-200">
-              <h4 className="font-semibold text-burnt-orange-800 mb-3">📞 Contact Information:</h4>
-              <div className="space-y-2 text-burnt-orange-700">
+            <div className="bg-linen p-4 border border-clay">
+              <h4 className="font-semibold text-accent-deep mb-3">📞 Contact Information:</h4>
+              <div className="space-y-2 text-accent-deep">
                 <div className="flex items-center">
                   <Mail className="w-4 h-4 mr-2" />
                   <a href="mailto:memberservices@merrittworkspace.net" className="hover:underline">
@@ -437,7 +436,7 @@ export default function FAQPage() {
                 </div>
               </div>
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-ink-60">
               <p><strong>Response Time:</strong> We typically respond to emails within 4 hours during business days.</p>
             </div>
           </div>
@@ -446,148 +445,127 @@ export default function FAQPage() {
     }
   ];
 
-  const categories = [
-    { id: 'all', name: 'All Questions', icon: Users },
-    { id: 'access', name: 'Access & Security', icon: Key },
-    { id: 'amenities', name: 'Amenities', icon: Coffee },
-    { id: 'policies', name: 'Policies', icon: Shield },
-    { id: 'membership', name: 'Membership & Billing', icon: FileText },
-    { id: 'location', name: 'Location & Parking', icon: Car },
-    { id: 'technical', name: 'Technical', icon: Wifi },
-    { id: 'general', name: 'General', icon: Mail }
-  ];
-
   const filteredFAQs = selectedCategory === 'all'
     ? faqData
     : faqData.filter(faq => faq.category === selectedCategory);
 
   return (
-    <main className="min-h-screen bg-gray-50 pt-16">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Frequently Asked Questions
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Find quick answers to common questions about Merritt Workspace.
-              Can't find what you're looking for? We're here to help!
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="mailto:memberservices@merrittworkspace.net" className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition">
-                Email Us
-              </a>
-              <a href="tel:720-357-9499" className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition">
-                Call: (720) 357-9499
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+    <main className="bg-bone">
+      <PageHero
+        src="/images/new-hero/community-counter.webp"
+        alt="A member working at the kitchen counter at Merritt Workspace in Sloan's Lake, Denver"
+        blurDataURL={BLUR['community-counter']}
+        eyebrow="Answers"
+        title={<>The questions people actually ask.</>}
+        lead="Access, parking, pets, billing, WiFi, the flex space. If it isn't here, call us."
+      />
 
-      {/* FAQ Content */}
-      <section className="py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Category Filter */}
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Browse by Category</h2>
-            <div className="flex flex-wrap gap-3 justify-center">
-              {categories.map(category => {
-                const IconComponent = category.icon;
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${selectedCategory === category.id
-                        ? 'bg-burnt-orange-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-burnt-orange-50 hover:text-burnt-orange-600 border border-gray-200'
+      <section className="mw-section">
+        <div className="mw-container">
+          <div className="grid gap-12 md:grid-cols-12 md:gap-14">
+            {/* Category filter — a sidebar on desktop, a scrolling row on phones. */}
+            {/* min-w-0: a grid child defaults to min-width auto, which would let the
+                scrolling filter row widen the page instead of scrolling. */}
+            <aside className="min-w-0 md:col-span-3">
+              <p className="mw-eyebrow mb-5">Browse</p>
+              <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-2 md:mx-0 md:flex-col md:gap-0 md:overflow-visible md:px-0 md:pb-0">
+                {CATEGORIES.map(category => {
+                  const active = selectedCategory === category.id;
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      aria-pressed={active}
+                      className={`min-h-[44px] whitespace-nowrap border-b-2 px-3 text-left text-[15px] transition md:whitespace-normal md:border-b md:border-l-2 md:border-b-clay md:px-0 md:py-3 md:pl-4 ${
+                        active
+                          ? 'border-accent font-medium text-ink md:border-l-accent'
+                          : 'border-transparent text-ink-60 hover:text-ink md:border-l-transparent'
                       }`}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    {category.name}
-                  </button>
-                );
-              })}
+                    >
+                      {category.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+
+            {/* Questions */}
+            <div className="min-w-0 md:col-span-8 md:col-start-5">
+              <div className="border-t border-clay">
+                {filteredFAQs.map((faq) => {
+                  const isOpen = openItems.includes(faq.id);
+                  return (
+                    <div key={faq.id} className="border-b border-clay">
+                      <button
+                        onClick={() => toggleItem(faq.id)}
+                        aria-expanded={isOpen}
+                        className="flex min-h-[44px] w-full items-start justify-between gap-6 py-6 text-left transition hover:opacity-70"
+                      >
+                        <h3 className="font-display text-xl font-semibold leading-snug tracking-tight text-ink md:text-2xl">
+                          {faq.question}
+                        </h3>
+                        <span
+                          aria-hidden="true"
+                          className={`mt-1.5 shrink-0 text-2xl font-light leading-none text-ink-60 transition-transform duration-200 ${
+                            isOpen ? 'rotate-45' : ''
+                          }`}
+                        >
+                          +
+                        </span>
+                      </button>
+
+                      {isOpen && (
+                        <div className="mw-legal max-w-2xl pb-7 text-[16px] leading-relaxed text-ink-60">
+                          {faq.answer}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {filteredFAQs.length === 0 && (
+                <p className="py-12 mw-body">No questions in this category yet.</p>
+              )}
             </div>
           </div>
-
-          {/* FAQ Items */}
-          <div className="space-y-4">
-            {filteredFAQs.map((faq) => {
-              const IconComponent = faq.icon;
-              const isOpen = openItems.includes(faq.id);
-
-              return (
-                <div
-                  key={faq.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
-                >
-                  <button
-                    onClick={() => toggleItem(faq.id)}
-                    className="w-full p-6 text-left hover:bg-gray-50 transition flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <IconComponent className="w-6 h-6 text-burnt-orange-600 flex-shrink-0" />
-                      <h3 className="text-lg font-semibold text-gray-900">{faq.question}</h3>
-                    </div>
-                    {isOpen ? (
-                      <ChevronUp className="w-5 h-5 text-gray-500 flex-shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-500 flex-shrink-0" />
-                    )}
-                  </button>
-
-                  {isOpen && (
-                    <div className="px-6 pb-6">
-                      <div className="pl-9 text-gray-700 leading-relaxed">
-                        {faq.answer}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {filteredFAQs.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-600">No questions found in this category.</p>
-            </div>
-          )}
         </div>
       </section>
 
-      {/* Still Have Questions */}
-      <section className="py-16 bg-burnt-orange-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Still Have Questions?</h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Our team is here to help you get the most out of your Merritt Workspace experience.
-          </p>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <Mail className="w-8 h-8 text-burnt-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Email Support</h3>
-              <p className="text-gray-600 mb-4">Get detailed answers to your questions</p>
+      {/* Still have questions */}
+      <section className="border-t border-clay bg-ink py-20 text-bone md:py-32">
+        <div className="mw-container">
+          <div className="max-w-3xl">
+            <p className="mb-5 text-[12px] font-medium uppercase tracking-[0.18em] text-bone/60 md:text-[13px]">
+              Still stuck
+            </p>
+            <h2 className="font-display text-[2rem] font-semibold leading-[1.02] tracking-tightest text-bone sm:text-4xl lg:text-[3.25rem]">
+              Ask us directly.
+            </h2>
+            <p className="mt-7 max-w-2xl text-[17px] leading-relaxed text-bone/70 md:text-lg">
+              Someone is on the other end of both of these. Email gets you a
+              considered answer; the phone gets you a fast one.
+            </p>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
               <a
                 href="mailto:memberservices@merrittworkspace.net"
-                className="bg-burnt-orange-600 text-white px-6 py-2 rounded-lg hover:bg-burnt-orange-700 transition inline-block"
+                className="mw-btn bg-accent text-white hover:bg-accent-deep"
               >
-                Send Email
+                Email member services
               </a>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <Phone className="w-8 h-8 text-burnt-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Phone Support</h3>
-              <p className="text-gray-600 mb-4">Speak directly with our team</p>
               <a
                 href="tel:720-357-9499"
-                className="bg-burnt-orange-600 text-white px-6 py-2 rounded-lg hover:bg-burnt-orange-700 transition inline-block"
+                className="mw-btn border border-bone/40 text-bone hover:bg-bone hover:text-ink"
               >
-                Call Now
+                Call (720) 357-9499
               </a>
             </div>
+            <p className="mt-8 text-[15px] text-bone/60">
+              Not a member yet?{' '}
+              <Link href="/membership" className="border-b border-accent pb-0.5 text-bone hover:border-bone">
+                See membership options
+              </Link>.
+            </p>
           </div>
         </div>
       </section>

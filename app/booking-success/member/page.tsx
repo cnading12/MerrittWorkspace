@@ -100,11 +100,11 @@ function MemberBookingSuccessContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
+      <div className="min-h-screen bg-bone pt-20 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-orange-600 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg">Loading your booking confirmation...</p>
-          <p className="text-gray-500 text-sm mt-2">Just a moment while we get your details...</p>
+          <p className="text-ink-60 text-lg">Loading your booking confirmation...</p>
+          <p className="text-ink-60 text-sm mt-2">Just a moment while we get your details...</p>
         </div>
       </div>
     );
@@ -112,19 +112,19 @@ function MemberBookingSuccessContent() {
 
   if (error || !booking) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
+      <div className="min-h-screen bg-bone pt-20 flex items-center justify-center">
         <div className="text-center max-w-md px-4">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-6" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Unable to Load Booking</h2>
-          <p className="text-gray-600 mb-8">{error || 'Could not find booking details. Your booking may still be valid - check your email for confirmation.'}</p>
+          <h2 className="font-display text-2xl font-semibold text-ink mb-4">Unable to Load Booking</h2>
+          <p className="text-ink-60 mb-8">{error || 'Could not find booking details. Your booking may still be valid - check your email for confirmation.'}</p>
           <div className="space-y-3">
             <Link 
               href="/member-resources/meeting-rooms" 
-              className="block bg-orange-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-orange-700 transition"
+              className="block bg-orange-600 text-white px-8 py-3 font-semibold hover:bg-orange-700 transition"
             >
               Back to Meeting Rooms
             </Link>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-ink-60">
               Need help? <Link href="/contact" className="text-orange-600 hover:underline font-medium">Contact Support</Link> or call <a href="tel:(720)357-9499" className="text-orange-600 hover:underline font-medium">(720) 357-9499</a>
             </p>
           </div>
@@ -134,35 +134,35 @@ function MemberBookingSuccessContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className="min-h-screen bg-bone pt-20">
       {/* Success Header */}
       <section className="bg-gradient-to-br from-green-50 via-green-50 to-orange-50 py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center mb-8">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mr-4 shadow-lg">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mr-4">
               <CheckCircle className="w-12 h-12 text-green-600" />
             </div>
-            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center shadow-lg">
+            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center">
               <Gift className="w-12 h-12 text-orange-600" />
             </div>
           </div>
           
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+          <h1 className="font-display text-4xl md:text-6xl font-semibold text-ink mb-6">
             Member Booking Confirmed! 🎉
           </h1>
-          <p className="text-xl md:text-2xl text-gray-600 mb-4">
+          <p className="text-xl md:text-2xl text-ink-60 mb-4">
             Your meeting room has been reserved using your member hours.
           </p>
           <p className="text-lg text-green-600 font-semibold mb-8">
             No payment required - it's all included in your membership!
           </p>
           
-          <div className="inline-flex items-center bg-white px-6 py-3 rounded-full shadow-lg border">
-            <span className="text-sm font-medium text-gray-600 mr-2">Booking ID:</span>
-            <span className="font-mono text-lg text-gray-900 font-bold">{booking.id}</span>
+          <div className="inline-flex items-center bg-bone px-6 py-3 rounded-full border">
+            <span className="text-sm font-medium text-ink-60 mr-2">Booking ID:</span>
+            <span className="font-mono text-lg text-ink font-bold">{booking.id}</span>
             <button
               onClick={copyBookingDetails}
-              className="ml-3 p-2 text-gray-400 hover:text-orange-600 transition"
+              className="ml-3 p-2 text-clay hover:text-orange-600 transition"
               title="Copy booking details"
             >
               {copied ? <CheckSquare className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
@@ -174,9 +174,9 @@ function MemberBookingSuccessContent() {
       {/* Booking Details Card */}
       <section className="py-16 -mt-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-bone overflow-hidden">
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-6">
-              <h2 className="text-2xl md:text-3xl font-bold text-white">Your Meeting Details</h2>
+              <h2 className="font-display text-2xl md:text-3xl font-semibold text-white">Your Meeting Details</h2>
               <p className="text-orange-100 mt-2">Everything you need to know about your booking</p>
             </div>
             
@@ -185,60 +185,60 @@ function MemberBookingSuccessContent() {
                 {/* Left Column - Booking Info */}
                 <div className="space-y-8">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                    <h3 className="font-display text-xl font-semibold text-ink mb-6 flex items-center">
                       <Calendar className="w-6 h-6 text-orange-600 mr-3" />
                       Booking Information
                     </h3>
                     <div className="space-y-4">
-                      <div className="flex items-start bg-gray-50 p-4 rounded-lg">
+                      <div className="flex items-start bg-linen p-4">
                         <Calendar className="w-6 h-6 text-orange-600 mr-4 mt-1 flex-shrink-0" />
                         <div>
-                          <p className="font-semibold text-gray-900">Date</p>
-                          <p className="text-gray-700 text-lg">{formatDate(booking.booking_date)}</p>
+                          <p className="font-semibold text-ink">Date</p>
+                          <p className="text-ink-60 text-lg">{formatDate(booking.booking_date)}</p>
                         </div>
                       </div>
                       
-                      <div className="flex items-start bg-gray-50 p-4 rounded-lg">
+                      <div className="flex items-start bg-linen p-4">
                         <Clock className="w-6 h-6 text-orange-600 mr-4 mt-1 flex-shrink-0" />
                         <div>
-                          <p className="font-semibold text-gray-900">Time</p>
-                          <p className="text-gray-700 text-lg">
+                          <p className="font-semibold text-ink">Time</p>
+                          <p className="text-ink-60 text-lg">
                             {booking.start_time} - {booking.end_time}
                           </p>
-                          <p className="text-gray-600 text-sm">
+                          <p className="text-ink-60 text-sm">
                             Duration: {booking.duration_hours} hour{booking.duration_hours > 1 ? 's' : ''}
                           </p>
                         </div>
                       </div>
                       
-                      <div className="flex items-start bg-gray-50 p-4 rounded-lg">
+                      <div className="flex items-start bg-linen p-4">
                         <Users className="w-6 h-6 text-orange-600 mr-4 mt-1 flex-shrink-0" />
                         <div>
-                          <p className="font-semibold text-gray-900">Attendees</p>
-                          <p className="text-gray-700 text-lg">
+                          <p className="font-semibold text-ink">Attendees</p>
+                          <p className="text-ink-60 text-lg">
                             {booking.attendees} {booking.attendees === 1 ? 'person' : 'people'}
                           </p>
                         </div>
                       </div>
                       
-                      <div className="flex items-start bg-gray-50 p-4 rounded-lg">
+                      <div className="flex items-start bg-linen p-4">
                         <MapPin className="w-6 h-6 text-orange-600 mr-4 mt-1 flex-shrink-0" />
                         <div>
-                          <p className="font-semibold text-gray-900">Location</p>
-                          <p className="text-gray-700 text-lg">Conference Room</p>
-                          <p className="text-gray-600 text-sm">Merritt Workspace Coworking</p>
+                          <p className="font-semibold text-ink">Location</p>
+                          <p className="text-ink-60 text-lg">Conference Room</p>
+                          <p className="text-ink-60 text-sm">Merritt Workspace Coworking</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">Contact Details</h3>
-                    <div className="bg-gray-50 p-6 rounded-lg">
-                      <p className="text-gray-700 mb-2">
+                    <h3 className="font-display text-xl font-semibold text-ink mb-4">Contact Details</h3>
+                    <div className="bg-linen p-6">
+                      <p className="text-ink-60 mb-2">
                         <span className="font-semibold">Name:</span> {booking.customer_name}
                       </p>
-                      <p className="text-gray-700">
+                      <p className="text-ink-60">
                         <span className="font-semibold">Email:</span> {booking.customer_email}
                       </p>
                     </div>
@@ -246,9 +246,9 @@ function MemberBookingSuccessContent() {
 
                   {booking.purpose && (
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-4">Meeting Purpose</h3>
-                      <div className="bg-gray-50 p-6 rounded-lg">
-                        <p className="text-gray-700">{booking.purpose}</p>
+                      <h3 className="font-display text-xl font-semibold text-ink mb-4">Meeting Purpose</h3>
+                      <div className="bg-linen p-6">
+                        <p className="text-ink-60">{booking.purpose}</p>
                       </div>
                     </div>
                   )}
@@ -257,11 +257,11 @@ function MemberBookingSuccessContent() {
                 {/* Right Column - Member Benefits & Next Steps */}
                 <div className="space-y-8">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                    <h3 className="font-display text-xl font-semibold text-ink mb-6 flex items-center">
                       <Star className="w-6 h-6 text-orange-600 mr-3" />
                       Member Benefits Applied
                     </h3>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 border border-green-200">
                       <div className="text-center mb-4">
                         <div className="inline-flex items-center bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold mb-3">
                           ✨ MEMBER EXCLUSIVE
@@ -271,16 +271,16 @@ function MemberBookingSuccessContent() {
                       </div>
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-700">Member hours used:</span>
+                          <span className="text-ink-60">Member hours used:</span>
                           <span className="font-bold text-green-600">{booking.duration_hours}h</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-700">Regular price:</span>
-                          <span className="text-gray-500 line-through">${booking.duration_hours * 25}</span>
+                          <span className="text-ink-60">Regular price:</span>
+                          <span className="text-ink-60 line-through">${booking.duration_hours * 25}</span>
                         </div>
                         <div className="border-t border-green-300 pt-2 mt-3">
                           <div className="flex items-center justify-between font-bold">
-                            <span className="text-gray-900">You saved:</span>
+                            <span className="text-ink">You saved:</span>
                             <span className="text-green-600">${booking.duration_hours * 25}</span>
                           </div>
                         </div>
@@ -290,44 +290,44 @@ function MemberBookingSuccessContent() {
 
                   {/* What's Included */}
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">What's Included</h3>
+                    <h3 className="font-display text-xl font-semibold text-ink mb-4">What's Included</h3>
                     <div className="space-y-3">
-                      <div className="flex items-center bg-white p-3 rounded-lg border">
+                      <div className="flex items-center bg-bone p-3 border">
                         <Monitor className="w-5 h-5 text-green-600 mr-3" />
-                        <span className="text-gray-700">65" Smart TV with HDMI/Wireless casting</span>
+                        <span className="text-ink-60">65" Smart TV with HDMI/Wireless casting</span>
                       </div>
-                      <div className="flex items-center bg-white p-3 rounded-lg border">
+                      <div className="flex items-center bg-bone p-3 border">
                         <Wifi className="w-5 h-5 text-green-600 mr-3" />
-                        <span className="text-gray-700">High-speed WiFi & power outlets</span>
+                        <span className="text-ink-60">High-speed WiFi & power outlets</span>
                       </div>
-                      <div className="flex items-center bg-white p-3 rounded-lg border">
+                      <div className="flex items-center bg-bone p-3 border">
                         <Coffee className="w-5 h-5 text-green-600 mr-3" />
-                        <span className="text-gray-700">Complimentary coffee & water</span>
+                        <span className="text-ink-60">Complimentary coffee & water</span>
                       </div>
-                      <div className="flex items-center bg-white p-3 rounded-lg border">
+                      <div className="flex items-center bg-bone p-3 border">
                         <Users className="w-5 h-5 text-green-600 mr-3" />
-                        <span className="text-gray-700">Professional meeting environment</span>
+                        <span className="text-ink-60">Professional meeting environment</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Calendar Status */}
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">Confirmations Sent</h3>
+                    <h3 className="font-display text-xl font-semibold text-ink mb-4">Confirmations Sent</h3>
                     <div className="space-y-3">
-                      <div className="flex items-center bg-green-50 p-3 rounded-lg border border-green-200">
+                      <div className="flex items-center bg-green-50 p-3 border border-green-200">
                         <Mail className="w-5 h-5 text-green-600 mr-3" />
-                        <span className="text-gray-700">Email confirmation sent to {booking.customer_email}</span>
+                        <span className="text-ink-60">Email confirmation sent to {booking.customer_email}</span>
                       </div>
                       {booking.calendar_event_created ? (
-                        <div className="flex items-center bg-green-50 p-3 rounded-lg border border-green-200">
+                        <div className="flex items-center bg-green-50 p-3 border border-green-200">
                           <Calendar className="w-5 h-5 text-green-600 mr-3" />
-                          <span className="text-gray-700">Calendar invitation sent</span>
+                          <span className="text-ink-60">Calendar invitation sent</span>
                         </div>
                       ) : (
-                        <div className="flex items-center bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                        <div className="flex items-center bg-yellow-50 p-3 border border-yellow-200">
                           <AlertCircle className="w-5 h-5 text-yellow-600 mr-3" />
-                          <span className="text-gray-700">Calendar invite pending - check your email</span>
+                          <span className="text-ink-60">Calendar invite pending - check your email</span>
                         </div>
                       )}
                     </div>
@@ -340,17 +340,17 @@ function MemberBookingSuccessContent() {
       </section>
 
       {/* Next Steps */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-bone">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">What Happens Next?</h2>
+          <h2 className="font-display text-3xl font-semibold text-ink text-center mb-12">What Happens Next?</h2>
           
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Mail className="w-10 h-10 text-blue-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">1. Check Your Email</h3>
-              <p className="text-gray-600">
+              <h3 className="font-display text-xl font-semibold text-ink mb-4">1. Check Your Email</h3>
+              <p className="text-ink-60">
                 You'll receive a detailed confirmation email with all your booking information and any calendar invitations.
               </p>
             </div>
@@ -359,8 +359,8 @@ function MemberBookingSuccessContent() {
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Calendar className="w-10 h-10 text-green-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">2. Add to Calendar</h3>
-              <p className="text-gray-600">
+              <h3 className="font-display text-xl font-semibold text-ink mb-4">2. Add to Calendar</h3>
+              <p className="text-ink-60">
                 If you received a calendar invitation, accept it to automatically add the meeting to your calendar.
               </p>
             </div>
@@ -369,8 +369,8 @@ function MemberBookingSuccessContent() {
               <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <MapPin className="w-10 h-10 text-orange-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">3. Just Show Up!</h3>
-              <p className="text-gray-600">
+              <h3 className="font-display text-xl font-semibold text-ink mb-4">3. Just Show Up!</h3>
+              <p className="text-ink-60">
                 Arrive a few minutes early and your room will be ready. The door will be unlocked during your reserved time.
               </p>
             </div>
@@ -379,14 +379,14 @@ function MemberBookingSuccessContent() {
       </section>
 
       {/* Action Buttons */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-linen">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">Need Anything Else?</h2>
+          <h2 className="font-display text-2xl font-semibold text-ink mb-8">Need Anything Else?</h2>
           
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Link 
               href="/member-resources/meeting-rooms" 
-              className="bg-orange-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-orange-700 transition flex items-center justify-center group"
+              className="bg-orange-600 text-white px-6 py-4 font-semibold hover:bg-orange-700 transition flex items-center justify-center group"
             >
               <Calendar className="w-5 h-5 mr-2" />
               Book Another Room
@@ -395,7 +395,7 @@ function MemberBookingSuccessContent() {
             
             <Link 
               href="/member-resources/snackshop" 
-              className="bg-green-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-green-700 transition flex items-center justify-center group"
+              className="bg-green-600 text-white px-6 py-4 font-semibold hover:bg-green-700 transition flex items-center justify-center group"
             >
               <Coffee className="w-5 h-5 mr-2" />
               Order Snacks
@@ -404,7 +404,7 @@ function MemberBookingSuccessContent() {
             
             <Link 
               href="/member-resources" 
-              className="bg-blue-600 text-white px-6 py-4 rounded-xl font-semibold hover:bg-blue-700 transition flex items-center justify-center group"
+              className="bg-blue-600 text-white px-6 py-4 font-semibold hover:bg-blue-700 transition flex items-center justify-center group"
             >
               <Star className="w-5 h-5 mr-2" />
               Member Portal
@@ -413,7 +413,7 @@ function MemberBookingSuccessContent() {
             
             <Link 
               href="/contact" 
-              className="bg-white text-gray-700 border-2 border-gray-300 px-6 py-4 rounded-xl font-semibold hover:bg-gray-50 transition flex items-center justify-center group"
+              className="bg-bone text-ink-60 border border-clay px-6 py-4 font-semibold hover:bg-linen transition flex items-center justify-center group"
             >
               <Phone className="w-5 h-5 mr-2" />
               Get Help
@@ -421,15 +421,15 @@ function MemberBookingSuccessContent() {
             </Link>
           </div>
           
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <p className="text-gray-600 mb-2">
+          <div className="bg-bone p-6 border border-clay">
+            <p className="text-ink-60 mb-2">
               <strong>Questions about your booking?</strong>
             </p>
-            <p className="text-gray-600">
+            <p className="text-ink-60">
               Call us at <a href="tel:(720)357-9499" className="text-orange-600 hover:underline font-bold">(720) 357-9499</a> or
               email <a href="mailto:memberservices@merrittworkspace.net" className="text-orange-600 hover:underline font-bold">memberservices@merrittworkspace.net</a>
             </p>
-            <p className="text-sm text-gray-500 mt-2">We're here to help make your meeting successful!</p>
+            <p className="text-sm text-ink-60 mt-2">We're here to help make your meeting successful!</p>
           </div>
         </div>
       </section>
@@ -442,10 +442,10 @@ function MemberBookingSuccessContent() {
 export default function MemberBookingSuccessPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
+      <div className="min-h-screen bg-bone pt-20 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-orange-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 text-lg">Loading booking confirmation...</p>
+          <p className="text-ink-60 text-lg">Loading booking confirmation...</p>
         </div>
       </div>
     }>

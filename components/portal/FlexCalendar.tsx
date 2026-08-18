@@ -236,11 +236,11 @@ export default function FlexCalendar({
   const isViewingThisWeek = week.some((c) => c.isToday);
 
   return (
-    <section className="bg-white border rounded-lg p-5">
+    <section className="bg-bone border p-5">
       <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
         <div>
-          <h2 className="text-lg font-medium text-gray-900">Availability</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="font-display text-lg font-medium text-ink">Availability</h2>
+          <p className="text-sm text-ink-60">
             {formatRangeLabel(week)} · Mountain Time
           </p>
         </div>
@@ -248,7 +248,7 @@ export default function FlexCalendar({
           <button
             type="button"
             onClick={() => shiftWeek(-7)}
-            className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
+            className="px-3 py-1.5 text-sm border hover:bg-linen"
             aria-label="Previous week"
           >
             ‹ Prev
@@ -257,14 +257,14 @@ export default function FlexCalendar({
             type="button"
             onClick={() => setAnchor(new Date())}
             disabled={isViewingThisWeek}
-            className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 text-sm border hover:bg-linen disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Today
           </button>
           <button
             type="button"
             onClick={() => shiftWeek(7)}
-            className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
+            className="px-3 py-1.5 text-sm border hover:bg-linen"
             aria-label="Next week"
           >
             Next ›
@@ -297,7 +297,7 @@ export default function FlexCalendar({
                 >
                   {col.weekdayShort}
                 </div>
-                <div className="text-sm text-gray-900">{col.monthDay}</div>
+                <div className="text-sm text-ink">{col.monthDay}</div>
               </div>
             ))}
           </div>
@@ -314,7 +314,7 @@ export default function FlexCalendar({
                 return (
                   <div
                     key={i}
-                    className="text-[11px] text-gray-400 text-right pr-2 -translate-y-1.5"
+                    className="text-[11px] text-ink-60 text-right pr-2 -translate-y-1.5"
                     style={{ height: CELL_HEIGHT_PX }}
                   >
                     {showLabel ? timeLabel(minutes) : ''}
@@ -330,11 +330,11 @@ export default function FlexCalendar({
         </div>
       </div>
 
-      <div className="mt-4 flex items-center gap-4 text-xs text-gray-600 flex-wrap">
+      <div className="mt-4 flex items-center gap-4 text-xs text-ink-60 flex-wrap">
         <Legend className="bg-orange-200 border-orange-400" label="Your booking" />
         <Legend className="bg-gray-300 border-gray-400" label="Booked" />
-        <Legend className="bg-white border-gray-300" label="Available" />
-        {loading && <span className="text-gray-400">Loading…</span>}
+        <Legend className="bg-bone border-clay" label="Available" />
+        {loading && <span className="text-ink-60">Loading…</span>}
       </div>
     </section>
   );
@@ -390,7 +390,7 @@ function DayColumn({ col, busy }: { col: DayCol; busy: BusyWindow[] }) {
   }>;
 
   return (
-    <div className="relative border-l border-gray-200">
+    <div className="relative border-l border-clay">
       {Array.from({ length: SLOT_COUNT }).map((_, i) => (
         <div
           key={i}
@@ -409,7 +409,7 @@ function DayColumn({ col, busy }: { col: DayCol; busy: BusyWindow[] }) {
           <div
             key={b.key}
             title={tooltip}
-            className={`absolute left-0.5 right-0.5 rounded border text-[10px] leading-tight px-1 py-0.5 overflow-hidden ${
+            className={`absolute left-0.5 right-0.5 border text-[10px] leading-tight px-1 py-0.5 overflow-hidden ${
               b.is_self
                 ? 'bg-orange-200 border-orange-400 text-orange-900'
                 : 'bg-gray-300 border-gray-400 text-gray-800'

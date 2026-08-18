@@ -82,10 +82,10 @@ export default function OfficeMemberDashboard({
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="font-display text-2xl font-semibold text-ink">
             Welcome, {member.first_name}
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-ink-60">
             Office Member
             {member.office_number && ` · Office ${member.office_number}`} · No monthly
             charge — your office&apos;s primary member covers the space.
@@ -94,13 +94,13 @@ export default function OfficeMemberDashboard({
         <div className="flex items-center gap-4">
           <a
             href="/portal/activity"
-            className="text-sm font-medium text-burnt-orange-600 hover:text-burnt-orange-700"
+            className="text-sm font-medium text-accent-deep hover:text-accent-deep"
           >
             My Activity →
           </a>
           <button
             onClick={onSignOut}
-            className="text-sm text-gray-500 hover:text-gray-900"
+            className="text-sm text-ink-60 hover:text-ink"
           >
             Sign out
           </button>
@@ -108,7 +108,7 @@ export default function OfficeMemberDashboard({
       </div>
 
       {isPending && (
-        <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-5">
+        <div className="bg-amber-50 border-2 border-amber-300 p-5">
           <div className="font-semibold text-amber-900 text-base">
             ⏳ Your request is with our staff
           </div>
@@ -134,7 +134,7 @@ export default function OfficeMemberDashboard({
       )}
 
       {isDeclined && (
-        <div className="bg-red-50 border-2 border-red-300 rounded-lg p-5">
+        <div className="bg-red-50 border-2 border-red-300 p-5">
           <div className="font-semibold text-red-900 text-base">
             Your office-member request was declined
           </div>
@@ -154,7 +154,7 @@ export default function OfficeMemberDashboard({
 
       {isActive && (
         <>
-          <div className="bg-green-50 border border-green-300 rounded-lg p-4 text-sm text-green-900">
+          <div className="bg-green-50 border border-green-300 p-4 text-sm text-green-900">
             ✓ You&apos;re an approved member of{' '}
             <strong>Office {member.office_number || '—'}</strong>. Everything below
             is included with your office — no charge to you.
@@ -163,12 +163,12 @@ export default function OfficeMemberDashboard({
           <div className="grid gap-4 sm:grid-cols-2">
             <a
               href="/member-resources/meeting-rooms"
-              className="block bg-white border rounded-lg p-5 hover:border-gray-400 transition-colors"
+              className="block bg-bone border p-5 hover:border-gray-400 transition-colors"
             >
-              <div className="font-semibold text-gray-900">
+              <div className="font-semibold text-ink">
                 📅 Book the conference room
               </div>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-ink-60 mt-1">
                 {hours?.pooled ? (
                   <>
                     Your office has <strong>{hours.remaining}</strong> of{' '}
@@ -188,10 +188,10 @@ export default function OfficeMemberDashboard({
 
             <a
               href="/member-resources/snackshop"
-              className="block bg-white border rounded-lg p-5 hover:border-gray-400 transition-colors"
+              className="block bg-bone border p-5 hover:border-gray-400 transition-colors"
             >
-              <div className="font-semibold text-gray-900">🍫 Snack shop</div>
-              <p className="text-sm text-gray-600 mt-1">
+              <div className="font-semibold text-ink">🍫 Snack shop</div>
+              <p className="text-sm text-ink-60 mt-1">
                 One-click member checkout — orders are delivered to Office{' '}
                 {member.office_number || 'your office'}.
               </p>
@@ -199,25 +199,25 @@ export default function OfficeMemberDashboard({
 
             <a
               href="/portal/flex-space"
-              className="block bg-white border rounded-lg p-5 hover:border-gray-400 transition-colors"
+              className="block bg-bone border p-5 hover:border-gray-400 transition-colors"
             >
-              <div className="font-semibold text-gray-900">🧘 Flex space</div>
-              <p className="text-sm text-gray-600 mt-1">
+              <div className="font-semibold text-ink">🧘 Flex space</div>
+              <p className="text-sm text-ink-60 mt-1">
                 Reserve time in the historic church flex space (4 free hours per
                 week).
               </p>
             </a>
 
-            <div className="bg-white border rounded-lg p-5">
-              <div className="font-semibold text-gray-900">🔑 After-hours access code</div>
+            <div className="bg-bone border p-5">
+              <div className="font-semibold text-ink">🔑 After-hours access code</div>
               <p className="text-sm text-green-800 mt-1 font-medium">
                 No code needed Mon – Fri, 8:00 AM – 6:00 PM — the door is unlocked.
               </p>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-ink-60 mt-1">
                 {member.access_code ? (
                   <>
                     Your after-hours code:{' '}
-                    <code className="bg-gray-100 px-1.5 py-0.5 rounded font-semibold">
+                    <code className="bg-linen px-1.5 py-0.5 font-semibold">
                       {member.access_code}
                     </code>
                   </>
@@ -229,7 +229,7 @@ export default function OfficeMemberDashboard({
                 <button
                   onClick={requestAccessCode}
                   disabled={requestingCode || !!accessRequestStatus}
-                  className="mt-3 text-sm border border-gray-900 bg-gray-900 text-white rounded px-3 py-1.5 hover:bg-gray-800 disabled:opacity-50"
+                  className="mt-3 text-sm border border-gray-900 bg-ink text-white px-3 py-1.5 hover:bg-ink disabled:opacity-50"
                 >
                   {requestingCode
                     ? 'Requesting…'
@@ -241,9 +241,9 @@ export default function OfficeMemberDashboard({
         </>
       )}
 
-      <section className="bg-white border rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">Who to contact</h3>
-        <div className="text-sm text-gray-700 space-y-1">
+      <section className="bg-bone border p-6">
+        <h3 className="font-display font-semibold text-ink mb-2">Who to contact</h3>
+        <div className="text-sm text-ink-60 space-y-1">
           <p>
             <span className="font-medium">Member Services</span> — day-to-day help,
             access codes, snack shop, conference room:{' '}
@@ -272,9 +272,9 @@ export default function OfficeMemberDashboard({
               (720) 357-9499
             </a>
           </p>
-          <p className="text-xs text-gray-500 pt-1">
-            WiFi: <code className="bg-gray-100 px-1 rounded">merrittcowork</code> /{' '}
-            <code className="bg-gray-100 px-1 rounded">Merritt23X</code>
+          <p className="text-xs text-ink-60 pt-1">
+            WiFi: <code className="bg-linen px-1">merrittcowork</code> /{' '}
+            <code className="bg-linen px-1">Merritt23X</code>
           </p>
         </div>
       </section>

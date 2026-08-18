@@ -51,7 +51,7 @@ const ErrorDisplay = ({ error }: { error: string | null }) => {
   if (!error) return null;
 
   return (
-    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+    <div className="bg-red-50 border border-red-200 p-4 mb-6">
       <div className="flex items-start">
         <AlertCircle className="w-5 h-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
         <div>
@@ -65,7 +65,7 @@ const ErrorDisplay = ({ error }: { error: string | null }) => {
 
 // Success Message Component
 const SuccessMessage = ({ message, onClose }: { message: string; onClose: () => void }) => (
-  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+  <div className="bg-green-50 border border-green-200 p-4 mb-6">
     <div className="flex items-start justify-between">
       <div className="flex items-start">
         <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
@@ -85,8 +85,8 @@ const SuccessMessage = ({ message, onClose }: { message: string; onClose: () => 
 const LoadingState = ({ message }: { message: string }) => (
   <div className="text-center py-8">
     <Loader2 className="w-8 h-8 animate-spin text-orange-600 mx-auto mb-4" />
-    <p className="text-gray-600">{message}</p>
-    <p className="text-sm text-gray-500 mt-2">This may take a few moments...</p>
+    <p className="text-ink-60">{message}</p>
+    <p className="text-sm text-ink-60 mt-2">This may take a few moments...</p>
   </div>
 );
 
@@ -486,15 +486,15 @@ Your time slot is temporarily reserved.`);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className="min-h-screen bg-bone pt-20">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-orange-50 to-orange-100 py-16">
+      <section className="bg-linen py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            <h1 className="font-display text-4xl md:text-5xl font-semibold text-ink mb-6">
               Professional Conference Room
             </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl text-ink-60 mb-8 max-w-3xl mx-auto">
               Book our state-of-the-art conference room with A/V equipment, high-speed wifi,
               and a professional atmosphere. Members get simple booking with no payment required!
             </p>
@@ -516,11 +516,11 @@ Your time slot is temporarily reserved.`);
       )}
 
       {/* Member Benefits */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-bone">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">Member Benefits</h2>
+              <h2 className="font-display text-3xl font-semibold text-ink mb-6">Member Benefits</h2>
               <div className="space-y-4">
                 <div className="flex items-center">
                   <Gift className="w-6 h-6 text-orange-600 mr-3" />
@@ -536,8 +536,8 @@ Your time slot is temporarily reserved.`);
                 </div>
               </div>
             </div>
-            <div className="bg-orange-50 p-6 rounded-xl">
-              <h3 className="text-xl font-semibold text-orange-900 mb-4">Pricing</h3>
+            <div className="bg-orange-50 p-6">
+              <h3 className="font-display text-xl font-semibold text-orange-900 mb-4">Pricing</h3>
               <div className="space-y-2">
                 <p className="text-orange-800">
                   <strong>Members:</strong> included hours each month
@@ -558,13 +558,13 @@ Your time slot is temporarily reserved.`);
       </section>
 
       {/* Booking Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-linen">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Book Your Meeting Room</h2>
+          <h2 className="font-display text-3xl font-semibold text-center text-ink mb-12">Book Your Meeting Room</h2>
 
           {/* Date Selection */}
           <div className="mb-8">
-            <label className="block text-lg font-semibold text-gray-900 mb-4">Select Date</label>
+            <label className="block text-lg font-semibold text-ink mb-4">Select Date</label>
             <input
               type="date"
               value={selectedDate}
@@ -578,14 +578,14 @@ Your time slot is temporarily reserved.`);
                 setSuccessMessage(null);
               }}
               min={new Date().toISOString().split('T')[0]}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
 
           {/* Time Slots */}
           {selectedDate && (
             <div className="mb-8">
-              <label className="block text-lg font-semibold text-gray-900 mb-4">Available Time Slots</label>
+              <label className="block text-lg font-semibold text-ink mb-4">Available Time Slots</label>
 
               {loadingSlots ? (
                 <LoadingState message="Loading available times from Google Calendar..." />
@@ -600,7 +600,7 @@ Your time slot is temporarily reserved.`);
                         key={time_slot}
                         onClick={() => is_available && handleTimeSelect(time_slot)}
                         disabled={!is_available}
-                        className={`p-3 rounded-lg border-2 font-medium transition ${
+                        className={`p-3  border-2 font-medium transition ${
                           !is_available
                             ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
                             : isSelected
@@ -616,7 +616,7 @@ Your time slot is temporarily reserved.`);
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-600">No time slots available for this date.</p>
+                  <p className="text-ink-60">No time slots available for this date.</p>
                 </div>
               )}
             </div>
@@ -629,11 +629,11 @@ Your time slot is temporarily reserved.`);
                 /* Signed-in member: one unified booking. Included hours are
                    free; overage is charged to the card on file. */
                 <div className="mb-2">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Your Member Booking</h3>
-                  <div className="p-6 border-2 border-green-500 bg-green-50 rounded-xl">
+                  <h3 className="font-display text-xl font-semibold text-ink mb-4">Your Member Booking</h3>
+                  <div className="p-6 border-2 border-green-500 bg-green-50">
                     <div className="flex items-center mb-3">
                       <Sparkles className="w-7 h-7 text-green-600 mr-3" />
-                      <h4 className="text-lg font-semibold text-gray-900">
+                      <h4 className="text-lg font-semibold text-ink">
                         Booking as {bookingForm.name || member.email}
                       </h4>
                     </div>
@@ -655,14 +655,14 @@ Your time slot is temporarily reserved.`);
                       <p className="text-sm text-green-800 mb-3">Loading your included hours…</p>
                     )}
                     {memberCost && (
-                      <div className="bg-white/70 p-3 rounded-lg border border-green-200">
+                      <div className="bg-bone/70 p-3 border border-green-200">
                         {memberCost.billed === 0 ? (
                           <p className="text-green-800 font-medium">
                             ✓ Free — covered by your included hours ({memberCost.included} hr{memberCost.included === 1 ? '' : 's'})
                           </p>
                         ) : (
                           <>
-                            <p className="text-gray-800 font-medium">
+                            <p className="text-ink font-medium">
                               {memberCost.included} hr{memberCost.included === 1 ? '' : 's'} included
                               {' + '}{memberCost.billed} hr{memberCost.billed === 1 ? '' : 's'} over {hours?.pooled ? "your office's" : 'your'} allotment
                             </p>
@@ -679,22 +679,22 @@ Your time slot is temporarily reserved.`);
                 /* Guest: keep the two-card chooser, but the member card now
                    nudges sign-in instead of offering a free-for-all booking. */
                 <>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Choose Booking Type</h3>
+                  <h3 className="font-display text-xl font-semibold text-ink mb-6">Choose Booking Type</h3>
                   <div className="grid md:grid-cols-2 gap-6">
                     {/* Member sign-in nudge */}
                     <Link
                       href="/portal/login"
-                      className="block p-6 border-2 border-gray-200 hover:border-green-400 rounded-xl transition"
+                      className="block p-6 border border-clay hover:border-green-400 transition"
                     >
                       <div className="flex items-center mb-4">
                         <Gift className="w-8 h-8 text-green-600 mr-3" />
-                        <h4 className="text-lg font-semibold text-gray-900">Member Booking</h4>
+                        <h4 className="text-lg font-semibold text-ink">Member Booking</h4>
                       </div>
-                      <p className="text-gray-600 mb-4">
+                      <p className="text-ink-60 mb-4">
                         Members get included hours each month and book in one click — no
                         re-typing, no fees on included time.
                       </p>
-                      <div className="bg-green-100 p-3 rounded-lg">
+                      <div className="bg-green-100 p-3">
                         <p className="text-green-800 font-medium">Sign in to book with your hours →</p>
                         <p className="text-sm text-green-700 mt-1">Already a member? Move your account online.</p>
                       </div>
@@ -702,7 +702,7 @@ Your time slot is temporarily reserved.`);
 
                     {/* Paid Booking */}
                     <div
-                      className={`p-6 border-2 rounded-xl cursor-pointer transition ${
+                      className={`p-6 border-2  cursor-pointer transition ${
                         bookingForm.bookingType === 'paid'
                           ? 'border-orange-500 bg-orange-50'
                           : 'border-gray-200 hover:border-orange-300'
@@ -711,12 +711,12 @@ Your time slot is temporarily reserved.`);
                     >
                       <div className="flex items-center mb-4">
                         <CreditCard className="w-8 h-8 text-orange-600 mr-3" />
-                        <h4 className="text-lg font-semibold text-gray-900">Pay Online</h4>
+                        <h4 className="text-lg font-semibold text-ink">Pay Online</h4>
                       </div>
-                      <p className="text-gray-600 mb-4">
+                      <p className="text-ink-60 mb-4">
                         Guest, tour, or trial day? Pay securely online — no account needed.
                       </p>
-                      <div className="bg-orange-100 p-3 rounded-lg">
+                      <div className="bg-orange-100 p-3">
                         <p className="text-orange-800 font-medium">${calculatePrice(bookingForm.duration)} total</p>
                         <p className="text-sm text-orange-700">Duration: {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
                       </div>
@@ -727,11 +727,11 @@ Your time slot is temporarily reserved.`);
 
               {/* Duration Selection */}
               <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Duration (hours)</label>
+                <label className="block text-sm font-medium text-ink-60 mb-2">Duration (hours)</label>
                 <select
                   value={bookingForm.duration}
                   onChange={(e) => handleDurationChange(parseInt(e.target.value))}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                 >
                   <option value={1}>1 hour</option>
                   <option value={2}>2 hours</option>
@@ -744,61 +744,61 @@ Your time slot is temporarily reserved.`);
 
           {/* Booking Form */}
           {showBookingForm && (
-            <div className="bg-white p-6 rounded-xl border">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">
+            <div className="bg-bone p-6 border">
+              <h3 className="font-display text-xl font-semibold text-ink mb-6">
                 {bookingForm.bookingType === 'member' ? 'Complete Member Booking' : 'Complete Payment Booking'}
               </h3>
 
               <form onSubmit={handleSubmitBooking} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">Full Name *</label>
                     <input
                       type="text"
                       required
                       readOnly={Boolean(member)}
                       value={bookingForm.name}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, name: e.target.value }))}
-                      className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 ${member ? 'bg-gray-100 text-gray-600' : ''}`}
+                      className={`w-full p-3 border border-clay  focus:ring-2 focus:ring-orange-500 ${member ? 'bg-gray-100 text-gray-600' : ''}`}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">Email *</label>
                     <input
                       type="email"
                       required
                       readOnly={Boolean(member)}
                       value={bookingForm.email}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, email: e.target.value }))}
-                      className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 ${member ? 'bg-gray-100 text-gray-600' : ''}`}
+                      className={`w-full p-3 border border-clay  focus:ring-2 focus:ring-orange-500 ${member ? 'bg-gray-100 text-gray-600' : ''}`}
                     />
                   </div>
 
                   {bookingForm.bookingType === 'paid' && (
                     <>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                        <label className="block text-sm font-medium text-ink-60 mb-2">Company</label>
                         <input
                           type="text"
                           value={bookingForm.company}
                           onChange={(e) => setBookingForm(prev => ({ ...prev, company: e.target.value }))}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                        <label className="block text-sm font-medium text-ink-60 mb-2">Phone</label>
                         <input
                           type="tel"
                           value={bookingForm.phone}
                           onChange={(e) => setBookingForm(prev => ({ ...prev, phone: e.target.value }))}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                         />
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Photo ID *</label>
+                        <label className="block text-sm font-medium text-ink-60 mb-2">Photo ID *</label>
                         <input
                           type="file"
                           required
@@ -814,9 +814,9 @@ Your time slot is temporarily reserved.`);
                             setError(null);
                             setIdFile(file);
                           }}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-orange-100 file:text-orange-800 file:font-medium hover:file:bg-orange-200"
+                          className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500 file:mr-3 file:py-1.5 file:px-3 file: file:border-0 file:bg-orange-100 file:text-orange-800 file:font-medium hover:file:bg-orange-200"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-ink-60 mt-1">
                           A photo of your government-issued ID (driver's license or passport) is
                           required for non-member bookings. Max 10MB.
                         </p>
@@ -825,11 +825,11 @@ Your time slot is temporarily reserved.`);
                   )}
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Number of Attendees</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">Number of Attendees</label>
                     <select
                       value={bookingForm.attendees}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, attendees: parseInt(e.target.value) }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     >
                       {Array.from({ length: ROOM_CAPACITY }, (_, i) => i + 1).map(num => (
                         <option key={num} value={num}>{num} {num === 1 ? 'person' : 'people'}</option>
@@ -839,27 +839,27 @@ Your time slot is temporarily reserved.`);
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Meeting Purpose</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">Meeting Purpose</label>
                   <textarea
                     rows={3}
                     value={bookingForm.purpose}
                     onChange={(e) => setBookingForm(prev => ({ ...prev, purpose: e.target.value }))}
                     placeholder="Brief description of your meeting (optional)"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 {/* Booking Summary */}
-                <div className="bg-gray-50 p-4 rounded-lg border">
-                  <h4 className="font-semibold text-gray-900 mb-2">Booking Summary</h4>
-                  <div className="space-y-1 text-sm text-gray-600">
+                <div className="bg-linen p-4 border">
+                  <h4 className="font-semibold text-ink mb-2">Booking Summary</h4>
+                  <div className="space-y-1 text-sm text-ink-60">
                     <p><strong>Room:</strong> Conference Room</p>
                     <p><strong>Date:</strong> {new Date(selectedDate).toLocaleDateString()}</p>
                     <p><strong>Time:</strong> {formatTime(selectedTime)} - {formatTime(calculateEndTime(selectedTime, bookingForm.duration))}</p>
                     <p><strong>Duration:</strong> {bookingForm.duration} hour{bookingForm.duration > 1 ? 's' : ''}</p>
                     <p><strong>Type:</strong> {member ? 'Member Booking' : 'Paid Booking'}</p>
                     {member && memberCost && memberCost.billed > 0 && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-ink-60">
                         {memberCost.included} hr included · {memberCost.billed} hr @ ${HOURLY_RATE}/hr
                       </p>
                     )}
@@ -876,7 +876,7 @@ Your time slot is temporarily reserved.`);
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-orange-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-orange-600 text-white py-4 px-6 font-semibold hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
                     <>
@@ -898,33 +898,33 @@ Your time slot is temporarily reserved.`);
       </section>
 
       {/* Room Features */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-bone">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">What's Included</h2>
+          <h2 className="font-display text-3xl font-semibold text-center text-ink mb-12">What's Included</h2>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
               <Monitor className="w-12 h-12 text-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">75" Smart TV</h3>
-              <p className="text-gray-600">Present wirelessly or via HDMI with crystal clear 4K display</p>
+              <h3 className="font-display text-lg font-semibold mb-2">75" Smart TV</h3>
+              <p className="text-ink-60">Present wirelessly or via HDMI with crystal clear 4K display</p>
             </div>
 
             <div className="text-center">
               <Wifi className="w-12 h-12 text-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">High-Speed WiFi</h3>
-              <p className="text-gray-600">Reliable internet for video calls and online presentations</p>
+              <h3 className="font-display text-lg font-semibold mb-2">High-Speed WiFi</h3>
+              <p className="text-ink-60">Reliable internet for video calls and online presentations</p>
             </div>
 
             <div className="text-center">
               <Users className="w-12 h-12 text-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Seats up to {ROOM_CAPACITY}</h3>
-              <p className="text-gray-600">Comfortable seating for small to medium team meetings</p>
+              <h3 className="font-display text-lg font-semibold mb-2">Seats up to {ROOM_CAPACITY}</h3>
+              <p className="text-ink-60">Comfortable seating for small to medium team meetings</p>
             </div>
 
             <div className="text-center">
               <Coffee className="w-12 h-12 text-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Refreshments</h3>
-              <p className="text-gray-600">Access to our snackshop for coffee and light refreshments</p>
+              <h3 className="font-display text-lg font-semibold mb-2">Refreshments</h3>
+              <p className="text-ink-60">Access to our snackshop for coffee and light refreshments</p>
             </div>
           </div>
         </div>
@@ -933,11 +933,11 @@ Your time slot is temporarily reserved.`);
       {/* Contact Section */}
       <section className="py-16 bg-orange-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Need Help or Have Questions?</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className="font-display text-2xl font-semibold text-ink mb-4">Need Help or Have Questions?</h2>
+          <p className="text-ink-60 mb-6">
             Our team is here to help you have a successful meeting experience.
           </p>
-          <Link href="/contact" className="bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 transition inline-block">
+          <Link href="/contact" className="bg-orange-600 text-white px-6 py-3 font-semibold hover:bg-orange-700 transition inline-block">
             Contact Us
           </Link>
         </div>

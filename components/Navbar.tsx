@@ -15,10 +15,10 @@ import { supabase } from '@/lib/supabase';
 // positions: a transparent bar over a light page body is unreadable, so
 // transparency is opt-in per route, never the default.
 //
-// Only '/' qualifies today. Every other marketing page opens with a light
-// gradient panel rather than a photograph; adding one here without first
-// giving it a real hero would make its nav illegible.
-const HERO_ROUTES = new Set(['/']);
+// A route belongs here only once its page opens with <PageHero> (or the
+// homepage's own full-bleed hero). Adding one without that makes its nav
+// illegible over a light page body.
+const HERO_ROUTES = new Set(['/', '/about', '/membership', '/membership/dedicated-desk', '/membership/private-office', '/member-resources/faqs', '/contact']);
 
 // The same links, order and destinations the bar has always had, lifted into
 // data so the mobile drawer can group them under section labels.

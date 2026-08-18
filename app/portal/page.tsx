@@ -35,7 +35,7 @@ type Tab = 'documents' | 'payments' | 'onboarding';
 
 export default function PortalDashboardPage() {
   return (
-    <Suspense fallback={<div className="text-gray-500">Loading…</div>}>
+    <Suspense fallback={<div className="text-ink-60">Loading…</div>}>
       <PortalDashboard />
     </Suspense>
   );
@@ -274,16 +274,16 @@ function PortalDashboard() {
     router.replace('/portal/login');
   }
 
-  if (loading) return <div className="text-gray-500">Loading…</div>;
+  if (loading) return <div className="text-ink-60">Loading…</div>;
   if (!member) {
     return (
-      <div className="bg-white border rounded p-6">
-        <p className="text-gray-700">
+      <div className="bg-bone border p-6">
+        <p className="text-ink-60">
           We couldn&apos;t find a member record for your account. If you&apos;ve just submitted an
           application, please wait for approval—you&apos;ll receive an email when your portal is
           ready.
         </p>
-        <button onClick={signOut} className="mt-4 text-sm text-gray-500 underline">
+        <button onClick={signOut} className="mt-4 text-sm text-ink-60 underline">
           Sign out
         </button>
       </div>
@@ -305,10 +305,10 @@ function PortalDashboard() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="font-display text-2xl font-semibold text-ink">
             Welcome, {member.first_name}
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-ink-60">
             Status:{' '}
             <span className="font-medium capitalize">{member.status}</span>
             {member.designation && ` · ${DESIGNATION_LABELS[member.designation]}`}
@@ -319,11 +319,11 @@ function PortalDashboard() {
         <div className="flex items-center gap-4">
           <a
             href="/portal/activity"
-            className="text-sm font-medium text-burnt-orange-600 hover:text-burnt-orange-700"
+            className="text-sm font-medium text-accent-deep hover:text-accent-deep"
           >
             My Activity →
           </a>
-          <button onClick={signOut} className="text-sm text-gray-500 hover:text-gray-900">
+          <button onClick={signOut} className="text-sm text-ink-60 hover:text-ink">
             Sign out
           </button>
         </div>
@@ -335,7 +335,7 @@ function PortalDashboard() {
         <div
           role="status"
           aria-live="polite"
-          className="bg-blue-50 border-2 border-blue-300 text-blue-900 rounded-lg p-4 flex items-start gap-3"
+          className="bg-blue-50 border-2 border-blue-300 text-blue-900 p-4 flex items-start gap-3"
         >
           <svg
             className="animate-spin h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0"
@@ -360,7 +360,7 @@ function PortalDashboard() {
         <div
           role="status"
           aria-live="polite"
-          className="bg-green-50 border-2 border-green-400 text-green-900 rounded-lg p-4 flex items-start justify-between gap-3"
+          className="bg-green-50 border-2 border-green-400 text-green-900 p-4 flex items-start justify-between gap-3"
         >
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
@@ -400,7 +400,7 @@ function PortalDashboard() {
         <div
           role="status"
           aria-live="polite"
-          className="bg-green-50 border-2 border-green-400 text-green-900 rounded-lg p-4 flex items-start justify-between gap-3"
+          className="bg-green-50 border-2 border-green-400 text-green-900 p-4 flex items-start justify-between gap-3"
         >
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
@@ -428,7 +428,7 @@ function PortalDashboard() {
         <div
           role="status"
           aria-live="polite"
-          className="bg-amber-50 border-2 border-amber-300 text-amber-900 rounded-lg p-4 flex items-start justify-between gap-3"
+          className="bg-amber-50 border-2 border-amber-300 text-amber-900 p-4 flex items-start justify-between gap-3"
         >
           <div>
             <div className="font-semibold">Checkout canceled</div>
@@ -448,7 +448,7 @@ function PortalDashboard() {
       )}
 
       {flashMessage && (
-        <div className="bg-green-50 border border-green-300 text-green-900 rounded p-3 text-sm flex items-center justify-between">
+        <div className="bg-green-50 border border-green-300 text-green-900 p-3 text-sm flex items-center justify-between">
           <span>{flashMessage}</span>
           <button
             onClick={() => setFlashMessage(null)}
@@ -518,7 +518,7 @@ function PortalDashboard() {
         />
       )}
       {tab === 'payments' && paymentsLocked && (
-        <div className="bg-amber-50 border border-amber-300 rounded p-6 text-sm text-amber-900">
+        <div className="bg-amber-50 border border-amber-300 p-6 text-sm text-amber-900">
           {member.is_legacy_member
             ? 'Sign all three agreements first, and then you can (optionally) set up auto-pay here.'
             : 'You must complete steps 1 (upload required documents and sign all three agreements) before you can set up payment.'}
@@ -565,12 +565,12 @@ function ProgressBar({ member }: { member: Member }) {
   const completed = steps.filter((s) => s.done).length;
   const pct = Math.round((completed / steps.length) * 100);
   return (
-    <div className="bg-white border rounded-lg p-5 space-y-4">
+    <div className="bg-bone border p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-900">Onboarding progress</h2>
-        <span className="text-xs text-gray-500">{completed} of {steps.length} steps complete</span>
+        <h2 className="font-display text-sm font-semibold text-ink">Onboarding progress</h2>
+        <span className="text-xs text-ink-60">{completed} of {steps.length} steps complete</span>
       </div>
-      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+      <div className="w-full bg-linen rounded-full h-2 overflow-hidden">
         <div
           className="bg-green-600 h-full transition-all"
           style={{ width: `${pct}%` }}
@@ -580,7 +580,7 @@ function ProgressBar({ member }: { member: Member }) {
         {steps.map((s, i) => (
           <div
             key={i}
-            className={`flex items-start gap-2 p-3 rounded border ${
+            className={`flex items-start gap-2 p-3 border ${
               s.done
                 ? 'bg-green-50 border-green-300'
                 : 'bg-gray-50 border-gray-200'
@@ -753,7 +753,7 @@ function DocumentsTab({
   return (
     <div className="space-y-6">
       {error && (
-        <div className="bg-red-50 border border-red-300 text-red-900 rounded p-3 text-sm flex items-center justify-between">
+        <div className="bg-red-50 border border-red-300 text-red-900 p-3 text-sm flex items-center justify-between">
           <span><strong>Error:</strong> {error}</span>
           <button
             onClick={() => setError(null)}
@@ -765,10 +765,10 @@ function DocumentsTab({
         </div>
       )}
 
-      <section className="bg-white border rounded p-6">
+      <section className="bg-bone border p-6">
         <div className="flex items-start justify-between mb-1">
           <div>
-            <h2 className="font-semibold text-gray-900">
+            <h2 className="font-display font-semibold text-ink">
               Step 1 ·{' '}
               {member.is_legacy_member
                 ? 'Documents (optional)'
@@ -777,12 +777,12 @@ function DocumentsTab({
                 <span className="ml-2 text-green-700 text-sm font-semibold">✓ Complete</span>
               )}
               {member.is_legacy_member && (
-                <span className="ml-2 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                <span className="ml-2 text-xs uppercase tracking-wider text-ink-60 font-semibold">
                   Optional for existing members
                 </span>
               )}
             </h2>
-            <p className="text-sm text-gray-500 mb-4 mt-1">
+            <p className="text-sm text-ink-60 mb-4 mt-1">
               {member.is_legacy_member ? (
                 <>
                   We have your information on file from your original paper
@@ -799,7 +799,7 @@ function DocumentsTab({
               )}
             </p>
           </div>
-          <div className="text-xs text-gray-500 whitespace-nowrap">
+          <div className="text-xs text-ink-60 whitespace-nowrap">
             {requiredDocsCount} / {totalRequiredDocs} uploaded
           </div>
         </div>
@@ -809,7 +809,7 @@ function DocumentsTab({
             return (
               <div
                 key={t}
-                className={`flex items-center justify-between border rounded p-3 ${
+                className={`flex items-center justify-between border p-3 ${
                   submitted ? 'border-green-300 bg-green-50' : ''
                 }`}
               >
@@ -824,13 +824,13 @@ function DocumentsTab({
                     {submitted ? '✓' : '•'}
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-gray-900">{DOC_TYPE_LABELS[t]}</div>
+                    <div className="text-sm font-medium text-ink">{DOC_TYPE_LABELS[t]}</div>
                     {submitted && (
                       <div className="text-xs text-green-700 font-medium">Submitted</div>
                     )}
                   </div>
                 </div>
-                <label className={`text-sm cursor-pointer rounded px-3 py-1.5 border ${
+                <label className={`text-sm cursor-pointer px-3 py-1.5 border ${
                   submitted
                     ? 'border-gray-300 text-gray-700 hover:bg-white'
                     : 'border-gray-900 bg-gray-900 text-white hover:bg-gray-800'
@@ -851,16 +851,16 @@ function DocumentsTab({
         </div>
       </section>
 
-      <section className="bg-white border rounded p-6">
+      <section className="bg-bone border p-6">
         <div className="flex items-start justify-between mb-1">
           <div>
-            <h2 className="font-semibold text-gray-900">
+            <h2 className="font-display font-semibold text-ink">
               Step 2 · Agreements
               {member.agreement_signed && (
                 <span className="ml-2 text-green-700 text-sm font-semibold">✓ All signed</span>
               )}
             </h2>
-            <p className="text-sm text-gray-500 mb-4 mt-1">
+            <p className="text-sm text-ink-60 mb-4 mt-1">
               Review and sign each document below. All three are required before you can set up
               payment.{' '}
               {!member.required_docs_complete && !member.is_legacy_member && (
@@ -870,7 +870,7 @@ function DocumentsTab({
               )}
             </p>
           </div>
-          <div className="text-xs text-gray-500 whitespace-nowrap">
+          <div className="text-xs text-ink-60 whitespace-nowrap">
             {signedCount} / 3 signed
           </div>
         </div>
@@ -880,13 +880,13 @@ function DocumentsTab({
           className="space-y-4 disabled:opacity-50"
         >
           <div>
-            <label className="block text-xs text-gray-600">
+            <label className="block text-xs text-ink-60">
               Type your full legal name (used as your signature on all documents)
             </label>
             <input
               value={signatureName}
               onChange={(e) => setSignatureName(e.target.value)}
-              className="mt-1 w-full border rounded px-3 py-2"
+              className="mt-1 w-full border px-3 py-2"
             />
           </div>
 
@@ -953,7 +953,7 @@ function DocumentsTab({
         </fieldset>
 
         {member.agreement_signed && (
-          <div className="mt-6 bg-green-50 border-2 border-green-400 rounded-lg p-4 text-center">
+          <div className="mt-6 bg-green-50 border-2 border-green-400 p-4 text-center">
             <div className="text-2xl">✓</div>
             <div className="font-semibold text-green-900 mt-1">All three agreements signed!</div>
             <p className="text-sm text-green-800 mt-1">
@@ -991,7 +991,7 @@ function SignableDoc({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={`border-2 rounded-lg ${signed ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}>
+    <div className={`border-2 ${signed ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}>
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
           <div
@@ -1002,7 +1002,7 @@ function SignableDoc({
             {signed ? '✓' : '•'}
           </div>
           <div>
-            <div className="text-sm font-semibold text-gray-900">
+            <div className="text-sm font-semibold text-ink">
               {title}
               {signed && (
                 <span className="ml-2 text-green-700 text-xs font-bold uppercase tracking-wider">
@@ -1010,7 +1010,7 @@ function SignableDoc({
                 </span>
               )}
             </div>
-            <div className="text-xs text-gray-500">{description}</div>
+            <div className="text-xs text-ink-60">{description}</div>
             {signed && signedBy && signedAt && (
               <div className="text-xs text-green-800 mt-1 font-medium">
                 Signed by {signedBy} on {new Date(signedAt).toLocaleString()}
@@ -1025,7 +1025,7 @@ function SignableDoc({
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
-            className="text-sm border rounded px-3 py-1.5 hover:bg-white bg-white"
+            className="text-sm border px-3 py-1.5 hover:bg-bone bg-bone"
           >
             {open ? 'Hide' : 'Review'}
           </button>
@@ -1033,7 +1033,7 @@ function SignableDoc({
             <button
               type="button"
               disabled
-              className="text-sm bg-green-600 text-white rounded px-4 py-1.5 cursor-default font-semibold"
+              className="text-sm bg-green-600 text-white px-4 py-1.5 cursor-default font-semibold"
             >
               ✓ Signed
             </button>
@@ -1042,7 +1042,7 @@ function SignableDoc({
               type="button"
               onClick={onSign}
               disabled={signing || disabled}
-              className="text-sm bg-gray-900 text-white rounded px-4 py-1.5 hover:bg-gray-800 disabled:opacity-50 font-semibold"
+              className="text-sm bg-ink text-white px-4 py-1.5 hover:bg-ink disabled:opacity-50 font-semibold"
             >
               {signing ? 'Signing\u2026' : 'Sign'}
             </button>
@@ -1050,7 +1050,7 @@ function SignableDoc({
         </div>
       </div>
       {open && (
-        <pre className="border-t bg-white p-4 text-xs text-gray-800 whitespace-pre-wrap font-sans max-h-80 overflow-auto">
+        <pre className="border-t bg-bone p-4 text-xs text-ink whitespace-pre-wrap font-sans max-h-80 overflow-auto">
           {body}
         </pre>
       )}
@@ -1147,7 +1147,7 @@ function LegacyFeeAgreementSection({
 
   return (
     <div
-      className={`border-2 rounded-lg ${
+      className={`border-2 ${
         signed ? 'border-green-400 bg-green-50' : 'border-gray-200'
       }`}
     >
@@ -1161,7 +1161,7 @@ function LegacyFeeAgreementSection({
             {signed ? '✓' : '•'}
           </div>
           <div>
-            <div className="text-sm font-semibold text-gray-900">
+            <div className="text-sm font-semibold text-ink">
               Fee Agreement
               {signed && (
                 <span className="ml-2 text-green-700 text-xs font-bold uppercase tracking-wider">
@@ -1169,7 +1169,7 @@ function LegacyFeeAgreementSection({
                 </span>
               )}
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-ink-60">
               Existing member rate acknowledgement. No first/last-month deposit
               and no proration.
             </div>
@@ -1189,7 +1189,7 @@ function LegacyFeeAgreementSection({
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
-            className="text-sm border rounded px-3 py-1.5 hover:bg-white bg-white"
+            className="text-sm border px-3 py-1.5 hover:bg-bone bg-bone"
           >
             {open ? 'Hide' : signed ? 'Review' : 'Open & sign'}
           </button>
@@ -1197,7 +1197,7 @@ function LegacyFeeAgreementSection({
             <button
               type="button"
               disabled
-              className="text-sm bg-green-600 text-white rounded px-4 py-1.5 cursor-default font-semibold"
+              className="text-sm bg-green-600 text-white px-4 py-1.5 cursor-default font-semibold"
             >
               ✓ Signed
             </button>
@@ -1206,13 +1206,13 @@ function LegacyFeeAgreementSection({
       </div>
 
       {open && (
-        <div className="border-t bg-gray-50 p-4 space-y-5">
-          <div className="bg-gray-900 text-white text-center font-semibold py-2 rounded">
+        <div className="border-t bg-linen p-4 space-y-5">
+          <div className="bg-ink text-white text-center font-semibold py-2">
             MERRITT WORKSPACE FEE AGREEMENT — EXISTING MEMBER
           </div>
 
           <fieldset disabled={signed} className="space-y-3 disabled:opacity-70">
-            <legend className="text-sm font-semibold text-gray-900">Member Information</legend>
+            <legend className="text-sm font-semibold text-ink">Member Information</legend>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label="Contact Name" value={memberName} readOnly />
               <Field label="Telephone" value={phone} onChange={setPhone} required />
@@ -1233,13 +1233,13 @@ function LegacyFeeAgreementSection({
             </div>
           </fieldset>
 
-          <div className="bg-white border rounded overflow-hidden">
-            <div className="bg-blue-100 text-gray-900 font-semibold text-sm px-3 py-2 flex justify-between">
+          <div className="bg-bone border overflow-hidden">
+            <div className="bg-blue-100 text-ink font-semibold text-sm px-3 py-2 flex justify-between">
               <span>MEMBERSHIP DESCRIPTION</span>
               <span>RATE</span>
             </div>
             <div className="px-3 py-2 text-sm">
-              <div className="font-semibold text-gray-900">{designationLabel}</div>
+              <div className="font-semibold text-ink">{designationLabel}</div>
             </div>
             <Row
               label="Monthly Membership Fee"
@@ -1247,7 +1247,7 @@ function LegacyFeeAgreementSection({
             />
           </div>
 
-          <div className="bg-amber-50 border-2 border-amber-400 rounded p-3 text-sm text-amber-900 space-y-2">
+          <div className="bg-amber-50 border-2 border-amber-400 p-3 text-sm text-amber-900 space-y-2">
             <div className="font-semibold uppercase tracking-wide text-xs">
               What you are agreeing to
             </div>
@@ -1270,10 +1270,10 @@ function LegacyFeeAgreementSection({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white border rounded p-3 text-sm">
+            <div className="bg-bone border p-3 text-sm">
               <div className="font-semibold mb-2">MEMBER</div>
-              <div className="space-y-1 text-xs text-gray-700">
-                <div>Name Printed: <span className="text-gray-900">{memberName}</span></div>
+              <div className="space-y-1 text-xs text-ink-60">
+                <div>Name Printed: <span className="text-ink">{memberName}</span></div>
                 <div className="flex items-center gap-2">
                   <span>Title:</span>
                   <input
@@ -1281,17 +1281,17 @@ function LegacyFeeAgreementSection({
                     value={memberTitle}
                     onChange={(e) => setMemberTitle(e.target.value)}
                     placeholder="Optional"
-                    className="border rounded px-2 py-0.5 text-xs flex-1"
+                    className="border px-2 py-0.5 text-xs flex-1"
                   />
                 </div>
                 <div>Signature: <em>typed name on the form above</em></div>
                 <div>Date: {today.toLocaleDateString()}</div>
               </div>
             </div>
-            <div className="bg-white border rounded p-3 text-sm">
+            <div className="bg-bone border p-3 text-sm">
               <div className="font-semibold mb-2">MERRITT WORKSPACE</div>
-              <div className="space-y-1 text-xs text-gray-700">
-                <div>Name Printed: <span className="text-gray-900">{MERRITT_SIGNATORY.name}</span></div>
+              <div className="space-y-1 text-xs text-ink-60">
+                <div>Name Printed: <span className="text-ink">{MERRITT_SIGNATORY.name}</span></div>
                 <div>Title: {MERRITT_SIGNATORY.title}</div>
                 <div>Signature: <em>on file</em></div>
                 <div>Date: {today.toLocaleDateString()}</div>
@@ -1300,13 +1300,13 @@ function LegacyFeeAgreementSection({
           </div>
 
           {localError && (
-            <div className="bg-red-50 border border-red-300 text-red-900 rounded p-3 text-sm">
+            <div className="bg-red-50 border border-red-300 text-red-900 p-3 text-sm">
               {localError}
             </div>
           )}
 
           {signed ? (
-            <div className="bg-green-100 border border-green-400 rounded p-3 text-center">
+            <div className="bg-green-100 border border-green-400 p-3 text-center">
               <div className="text-2xl">✓</div>
               <div className="text-sm font-semibold text-green-900">
                 Fee Agreement signed
@@ -1318,7 +1318,7 @@ function LegacyFeeAgreementSection({
                 type="button"
                 onClick={handleSign}
                 disabled={signing || disabled}
-                className="text-sm bg-gray-900 text-white rounded px-6 py-3 hover:bg-gray-800 disabled:opacity-50 font-semibold"
+                className="text-sm bg-ink text-white px-6 py-3 hover:bg-ink disabled:opacity-50 font-semibold"
               >
                 {signing ? 'Signing…' : 'Sign Fee Agreement'}
               </button>
@@ -1535,7 +1535,7 @@ function FeeAgreementSection({
   return (
     <div
       ref={sectionRef}
-      className={`border-2 rounded-lg ${
+      className={`border-2 ${
         revising
           ? 'border-amber-400 bg-amber-50'
           : signed
@@ -1553,7 +1553,7 @@ function FeeAgreementSection({
             {signed ? '✓' : '•'}
           </div>
           <div>
-            <div className="text-sm font-semibold text-gray-900">
+            <div className="text-sm font-semibold text-ink">
               Fee Agreement
               {signed && !revising && (
                 <span className="ml-2 text-green-700 text-xs font-bold uppercase tracking-wider">
@@ -1566,7 +1566,7 @@ function FeeAgreementSection({
                 </span>
               )}
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-ink-60">
               {oneTime
                 ? 'Auto-generated for your one-day pass. One-time charge (plus a 3.5% fee if paying by card).'
                 : 'Auto-generated for your selected plan. Includes first + last month and (if paying by card) a 3.5% processing fee.'}
@@ -1587,7 +1587,7 @@ function FeeAgreementSection({
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
-            className="text-sm border rounded px-3 py-1.5 hover:bg-white bg-white"
+            className="text-sm border px-3 py-1.5 hover:bg-bone bg-bone"
           >
             {open ? 'Hide' : signed ? 'Review' : 'Open & sign'}
           </button>
@@ -1598,7 +1598,7 @@ function FeeAgreementSection({
                 setRevising(true);
                 setOpen(true);
               }}
-              className="text-sm border border-amber-500 text-amber-800 bg-white rounded px-3 py-1.5 hover:bg-amber-50 font-semibold"
+              className="text-sm border border-amber-500 text-amber-800 bg-bone px-3 py-1.5 hover:bg-amber-50 font-semibold"
             >
               Revise &amp; re-sign
             </button>
@@ -1607,7 +1607,7 @@ function FeeAgreementSection({
             <button
               type="button"
               onClick={() => setRevising(false)}
-              className="text-sm border rounded px-3 py-1.5 hover:bg-white bg-white"
+              className="text-sm border px-3 py-1.5 hover:bg-bone bg-bone"
             >
               Cancel revision
             </button>
@@ -1616,7 +1616,7 @@ function FeeAgreementSection({
             <button
               type="button"
               disabled
-              className="text-sm bg-green-600 text-white rounded px-4 py-1.5 cursor-default font-semibold"
+              className="text-sm bg-green-600 text-white px-4 py-1.5 cursor-default font-semibold"
             >
               ✓ Signed
             </button>
@@ -1625,14 +1625,14 @@ function FeeAgreementSection({
       </div>
 
       {open && (
-        <div className="border-t bg-gray-50 p-4 space-y-5">
+        <div className="border-t bg-linen p-4 space-y-5">
           {/* Document preview header */}
-          <div className="bg-gray-900 text-white text-center font-semibold py-2 rounded">
+          <div className="bg-ink text-white text-center font-semibold py-2">
             MERRITT WORKSPACE FEE AGREEMENT
           </div>
 
           {revising && (
-            <div className="bg-amber-100 border border-amber-400 rounded p-3 text-xs text-amber-900">
+            <div className="bg-amber-100 border border-amber-400 p-3 text-xs text-amber-900">
               <strong>Revising your Fee Agreement.</strong> Update any details
               (most often the start date) and click <em>Re-sign Fee Agreement</em>{' '}
               to record a new signature with today&apos;s date. Your previous
@@ -1642,7 +1642,7 @@ function FeeAgreementSection({
 
           {/* Member Information */}
           <fieldset disabled={!editable} className="space-y-3 disabled:opacity-70">
-            <legend className="text-sm font-semibold text-gray-900">Member Information</legend>
+            <legend className="text-sm font-semibold text-ink">Member Information</legend>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label="Contact Name" value={memberName} readOnly />
               <Field label="Company Federal ID #" value={federalId} onChange={setFederalId} placeholder="Optional" />
@@ -1655,8 +1655,8 @@ function FeeAgreementSection({
             {/* Invoicing Details */}
             <div className="pt-2">
               <div className="flex items-center justify-between">
-                <legend className="text-sm font-semibold text-gray-900">Invoicing Details</legend>
-                <label className="text-xs text-gray-600 flex items-center gap-2">
+                <legend className="text-sm font-semibold text-ink">Invoicing Details</legend>
+                <label className="text-xs text-ink-60 flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={sameAsMember}
@@ -1701,7 +1701,7 @@ function FeeAgreementSection({
             </div>
 
             <div className="pt-2">
-              <label className="block text-xs text-gray-600 mb-1">Payment method</label>
+              <label className="block text-xs text-ink-60 mb-1">Payment method</label>
               <div className="flex gap-4 text-sm">
                 <label className="flex items-center gap-2">
                   <input
@@ -1726,11 +1726,11 @@ function FeeAgreementSection({
               <div className="pt-2">
                 <label
                   htmlFor="fee-agreement-start-date"
-                  className="block text-sm font-semibold text-gray-900"
+                  className="block text-sm font-semibold text-ink"
                 >
                   Membership Start Date
                 </label>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-ink-60 mt-1">
                   Pick the day you want your membership to begin. Today through 30 days
                   from today are available.
                 </p>
@@ -1742,10 +1742,10 @@ function FeeAgreementSection({
                   max={maxIso}
                   onChange={(e) => setStartDateIso(e.target.value)}
                   disabled={!editable}
-                  className="mt-2 border rounded px-3 py-2 text-sm"
+                  className="mt-2 border px-3 py-2 text-sm"
                 />
 
-                <div className="mt-3 bg-amber-50 border-2 border-amber-400 rounded p-3 text-sm text-amber-900 space-y-2">
+                <div className="mt-3 bg-amber-50 border-2 border-amber-400 p-3 text-sm text-amber-900 space-y-2">
                   <div className="font-semibold uppercase tracking-wide text-xs text-amber-900">
                     Important — please read before signing
                   </div>
@@ -1785,7 +1785,7 @@ function FeeAgreementSection({
           </fieldset>
 
           {/* Description */}
-          <div className="text-xs text-gray-700 bg-white border rounded p-3">
+          <div className="text-xs text-ink-60 bg-bone border p-3">
             <div className="font-semibold mb-1">DESCRIPTION OF SIGNATURE PAGE</div>
             This page shall act as a binding agreement between Merritt Workspace and the
             Member, as named above. By signing this CoWork Space Agreement (CSA), the member
@@ -1807,13 +1807,13 @@ function FeeAgreementSection({
           </div>
 
           {/* Membership Description / Totals */}
-          <div className="bg-white border rounded overflow-hidden">
-            <div className="bg-blue-100 text-gray-900 font-semibold text-sm px-3 py-2 flex justify-between">
+          <div className="bg-bone border overflow-hidden">
+            <div className="bg-blue-100 text-ink font-semibold text-sm px-3 py-2 flex justify-between">
               <span>MEMBERSHIP DESCRIPTION</span>
               <span>TOTAL</span>
             </div>
             <div className="px-3 py-2 text-sm">
-              <div className="font-semibold text-gray-900">{designationLabel}</div>
+              <div className="font-semibold text-ink">{designationLabel}</div>
             </div>
             {oneTime ? (
               <Row
@@ -1837,11 +1837,11 @@ function FeeAgreementSection({
                 </div>
               </>
             ) : (
-              <div className="px-3 py-2 text-xs text-gray-600">
+              <div className="px-3 py-2 text-xs text-ink-60">
                 Paying by ACH / EFT — no credit card fee.
               </div>
             )}
-            <div className="bg-gray-100 px-3 py-2 text-sm font-semibold flex justify-between border-t">
+            <div className="bg-linen px-3 py-2 text-sm font-semibold flex justify-between border-t">
               <span>GRAND TOTAL</span>
               <span>{formatUsd(totals.grandTotalCents)}</span>
             </div>
@@ -1849,10 +1849,10 @@ function FeeAgreementSection({
 
           {/* Signature blocks */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white border rounded p-3 text-sm">
+            <div className="bg-bone border p-3 text-sm">
               <div className="font-semibold mb-2">MEMBER</div>
-              <div className="space-y-1 text-xs text-gray-700">
-                <div>Name Printed: <span className="text-gray-900">{memberName}</span></div>
+              <div className="space-y-1 text-xs text-ink-60">
+                <div>Name Printed: <span className="text-ink">{memberName}</span></div>
                 <div className="flex items-center gap-2">
                   <span>Title:</span>
                   <input
@@ -1860,17 +1860,17 @@ function FeeAgreementSection({
                     value={memberTitle}
                     onChange={(e) => setMemberTitle(e.target.value)}
                     placeholder="Optional"
-                    className="border rounded px-2 py-0.5 text-xs flex-1"
+                    className="border px-2 py-0.5 text-xs flex-1"
                   />
                 </div>
                 <div>Signature: <em>typed name on the form above</em></div>
                 <div>Date: {today.toLocaleDateString()}</div>
               </div>
             </div>
-            <div className="bg-white border rounded p-3 text-sm">
+            <div className="bg-bone border p-3 text-sm">
               <div className="font-semibold mb-2">MERRITT WORKSPACE</div>
-              <div className="space-y-1 text-xs text-gray-700">
-                <div>Name Printed: <span className="text-gray-900">{MERRITT_SIGNATORY.name}</span></div>
+              <div className="space-y-1 text-xs text-ink-60">
+                <div>Name Printed: <span className="text-ink">{MERRITT_SIGNATORY.name}</span></div>
                 <div>Title: {MERRITT_SIGNATORY.title}</div>
                 <div>Signature: <em>on file</em></div>
                 <div>Date: {today.toLocaleDateString()}</div>
@@ -1879,13 +1879,13 @@ function FeeAgreementSection({
           </div>
 
           {localError && (
-            <div className="bg-red-50 border border-red-300 text-red-900 rounded p-3 text-sm">
+            <div className="bg-red-50 border border-red-300 text-red-900 p-3 text-sm">
               {localError}
             </div>
           )}
 
           {signed && !revising ? (
-            <div className="bg-green-100 border border-green-400 rounded p-3 text-center">
+            <div className="bg-green-100 border border-green-400 p-3 text-center">
               <div className="text-2xl">✓</div>
               <div className="text-sm font-semibold text-green-900">
                 Fee Agreement signed
@@ -1898,7 +1898,7 @@ function FeeAgreementSection({
                   type="button"
                   onClick={() => setRevising(false)}
                   disabled={signing}
-                  className="text-sm border rounded px-4 py-3 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  className="text-sm border px-4 py-3 bg-bone hover:bg-linen disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -1907,7 +1907,7 @@ function FeeAgreementSection({
                 type="button"
                 onClick={handleSign}
                 disabled={signing || disabled}
-                className="text-sm bg-gray-900 text-white rounded px-6 py-3 hover:bg-gray-800 disabled:opacity-50 font-semibold"
+                className="text-sm bg-ink text-white px-6 py-3 hover:bg-ink disabled:opacity-50 font-semibold"
               >
                 {signing
                   ? 'Signing\u2026'
@@ -1940,7 +1940,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="block text-xs text-gray-600">
+      <span className="block text-xs text-ink-60">
         {label} {required && <span className="text-red-600">*</span>}
       </span>
       <input
@@ -1948,7 +1948,7 @@ function Field({
         onChange={(e) => onChange?.(e.target.value)}
         readOnly={readOnly}
         placeholder={placeholder}
-        className={`mt-1 w-full border rounded px-2 py-1.5 text-sm ${
+        className={`mt-1 w-full border px-2 py-1.5 text-sm ${
           readOnly ? 'bg-gray-100 text-gray-700' : 'bg-white'
         }`}
       />
@@ -1959,8 +1959,8 @@ function Field({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="px-3 py-1.5 text-sm flex justify-between border-t">
-      <span className="text-gray-700">{label}</span>
-      <span className="text-gray-900">{value}</span>
+      <span className="text-ink-60">{label}</span>
+      <span className="text-ink">{value}</span>
     </div>
   );
 }
@@ -2167,31 +2167,31 @@ function PaymentsTab({
   return (
     <div className="space-y-6">
       {canReviseFeeAgreement && (
-        <div className="bg-white border rounded p-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="text-sm text-gray-700">
+        <div className="bg-bone border p-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm text-ink-60">
             Need to change your start date or other Fee Agreement details before
             paying? You can go back and re-sign with new information.
           </div>
           <button
             type="button"
             onClick={onReviseFeeAgreement}
-            className="text-sm border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50 font-medium"
+            className="text-sm border border-clay px-3 py-1.5 hover:bg-linen font-medium"
           >
             ← Back &amp; revise Fee Agreement
           </button>
         </div>
       )}
 
-      <section className="bg-white border rounded p-6">
-        <h2 className="font-semibold text-gray-900 mb-2">
+      <section className="bg-bone border p-6">
+        <h2 className="font-display font-semibold text-ink mb-2">
           {oneTime ? 'Day pass' : 'Monthly membership'}
         </h2>
         {member.monthly_cost_cents == null ? (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-ink-60">
             Your administrator hasn&apos;t assigned a monthly cost yet.
           </p>
         ) : oneTime && hasInitialPayment ? (
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-ink-60">
             Day passes are{' '}
             <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>{' '}
             each — a one-time charge per day (plus a 3.5% processing fee when
@@ -2201,7 +2201,7 @@ function PaymentsTab({
         ) : !member.stripe_subscription_id ? (
           member.is_legacy_member ? (
             <>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-ink-60">
                 Your monthly cost is{' '}
                 <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>
                 . As an existing member, there is{' '}
@@ -2211,7 +2211,7 @@ function PaymentsTab({
               </p>
 
               {legacyAutoPayStartLabel && (
-                <div className="mt-3 bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-900">
+                <div className="mt-3 bg-blue-50 border border-blue-200 p-3 text-sm text-blue-900">
                   <strong>If you set up auto-pay today,</strong> your first
                   auto-charge of{' '}
                   <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>{' '}
@@ -2224,7 +2224,7 @@ function PaymentsTab({
             </>
           ) : (
             <>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-ink-60">
                 Your monthly cost is{' '}
                 <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>
                 {oneTime
@@ -2232,37 +2232,37 @@ function PaymentsTab({
                   : ', billed on the 1st of each month (first charge prorated).'}
               </p>
 
-              <div className="mt-4 border rounded bg-gray-50 p-4">
-                <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
+              <div className="mt-4 border bg-linen p-4">
+                <div className="text-xs font-semibold uppercase tracking-wider text-ink-60 mb-3">
                   Due today — matches your signed Fee Agreement
                 </div>
                 <dl className="space-y-1.5 text-sm">
                   <div className="flex justify-between">
-                    <dt className="text-gray-700">
+                    <dt className="text-ink-60">
                       {oneTime
                         ? 'One Day Membership Fee'
                         : 'First Month Membership Fee (prorated)'}
                     </dt>
-                    <dd className="font-medium text-gray-900">
+                    <dd className="font-medium text-ink">
                       {formatUsd(firstMonthCents)}
                     </dd>
                   </div>
                   {!oneTime && (
                     <div className="flex justify-between">
-                      <dt className="text-gray-700">
+                      <dt className="text-ink-60">
                         Last Month&apos;s Membership Fee (deposit)
                       </dt>
-                      <dd className="font-medium text-gray-900">
+                      <dd className="font-medium text-ink">
                         {formatUsd(lastMonthCents)}
                       </dd>
                     </div>
                   )}
                   {selectedMethod === 'card' && (
                     <div className="flex justify-between">
-                      <dt className="text-gray-700">
+                      <dt className="text-ink-60">
                         Credit Card Processing Fee (3.5%)
                       </dt>
-                      <dd className="font-medium text-gray-900">
+                      <dd className="font-medium text-ink">
                         {formatUsd(ccFeeCents)}
                       </dd>
                     </div>
@@ -2274,8 +2274,8 @@ function PaymentsTab({
                     </div>
                   )}
                   <div className="border-t pt-2 mt-2 flex justify-between text-base">
-                    <dt className="font-semibold text-gray-900">Total due today</dt>
-                    <dd className="font-bold text-gray-900">
+                    <dt className="font-semibold text-ink">Total due today</dt>
+                    <dd className="font-bold text-ink">
                       {formatUsd(grandTotalCents)}
                     </dd>
                   </div>
@@ -2283,7 +2283,7 @@ function PaymentsTab({
               </div>
 
               {!oneTime && (
-                <div className="mt-3 bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-900">
+                <div className="mt-3 bg-blue-50 border border-blue-200 p-3 text-sm text-blue-900">
                   <strong>What happens next:</strong> After this initial payment,
                   you&apos;ll be charged{' '}
                   <span className="font-semibold">{formatUsd(monthlyCostCents)}/month</span>{' '}
@@ -2295,7 +2295,7 @@ function PaymentsTab({
             </>
           )
         ) : (
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-ink-60">
             Your monthly cost is{' '}
             <span className="font-semibold">{formatUsd(monthlyCostCents)}</span>
             , billed on the 1st of each month.
@@ -2309,7 +2309,7 @@ function PaymentsTab({
               {member.subscription_status || 'active'}
             </div>
             {achProcessing && (
-              <div className="bg-blue-50 border border-blue-300 text-blue-900 rounded p-3 text-xs">
+              <div className="bg-blue-50 border border-blue-300 text-blue-900 p-3 text-xs">
                 Your ACH bank transfer is being verified. It can take 3–5 business
                 days for your first payment to clear. You don&apos;t need to do
                 anything — we&apos;ll email you once it settles.
@@ -2319,7 +2319,7 @@ function PaymentsTab({
               <button
                 onClick={openBillingPortal}
                 disabled={portalLoading}
-                className="text-sm border rounded px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
+                className="text-sm border px-3 py-1.5 hover:bg-linen disabled:opacity-50"
               >
                 {portalLoading ? 'Opening…' : 'Manage payment method'}
               </button>
@@ -2327,15 +2327,15 @@ function PaymentsTab({
                 <button
                   onClick={cancelMembership}
                   disabled={cancelLoading}
-                  className="text-sm border border-red-300 text-red-700 rounded px-3 py-1.5 hover:bg-red-50 disabled:opacity-50"
+                  className="text-sm border border-red-300 text-red-700 px-3 py-1.5 hover:bg-red-50 disabled:opacity-50"
                 >
                   {cancelLoading ? 'Cancelling…' : 'Cancel membership'}
                 </button>
               )}
             </div>
             {!cancelPending && !oneTime && (
-              <div className="mt-2 bg-gray-50 border border-gray-200 rounded p-3 text-xs text-gray-700 space-y-1">
-                <p className="font-semibold text-gray-900">
+              <div className="mt-2 bg-linen border border-clay p-3 text-xs text-ink-60 space-y-1">
+                <p className="font-semibold text-ink">
                   Cancellation policy (30-day notice required)
                 </p>
                 <p>
@@ -2358,7 +2358,7 @@ function PaymentsTab({
               </div>
             )}
             {cancelPending && (
-              <div className="mt-2 bg-amber-50 border border-amber-300 rounded p-3 text-xs text-amber-900 space-y-1">
+              <div className="mt-2 bg-amber-50 border border-amber-300 p-3 text-xs text-amber-900 space-y-1">
                 <p className="font-semibold">
                   Your membership is set to end
                   {member.cancellation_effective_date
@@ -2395,7 +2395,7 @@ function PaymentsTab({
           oneTime ? (
             <DayPassSection />
           ) : (
-            <div className="mt-4 bg-blue-50 border border-blue-300 text-blue-900 rounded p-3 text-sm">
+            <div className="mt-4 bg-blue-50 border border-blue-300 text-blue-900 p-3 text-sm">
               <strong>We&apos;ve received your initial payment.</strong> Your
               subscription is being finalized — please don&apos;t pay again. If
               this section hasn&apos;t updated within an hour, email{' '}
@@ -2407,7 +2407,7 @@ function PaymentsTab({
           <>
             {member.agreement_signed && (
               <div
-                className={`mt-4 rounded border p-3 text-xs ${
+                className={`mt-4 border p-3 text-xs ${
                   isAch
                     ? 'bg-green-50 border-green-300 text-green-900'
                     : 'bg-gray-50 border-gray-200 text-gray-700'
@@ -2433,7 +2433,7 @@ function PaymentsTab({
               </div>
             )}
             {member.is_legacy_member && (
-              <div className="mt-4 bg-orange-50 border border-orange-200 rounded p-4 text-sm text-gray-800 space-y-2">
+              <div className="mt-4 bg-orange-50 border border-orange-200 p-4 text-sm text-ink space-y-2">
                 <p className="font-semibold text-orange-900">
                   Auto-pay is optional for existing members
                 </p>
@@ -2456,7 +2456,7 @@ function PaymentsTab({
               <button
                 onClick={startCheckout}
                 disabled={!canSetUp || loading}
-                className="bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
+                className="bg-ink text-white px-4 py-2 hover:bg-ink disabled:opacity-50"
               >
                 {loading
                   ? 'Loading…'
@@ -2470,7 +2470,7 @@ function PaymentsTab({
                 <button
                   type="button"
                   onClick={onSkipPayment}
-                  className="border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 text-sm font-medium"
+                  className="border border-clay px-4 py-2 hover:bg-linen text-sm font-medium"
                 >
                   Skip — keep my current billing
                 </button>
@@ -2479,20 +2479,20 @@ function PaymentsTab({
           </>
         )}
         {!member.agreement_signed && (
-          <p className="mt-2 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-ink-60">
             You must sign the member agreement before setting up payment.
           </p>
         )}
       </section>
 
-      <section className="bg-white border rounded p-6">
-        <h2 className="font-semibold text-gray-900 mb-3">Payment history</h2>
+      <section className="bg-bone border p-6">
+        <h2 className="font-display font-semibold text-ink mb-3">Payment history</h2>
         {payments.length === 0 ? (
-          <p className="text-sm text-gray-500">No payments yet.</p>
+          <p className="text-sm text-ink-60">No payments yet.</p>
         ) : (
           <>
             {payments.some((p) => p.status === 'refunded') && (
-              <div className="mb-3 bg-amber-50 border border-amber-300 text-amber-900 rounded p-3 text-xs">
+              <div className="mb-3 bg-amber-50 border border-amber-300 text-amber-900 p-3 text-xs">
                 <strong>Refund in progress.</strong> One or more of your payments
                 has been refunded. Refunds typically take{' '}
                 <span className="font-semibold">3–5 business days</span> to appear
@@ -2502,7 +2502,7 @@ function PaymentsTab({
               </div>
             )}
             <table className="w-full text-sm">
-              <thead className="text-left text-gray-500 border-b">
+              <thead className="text-left text-ink-60 border-b">
                 <tr>
                   <th className="py-2">Date</th>
                   <th>Description</th>
@@ -2632,8 +2632,8 @@ function DayPassSection() {
 
   return (
     <div className="mt-4 space-y-4">
-      <div className="bg-gray-50 border border-gray-200 rounded p-3 text-xs text-gray-700 space-y-1">
-        <p className="font-semibold text-gray-900">What a day pass includes</p>
+      <div className="bg-linen border border-clay p-3 text-xs text-ink-60 space-y-1">
+        <p className="font-semibold text-ink">What a day pass includes</p>
         <p>
           A dedicated desk for the day, plus{' '}
           <span className="font-semibold">1 hour of conference-room time</span>{' '}
@@ -2643,21 +2643,21 @@ function DayPassSection() {
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">Your passes</h3>
+        <h3 className="font-display text-sm font-semibold text-ink mb-2">Your passes</h3>
         {loading ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <p className="text-sm text-ink-60">Loading…</p>
         ) : passes.length === 0 ? (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-ink-60">
             No passes on file yet — your first pass will appear here shortly
             after payment.
           </p>
         ) : (
-          <ul className="divide-y border rounded">
+          <ul className="divide-y border">
             {passes.map((p) => {
               const upcoming = p.pass_date >= today && p.status === 'confirmed';
               return (
                 <li key={p.id} className="px-3 py-2 flex items-center justify-between text-sm">
-                  <span className="text-gray-900">{formatPassDate(p.pass_date)}</span>
+                  <span className="text-ink">{formatPassDate(p.pass_date)}</span>
                   <span
                     className={
                       p.status === 'refunded'
@@ -2676,13 +2676,13 @@ function DayPassSection() {
         )}
       </div>
 
-      <div className="border rounded p-4 bg-white">
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">
+      <div className="border p-4 bg-bone">
+        <h3 className="font-display text-sm font-semibold text-ink mb-2">
           Buy another day pass — {formatUsd(priceCents)}
         </h3>
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-ink-60 mb-1">
               Which day are you coming in?
             </label>
             <input
@@ -2691,18 +2691,18 @@ function DayPassSection() {
               max={maxDate || undefined}
               value={passDate}
               onChange={(e) => setPassDate(e.target.value)}
-              className="border rounded px-3 py-2 text-sm"
+              className="border px-3 py-2 text-sm"
             />
           </div>
           <button
             onClick={buyPass}
             disabled={buying || loading}
-            className="bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50 text-sm"
+            className="bg-ink text-white px-4 py-2 hover:bg-ink disabled:opacity-50 text-sm"
           >
             {buying ? 'Opening checkout…' : 'Buy day pass'}
           </button>
         </div>
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-ink-60">
           One-time charge per pass (plus a 3.5% processing fee when paying by
           card). No new application needed — you&apos;re already onboarded.
         </p>
@@ -2873,16 +2873,16 @@ function WorkspaceAssignmentSection({
   }
 
   return (
-    <section className="bg-white border rounded-lg p-6">
-      <h3 className="font-semibold text-gray-900 mb-1">{labelTitle}</h3>
-      <p className="text-sm text-gray-600 mb-4">{helper}</p>
+    <section className="bg-bone border p-6">
+      <h3 className="font-display font-semibold text-ink mb-1">{labelTitle}</h3>
+      <p className="text-sm text-ink-60 mb-4">{helper}</p>
       {isDesk && (
-        <div className="mb-4 rounded border border-orange-200 bg-orange-50 p-3 text-sm text-orange-900">
+        <div className="mb-4 border border-orange-200 bg-orange-50 p-3 text-sm text-orange-900">
           <span className="font-semibold">Mark your desk:</span> {markingPolicy}
         </div>
       )}
       {isDesk && options && (
-        <p className="mb-4 text-xs text-gray-600">
+        <p className="mb-4 text-xs text-ink-60">
           <span className="font-semibold">
             {options.taken} of {options.capacity}
           </span>{' '}
@@ -2894,7 +2894,7 @@ function WorkspaceAssignmentSection({
         </p>
       )}
       {isDesk && noDesksOpen && (
-        <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <div className="mb-4 border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           Every dedicated desk is currently taken, so there&apos;s nothing to
           choose from right now. Member services will place you as soon as a
           desk opens up — please get in touch using the details below.
@@ -2902,7 +2902,7 @@ function WorkspaceAssignmentSection({
       )}
       <div className="flex flex-col sm:flex-row sm:items-end gap-3">
         <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-ink-60 mb-1">
             {fieldLabel}
           </label>
           {isDesk ? (
@@ -2910,7 +2910,7 @@ function WorkspaceAssignmentSection({
               value={value}
               onChange={(e) => setValue(e.target.value)}
               disabled={!options || (noDesksOpen && !baseline)}
-              className="w-full border rounded px-3 py-2 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
+              className="w-full border px-3 py-2 text-sm bg-bone disabled:bg-linen disabled:text-ink-60"
             >
               <option value="">
                 {optionsError
@@ -2937,20 +2937,20 @@ function WorkspaceAssignmentSection({
               onChange={(e) => setValue(e.target.value)}
               placeholder={placeholder}
               maxLength={32}
-              className="w-full border rounded px-3 py-2 text-sm"
+              className="w-full border px-3 py-2 text-sm"
             />
           )}
         </div>
         <button
           onClick={save}
           disabled={saving || !dirty}
-          className="bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
+          className="bg-ink text-white px-4 py-2 hover:bg-ink disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
       </div>
       {currentValue && (
-        <p className="mt-3 text-xs text-gray-500">
+        <p className="mt-3 text-xs text-ink-60">
           {currentLabel} <span className="font-mono">{currentValue}</span>
         </p>
       )}
@@ -2969,7 +2969,7 @@ function WorkspaceAssignmentSection({
         </p>
       )}
       {isDesk && (status?.kind === 'err' || noDesksOpen || optionsError) && (
-        <p className="mt-1 text-xs text-gray-600">
+        <p className="mt-1 text-xs text-ink-60">
           Need a hand? Call member services at{' '}
           <a
             href={`tel:${MEMBER_SERVICES_PHONE_TEL}`}
@@ -2997,28 +2997,28 @@ function WorkspaceAssignmentSection({
 function PrivateDeskAssignmentSection({ member }: { member: Member }) {
   const room = (member.office_number || '').trim();
   return (
-    <section className="bg-white border rounded-lg p-6">
-      <h3 className="font-semibold text-gray-900 mb-1">Your Private Desk Area</h3>
-      <p className="text-sm text-gray-600 mb-4">
+    <section className="bg-bone border p-6">
+      <h3 className="font-display font-semibold text-ink mb-1">Your Private Desk Area</h3>
+      <p className="text-sm text-ink-60 mb-4">
         Your dedicated desk is in a private, lockable office area rather than on
         the shared coworking floor. Member services assigns the room, so
         there&apos;s nothing to choose here.
       </p>
       {room ? (
-        <div className="rounded border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+        <div className="border border-green-200 bg-green-50 p-3 text-sm text-green-900">
           You&apos;re assigned to{' '}
           <span className="font-mono font-semibold">Office {room}</span>. Your
           desk is inside that room — it locks, and it&apos;s outside the shared
           community area.
         </div>
       ) : (
-        <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <div className="border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           Member services is preparing your private desk area and will confirm
           your room shortly. Everything else in your onboarding can continue in
           the meantime.
         </div>
       )}
-      <p className="mt-3 text-xs text-gray-600">
+      <p className="mt-3 text-xs text-ink-60">
         Questions about your room? Call member services at{' '}
         <a
           href={`tel:${MEMBER_SERVICES_PHONE_TEL}`}
@@ -3077,11 +3077,11 @@ function OnboardingTab({
   return (
     <div className="space-y-6">
       {/* Welcome banner */}
-      <section className="bg-white border rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+      <section className="bg-bone border p-6">
+        <h2 className="font-display text-xl font-semibold text-ink mb-2">
           Hello {member.first_name}, welcome to the Merritt Workspace community!
         </h2>
-        <p className="text-sm text-gray-700">
+        <p className="text-sm text-ink-60">
           We&apos;re thrilled to have you with us. Now that your membership is complete, we want to
           make sure you have everything you need to get started. Below you&apos;ll find all the
           essential information about your workspace.
@@ -3091,9 +3091,9 @@ function OnboardingTab({
       <WorkspaceAssignmentSection member={member} onMemberChange={onMemberChange} />
 
       {/* About Merritt Workspace */}
-      <section className="bg-white border rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">About Merritt Workspace</h3>
-        <div className="text-sm text-gray-700 space-y-3">
+      <section className="bg-bone border p-6">
+        <h3 className="font-display font-semibold text-ink mb-2">About Merritt Workspace</h3>
+        <div className="text-sm text-ink-60 space-y-3">
           <p>
             Merritt Workspace is made up of two historic buildings in the heart of Sloan&apos;s
             Lake: the original 1905 Merritt Methodist Church and the adjacent 1956 Auxiliary
@@ -3114,22 +3114,22 @@ function OnboardingTab({
       </section>
 
       {/* Management Team contact info */}
-      <section className="bg-white border rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">Who to Contact</h3>
-        <p className="text-sm text-gray-600 mb-4">
+      <section className="bg-bone border p-6">
+        <h3 className="font-display font-semibold text-ink mb-2">Who to Contact</h3>
+        <p className="text-sm text-ink-60 mb-4">
           Merritt Workspace has two dedicated contact channels — please use the right one so your
           request gets to the right person quickly.
         </p>
 
         <div className="grid gap-4 md:grid-cols-2">
           {/* Manager */}
-          <div className="border border-burnt-orange-200 rounded-lg p-4 bg-orange-50">
-            <h4 className="font-semibold text-gray-900">Manager</h4>
-            <p className="text-xs text-gray-600 mt-1">
+          <div className="border border-clay p-4 bg-orange-50">
+            <h4 className="font-semibold text-ink">Manager</h4>
+            <p className="text-xs text-ink-60 mt-1">
               Best for: new member onboarding, tours, membership-level changes, and
               high-level workspace matters.
             </p>
-            <ul className="mt-3 text-sm text-gray-700 space-y-1">
+            <ul className="mt-3 text-sm text-ink-60 space-y-1">
               <li>
                 <span className="font-medium">Phone:</span>{' '}
                 <a href="tel:+17203579499" className="text-orange-700 hover:underline">
@@ -3149,14 +3149,14 @@ function OnboardingTab({
           </div>
 
           {/* Member Services */}
-          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-            <h4 className="font-semibold text-gray-900">Member Services</h4>
-            <p className="text-xs text-gray-600 mt-1">
+          <div className="border border-clay p-4 bg-linen">
+            <h4 className="font-semibold text-ink">Member Services</h4>
+            <p className="text-xs text-ink-60 mt-1">
               Best for: day-to-day member support, building access code setup, cubbies,
               mail, snack shop questions, conference room help, and anything else you
               need as an existing member.
             </p>
-            <ul className="mt-3 text-sm text-gray-700 space-y-1">
+            <ul className="mt-3 text-sm text-ink-60 space-y-1">
               <li>
                 <span className="font-medium">Phone:</span>{' '}
                 <a href="tel:+13033598337" className="text-orange-700 hover:underline">
@@ -3176,7 +3176,7 @@ function OnboardingTab({
           </div>
         </div>
 
-        <div className="mt-4 text-sm text-gray-700">
+        <div className="mt-4 text-sm text-ink-60">
           <p>
             <span className="font-medium">Website:</span>{' '}
             <a
@@ -3195,25 +3195,25 @@ function OnboardingTab({
       </section>
 
       {/* Getting Started */}
-      <section className="bg-white border rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Getting Started</h3>
+      <section className="bg-bone border p-6">
+        <h3 className="font-display font-semibold text-ink mb-4">Getting Started</h3>
 
-        <div className="space-y-5 text-sm text-gray-700">
+        <div className="space-y-5 text-sm text-ink-60">
           <div>
-            <h4 className="font-semibold text-gray-900">WiFi</h4>
+            <h4 className="font-semibold text-ink">WiFi</h4>
             <p className="mt-1">Connect to WiFi using the following credentials:</p>
             <ul className="mt-1 list-disc pl-5 space-y-0.5">
               <li>
-                Username: <code className="bg-gray-100 px-1 rounded">merrittcowork</code>
+                Username: <code className="bg-linen px-1">merrittcowork</code>
               </li>
               <li>
-                Password: <code className="bg-gray-100 px-1 rounded">Merritt23X</code>
+                Password: <code className="bg-linen px-1">Merritt23X</code>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-gray-900">Kitchen &amp; Snack Shop</h4>
+            <h4 className="font-semibold text-ink">Kitchen &amp; Snack Shop</h4>
             <p className="mt-1">How to use the kitchen:</p>
             <ul className="mt-1 list-disc pl-5 space-y-0.5">
               <li>
@@ -3235,7 +3235,7 @@ function OnboardingTab({
           </div>
 
           <div>
-            <h4 className="font-semibold text-gray-900">Lock / Unlock Building</h4>
+            <h4 className="font-semibold text-ink">Lock / Unlock Building</h4>
             <ul className="mt-1 list-disc pl-5 space-y-0.5">
               <li>
                 <strong>Monday – Friday, 8:00 AM – 6:00 PM:</strong> the front door is
@@ -3251,7 +3251,7 @@ function OnboardingTab({
           </div>
 
           <div>
-            <h4 className="font-semibold text-gray-900">Cubbies &amp; Mail</h4>
+            <h4 className="font-semibold text-ink">Cubbies &amp; Mail</h4>
             <ul className="mt-1 list-disc pl-5 space-y-0.5">
               <li>
                 <span className="font-medium">Want a cubby?</span> Email{' '}
@@ -3277,7 +3277,7 @@ function OnboardingTab({
           </div>
 
           <div>
-            <h4 className="font-semibold text-gray-900">Booking the Flex Space</h4>
+            <h4 className="font-semibold text-ink">Booking the Flex Space</h4>
             <p className="mt-1">
               The Flex Space (our historic 1905 church sanctuary next door) is available for
               members to reserve for focused work, small gatherings, or personal use. A few ground
@@ -3322,7 +3322,7 @@ function OnboardingTab({
           </div>
 
           <div>
-            <h4 className="font-semibold text-gray-900">Community &amp; Wellness Events</h4>
+            <h4 className="font-semibold text-ink">Community &amp; Wellness Events</h4>
             <p className="mt-1">
               Throughout the week, the church/flex space next door hosts a variety of community
               and wellness events — yoga, fitness classes, workshops, and member gatherings. As a
@@ -3345,37 +3345,37 @@ function OnboardingTab({
       </section>
 
       {/* After-hours building access */}
-      <section className="bg-amber-50 border border-amber-300 rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">
+      <section className="bg-amber-50 border border-amber-300 p-6">
+        <h3 className="font-display font-semibold text-ink mb-2">
           🔐 After-Hours Building Access {member.access_code ? '' : '(Optional)'}
         </h3>
-        <div className="bg-white border border-green-300 rounded p-4 text-sm">
+        <div className="bg-bone border border-green-300 p-4 text-sm">
           <p className="font-semibold text-green-800">
             ✅ No access code needed Monday – Friday, 8:00 AM – 6:00 PM.
           </p>
-          <p className="mt-1 text-gray-700">
+          <p className="mt-1 text-ink-60">
             During business hours the front door is unlocked — just walk in.
           </p>
         </div>
-        <p className="mt-3 text-sm text-gray-700">
+        <p className="mt-3 text-sm text-ink-60">
           A <strong>personal access code is only needed outside those hours</strong> — late
           evenings, weekends, and holidays. It&apos;s included with your membership at no extra
           charge, so only request one if you plan to come in after hours.
         </p>
         {member.access_code ? (
-          <div className="mt-4 bg-white border border-amber-300 rounded p-4">
-            <p className="text-sm text-gray-700">Your personal access code:</p>
-            <div className="mt-2 text-2xl font-mono font-bold tracking-widest text-gray-900">
+          <div className="mt-4 bg-bone border border-amber-300 p-4">
+            <p className="text-sm text-ink-60">Your personal access code:</p>
+            <div className="mt-2 text-2xl font-mono font-bold tracking-widest text-ink">
               {member.access_code}
             </div>
-            <p className="mt-2 text-xs text-gray-500">
+            <p className="mt-2 text-xs text-ink-60">
               Keep this code confidential. You only need it outside of 8:00 AM – 6:00 PM,
               Monday – Friday.
             </p>
           </div>
         ) : (
           <div className="mt-3">
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-ink-60">
               Planning to come in during the late evening or on a weekend? Request your code
               with the button below, or email{' '}
               <a
@@ -3389,7 +3389,7 @@ function OnboardingTab({
             <button
               onClick={requestAccessCode}
               disabled={loading}
-              className="mt-3 bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50"
+              className="mt-3 bg-ink text-white px-4 py-2 hover:bg-ink disabled:opacity-50"
             >
               {loading ? 'Requesting…' : 'Request after-hours access code'}
             </button>
@@ -3401,9 +3401,9 @@ function OnboardingTab({
       </section>
 
       {/* Additional Resources */}
-      <section className="bg-white border rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-3">📚 Additional Resources</h3>
-        <ul className="text-sm text-gray-700 space-y-2 list-disc pl-5">
+      <section className="bg-bone border p-6">
+        <h3 className="font-display font-semibold text-ink mb-3">📚 Additional Resources</h3>
+        <ul className="text-sm text-ink-60 space-y-2 list-disc pl-5">
           <li>
             <a
               href="/member-resources"
@@ -3441,7 +3441,7 @@ function OnboardingTab({
             >
               www.merrittwellness.net/booking
             </a>
-            <p className="mt-1 text-gray-700">
+            <p className="mt-1 text-ink-60">
               Based on availability, the Wellness Space may be reserved up to 14 days in advance
               for approved uses and based on the existing terms and conditions. Maximum single use
               reservation is 4 hours. Currently, Wellness Space reservations made by Workspace
@@ -3456,32 +3456,32 @@ function OnboardingTab({
       </section>
 
       {/* Events */}
-      <section className="bg-white border rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">🎉 Events</h3>
-        <p className="text-sm text-gray-700">
+      <section className="bg-bone border p-6">
+        <h3 className="font-display font-semibold text-ink mb-2">🎉 Events</h3>
+        <p className="text-sm text-ink-60">
           Get involved with our events next door:
         </p>
-        <ul className="mt-2 text-sm text-gray-700 list-disc pl-5 space-y-1">
+        <ul className="mt-2 text-sm text-ink-60 list-disc pl-5 space-y-1">
           <li>Weekly schedule from management</li>
           <li>Discount on hosting and attending events</li>
         </ul>
       </section>
 
       {/* Member Referral Program */}
-      <section className="bg-green-50 border border-green-300 rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">💰 Member Referral Program</h3>
-        <p className="text-sm text-gray-800">
+      <section className="bg-green-50 border border-green-300 p-6">
+        <h3 className="font-display font-semibold text-ink mb-2">💰 Member Referral Program</h3>
+        <p className="text-sm text-ink">
           Love your workspace? Refer a friend and{' '}
           <strong>save $200 on your next month&apos;s membership fee</strong> when they sign up!
         </p>
       </section>
 
       {/* Leave a Review */}
-      <section className="bg-orange-50 border-2 border-orange-300 rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">
+      <section className="bg-orange-50 border-2 border-orange-300 p-6">
+        <h3 className="font-display font-semibold text-ink mb-2">
           ⭐ Have you been enjoying Merritt Workspace?
         </h3>
-        <p className="text-sm text-gray-800">
+        <p className="text-sm text-ink">
           As a small, locally-owned business, <strong>nothing helps us more than a quick
           Google review from a happy member</strong>. Every star and kind word makes a real
           difference — it helps new members discover us, supports our team, and keeps our
@@ -3493,23 +3493,23 @@ function OnboardingTab({
             href="https://g.page/r/CQ0n3_RM3TiMEBM/review"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-orange-600 text-white font-semibold px-5 py-2.5 rounded hover:bg-orange-700 transition-colors"
+            className="inline-flex items-center gap-2 bg-orange-600 text-white font-semibold px-5 py-2.5 hover:bg-orange-700 transition-colors"
           >
             ⭐ Leave us a review
           </a>
         </div>
-        <p className="mt-3 text-xs text-gray-600">
+        <p className="mt-3 text-xs text-ink-60">
           Thank you so much — it means the world to us!
         </p>
       </section>
 
       {/* Closing */}
-      <section className="bg-white border rounded-lg p-6">
-        <p className="text-sm text-gray-700">
+      <section className="bg-bone border p-6">
+        <p className="text-sm text-ink-60">
           If you have any questions or need assistance getting settled in, don&apos;t hesitate to
           reach out. We&apos;re here to help make your experience at Merritt Workspace exceptional.
         </p>
-        <p className="mt-3 text-sm text-gray-700 font-medium">See you soon!</p>
+        <p className="mt-3 text-sm text-ink-60 font-medium">See you soon!</p>
       </section>
     </div>
   );

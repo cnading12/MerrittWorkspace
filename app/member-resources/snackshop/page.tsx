@@ -322,15 +322,15 @@ export default function SimpleSnackshopPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pt-16">
+        <div className="min-h-screen bg-bone pt-20">
             {/* Hero Section */}
-            <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-16">
+            <section className="bg-linen py-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center">
-                        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                        <h1 className="font-display text-4xl md:text-5xl font-semibold text-ink mb-6">
                             Merritt Snackshop
                         </h1>
-                        <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                        <p className="text-xl text-ink-60 mb-8 max-w-3xl mx-auto">
                             Select your items and quantities from our kitchen. Secure payment processing with immediate pickup!
                         </p>
                     </div>
@@ -339,7 +339,7 @@ export default function SimpleSnackshopPage() {
 
             {/* Alerts */}
             {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mx-4 mt-4">
+                <div className="bg-red-50 border border-red-200 p-4 mx-4 mt-4">
                     <div className="flex items-center">
                         <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
                         <p className="text-red-700">{error}</p>
@@ -348,7 +348,7 @@ export default function SimpleSnackshopPage() {
             )}
 
             {success && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mx-4 mt-4">
+                <div className="bg-green-50 border border-green-200 p-4 mx-4 mt-4">
                     <div className="flex items-center">
                         <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
                         <div className="text-green-700 whitespace-pre-line">{success}</div>
@@ -368,7 +368,7 @@ export default function SimpleSnackshopPage() {
                                     <button
                                         key={category.value}
                                         onClick={() => setSelectedCategory(category.value)}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${selectedCategory === category.value
+                                        className={`flex items-center gap-2 px-4 py-2  font-medium transition ${selectedCategory === category.value
                                                 ? 'bg-burnt-orange-600 text-white'
                                                 : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
                                             }`}
@@ -387,12 +387,12 @@ export default function SimpleSnackshopPage() {
                                 return (
                                     <div
                                         key={product.id}
-                                        className={`bg-white rounded-lg shadow-sm border overflow-hidden transition ${quantity > 0
+                                        className={`bg-bone   border overflow-hidden transition ${quantity > 0
                                                 ? 'border-burnt-orange-500 ring-2 ring-burnt-orange-200'
                                                 : 'border-gray-200 hover:shadow-md'
                                             }`}
                                     >
-                                        <div className="h-32 bg-gray-100 relative overflow-hidden">
+                                        <div className="h-32 bg-linen relative overflow-hidden">
                                             {product.image && (
                                                 <Image
                                                     src={product.image}
@@ -403,13 +403,13 @@ export default function SimpleSnackshopPage() {
                                                 />
                                             )}
                                             <div className="absolute top-2 left-2">
-                                                <span className="bg-white/90 text-gray-700 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                                                <span className="bg-bone/90 text-ink-60 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
                                                     {getCategoryIcon(product.category)}
                                                 </span>
                                             </div>
                                             {quantity > 0 && (
                                                 <div className="absolute top-2 right-2">
-                                                    <span className="bg-burnt-orange-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">
+                                                    <span className="bg-accent text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">
                                                         {quantity}
                                                     </span>
                                                 </div>
@@ -417,8 +417,8 @@ export default function SimpleSnackshopPage() {
                                         </div>
 
                                         <div className="p-4">
-                                            <h3 className="font-semibold text-gray-900 mb-1">{product.name}</h3>
-                                            <p className="text-lg font-bold text-burnt-orange-600 mb-3">${product.price.toFixed(2)}</p>
+                                            <h3 className="font-display font-semibold text-ink mb-1">{product.name}</h3>
+                                            <p className="text-lg font-bold text-accent-deep mb-3">${product.price.toFixed(2)}</p>
                                             
                                             {/* Quantity Controls */}
                                             <div className="flex items-center justify-between">
@@ -426,20 +426,20 @@ export default function SimpleSnackshopPage() {
                                                     <button
                                                         onClick={() => removeFromCart(product.id)}
                                                         disabled={quantity === 0}
-                                                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="w-8 h-8 rounded-full border border-clay flex items-center justify-center hover:bg-linen disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
                                                         <Minus className="w-4 h-4" />
                                                     </button>
                                                     <span className="w-8 text-center font-semibold">{quantity}</span>
                                                     <button
                                                         onClick={() => addToCart(product.id)}
-                                                        className="w-8 h-8 rounded-full bg-burnt-orange-600 text-white flex items-center justify-center hover:bg-burnt-orange-700"
+                                                        className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center hover:bg-accent-deep"
                                                     >
                                                         <Plus className="w-4 h-4" />
                                                     </button>
                                                 </div>
                                                 {quantity > 0 && (
-                                                    <span className="text-sm font-medium text-burnt-orange-600">
+                                                    <span className="text-sm font-medium text-accent-deep">
                                                         ${(product.price * quantity).toFixed(2)}
                                                     </span>
                                                 )}
@@ -453,17 +453,17 @@ export default function SimpleSnackshopPage() {
 
                     {/* Order Form Section */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-24">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">Complete Your Purchase</h2>
+                        <div className="bg-bone border border-clay p-6 sticky top-24">
+                            <h2 className="font-display text-xl font-semibold text-ink mb-4">Complete Your Purchase</h2>
 
                             {/* Guests: nudge them toward the portal (goal: migrate members online). */}
                             {!member && (
-                                <div className="mb-6 p-4 rounded-lg border border-burnt-orange-200 bg-gradient-to-br from-burnt-orange-50 to-white">
+                                <div className="mb-6 p-4 border border-clay bg-gradient-to-br from-burnt-orange-50 to-white">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <Sparkles className="w-4 h-4 text-burnt-orange-600" />
-                                        <span className="font-semibold text-burnt-orange-900">Members check out in one click</span>
+                                        <Sparkles className="w-4 h-4 text-accent-deep" />
+                                        <span className="font-semibold text-ink">Members check out in one click</span>
                                     </div>
-                                    <p className="text-sm text-gray-600 mb-3">
+                                    <p className="text-sm text-ink-60 mb-3">
                                         It&apos;s where all our new members are. Pay with a card on file, skip
                                         re-typing your name and office, avoid fees, and see every purchase in
                                         your portal.
@@ -471,14 +471,14 @@ export default function SimpleSnackshopPage() {
                                     <div className="flex flex-wrap gap-2">
                                         <Link
                                             href="/portal/login"
-                                            className="text-sm font-medium text-burnt-orange-700 hover:text-burnt-orange-800 underline"
+                                            className="text-sm font-medium text-accent-deep hover:text-accent-deep underline"
                                         >
                                             Member sign in
                                         </Link>
-                                        <span className="text-gray-300">·</span>
+                                        <span className="text-clay">·</span>
                                         <Link
                                             href="/portal/existing-member"
-                                            className="text-sm font-medium text-burnt-orange-700 hover:text-burnt-orange-800 underline"
+                                            className="text-sm font-medium text-accent-deep hover:text-accent-deep underline"
                                         >
                                             Already a member? Move your account online
                                         </Link>
@@ -488,16 +488,16 @@ export default function SimpleSnackshopPage() {
 
                             {/* Cart Items with Quantities */}
                             {cart.length > 0 && (
-                                <div className="mb-6 p-4 bg-burnt-orange-50 rounded-lg">
-                                    <h3 className="font-medium text-burnt-orange-900 mb-3">Your Cart:</h3>
+                                <div className="mb-6 p-4 bg-linen">
+                                    <h3 className="font-display font-medium text-ink mb-3">Your Cart:</h3>
                                     {cart.map(item => (
-                                        <div key={item.id} className="flex justify-between items-center py-1 text-sm text-burnt-orange-800">
+                                        <div key={item.id} className="flex justify-between items-center py-1 text-sm text-accent-deep">
                                             <span>{item.name} {item.quantity > 1 && `(x${item.quantity})`}</span>
                                             <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
                                         </div>
                                     ))}
-                                    <div className="border-t border-burnt-orange-200 mt-2 pt-2">
-                                        <div className="flex justify-between items-center font-bold text-burnt-orange-900">
+                                    <div className="border-t border-clay mt-2 pt-2">
+                                        <div className="flex justify-between items-center font-bold text-ink">
                                             <span>Total:</span>
                                             <span className="text-lg">${calculateTotal().toFixed(2)}</span>
                                         </div>
@@ -510,16 +510,16 @@ export default function SimpleSnackshopPage() {
                                     <>
                                         {/* Signed-in member: identity comes from their profile,
                                             so we don't ask for it again. */}
-                                        <div className="p-4 bg-burnt-orange-50 rounded-lg border border-burnt-orange-200">
+                                        <div className="p-4 bg-linen border border-clay">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <User className="w-4 h-4 text-burnt-orange-600" />
-                                                <span className="font-semibold text-burnt-orange-900">
+                                                <User className="w-4 h-4 text-accent-deep" />
+                                                <span className="font-semibold text-ink">
                                                     {orderForm.customer_name || member.email}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-burnt-orange-800">{member.email}</p>
+                                            <p className="text-sm text-accent-deep">{member.email}</p>
                                             {memberHasLocation && (
-                                                <p className="text-sm text-burnt-orange-800 mt-1">
+                                                <p className="text-sm text-accent-deep mt-1">
                                                     Pickup: <strong>{orderForm.office_number}</strong>
                                                 </p>
                                             )}
@@ -528,16 +528,16 @@ export default function SimpleSnackshopPage() {
                                         {/* Only ask for a location if it's missing from their profile. */}
                                         {!memberHasLocation && (
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Office/Desk Number *</label>
+                                                <label className="block text-sm font-medium text-ink-60 mb-2">Office/Desk Number *</label>
                                                 <input
                                                     type="text"
                                                     required
                                                     placeholder="e.g., Office 104 or Desk DD4"
                                                     value={orderForm.office_number}
                                                     onChange={(e) => setOrderForm(prev => ({ ...prev, office_number: e.target.value }))}
-                                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                                                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-accent focus:border-accent"
                                                 />
-                                                <p className="text-xs text-gray-500 mt-1">
+                                                <p className="text-xs text-ink-60 mt-1">
                                                     We&apos;ll save this to your profile so you won&apos;t be asked again.
                                                 </p>
                                             </div>
@@ -546,56 +546,56 @@ export default function SimpleSnackshopPage() {
                                 ) : (
                                     <>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                                            <label className="block text-sm font-medium text-ink-60 mb-2">Full Name *</label>
                                             <input
                                                 type="text"
                                                 required
                                                 value={orderForm.customer_name}
                                                 onChange={(e) => setOrderForm(prev => ({ ...prev, customer_name: e.target.value }))}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                                                className="w-full p-3 border border-clay focus:ring-2 focus:ring-accent focus:border-accent"
                                                 placeholder="Enter your full name"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                                            <label className="block text-sm font-medium text-ink-60 mb-2">Email *</label>
                                             <input
                                                 type="email"
                                                 required
                                                 value={orderForm.customer_email}
                                                 onChange={(e) => setOrderForm(prev => ({ ...prev, customer_email: e.target.value }))}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                                                className="w-full p-3 border border-clay focus:ring-2 focus:ring-accent focus:border-accent"
                                                 placeholder="your.email@company.com"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Office/Desk Number *</label>
+                                            <label className="block text-sm font-medium text-ink-60 mb-2">Office/Desk Number *</label>
                                             <input
                                                 type="text"
                                                 required
                                                 placeholder="e.g., Office 104 or Desk DD4"
                                                 value={orderForm.office_number}
                                                 onChange={(e) => setOrderForm(prev => ({ ...prev, office_number: e.target.value }))}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                                                className="w-full p-3 border border-clay focus:ring-2 focus:ring-accent focus:border-accent"
                                             />
                                         </div>
                                     </>
                                 )}
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                                    <label className="block text-sm font-medium text-ink-60 mb-2">Notes (Optional)</label>
                                     <textarea
                                         rows={3}
                                         value={orderForm.notes}
                                         onChange={(e) => setOrderForm(prev => ({ ...prev, notes: e.target.value }))}
                                         placeholder="Any notes or requests..."
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                                        className="w-full p-3 border border-clay focus:ring-2 focus:ring-accent focus:border-accent"
                                     />
                                 </div>
 
                                 {/* Payment Options */}
-                                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-4">
+                                <div className="p-4 bg-blue-50 border border-blue-200 mb-4">
                                     <h4 className="font-semibold text-blue-800 mb-3">
                                         {member ? '⚡ One-Click Checkout' : '💳 Pay Now'}
                                     </h4>
@@ -610,7 +610,7 @@ export default function SimpleSnackshopPage() {
                                             type="button"
                                             onClick={() => handlePay()}
                                             disabled={submitting || cart.length === 0}
-                                            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                            className="w-full bg-blue-600 text-white py-2 px-4 font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                                         >
                                             {submitting ? (
                                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

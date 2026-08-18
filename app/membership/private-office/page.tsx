@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from 'react';
-import { Check, Clock, Wifi, Shield, Coffee, Users, Calendar, Phone, Mail, Lock, Building2, Heart, ArrowRight, Briefcase, Eye, UserCheck } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
 import Image from 'next/image';
+import PageHero from '@/components/marketing/PageHero';
+import { BLUR } from '@/components/marketing/blur';
 
 export default function PrivateOfficePage() {
   const [selectedPlan, setSelectedPlan] = useState<'single' | 'double' | 'large'>('single');
@@ -17,12 +18,7 @@ export default function PrivateOfficePage() {
       capacity: '1 person',
       size: '35-45 sq ft',
       desks: 1,
-      color: 'blue',
       description: 'Perfect for solo professionals who need complete privacy',
-      image1: '/images/private-offices/single.webp',
-      image2: '/images/private-offices/single2.webp',
-      blur1: 'data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAACQAQCdASoKAA0ABUB8JZQC7ABpDmAAj/vsp3SQ/qO4OdwA',
-      blur2: 'data:image/webp;base64,UklGRiwAAABXRUJQVlA4ICAAAACwAQCdASoKAA0ABUB8JYwAAfWgTXrAAF+mDYcT9+WAAA==',
       features: [
         'Private lockable office',
         'Professional business address',
@@ -41,12 +37,7 @@ export default function PrivateOfficePage() {
       capacity: '2 people',
       size: '55-65 sq ft',
       desks: 2,
-      color: 'green',
       description: 'Ideal for partnerships and small collaborative teams',
-      image1: '/images/private-offices/2-desk.webp',
-      image2: '/images/private-offices/2-desk2.webp',
-      blur1: 'data:image/webp;base64,UklGRiwAAABXRUJQVlA4ICAAAABQAQCdASoKAA0AD8B8JQBdgCgAAP6/F7byZ3GAPAgAAA==',
-      blur2: 'data:image/webp;base64,UklGRiwAAABXRUJQVlA4ICAAAACwAQCdASoKAA0ABUB8JZQAAUoqQOQAAPnBWbJDuUusAA==',
       features: [
         'Private lockable office with 2 desks',
         'Professional business address',
@@ -66,12 +57,7 @@ export default function PrivateOfficePage() {
       capacity: '4-8 people',
       size: '125-150 sq ft',
       desks: '4-8',
-      color: 'purple',
       description: 'Spacious office for established teams and growing companies',
-      image1: '/images/private-offices/4-desk.webp',
-      image2: '/images/private-offices/4-desk2.webp',
-      blur1: 'data:image/webp;base64,UklGRjAAAABXRUJQVlA4ICQAAABQAQCdASoKAA0ABUB8JQBOgAAAAOc8gv7uy41SNTE8bIfgAAA=',
-      blur2: 'data:image/webp;base64,UklGRjIAAABXRUJQVlA4ICYAAABwAQCdASoKAA0ABUB8JQBdgBGLIADM9faIdT5iRGlJCB/J2gAAAA==',
       features: [
         'Large private office (4-8 desks)',
         'Professional business address',
@@ -89,57 +75,46 @@ export default function PrivateOfficePage() {
 
   const allFeatures = [
     {
-      icon: Lock,
       title: 'Complete Privacy',
       description: 'Your own lockable office space with full privacy and security'
     },
     {
-      icon: Clock,
       title: '24/7 Access',
       description: 'Round-the-clock building and office access with your own key'
     },
     {
-      icon: Wifi,
       title: 'High-Speed WiFi',
       description: 'Enterprise-grade internet with dedicated connection options'
     },
     {
-      icon: Building2,
       title: 'Professional Address',
       description: 'Use our prestigious Sloan\'s Lake address for your business'
     },
     {
-      icon: Mail,
       title: 'Mail & Package Handling',
       description: 'Full mail receiving and package management services'
     },
     {
-      icon: Calendar,
       title: 'Meeting Room Credits',
       description: 'Monthly meeting room hours included (varies by plan)'
     },
     {
-      icon: Phone,
       title: 'Phone Line Options',
       description: 'Dedicated business phone lines available for your office'
     },
     {
-      icon: Coffee,
       title: 'Full Kitchen Access',
       description: 'Complete access to kitchen facilities and snackshop services'
     },
     {
-      icon: Heart,
       title: 'Pet-Friendly',
       description: 'Bring your dog to work - they can stay in your private office'
     },
     {
-      icon: Shield,
       title: 'Premium Storage',
       description: 'Multiple storage options including filing cabinets and shelving'
     },
     {
-      icon: Calendar,
       title: 'Free Trial Day',
       description: 'Spend a full workday in our space before you sign up — every potential new member qualifies'
     }
@@ -147,267 +122,210 @@ export default function PrivateOfficePage() {
 
   const idealFor = [
     {
-      icon: Briefcase,
       title: 'Professional Services',
       description: 'Lawyers, accountants, consultants who need confidential client meetings'
     },
     {
-      icon: UserCheck,
       title: 'Small Business Owners',
       description: 'Established businesses needing professional address and private workspace'
     },
     {
-      icon: Eye,
       title: 'Privacy-Focused Workers',
       description: 'Anyone who needs guaranteed quiet space for focused work and sensitive conversations'
     }
   ];
 
   const selectedPlanDetails = privateOfficePlans.find(plan => plan.id === selectedPlan)!;
-  const colorClasses = {
-    blue: 'bg-blue-600 hover:bg-blue-700 text-blue-600 bg-blue-50 border-blue-600',
-    green: 'bg-green-600 hover:bg-green-700 text-green-600 bg-green-50 border-green-600',
-    purple: 'bg-purple-600 hover:bg-purple-700 text-purple-600 bg-purple-50 border-purple-600'
-  };
 
   return (
-    <main className="min-h-screen bg-gray-50 pt-16">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-50 to-blue-100 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold inline-block mb-4">
-              Professional Choice
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Private Office Rental
-              <span className="text-blue-600 block">in Sloan's Lake, Denver</span>
-            </h1>
-            <p className="text-xl text-gray-600 mb-6 max-w-3xl mx-auto">
-              Lockable private offices in Denver's Sloan's Lake neighborhood, just 3 minutes from I-25. Choose from single ($500/mo), double ($700/mo), or team offices ($1,200/mo). All include 24/7 access, professional business address, and meeting room credits.
-            </p>
-            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-bold mb-2">
-              <Check className="w-4 h-4" />
-              Every Potential New Member Gets a Free Trial Day
-            </div>
+    <main className="bg-bone">
+      <PageHero
+        src="/images/new-hero/office-large-occupied.webp"
+        alt="Members working in a private office on the burnt orange floors at Merritt Workspace, Sloan's Lake, Denver"
+        blurDataURL={BLUR['office-large-occupied']}
+        eyebrow="Private offices &middot; $500 to $1,200"
+        title={<>A room with a door that locks.</>}
+        lead="Fourteen private offices in Sloan's Lake, sized for one person up to a team of eight. Business address, 24/7 access, month to month."
+      />
+
+      {/* The rooms */}
+      <section className="mw-section">
+        <div className="mw-container">
+          <div className="max-w-2xl">
+            <p className="mw-eyebrow mb-5">The rooms</p>
+            <h2 className="mw-h2">Daylight, butcher block, and the orange floors.</h2>
+          </div>
+          <div className="mt-14 grid gap-8 md:mt-20 md:grid-cols-2 md:gap-10">
+            <figure>
+              <div className="relative aspect-[3/2]">
+                <Image
+                  src="/images/new-hero/office-single-daylight.webp"
+                  alt="Single private office with an ultrawide monitor and window light at Merritt Workspace, Denver"
+                  fill
+                  placeholder="blur"
+                  blurDataURL={BLUR['office-single-daylight']}
+                  sizes="(max-width: 768px) 100vw, 46vw"
+                  className="object-cover"
+                />
+              </div>
+              <figcaption className="mt-4 text-[13px] uppercase tracking-[0.14em] text-ink-60">
+                Single office
+              </figcaption>
+            </figure>
+            <figure>
+              <div className="relative aspect-[3/2]">
+                <Image
+                  src="/images/new-hero/office-large-team.webp"
+                  alt="A team at work in the large private office at Merritt Workspace, Denver"
+                  fill
+                  placeholder="blur"
+                  blurDataURL={BLUR['office-large-team']}
+                  sizes="(max-width: 768px) 100vw, 46vw"
+                  className="object-cover"
+                />
+              </div>
+              <figcaption className="mt-4 text-[13px] uppercase tracking-[0.14em] text-ink-60">
+                Large office
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      {/* Plan selector */}
+      <section className="mw-section-alt">
+        <div className="mw-container">
+          <div className="max-w-2xl">
+            <p className="mw-eyebrow mb-5">Pick a size</p>
+            <h2 className="mw-h2">Three sizes, one rate card.</h2>
           </div>
 
-          {/* Plan Selector */}
-          <div className="flex flex-wrap justify-center gap-4 mb-12">
+          {/* Tabs */}
+          <div className="mt-12 flex flex-wrap gap-2 border-b border-clay md:mt-16">
             {privateOfficePlans.map((plan) => (
               <button
                 key={plan.id}
                 onClick={() => setSelectedPlan(plan.id)}
-                className={`px-6 py-3 rounded-lg font-semibold transition ${
+                aria-pressed={selectedPlan === plan.id}
+                className={`-mb-px min-h-[44px] border-b-2 px-4 py-3 text-[15px] font-medium transition ${
                   selectedPlan === plan.id
-                    ? `bg-${plan.color}-600 text-white`
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                    ? 'border-accent text-ink'
+                    : 'border-transparent text-ink-60 hover:text-ink'
                 }`}
-                style={{
-                  backgroundColor: selectedPlan === plan.id 
-                    ? plan.color === 'blue' ? '#2563eb' 
-                    : plan.color === 'green' ? '#16a34a' 
-                    : '#9333ea'
-                    : undefined
-                }}
               >
                 {plan.name}
               </button>
             ))}
           </div>
 
-          {/* Selected Plan Display */}
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <div className="grid lg:grid-cols-2 gap-8 p-8 md:p-12">
-              {/* Left Column - Details */}
-              <div>
-                <div className="mb-6">
-                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                    {selectedPlanDetails.name}
-                  </h2>
-                  <p className="text-xl text-gray-600 mb-6">
-                    {selectedPlanDetails.description}
-                  </p>
-                  
-                  <div className="flex items-baseline gap-2 mb-6">
-                    <span className="text-5xl font-bold" style={{
-                      color: selectedPlanDetails.color === 'blue' ? '#2563eb' 
-                        : selectedPlanDetails.color === 'green' ? '#16a34a' 
-                        : '#9333ea'
-                    }}>
-                      ${selectedPlanDetails.price}
-                    </span>
-                    <span className="text-2xl text-gray-500">/month</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <div className="text-sm text-gray-600 mb-1">Office Size</div>
-                      <div className="font-semibold text-gray-900">{selectedPlanDetails.size}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-600 mb-1">Capacity</div>
-                      <div className="font-semibold text-gray-900">{selectedPlanDetails.capacity}</div>
-                    </div>
-                  </div>
+          {/* Selected plan */}
+          <div className="mt-12 grid gap-12 md:grid-cols-12 md:gap-16">
+            <div className="md:col-span-5">
+              <h3 className="mw-h3">{selectedPlanDetails.name}</h3>
+              <p className="mt-4 mw-body">{selectedPlanDetails.description}</p>
+              <p className="mt-8 font-display text-6xl font-semibold tracking-tightest text-ink lg:text-7xl">
+                ${selectedPlanDetails.price}
+                <span className="text-2xl font-normal text-ink-60"> /mo</span>
+              </p>
+              <dl className="mt-8 grid grid-cols-2 gap-x-8 gap-y-6 border-t border-clay pt-7">
+                <div>
+                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Room size</dt>
+                  <dd className="mt-1 font-display text-2xl font-semibold text-ink">{selectedPlanDetails.size}</dd>
                 </div>
-
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">What's Included</h3>
-                  <ul className="space-y-3">
-                    {selectedPlanDetails.features.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <div>
+                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Capacity</dt>
+                  <dd className="mt-1 font-display text-2xl font-semibold text-ink">{selectedPlanDetails.capacity}</dd>
                 </div>
-
-                <Link 
-                  href="/membership/apply"
-                  className="w-full py-4 px-6 rounded-lg font-semibold transition text-center block text-white"
-                  style={{
-                    backgroundColor: selectedPlanDetails.color === 'blue' ? '#2563eb' 
-                      : selectedPlanDetails.color === 'green' ? '#16a34a' 
-                      : '#9333ea'
-                  }}
-                >
-                  Apply for This Office
+              </dl>
+              <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+                <Link href="/membership/apply" className="mw-btn-primary">
+                  Apply for this office
+                </Link>
+                <Link href="/contact" className="mw-btn-ghost">
+                  Book a tour
                 </Link>
               </div>
+            </div>
 
-              {/* Right Column - Images */}
-              <div className="space-y-4">
-                <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
-                  <Image
-                    src={selectedPlanDetails.image1}
-                    alt={`${selectedPlanDetails.name} private office rental at Merritt Workspace in Sloan's Lake, Denver`}
-                    fill
-                    priority
-                    placeholder="blur"
-                    blurDataURL={selectedPlanDetails.blur1}
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="relative h-64 md:h-80 rounded-xl overflow-hidden shadow-lg">
-                  <Image
-                    src={selectedPlanDetails.image2}
-                    alt={`${selectedPlanDetails.name} interior view - private office near I-25 Denver`}
-                    fill
-                    placeholder="blur"
-                    blurDataURL={selectedPlanDetails.blur2}
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    className="object-cover"
-                  />
-                </div>
-              </div>
+            <div className="md:col-span-6 md:col-start-7">
+              <h4 className="mw-eyebrow mb-6">What&rsquo;s included</h4>
+              <ul>
+                {selectedPlanDetails.features.map((feature) => (
+                  <li key={feature} className="border-t border-clay py-3.5 text-[16px] leading-relaxed text-ink-60">
+                    {feature}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* All Features Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">All Private Offices Include</h2>
-            <p className="text-xl text-gray-600">Premium amenities and services for every office</p>
+      {/* All offices include */}
+      <section className="mw-section-rule">
+        <div className="mw-container">
+          <div className="max-w-2xl">
+            <p className="mw-eyebrow mb-5">Every office</p>
+            <h2 className="mw-h2">What comes with all of them.</h2>
           </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {allFeatures.map((feature, index) => {
-              const IconComponent = feature.icon;
-              return (
-                <div key={index} className="bg-gray-50 rounded-xl p-6 hover:shadow-lg transition">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <IconComponent className="w-6 h-6 text-blue-600" />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                      <p className="text-gray-600 text-sm">{feature.description}</p>
-                    </div>
-                    <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
-                  </div>
-                </div>
-              );
-            })}
+          <div className="mt-14 grid gap-x-10 gap-y-12 border-t border-clay pt-10 sm:grid-cols-2 lg:grid-cols-3 md:mt-20">
+            {allFeatures.map((feature) => (
+              <div key={feature.title}>
+                <h3 className="mw-h3">{feature.title}</h3>
+                <p className="mt-4 mw-body">{feature.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Perfect For Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Perfect For</h2>
-            <p className="text-xl text-gray-600">Private offices work best for these professionals</p>
+      {/* Ideal for */}
+      <section className="mw-section-alt">
+        <div className="mw-container">
+          <div className="max-w-2xl">
+            <p className="mw-eyebrow mb-5">Who takes an office</p>
+            <h2 className="mw-h2">Work that needs a closed door.</h2>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {idealFor.map((item, index) => {
-              const IconComponent = item.icon;
-              return (
-                <div key={index} className="bg-white p-8 rounded-xl text-center hover:shadow-lg transition">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <IconComponent className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{item.title}</h3>
-                  <p className="text-gray-600">{item.description}</p>
-                </div>
-              );
-            })}
+          <div className="mt-14 grid gap-x-10 gap-y-12 border-t border-clay pt-10 sm:grid-cols-2 lg:grid-cols-3 md:mt-20">
+            {idealFor.map((item) => (
+              <div key={item.title}>
+                <h3 className="mw-h3">{item.title}</h3>
+                <p className="mt-4 mw-body">{item.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonials removed — to be added when real member quotes are collected */}
-
-      {/* Internal Links Section */}
-      <section className="py-12 bg-gray-100">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Explore Other Options</h3>
-          <p className="text-gray-600 mb-6">
-            Looking for a more affordable option? Our <Link href="/membership/dedicated-desk" className="text-blue-600 hover:underline font-semibold">dedicated desks start at just $200/month</Link>.
-            Or <Link href="/membership" className="text-blue-600 hover:underline font-semibold">compare all membership options</Link> to find your perfect Sloan's Lake office space.
-          </p>
-          <p className="text-sm text-gray-500">
-            Questions? <Link href="/contact" className="text-blue-600 hover:underline">Contact us</Link> or visit our <Link href="/member-resources/faqs" className="text-blue-600 hover:underline">FAQ page</Link>
-          </p>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 bg-blue-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-full text-sm font-bold mb-6">
-            <Check className="w-4 h-4" />
-            Free Trial Day Included for New Members
-          </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Claim Your Private Office in Sloan's Lake?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Join Denver's premier coworking community—just 3 minutes from I-25. Try it free for a day before you commit.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/contact"
-              className="bg-white text-blue-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
-            >
-              Book Your Free Trial Day
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              href="/membership/apply"
-              className="bg-blue-700 text-white py-4 px-8 rounded-lg font-semibold hover:bg-blue-800 transition inline-flex items-center justify-center border-2 border-white"
-            >
-              Apply for Membership
-            </Link>
+      {/* CTA */}
+      <section className="border-t border-clay bg-ink py-20 text-bone md:py-32">
+        <div className="mw-container">
+          <div className="max-w-3xl">
+            <p className="mb-5 text-[12px] font-medium uppercase tracking-[0.18em] text-bone/60 md:text-[13px]">
+              See it first
+            </p>
+            <h2 className="font-display text-[2rem] font-semibold leading-[1.02] tracking-tightest text-bone sm:text-4xl lg:text-[3.25rem]">
+              Walk the offices before you take one.
+            </h2>
+            <p className="mt-7 max-w-2xl text-[17px] leading-relaxed text-bone/70 md:text-lg">
+              Every prospective member gets a free trial day. Or{' '}
+              <Link href="/membership" className="border-b border-accent pb-0.5 text-bone hover:border-bone">
+                compare every membership option
+              </Link>{' '}
+              first — the{' '}
+              <Link href="/membership/dedicated-desk" className="border-b border-accent pb-0.5 text-bone hover:border-bone">
+                dedicated desk
+              </Link>{' '}
+              starts at $200.
+            </p>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
+              <Link href="/membership/apply" className="mw-btn bg-accent text-white hover:bg-accent-deep">
+                Apply today
+              </Link>
+              <Link href="/contact" className="mw-btn border border-bone/40 text-bone hover:bg-bone hover:text-ink">
+                Book a tour
+              </Link>
+            </div>
           </div>
         </div>
       </section>

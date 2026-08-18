@@ -63,10 +63,10 @@ function OrderConfirmationContent() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
+            <div className="min-h-screen bg-bone pt-20 flex items-center justify-center">
                 <div className="text-center">
                     <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600">Processing your payment...</p>
+                    <p className="text-ink-60">Processing your payment...</p>
                 </div>
             </div>
         );
@@ -74,27 +74,27 @@ function OrderConfirmationContent() {
 
     if (error || !orderDetails) {
         return (
-            <div className="min-h-screen bg-gray-50 pt-16">
+            <div className="min-h-screen bg-bone pt-20">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                     <div className="text-center">
                         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <ShoppingCart className="w-8 h-8 text-red-600" />
                         </div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-4">Payment Error</h1>
-                        <p className="text-gray-600 mb-8">
+                        <h1 className="font-display text-3xl font-semibold text-ink mb-4">Payment Error</h1>
+                        <p className="text-ink-60 mb-8">
                             {error || 'We couldn\'t process your payment. Please try again or contact support.'}
                         </p>
                         <div className="space-x-4">
                             <Link
                                 href="/member-resources/snackshop"
-                                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+                                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
                             >
                                 <ShoppingCart className="w-5 h-5 mr-2" />
                                 Try Again
                             </Link>
                             <a
                                 href="mailto:memberservices@merrittworkspace.net"
-                                className="inline-flex items-center px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition"
+                                className="inline-flex items-center px-6 py-3 bg-bone text-blue-600 font-semibold border-2 border-blue-600 hover:bg-blue-50 transition"
                             >
                                 <Mail className="w-5 h-5 mr-2" />
                                 Contact Support
@@ -119,25 +119,25 @@ function OrderConfirmationContent() {
     });
 
     return (
-        <div className="min-h-screen bg-gray-50 pt-16">
+        <div className="min-h-screen bg-bone pt-20">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 {/* Success Header */}
                 <div className="text-center mb-12">
                     <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                         <CheckCircle className="w-12 h-12 text-green-600" />
                     </div>
-                    <h1 className="text-4xl font-bold text-gray-900 mb-4">Payment Successful!</h1>
-                    <p className="text-xl text-gray-600">
+                    <h1 className="font-display text-4xl font-semibold text-ink mb-4">Payment Successful!</h1>
+                    <p className="text-xl text-ink-60">
                         Thank you {orderDetails.customer_name}! Your payment has been processed and your items are ready for pickup.
                     </p>
                 </div>
 
                 {/* Payment Details Card */}
-                <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+                <div className="bg-bone overflow-hidden mb-8">
                     <div className="bg-gradient-to-r from-green-500 to-green-600 px-8 py-6">
                         <div className="flex items-center justify-between text-white">
                             <div>
-                                <h2 className="text-2xl font-bold">Order #{orderDetails.order_id}</h2>
+                                <h2 className="font-display text-2xl font-semibold">Order #{orderDetails.order_id}</h2>
                                 <p className="opacity-90">{formattedTime}</p>
                             </div>
                             <div className="text-right">
@@ -151,7 +151,7 @@ function OrderConfirmationContent() {
                         <div className="grid md:grid-cols-2 gap-8">
                             {/* Next Steps */}
                             <div>
-                                <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                                <h3 className="font-display text-xl font-semibold text-ink mb-4 flex items-center">
                                     <Clock className="w-6 h-6 text-green-600 mr-2" />
                                     What's Next?
                                 </h3>
@@ -161,8 +161,8 @@ function OrderConfirmationContent() {
                                             <span className="text-green-600 text-sm font-bold">1</span>
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-900">Head to the Kitchen</p>
-                                            <p className="text-gray-600 text-sm">Your paid items are ready for pickup in the kitchen area.</p>
+                                            <p className="font-medium text-ink">Head to the Kitchen</p>
+                                            <p className="text-ink-60 text-sm">Your paid items are ready for pickup in the kitchen area.</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start space-x-3">
@@ -170,8 +170,8 @@ function OrderConfirmationContent() {
                                             <span className="text-green-600 text-sm font-bold">2</span>
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-900">Collect Your Items</p>
-                                            <p className="text-gray-600 text-sm">Take the items you've paid for from the kitchen.</p>
+                                            <p className="font-medium text-ink">Collect Your Items</p>
+                                            <p className="text-ink-60 text-sm">Take the items you've paid for from the kitchen.</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start space-x-3">
@@ -179,8 +179,8 @@ function OrderConfirmationContent() {
                                             <span className="text-green-600 text-sm font-bold">3</span>
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-900">Enjoy!</p>
-                                            <p className="text-gray-600 text-sm">Your payment is complete - enjoy your snacks!</p>
+                                            <p className="font-medium text-ink">Enjoy!</p>
+                                            <p className="text-ink-60 text-sm">Your payment is complete - enjoy your snacks!</p>
                                         </div>
                                     </div>
                                 </div>
@@ -188,11 +188,11 @@ function OrderConfirmationContent() {
 
                             {/* Payment Confirmation */}
                             <div>
-                                <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                                <h3 className="font-display text-xl font-semibold text-ink mb-4 flex items-center">
                                     <CreditCard className="w-6 h-6 text-green-600 mr-2" />
                                     Payment Confirmed
                                 </h3>
-                                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                                <div className="bg-green-50 p-4 border border-green-200">
                                     <div className="space-y-2 text-sm">
                                         <div className="flex justify-between">
                                             <span className="text-green-700">Status:</span>
@@ -216,21 +216,21 @@ function OrderConfirmationContent() {
                         </div>
 
                         {/* Order Items */}
-                        <div className="mt-8 pt-8 border-t border-gray-200">
-                            <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                        <div className="mt-8 pt-8 border-t border-clay">
+                            <h3 className="font-display text-xl font-semibold text-ink mb-4 flex items-center">
                                 <ShoppingCart className="w-6 h-6 text-green-600 mr-2" />
                                 Your Items
                             </h3>
                             <div className="grid gap-3">
                                 {orderDetails.items.map((item, index) => (
-                                    <div key={index} className="flex justify-between items-center py-2 px-4 bg-gray-50 rounded-lg">
+                                    <div key={index} className="flex justify-between items-center py-2 px-4 bg-linen">
                                         <div className="flex items-center">
-                                            <span className="font-medium text-gray-900">{item.name}</span>
+                                            <span className="font-medium text-ink">{item.name}</span>
                                             {item.quantity > 1 && (
-                                                <span className="ml-2 text-sm text-gray-600">x{item.quantity}</span>
+                                                <span className="ml-2 text-sm text-ink-60">x{item.quantity}</span>
                                             )}
                                         </div>
-                                        <span className="font-semibold text-gray-900">
+                                        <span className="font-semibold text-ink">
                                             ${(item.price * item.quantity).toFixed(2)}
                                         </span>
                                     </div>
@@ -239,12 +239,12 @@ function OrderConfirmationContent() {
                         </div>
 
                         {/* Email Confirmation */}
-                        <div className="mt-8 pt-8 border-t border-gray-200">
+                        <div className="mt-8 pt-8 border-t border-clay">
                             <div className="flex items-center space-x-3">
                                 <Mail className="w-6 h-6 text-green-600" />
                                 <div>
-                                    <p className="font-medium text-gray-900">Email Confirmation</p>
-                                    <p className="text-gray-600 text-sm">
+                                    <p className="font-medium text-ink">Email Confirmation</p>
+                                    <p className="text-ink-60 text-sm">
                                         A receipt and confirmation email has been sent to {orderDetails.customer_email}
                                     </p>
                                 </div>
@@ -254,7 +254,7 @@ function OrderConfirmationContent() {
                 </div>
 
                 {/* Location Info */}
-                <div className="bg-blue-50 rounded-lg p-6 mb-8 border border-blue-200">
+                <div className="bg-blue-50 p-6 mb-8 border border-blue-200">
                     <div className="flex items-start space-x-3">
                         <MapPin className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
                         <div>
@@ -274,14 +274,14 @@ function OrderConfirmationContent() {
                 <div className="text-center space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center">
                     <Link
                         href="/member-resources/snackshop"
-                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition w-full sm:w-auto justify-center"
+                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold hover:bg-blue-700 transition w-full sm:w-auto justify-center"
                     >
                         <ShoppingCart className="w-5 h-5 mr-2" />
                         Order More Items
                     </Link>
                     <Link
                         href="/member-resources"
-                        className="inline-flex items-center px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition w-full sm:w-auto justify-center"
+                        className="inline-flex items-center px-6 py-3 bg-bone text-blue-600 font-semibold border-2 border-blue-600 hover:bg-blue-50 transition w-full sm:w-auto justify-center"
                     >
                         Back to Member Resources
                     </Link>
@@ -296,10 +296,10 @@ function OrderConfirmationContent() {
 export default function OrderConfirmationPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
+            <div className="min-h-screen bg-bone pt-20 flex items-center justify-center">
                 <div className="text-center">
                     <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600">Loading order details...</p>
+                    <p className="text-ink-60">Loading order details...</p>
                 </div>
             </div>
         }>

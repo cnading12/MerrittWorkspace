@@ -38,9 +38,9 @@ function CancelOnboardingInner() {
 
   if (!linkValid) {
     return (
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow p-8">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Link not recognized</h1>
-        <p className="text-sm text-gray-600">
+      <div className="max-w-md mx-auto bg-bone p-8 border border-clay">
+        <h1 className="font-display text-2xl font-semibold text-ink mb-2">Link not recognized</h1>
+        <p className="text-sm text-ink-60">
           This cancellation link is incomplete or invalid. If you'd like to cancel your
           signup, please reply to one of our emails and we'll take care of it.
         </p>
@@ -50,13 +50,13 @@ function CancelOnboardingInner() {
 
   if (state === 'done') {
     return (
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow p-8">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Signup cancelled</h1>
-        <p className="text-sm text-gray-600 mb-4">
+      <div className="max-w-md mx-auto bg-bone p-8 border border-clay">
+        <h1 className="font-display text-2xl font-semibold text-ink mb-2">Signup cancelled</h1>
+        <p className="text-sm text-ink-60 mb-4">
           Your Merritt Workspace signup has been cancelled and you won't receive any more
           onboarding emails. We're sorry to see you go.
         </p>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-ink-60">
           Changed your mind? You're always welcome to{' '}
           <a href="/membership/apply" className="text-orange-600 hover:underline">
             apply again
@@ -68,9 +68,9 @@ function CancelOnboardingInner() {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow p-8">
-      <h1 className="text-2xl font-semibold text-gray-900 mb-2">Cancel your signup?</h1>
-      <p className="text-sm text-gray-600 mb-4">
+    <div className="max-w-md mx-auto bg-bone p-8 border border-clay">
+      <h1 className="font-display text-2xl font-semibold text-ink mb-2">Cancel your signup?</h1>
+      <p className="text-sm text-ink-60 mb-4">
         This will cancel your Merritt Workspace signup and stop the reminder emails about
         finishing your portal. You can always apply again later if you change your mind.
       </p>
@@ -80,13 +80,13 @@ function CancelOnboardingInner() {
           type="button"
           onClick={confirmCancel}
           disabled={state === 'loading'}
-          className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 disabled:opacity-50"
+          className="bg-red-600 text-white py-2 px-4 hover:bg-red-700 disabled:opacity-50"
         >
           {state === 'loading' ? 'Cancelling…' : 'Yes, cancel my signup'}
         </button>
         <a
           href="/portal/login"
-          className="border border-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-50"
+          className="border border-clay text-ink-60 py-2 px-4 hover:bg-linen"
         >
           No, keep my signup
         </a>
@@ -99,8 +99,8 @@ export default function CancelOnboardingPage() {
   return (
     <Suspense
       fallback={
-        <div className="max-w-md mx-auto bg-white rounded-lg shadow p-8">
-          <p className="text-sm text-gray-500">Loading…</p>
+        <div className="max-w-md mx-auto bg-bone p-8 border border-clay">
+          <p className="text-sm text-ink-60">Loading…</p>
         </div>
       }
     >

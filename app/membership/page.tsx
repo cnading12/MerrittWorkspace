@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { MapPin, Wifi, Shield, Phone, Coffee, Users, Calendar, CheckCircle, Building2, Clock, Mail, Heart, ArrowRight, Zap, TrendingUp } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
-import Image from 'next/image';
+import PageHero from '@/components/marketing/PageHero';
+import { BLUR } from '@/components/marketing/blur';
 
 const membershipPlans = [
   {
@@ -176,32 +176,26 @@ const membershipPlans = [
 
 const whyChooseFeatures = [
   {
-    icon: MapPin,
     title: 'Prime Location',
     description: 'Heart of Sloan\'s Lake, 3 minutes to I-25. Walk, bike, or drive to work easily.'
   },
   {
-    icon: Building2,
     title: 'Historic Character',
     description: 'Beautifully restored space with distinctive burnt orange floors and unique charm.'
   },
   {
-    icon: Users,
     title: 'Vibrant Community',
     description: 'Network with entrepreneurs, freelancers, and small businesses in a supportive environment.'
   },
   {
-    icon: Shield,
     title: 'Secure & Professional',
     description: '24/7 monitored building with professional atmosphere and business address services.'
   },
   {
-    icon: Calendar,
     title: 'Flexible Terms',
     description: 'No long-term lease required. Month-to-month flexibility for your changing needs.'
   },
   {
-    icon: Coffee,
     title: 'Full-Service Amenities',
     description: 'On-site snackshop, meeting rooms, high-speed WiFi, and everything you need to be productive.'
   }
@@ -234,6 +228,28 @@ const processSteps = [
 // public catalog until every desk on the shared floor is spoken for.
 const PRIVATE_DESK_PLAN_ID = 'private_dedicated_desk';
 
+// Comparison rows. `true` renders the included mark, `false` an em dash,
+// anything else prints as-is.
+const COMPARE_ROWS: { label: string; values: (string | boolean)[] }[] = [
+  { label: 'Monthly price', values: ['$200', '$500', '$700', '$1,200'] },
+  { label: 'Capacity', values: ['1 person', '1 person', '2 people', '4–8 people'] },
+  { label: 'Privacy', values: ['Shared space', 'Private office', 'Private office', 'Private office'] },
+  { label: '24/7 access', values: [true, true, true, true] },
+  { label: 'Meeting room credit', values: ['4 hrs/mo', '8 hrs/mo', '12 hrs/mo', '20 hrs/mo'] },
+  { label: 'Business address', values: [false, true, true, true] },
+  { label: 'Phone booths', values: [true, true, true, true] },
+  { label: 'Pet friendly', values: ['Common areas', true, true, true] },
+  { label: 'Lockable storage', values: [true, true, true, true] },
+];
+
+const COMPARE_COLS = ['Dedicated desk', 'Single office', '2-desk office', 'Large office'];
+
+function CompareCell({ value }: { value: string | boolean }) {
+  if (value === true) return <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" aria-label="Included" />;
+  if (value === false) return <span className="text-clay" aria-label="Not included">&mdash;</span>;
+  return <span className="text-ink-60">{value}</span>;
+}
+
 export default function MembershipPage() {
   // Best-effort availability check. Unknown (fetch in flight or failed) shows
   // the normal catalog: standard dedicated desk on offer, private tier hidden.
@@ -254,378 +270,200 @@ export default function MembershipPage() {
   );
   const privatePlans = membershipPlans.filter(plan => plan.category === 'private');
 
-  const renderPlanCard = (plan: typeof membershipPlans[number]) => {
+  const renderPlan = (plan: typeof membershipPlans[number]) => {
     // Every floor-plan desk is taken. The card stays up — with the price it
     // has always shown — so the private alternative reads as an explanation
     // rather than an unannounced price rise.
     const soldOut = plan.id === 'dedicated_desk' && desksFull;
+    const perDay = plan.id === 'one_day_dedicated_desk';
+
     return (
-    <div
-      key={plan.id}
-      className={`bg-white rounded-xl shadow-lg border-2 overflow-hidden hover:shadow-2xl transition group flex flex-col ${soldOut ? 'border-gray-200' : plan.id === 'dedicated_desk' || plan.id === PRIVATE_DESK_PLAN_ID ? 'border-burnt-orange-400' : 'border-gray-200'}`}
-    >
-      {/* Image */}
-      <div className="relative h-48 overflow-hidden">
-        <Image
-          src={plan.image}
-          alt={plan.name}
-          fill
-          placeholder="blur"
-          blurDataURL={plan.blurDataURL}
-          className="object-cover group-hover:scale-105 transition duration-300"
-        />
-        {soldOut ? (
-          <div className="absolute top-4 right-4 bg-gray-900 text-white px-3 py-1 rounded-full text-xs font-semibold">
-            Fully Occupied
-          </div>
-        ) : plan.badge ? (
-          <div className="absolute top-4 right-4 bg-burnt-orange-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-            {plan.badge}
-          </div>
-        ) : null}
-      </div>
+      <div key={plan.id} className="flex flex-col border-t border-clay pt-8">
+        <h3 className="mw-h3">{plan.name}</h3>
 
-      {/* Content */}
-      <div className="p-6 flex flex-col flex-grow">
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+        <p className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
+          ${plan.price}
+          <span className="text-base font-normal text-ink-60">
+            {perDay ? ' one-time / day' : ' /mo'}
+          </span>
+        </p>
 
-        {plan.id === 'one_day_dedicated_desk' ? (
-          <div className="flex items-baseline gap-2 mb-4">
-            <span className="text-4xl font-bold text-burnt-orange-600">${plan.price}</span>
-            <span className="text-lg text-gray-500">one-time / day</span>
-          </div>
-        ) : (
-          <div className="flex items-baseline gap-2 mb-4">
-            <span className="text-4xl font-bold text-burnt-orange-600">${plan.price}</span>
-            <span className="text-lg text-gray-500">/month</span>
-          </div>
-        )}
-
-        <p className="text-gray-600 mb-4">{plan.description}</p>
+        <p className="mt-4 text-[16px] leading-relaxed text-ink-60">{plan.description}</p>
 
         {soldOut && (
-          <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-            <strong>All of our dedicated desks are currently taken.</strong> We&apos;re still
-            welcoming dedicated desk members — see the Private Dedicated Desk option, your own
-            desk in a private, lockable area.
-          </div>
+          <p className="mt-5 border-l-2 border-accent pl-4 text-[15px] leading-relaxed text-ink-60">
+            <strong className="font-semibold text-ink">Every dedicated desk is currently taken.</strong>{' '}
+            We&rsquo;re still welcoming dedicated desk members — see the Private
+            Dedicated Desk below, your own desk in a private, lockable area.
+          </p>
         )}
 
-        <div className="space-y-2 mb-4 text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-burnt-orange-600" />
-            <span>{plan.capacity}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-burnt-orange-600" />
-            <span>{plan.privacy}</span>
-          </div>
-        </div>
+        <p className="mt-5 text-[13px] uppercase tracking-[0.14em] text-ink-60">
+          {plan.capacity} &middot; {plan.privacy}
+        </p>
 
-        <div className="mb-6 flex-grow">
-          <p className="text-sm font-semibold text-gray-700 mb-3">Key Features:</p>
-          <ul className="space-y-2">
-            {plan.features.slice(0, 5).map((feature, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                <span>{feature}</span>
-              </li>
-            ))}
-          </ul>
+        <ul className="mt-5 flex-grow space-y-2">
+          {plan.features.slice(0, 5).map((feature, i) => (
+            <li key={i} className="text-[15px] leading-relaxed text-ink-60">{feature}</li>
+          ))}
           {plan.features.length > 5 && (
-            <p className="text-xs text-gray-500 mt-2">+ {plan.features.length - 5} more features</p>
+            <li className="text-[15px] text-ink-60/70">+ {plan.features.length - 5} more</li>
           )}
-        </div>
+        </ul>
 
-        <div className="space-y-3 mt-auto">
-          <Link
-            href={plan.link}
-            className="w-full bg-burnt-orange-600 hover:bg-burnt-orange-700 text-white py-3 px-4 rounded-lg font-semibold transition text-center block"
-          >
-            Learn More
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <Link href={plan.link} className="mw-btn-primary flex-1 px-6 py-3.5">
+            Learn more
           </Link>
           {!soldOut && (
-            <Link
-              href="/membership/apply"
-              className="w-full border-2 border-burnt-orange-600 text-burnt-orange-600 hover:bg-burnt-orange-600 hover:text-white py-3 px-4 rounded-lg font-semibold transition text-center block"
-            >
-              Apply Now
+            <Link href="/membership/apply" className="mw-btn-ghost flex-1 px-6 py-3.5">
+              Apply now
             </Link>
           )}
         </div>
       </div>
-    </div>
     );
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 pt-16">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-bold mb-6">
-              <CheckCircle className="w-4 h-4" />
-              Every New Member Gets a Free Trial Day
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Find Your Perfect
-              <span className="text-burnt-orange-600 block">Workspace</span>
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Experience premium coworking in the heart of Sloan's Lake. Choose from dedicated desks to private offices,
-              all with our distinctive character and collaborative atmosphere. Try any plan with a <strong>free trial day</strong>—no commitment required.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/contact"
-                className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition inline-flex items-center justify-center gap-2"
-              >
-                Book Your Free Trial Day
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link
-                href="/membership/apply"
-                className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition"
-              >
-                Apply for Membership
-              </Link>
-            </div>
+    <main className="bg-bone">
+      <PageHero
+        src="/images/new-hero/hero-desks-occupied.webp"
+        alt="Members at work on the dedicated desk floor at Merritt Workspace in Sloan's Lake, Denver"
+        blurDataURL={BLUR['hero-desks-occupied']}
+        eyebrow="Membership"
+        title={<>Desks and offices, month to month.</>}
+        lead="No long lease, no tiered nonsense. Pick the space that fits the work, and change it when the work changes."
+      />
+
+      {/* Shared workspace */}
+      <section className="mw-section">
+        <div className="mw-container">
+          <div className="max-w-2xl">
+            <p className="mw-eyebrow mb-5">Shared workspace</p>
+            <h2 className="mw-h2">A desk of your own on the shared floor.</h2>
+          </div>
+          <div className="mt-14 grid gap-x-10 gap-y-14 md:mt-20 md:grid-cols-2 lg:grid-cols-3">
+            {sharedPlans.map(renderPlan)}
           </div>
         </div>
       </section>
 
-      {/* Membership Plans */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Choose Your Membership</h2>
-            <p className="text-xl text-gray-600">Find the perfect workspace solution for your needs</p>
+      {/* Private offices */}
+      <section className="mw-section-alt">
+        <div className="mw-container">
+          <div className="max-w-2xl">
+            <p className="mw-eyebrow mb-5">Private offices</p>
+            <h2 className="mw-h2">Fourteen lockable rooms, one to eight people.</h2>
           </div>
-
-          {/* Shared Workspace */}
-          <div className="mb-16">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-burnt-orange-100 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-burnt-orange-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900">Shared Workspace</h3>
-            </div>
-            <p className="text-gray-600 mb-8">Flexible desks in our open community space — ideal for solo professionals.</p>
-            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              {sharedPlans.map(renderPlanCard)}
-            </div>
-          </div>
-
-          {/* Private Offices */}
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-burnt-orange-100 rounded-lg flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-burnt-orange-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900">Private Offices</h3>
-            </div>
-            <p className="text-gray-600 mb-8">Lockable private offices for individuals, partnerships, and teams.</p>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {privatePlans.map(renderPlanCard)}
-            </div>
-          </div>
-
-          <div className="text-center mt-12">
-            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-5 py-3 rounded-full text-base font-bold mb-3">
-              <CheckCircle className="w-5 h-5" />
-              All memberships include a FREE TRIAL DAY — experience the space before you commit
-            </div>
-            <p className="text-sm text-gray-500">No long-term contracts • Month-to-month flexibility</p>
+          <div className="mt-14 grid gap-x-10 gap-y-14 md:mt-20 md:grid-cols-2 lg:grid-cols-3">
+            {privatePlans.map(renderPlan)}
           </div>
         </div>
       </section>
 
-      {/* Comparison Table */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Compare All Options</h2>
-            <p className="text-xl text-gray-600">Find the perfect fit for your needs</p>
+      {/* Compare */}
+      <section className="mw-section-rule">
+        <div className="mw-container">
+          <div className="max-w-2xl">
+            <p className="mw-eyebrow mb-5">Side by side</p>
+            <h2 className="mw-h2">Compare every option.</h2>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-burnt-orange-50 border-b border-gray-200">
-                    <th className="text-left p-4 font-semibold text-gray-900 min-w-[200px]">Feature</th>
-                    <th className="text-center p-4 font-semibold text-gray-900 min-w-[150px]">
-                      Dedicated<br />Desk
+          <div className="mt-12 overflow-x-auto md:mt-16">
+            <table className="w-full min-w-[720px] border-collapse text-left">
+              <thead>
+                <tr className="border-y border-clay">
+                  <th className="w-[26%] py-5 pr-4 text-[13px] font-medium uppercase tracking-[0.14em] text-ink-60">
+                    Feature
+                  </th>
+                  {COMPARE_COLS.map(col => (
+                    <th key={col} className="py-5 pr-4 font-display text-lg font-semibold text-ink">
+                      {col}
                     </th>
-                    <th className="text-center p-4 font-semibold text-gray-900 min-w-[150px]">
-                      Single<br />Office
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARE_ROWS.map(row => (
+                  <tr key={row.label} className="border-b border-clay">
+                    <th scope="row" className="py-5 pr-4 text-[15px] font-medium text-ink">
+                      {row.label}
                     </th>
-                    <th className="text-center p-4 font-semibold text-gray-900 min-w-[150px]">
-                      2-Desk<br />Office
-                    </th>
-                    <th className="text-center p-4 font-semibold text-gray-900 min-w-[150px]">
-                      Large<br />Office
-                    </th>
+                    {row.values.map((v, i) => (
+                      <td key={i} className="py-5 pr-4 text-[15px]">
+                        <CompareCell value={v} />
+                      </td>
+                    ))}
                   </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-4 font-medium text-gray-900">Monthly Price</td>
-                    <td className="p-4 text-center text-burnt-orange-600 font-bold">$200</td>
-                    <td className="p-4 text-center text-burnt-orange-600 font-bold">$500</td>
-                    <td className="p-4 text-center text-burnt-orange-600 font-bold">$700</td>
-                    <td className="p-4 text-center text-burnt-orange-600 font-bold">$1,200</td>
-                  </tr>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <td className="p-4 font-medium text-gray-900">Capacity</td>
-                    <td className="p-4 text-center text-gray-600">1 person</td>
-                    <td className="p-4 text-center text-gray-600">1 person</td>
-                    <td className="p-4 text-center text-gray-600">2 people</td>
-                    <td className="p-4 text-center text-gray-600">4-8 people</td>
-                  </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-4 font-medium text-gray-900">Privacy</td>
-                    <td className="p-4 text-center text-gray-600">Shared space</td>
-                    <td className="p-4 text-center text-gray-600">Private office</td>
-                    <td className="p-4 text-center text-gray-600">Private office</td>
-                    <td className="p-4 text-center text-gray-600">Private office</td>
-                  </tr>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <td className="p-4 font-medium text-gray-900">24/7 Access</td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                  </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-4 font-medium text-gray-900">Meeting Room Credits</td>
-                    <td className="p-4 text-center text-gray-600">4 hrs/mo</td>
-                    <td className="p-4 text-center text-gray-600">8 hrs/mo</td>
-                    <td className="p-4 text-center text-gray-600">12 hrs/mo</td>
-                    <td className="p-4 text-center text-gray-600">20 hrs/mo</td>
-                  </tr>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <td className="p-4 font-medium text-gray-900">Business Address</td>
-                    <td className="p-4 text-center text-gray-400">—</td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                  </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-4 font-medium text-gray-900">Phone Booths</td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                  </tr>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <td className="p-4 font-medium text-gray-900">Pet-Friendly</td>
-                    <td className="p-4 text-center text-gray-600 text-sm">Common areas</td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                  </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-4 font-medium text-gray-900">Lockable Storage</td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                    <td className="p-4 text-center"><CheckCircle className="w-5 h-5 text-green-500 mx-auto" /></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
 
-      {/* Why Choose Merritt */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Merritt Workspace?</h2>
-            <p className="text-xl text-gray-600">More than just a workspace - it's a community</p>
+      {/* Why choose */}
+      <section className="mw-section-alt">
+        <div className="mw-container">
+          <div className="max-w-2xl">
+            <p className="mw-eyebrow mb-5">Why members choose us</p>
+            <h2 className="mw-h2">An independent space, not a franchise.</h2>
           </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {whyChooseFeatures.map((feature, index) => {
-              const IconComponent = feature.icon;
-              return (
-                <div key={index} className="bg-gray-50 rounded-xl p-6 hover:shadow-lg transition">
-                  <div className="w-12 h-12 bg-burnt-orange-100 rounded-lg flex items-center justify-center mb-4">
-                    <IconComponent className="w-6 h-6 text-burnt-orange-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
-                  <p className="text-gray-600">{feature.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials removed — to be added when real member quotes are collected */}
-
-      {/* Application Process */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Simple Application Process</h2>
-            <p className="text-xl text-gray-600">Get started in four easy steps</p>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-8">
-            {processSteps.map((step) => (
-              <div key={step.number} className="text-center">
-                <div className="w-16 h-16 bg-burnt-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl font-bold text-burnt-orange-600">{step.number}</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{step.title}</h3>
-                <p className="text-gray-600 text-sm">{step.description}</p>
+          <div className="mt-14 grid gap-x-10 gap-y-12 border-t border-clay pt-10 sm:grid-cols-2 lg:grid-cols-3 md:mt-20">
+            {whyChooseFeatures.map(feature => (
+              <div key={feature.title}>
+                <h3 className="mw-h3">{feature.title}</h3>
+                <p className="mt-4 mw-body">{feature.description}</p>
               </div>
             ))}
           </div>
-
-          <div className="text-center mt-12">
-            <Link
-              href="/membership/apply"
-              className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition inline-flex items-center gap-2"
-            >
-              Start Your Application
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-16 bg-gradient-to-r from-burnt-orange-500 to-burnt-orange-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 bg-white text-burnt-orange-700 px-4 py-2 rounded-full text-sm font-bold mb-6">
-            <CheckCircle className="w-4 h-4" />
-            Free Trial Day for Every New Member
+      {/* Process */}
+      <section className="mw-section-rule">
+        <div className="mw-container">
+          <div className="max-w-2xl">
+            <p className="mw-eyebrow mb-5">How it works</p>
+            <h2 className="mw-h2">Four steps, about a week.</h2>
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Join Our Community?
-          </h2>
-          <p className="text-xl text-burnt-orange-100 mb-8">
-            Spend a free day working with us before you decide. Experience Sloan's Lake's most collaborative workspace on the house.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/contact"
-              className="bg-white text-burnt-orange-600 py-4 px-8 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center gap-2"
-            >
-              Book Your Free Trial Day
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              href="/membership/apply"
-              className="bg-burnt-orange-700 text-white py-4 px-8 rounded-lg font-semibold hover:bg-burnt-orange-800 transition inline-flex items-center justify-center border-2 border-white"
-            >
-              Apply for Membership
-            </Link>
+          <ol className="mt-14 grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-4 md:mt-20">
+            {processSteps.map(step => (
+              <li key={step.number} className="border-t border-clay pt-6">
+                <span className="font-display text-4xl font-semibold text-clay">
+                  {String(step.number).padStart(2, '0')}
+                </span>
+                <h3 className="mt-4 font-display text-xl font-semibold text-ink">{step.title}</h3>
+                <p className="mt-3 text-[15px] leading-relaxed text-ink-60">{step.description}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="border-t border-clay bg-ink py-20 text-bone md:py-32">
+        <div className="mw-container">
+          <div className="max-w-3xl">
+            <p className="mb-5 text-[12px] font-medium uppercase tracking-[0.18em] text-bone/60 md:text-[13px]">
+              Try it first
+            </p>
+            <h2 className="font-display text-[2rem] font-semibold leading-[1.02] tracking-tightest text-bone sm:text-4xl lg:text-[3.25rem]">
+              Work a full day here before you commit to anything.
+            </h2>
+            <p className="mt-7 max-w-2xl text-[17px] leading-relaxed text-bone/70 md:text-lg">
+              Every prospective member gets a free trial day — the desk, the
+              coffee, the flex space, the whole thing. Then decide.
+            </p>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
+              <Link href="/membership/apply" className="mw-btn bg-accent text-white hover:bg-accent-deep">
+                Apply today
+              </Link>
+              <Link href="/contact" className="mw-btn border border-bone/40 text-bone hover:bg-bone hover:text-ink">
+                Book a free trial day
+              </Link>
+            </div>
           </div>
         </div>
       </section>

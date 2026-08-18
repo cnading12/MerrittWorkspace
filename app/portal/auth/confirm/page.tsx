@@ -43,26 +43,26 @@ export default function ConfirmAuthPage() {
   }, [params, router]);
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow p-8">
-      <h1 className="text-2xl font-semibold text-gray-900 mb-2">Signing you in…</h1>
+    <div className="max-w-md mx-auto bg-bone p-8 border border-clay">
+      <h1 className="font-display text-2xl font-semibold text-ink mb-2">Signing you in…</h1>
       {error ? (
         <div className="space-y-4">
           <div className="text-sm text-red-600">
             <p>{error}</p>
-            <p className="mt-2 text-gray-700">
+            <p className="mt-2 text-ink-60">
               Sign-in links expire after 24 hours. Enter your email below and we'll
               send you a fresh one.
             </p>
           </div>
           <ResendLinkForm />
           <p className="text-sm">
-            <a href="/portal/login" className="underline text-gray-700">
+            <a href="/portal/login" className="underline text-ink-60">
               Return to sign in
             </a>
           </p>
         </div>
       ) : (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-ink-60">
           Verifying your one-time link, please wait.
         </p>
       )}
@@ -98,19 +98,19 @@ function ResendLinkForm() {
 
   return (
     <form onSubmit={submit} className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">Your email</label>
+      <label className="block text-sm font-medium text-ink-60">Your email</label>
       <input
         type="email"
         required
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="w-full border rounded px-3 py-2 text-sm"
+        className="w-full border px-3 py-2 text-sm"
         placeholder="you@example.com"
       />
       <button
         type="submit"
         disabled={loading || !email}
-        className="w-full bg-gray-900 text-white py-2 rounded hover:bg-gray-800 disabled:opacity-50 text-sm"
+        className="w-full bg-ink text-white py-2 hover:bg-ink disabled:opacity-50 text-sm"
       >
         {loading ? 'Sending…' : 'Email me a new link'}
       </button>
