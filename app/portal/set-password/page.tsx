@@ -68,23 +68,23 @@ export default function SetPasswordPage() {
 
   if (checking) {
     return (
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow p-8">
-        <p className="text-sm text-gray-500">Loading…</p>
+      <div className="max-w-md mx-auto bg-bone p-8 border border-clay">
+        <p className="text-sm text-ink-60">Loading…</p>
       </div>
     );
   }
 
   if (!hasSession) {
     return (
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow p-8">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Set your password</h1>
-        <p className="text-sm text-gray-600 mb-4">
+      <div className="max-w-md mx-auto bg-bone p-8 border border-clay">
+        <h1 className="font-display text-2xl font-semibold text-ink mb-2">Set your password</h1>
+        <p className="text-sm text-ink-60 mb-4">
           To set a password you first need to sign in using the one-click
           invite link we emailed you, or request a new email sign-in link.
         </p>
         <a
           href="/portal/login"
-          className="inline-block bg-gray-900 text-white py-2 px-4 rounded hover:bg-gray-800"
+          className="inline-block bg-ink text-white py-2 px-4 hover:bg-ink"
         >
           Go to sign in
         </a>
@@ -93,33 +93,33 @@ export default function SetPasswordPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow p-8">
-      <h1 className="text-2xl font-semibold text-gray-900 mb-2">Set your password</h1>
-      <p className="text-sm text-gray-500 mb-6">
+    <div className="max-w-md mx-auto bg-bone p-8 border border-clay">
+      <h1 className="font-display text-2xl font-semibold text-ink mb-2">Set your password</h1>
+      <p className="text-sm text-ink-60 mb-6">
         {email ? <>Signed in as <strong>{email}</strong>. </> : null}
         Choose a password you'll use to sign in to the member portal.
       </p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">New password</label>
+          <label className="block text-sm font-medium text-ink-60">New password</label>
           <input
             type="password"
             required
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full border rounded px-3 py-2"
+            className="mt-1 w-full border px-3 py-2"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Confirm password</label>
+          <label className="block text-sm font-medium text-ink-60">Confirm password</label>
           <input
             type="password"
             required
             minLength={8}
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            className="mt-1 w-full border rounded px-3 py-2"
+            className="mt-1 w-full border px-3 py-2"
           />
         </div>
         {error && <div className="text-sm text-red-600">{error}</div>}
@@ -127,7 +127,7 @@ export default function SetPasswordPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gray-900 text-white py-2 rounded hover:bg-gray-800 disabled:opacity-50"
+          className="w-full bg-ink text-white py-2 hover:bg-ink disabled:opacity-50"
         >
           {loading ? 'Saving…' : 'Save password'}
         </button>

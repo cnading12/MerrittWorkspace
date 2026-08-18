@@ -184,16 +184,16 @@ export default function FlexSpacePage() {
   }
 
   if (!token || loading) {
-    return <div className="text-gray-500">Loading…</div>;
+    return <div className="text-ink-60">Loading…</div>;
   }
 
   if (accessBlocked) {
     return (
       <div className="space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold text-gray-900">Flex Space</h1>
+          <h1 className="font-display text-2xl font-semibold text-ink">Flex Space</h1>
         </header>
-        <div className="bg-amber-50 border border-amber-300 rounded-lg p-5 text-sm text-amber-900 space-y-2">
+        <div className="bg-amber-50 border border-amber-300 p-5 text-sm text-amber-900 space-y-2">
           <p className="font-semibold">Not included with your day pass</p>
           <p>{accessBlocked}</p>
           <p>
@@ -219,26 +219,26 @@ export default function FlexSpacePage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-gray-900">Flex Space</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="font-display text-2xl font-semibold text-ink">Flex Space</h1>
+        <p className="text-sm text-ink-60">
           Reserve the church building for up to 4 hours per week, up to 60 days
           in advance. Available weekdays 9:00 AM – 4:30 PM Mountain Time.
         </p>
       </header>
 
-      <div className="bg-white border rounded-lg p-5">
+      <div className="bg-bone border p-5">
         <div className="flex items-baseline justify-between">
-          <div className="text-lg font-medium text-gray-900">
+          <div className="text-lg font-medium text-ink">
             {fmtHours(usedMinutes)} of {fmtHours(allowedMinutes)} hours used
             this week
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-ink-60">
             {fmtHours(remainingMinutes)} hr remaining
           </div>
         </div>
-        <div className="mt-3 h-2 bg-gray-100 rounded">
+        <div className="mt-3 h-2 bg-linen">
           <div
-            className="h-2 rounded bg-orange-500"
+            className="h-2 bg-orange-500"
             style={{
               width: `${Math.min(100, (usedMinutes / allowedMinutes) * 100)}%`,
             }}
@@ -250,11 +250,11 @@ export default function FlexSpacePage() {
 
       <form
         onSubmit={submit}
-        className="bg-white border rounded-lg p-5 space-y-4"
+        className="bg-bone border p-5 space-y-4"
       >
-        <h2 className="text-lg font-medium text-gray-900">Book a time</h2>
+        <h2 className="font-display text-lg font-medium text-ink">Book a time</h2>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-ink-60">
             Event title
           </label>
           <input
@@ -264,21 +264,21 @@ export default function FlexSpacePage() {
             value={eventTitle}
             onChange={(e) => setEventTitle(e.target.value)}
             placeholder="e.g. Team meeting, art class, workshop"
-            className="mt-1 w-full border rounded px-3 py-2 text-base"
+            className="mt-1 w-full border px-3 py-2 text-base"
           />
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-ink-60">
             Tell us what you&apos;re using the space for so staff and other
             members know what&apos;s happening.
           </p>
         </div>
-        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+        <div className="border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
           <strong>Heads up:</strong> all setup and breakdown for your event
           must happen within your booked window. Please plan your arrival and
           cleanup time accordingly so the next member can start on time.
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-ink-60">
               Date
             </label>
             <input
@@ -288,11 +288,11 @@ export default function FlexSpacePage() {
               max={maxDateIso}
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="mt-1 w-full border rounded px-3 py-2 text-base"
+              className="mt-1 w-full border px-3 py-2 text-base"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-ink-60">
               Start time
             </label>
             <input
@@ -303,17 +303,17 @@ export default function FlexSpacePage() {
               step={900}
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="mt-1 w-full border rounded px-3 py-2 text-base"
+              className="mt-1 w-full border px-3 py-2 text-base"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-ink-60">
               Duration
             </label>
             <select
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
-              className="mt-1 w-full border rounded px-3 py-2 text-base"
+              className="mt-1 w-full border px-3 py-2 text-base"
             >
               {DURATION_OPTIONS.map((opt) => (
                 <option
@@ -333,24 +333,24 @@ export default function FlexSpacePage() {
         <button
           type="submit"
           disabled={submitting || remainingMinutes <= 0}
-          className="w-full sm:w-auto bg-gray-900 text-white px-5 py-2.5 rounded hover:bg-gray-800 disabled:opacity-50"
+          className="w-full sm:w-auto bg-ink text-white px-5 py-2.5 hover:bg-ink disabled:opacity-50"
         >
           {submitting ? 'Booking…' : 'Book flex space'}
         </button>
         {remainingMinutes <= 0 && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-ink-60">
             You&apos;ve used your full weekly allowance. Cancel an existing
             booking or wait until next week.
           </p>
         )}
       </form>
 
-      <section className="bg-white border rounded-lg p-5">
-        <h2 className="text-lg font-medium text-gray-900 mb-3">
+      <section className="bg-bone border p-5">
+        <h2 className="font-display text-lg font-medium text-ink mb-3">
           Upcoming bookings
         </h2>
         {bookings.length === 0 ? (
-          <p className="text-sm text-gray-500">No upcoming flex bookings.</p>
+          <p className="text-sm text-ink-60">No upcoming flex bookings.</p>
         ) : (
           <ul className="divide-y">
             {bookings.map((b) => (
@@ -360,14 +360,14 @@ export default function FlexSpacePage() {
               >
                 <div>
                   {b.event_title && (
-                    <div className="text-sm font-semibold text-gray-900">
+                    <div className="text-sm font-semibold text-ink">
                       {b.event_title}
                     </div>
                   )}
-                  <div className="text-sm text-gray-900">
+                  <div className="text-sm text-ink">
                     {formatLocal(b.start_time)} – {formatLocal(b.end_time)}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-ink-60">
                     {fmtHours(b.duration_minutes)} hr · {b.status}
                   </div>
                 </div>

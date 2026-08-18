@@ -162,24 +162,24 @@ export default function ExistingMemberMigrationPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-8">
+    <div className="max-w-2xl mx-auto bg-bone p-8 border border-clay">
       <div className="mb-6">
-        <Link href="/portal/login" className="text-sm text-gray-500 hover:text-gray-900">
+        <Link href="/portal/login" className="text-sm text-ink-60 hover:text-ink">
           ← Back to sign in
         </Link>
       </div>
 
-      <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+      <h1 className="font-display text-2xl font-semibold text-ink mb-2">
         Existing member account setup
       </h1>
-      <p className="text-sm text-gray-600 mb-6">
+      <p className="text-sm text-ink-60 mb-6">
         Use this form if you joined Merritt Workspace before our online
         portal existed, <strong>or</strong> if you&apos;re joining an office
         that a colleague or your company already pays for. We&apos;ll just
         need a few details.
       </p>
 
-      <div className="bg-orange-50 border border-orange-200 rounded p-4 text-sm text-gray-700 mb-6">
+      <div className="bg-orange-50 border border-orange-200 p-4 text-sm text-ink-60 mb-6">
         <p className="font-semibold text-orange-900 mb-1">What this is not</p>
         <p>
           This is <em>only</em> for people who already have a membership or a
@@ -193,17 +193,17 @@ export default function ExistingMemberMigrationPage() {
       </div>
 
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-300 text-red-900 rounded p-3 text-sm">
+        <div className="mb-4 bg-red-50 border border-red-300 text-red-900 p-3 text-sm">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <section>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Account</h2>
+          <h2 className="font-display text-lg font-semibold text-ink mb-3">Account</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-ink-60">
                 Email <span className="text-red-500">*</span>
               </label>
               <input
@@ -211,11 +211,11 @@ export default function ExistingMemberMigrationPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full border rounded px-3 py-2"
+                className="mt-1 w-full border px-3 py-2"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-ink-60">
                 Password <span className="text-red-500">*</span>
               </label>
               <input
@@ -224,12 +224,12 @@ export default function ExistingMemberMigrationPage() {
                 minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full border rounded px-3 py-2"
+                className="mt-1 w-full border px-3 py-2"
               />
-              <p className="text-xs text-gray-500 mt-1">At least 8 characters.</p>
+              <p className="text-xs text-ink-60 mt-1">At least 8 characters.</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-ink-60">
                 Confirm password <span className="text-red-500">*</span>
               </label>
               <input
@@ -238,17 +238,17 @@ export default function ExistingMemberMigrationPage() {
                 minLength={8}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 w-full border rounded px-3 py-2"
+                className="mt-1 w-full border px-3 py-2"
               />
             </div>
           </div>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Contact info</h2>
+          <h2 className="font-display text-lg font-semibold text-ink mb-3">Contact info</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-ink-60">
                 First name <span className="text-red-500">*</span>
               </label>
               <input
@@ -256,11 +256,11 @@ export default function ExistingMemberMigrationPage() {
                 required
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="mt-1 w-full border rounded px-3 py-2"
+                className="mt-1 w-full border px-3 py-2"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-ink-60">
                 Last name <span className="text-red-500">*</span>
               </label>
               <input
@@ -268,11 +268,11 @@ export default function ExistingMemberMigrationPage() {
                 required
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="mt-1 w-full border rounded px-3 py-2"
+                className="mt-1 w-full border px-3 py-2"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-ink-60">
                 Phone <span className="text-red-500">*</span>
               </label>
               <input
@@ -280,32 +280,32 @@ export default function ExistingMemberMigrationPage() {
                 required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="mt-1 w-full border rounded px-3 py-2"
+                className="mt-1 w-full border px-3 py-2"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-ink-60">
                 Company (optional)
               </label>
               <input
                 type="text"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                className="mt-1 w-full border rounded px-3 py-2"
+                className="mt-1 w-full border px-3 py-2"
               />
             </div>
           </div>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">
+          <h2 className="font-display text-lg font-semibold text-ink mb-3">
             Your membership
           </h2>
           <div className="space-y-2">
             {PLANS.map((p) => (
               <label
                 key={p.id}
-                className={`flex items-start gap-3 p-3 rounded border cursor-pointer ${
+                className={`flex items-start gap-3 p-3 border cursor-pointer ${
                   planId === p.id
                     ? 'border-orange-500 bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -320,12 +320,12 @@ export default function ExistingMemberMigrationPage() {
                 />
                 <div className="flex-1">
                   <div className="flex items-baseline justify-between gap-3">
-                    <div className="font-medium text-gray-900">{p.label}</div>
-                    <div className="text-sm text-gray-700">
+                    <div className="font-medium text-ink">{p.label}</div>
+                    <div className="text-sm text-ink-60">
                       {p.monthly === 0 ? 'Free' : `$${p.monthly}/mo`}
                     </div>
                   </div>
-                  <div className="text-xs text-gray-500">{p.blurb}</div>
+                  <div className="text-xs text-ink-60">{p.blurb}</div>
                 </div>
               </label>
             ))}
@@ -334,7 +334,7 @@ export default function ExistingMemberMigrationPage() {
           <div className="mt-4">
             {selectedPlan.needs === 'desk' ? (
               <>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-ink-60">
                   Your dedicated desk number <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -343,12 +343,12 @@ export default function ExistingMemberMigrationPage() {
                   value={deskNumber}
                   onChange={(e) => setDeskNumber(e.target.value)}
                   placeholder="e.g. DD4"
-                  className="mt-1 w-full border rounded px-3 py-2 sm:w-48"
+                  className="mt-1 w-full border px-3 py-2 sm:w-48"
                 />
               </>
             ) : (
               <>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-ink-60">
                   {planId === 'office_member'
                     ? 'The office you work in'
                     : 'Your office number'}{' '}
@@ -360,11 +360,11 @@ export default function ExistingMemberMigrationPage() {
                   value={officeNumber}
                   onChange={(e) => setOfficeNumber(e.target.value)}
                   placeholder="e.g. 110"
-                  className="mt-1 w-full border rounded px-3 py-2 sm:w-48"
+                  className="mt-1 w-full border px-3 py-2 sm:w-48"
                 />
               </>
             )}
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-ink-60 mt-1">
               {selectedPlan.needs === 'desk'
                 ? `Dedicated desks are numbered ${DESK_RANGE_LABEL}.`
                 : 'Offices are numbered 100–114 (there is no 113).'}{' '}
@@ -372,7 +372,7 @@ export default function ExistingMemberMigrationPage() {
               on the admin side.
             </p>
             {selectedPlan.needs === 'desk' && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-ink-60 mt-1">
                 Reminder: please keep something on your desk that marks it as
                 yours — anything from a business card or sticky note to your
                 full setup. An empty desk looks available to visitors and
@@ -382,8 +382,8 @@ export default function ExistingMemberMigrationPage() {
           </div>
         </section>
 
-        <section className="bg-gray-50 border border-gray-200 rounded p-4 text-sm text-gray-700 space-y-2">
-          <p className="font-semibold text-gray-900">After you submit</p>
+        <section className="bg-linen border border-clay p-4 text-sm text-ink-60 space-y-2">
+          <p className="font-semibold text-ink">After you submit</p>
           {planId === 'office_member' ? (
             <ol className="list-decimal pl-5 space-y-1">
               <li>You&apos;ll be signed straight into your member portal.</li>
@@ -416,7 +416,7 @@ export default function ExistingMemberMigrationPage() {
           )}
         </section>
 
-        <label className="flex items-start gap-2 text-sm text-gray-700">
+        <label className="flex items-start gap-2 text-sm text-ink-60">
           <input
             type="checkbox"
             checked={agreesToTerms}
@@ -441,7 +441,7 @@ export default function ExistingMemberMigrationPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full bg-gray-900 text-white py-3 rounded font-semibold hover:bg-gray-800 disabled:opacity-50"
+          className="w-full bg-ink text-white py-3 font-semibold hover:bg-ink disabled:opacity-50"
         >
           {submitting ? 'Setting up your account…' : 'Create my portal account'}
         </button>
