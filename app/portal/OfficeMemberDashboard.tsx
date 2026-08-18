@@ -209,17 +209,20 @@ export default function OfficeMemberDashboard({
             </a>
 
             <div className="bg-bone border p-5">
-              <div className="font-semibold text-ink">🔑 Building access code</div>
+              <div className="font-semibold text-ink">🔑 After-hours access code</div>
+              <p className="text-sm text-green-800 mt-1 font-medium">
+                No code needed Mon – Fri, 8:00 AM – 6:00 PM — the door is unlocked.
+              </p>
               <p className="text-sm text-ink-60 mt-1">
                 {member.access_code ? (
                   <>
-                    Your access code:{' '}
+                    Your after-hours code:{' '}
                     <code className="bg-linen px-1.5 py-0.5 font-semibold">
                       {member.access_code}
                     </code>
                   </>
                 ) : (
-                  'Need after-hours entry? Request a personal access code and staff will email it to you.'
+                  'Only coming in during late evenings or on weekends? Request a personal access code and staff will email it to you.'
                 )}
               </p>
               {!member.access_code && (
@@ -230,7 +233,7 @@ export default function OfficeMemberDashboard({
                 >
                   {requestingCode
                     ? 'Requesting…'
-                    : accessRequestStatus || 'Request access code'}
+                    : accessRequestStatus || 'Request after-hours code'}
                 </button>
               )}
             </div>

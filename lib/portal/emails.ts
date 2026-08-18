@@ -307,12 +307,13 @@ export function accessCodeIssuedEmail(opts: {
       tagline: 'Your personal building entry code',
       body: `
         <p>Hi ${opts.firstName},</p>
-        <p>Here is your personal 24/7 building access code:</p>
+        <p>Here is your personal after-hours building access code:</p>
         <p style="text-align:center;">
           <span class="code">${opts.accessCode}</span>
         </p>
         <div class="highlight">
-          <p style="margin:0;"><strong>Building hours:</strong> The main entrance is unlocked from 8 AM – 6 PM Monday through Friday. Use this code outside those hours to enter the building.</p>
+          <p style="margin:0 0 8px;"><strong>You do not need this code during business hours.</strong> The main entrance is unlocked <strong>${BUILDING_OPEN_HOURS}</strong> — during those hours just walk in.</p>
+          <p style="margin:0;">Use the code only <strong>outside those hours</strong>: late evenings, weekends, and holidays.</p>
         </div>
         <p><strong>How to use the keypad:</strong> Watch this short tutorial on locking and unlocking the front door with your access code:</p>
         <p style="text-align:center;">
@@ -327,11 +328,13 @@ export function accessCodeIssuedEmail(opts: {
     text: [
       `Hi ${opts.firstName},`,
       '',
-      'Here is your personal 24/7 building access code:',
+      'Here is your personal after-hours building access code:',
       '',
       `    ${opts.accessCode}`,
       '',
-      'Building hours: The main entrance is unlocked from 8 AM - 6 PM Monday through Friday. Use this code outside those hours to enter the building.',
+      `You do NOT need this code during business hours. The main entrance is unlocked ${BUILDING_OPEN_HOURS} — during those hours just walk in.`,
+      '',
+      'Use the code only outside those hours: late evenings, weekends, and holidays.',
       '',
       'How to use the keypad: watch this short tutorial on locking and unlocking the front door with your access code:',
       `    ${ACCESS_CODE_VIDEO_URL}`,
@@ -498,7 +501,7 @@ export function accessCodeRequestedAdminEmail(opts: {
       body: `
         <p><strong>${opts.firstName} ${opts.lastName}</strong> (${opts.email}) has requested a 24/7 building access code.</p>
         <div class="info-card">
-          <p style="margin:0;">Get a code from POPS, then assign it in the admin panel.</p>
+          <p style="margin:0;">Generate on Alarm.com, then assign it in the admin panel.</p>
         </div>
         <p style="text-align:center;">
           <a href="${opts.adminUrl}" class="button">Open Admin Panel</a>
@@ -508,7 +511,7 @@ export function accessCodeRequestedAdminEmail(opts: {
     text: [
       `${opts.firstName} ${opts.lastName} (${opts.email}) has requested a 24/7 building access code.`,
       '',
-      'Get a code from POPS, then assign it in the admin panel:',
+      'Generate on Alarm.com, then assign it in the admin panel:',
       opts.adminUrl,
     ].join('\n'),
   };
@@ -1025,7 +1028,7 @@ export function signupCompletedStaffEmail(opts: {
   const todos: string[] = [];
   if (!opts.hasAccessCode) {
     todos.push(
-      'Issue their 24/7 access code from POPS once they request it (they were told codes are only needed outside 8 AM – 6 PM weekdays).'
+      'Generate on Alarm.com and issue their 24/7 access code once they request it (they were told codes are only needed outside 8 AM – 6 PM weekdays).'
     );
   }
   if (opts.seatType && !opts.seatNumber) {
@@ -1409,4 +1412,68 @@ export function monthlyDuesSummaryEmail(opts: {
   const text = textSections.filter(Boolean).join('\n\n');
 
   return { subject, html, text };
+}
+
+// ------------------------------------------------------------------
+// Supabase keep-alive failure (staff only — never sent to members).
+// Fired by /api/cron/supabase-keep-alive when the daily liveness read
+// fails. The likely cause is the exact thing the keep-alive exists to
+// prevent: a paused Free-plan project, which only a human can restore
+// from the Supabase dashboard. The restore steps are in the email so
+// whoever opens it can act without hunting for them.
+// ------------------------------------------------------------------
+
+export function supabaseKeepAliveFailureEmail(opts: {
+  errorMessage: string;
+  tableName: string;
+  ranAtLabel: string;
+}) {
+  const safeError = escapeHtml(opts.errorMessage);
+  return {
+    subject: '🚨 Merritt Workspace database keep-alive FAILED',
+    html: shell({
+      title: 'Database Keep-Alive Failed',
+      tagline: 'The daily Supabase liveness check could not read the database',
+      body: `
+        <p>The daily keep-alive read against <strong>${escapeHtml(
+          opts.tableName
+        )}</strong> failed at ${escapeHtml(opts.ranAtLabel)}.</p>
+        <div class="highlight">
+          <p style="margin:0;"><strong>Error:</strong> ${safeError}</p>
+        </div>
+        <p>The most likely cause is a <strong>paused Supabase project</strong>.
+        Free-plan projects are paused after about 7 days with no database
+        activity, and only a human can bring one back.</p>
+        <div class="info-card">
+          <p style="margin:0 0 6px;"><strong>What to do:</strong></p>
+          <p style="margin:0 0 6px;">1. Open the Supabase dashboard and check this project's status.</p>
+          <p style="margin:0 0 6px;">2. If it is paused, click <strong>Restore project</strong> and wait for it to come back.</p>
+          <p style="margin:0 0 6px;">3. If it is not paused, check the Supabase status page and the Vercel logs for <code>/api/cron/supabase-keep-alive</code>.</p>
+          <p style="margin:0;">4. Until it is restored, the member portal, bookings, and the snack shop are all down.</p>
+        </div>
+        <p>This alert is sent at most once per UTC day, so it will repeat
+        tomorrow if the problem is still there.</p>
+      `,
+    }),
+    text: [
+      `The daily Supabase keep-alive read against ${opts.tableName} failed at ${opts.ranAtLabel}.`,
+      '',
+      `Error: ${opts.errorMessage}`,
+      '',
+      'The most likely cause is a paused Supabase project. Free-plan projects are',
+      'paused after about 7 days with no database activity, and only a human can',
+      'bring one back.',
+      '',
+      'WHAT TO DO',
+      "1. Open the Supabase dashboard and check this project's status.",
+      '2. If it is paused, click "Restore project" and wait for it to come back.',
+      '3. If it is not paused, check the Supabase status page and the Vercel logs',
+      '   for /api/cron/supabase-keep-alive.',
+      '4. Until it is restored, the member portal, bookings, and the snack shop are',
+      '   all down.',
+      '',
+      'This alert is sent at most once per UTC day, so it will repeat tomorrow if',
+      'the problem is still there.',
+    ].join('\n'),
+  };
 }

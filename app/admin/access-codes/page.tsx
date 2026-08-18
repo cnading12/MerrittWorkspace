@@ -71,7 +71,7 @@ export default function AccessCodesPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Access code requests</h1>
       <p className="text-sm text-gray-600">
-        Get a code from POPS, then enter it here. The member will be emailed automatically.
+        Generate on Alarm.com, then enter it here. The member will be emailed automatically.
       </p>
       <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-800">
         <strong>Reminder:</strong> do not submit the access code until the
@@ -97,7 +97,7 @@ export default function AccessCodesPage() {
             </div>
             <div className="flex gap-2">
               <input
-                placeholder="Code from POPS"
+                placeholder="Generate on Alarm.com"
                 value={codes[r.id] || ''}
                 onChange={(e) => setCodes({ ...codes, [r.id]: e.target.value })}
                 className="border rounded px-3 py-1.5 text-sm font-mono"

@@ -157,7 +157,7 @@ export default function AdminDashboardPage() {
         <ActionCard
           title="Access code requests"
           count={counts.pendingAccessCodes}
-          description="Members requesting their 24/7 building access code from POPS."
+          description="Members requesting their 24/7 building access code — generate on Alarm.com."
           href="/admin/access-codes"
           actionLabel="Issue codes"
           urgent={counts.pendingAccessCodes > 0}

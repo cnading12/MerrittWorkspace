@@ -3236,15 +3236,16 @@ function OnboardingTab({
 
           <div>
             <h4 className="font-semibold text-ink">Lock / Unlock Building</h4>
-            <p className="mt-1">
-              Getting in and out of the building <strong>outside of normal business hours
-              (8:00 AM – 6:00 PM)</strong>:
-            </p>
             <ul className="mt-1 list-disc pl-5 space-y-0.5">
-              <li>Use the main entrance if between 8:00 AM – 6:00 PM.</li>
               <li>
-                Outside normal hours — you will receive a YouTube tutorial along with your
-                security access code.
+                <strong>Monday – Friday, 8:00 AM – 6:00 PM:</strong> the front door is
+                unlocked. Walk in through the main entrance — <strong>no access code
+                needed</strong>.
+              </li>
+              <li>
+                <strong>Late evenings, weekends, and holidays:</strong> the door is locked and
+                you&apos;ll need a personal access code. We send it with a short YouTube
+                tutorial on using the keypad.
               </li>
             </ul>
           </div>
@@ -3343,14 +3344,23 @@ function OnboardingTab({
         </div>
       </section>
 
-      {/* 24/7 Building Access */}
+      {/* After-hours building access */}
       <section className="bg-amber-50 border border-amber-300 p-6">
         <h3 className="font-display font-semibold text-ink mb-2">
-          🔐 24/7 Building Access {member.access_code ? '' : '(Action Required)'}
+          🔐 After-Hours Building Access {member.access_code ? '' : '(Optional)'}
         </h3>
-        <p className="text-sm text-ink-60">
-          Your membership includes a <strong>personal access code at no extra charge</strong> that
-          allows you to access the building outside of normal business hours (8:00 AM – 6:00 PM).
+        <div className="bg-bone border border-green-300 p-4 text-sm">
+          <p className="font-semibold text-green-800">
+            ✅ No access code needed Monday – Friday, 8:00 AM – 6:00 PM.
+          </p>
+          <p className="mt-1 text-ink-60">
+            During business hours the front door is unlocked — just walk in.
+          </p>
+        </div>
+        <p className="mt-3 text-sm text-ink-60">
+          A <strong>personal access code is only needed outside those hours</strong> — late
+          evenings, weekends, and holidays. It&apos;s included with your membership at no extra
+          charge, so only request one if you plan to come in after hours.
         </p>
         {member.access_code ? (
           <div className="mt-4 bg-bone border border-amber-300 p-4">
@@ -3359,14 +3369,15 @@ function OnboardingTab({
               {member.access_code}
             </div>
             <p className="mt-2 text-xs text-ink-60">
-              Keep this code confidential. Use it to enter outside business hours.
+              Keep this code confidential. You only need it outside of 8:00 AM – 6:00 PM,
+              Monday – Friday.
             </p>
           </div>
         ) : (
           <div className="mt-3">
             <p className="text-sm text-ink-60">
-              To request your personal access code, click the button below or send a separate
-              email to{' '}
+              Planning to come in during the late evening or on a weekend? Request your code
+              with the button below, or email{' '}
               <a
                 href="mailto:memberservices@merrittworkspace.net"
                 className="text-orange-700 hover:underline"
@@ -3380,7 +3391,7 @@ function OnboardingTab({
               disabled={loading}
               className="mt-3 bg-ink text-white px-4 py-2 hover:bg-ink disabled:opacity-50"
             >
-              {loading ? 'Requesting…' : 'Request access code'}
+              {loading ? 'Requesting…' : 'Request after-hours access code'}
             </button>
             {accessRequestStatus && (
               <p className="mt-2 text-sm text-green-700">{accessRequestStatus}</p>
