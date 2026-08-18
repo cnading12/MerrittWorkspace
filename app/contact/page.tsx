@@ -1,9 +1,21 @@
 "use client";
 
-import { MapPin, Phone, Mail, Clock, Calendar, MessageSquare, Building2, Car } from 'lucide-react';
 import Footer from "@/components/Footer";
+import Link from 'next/link';
 import { useState } from 'react';
 import { trackFormSubmission, trackPhoneClick, trackEmailClick } from '@/lib/gtag';
+import PageHero from '@/components/marketing/PageHero';
+import { BLUR } from '@/components/marketing/blur';
+
+const INQUIRY_TYPES = [
+  { value: 'general', label: 'General Information' },
+  { value: 'trial_day', label: 'Book a Free Trial Day' },
+  { value: 'tour', label: 'Schedule a Tour' },
+  { value: 'membership', label: 'Membership Inquiry' },
+  { value: 'meeting_room', label: 'Meeting Room Booking' },
+  { value: 'current_member', label: 'Current Member Support' },
+  { value: 'other', label: 'Other' },
+];
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -58,153 +70,91 @@ export default function ContactPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 pt-16">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-bold mb-6">
-              <Calendar className="w-4 h-4" />
-              Book a Free Trial Day — Every New Member Qualifies
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Get in Touch
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Ready to join our community or have questions about our workspace?
-              Ask about our <strong>free trial day</strong> — spend a full workday with us before you commit to a membership.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="tel:720-357-9499" onClick={trackPhoneClick} className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition inline-flex items-center justify-center gap-2">
-                <Phone className="w-5 h-5" />
-                Call Now: (720) 357-9499
-              </a>
-              <a href="mailto:memberservices@merrittworkspace.net" onClick={trackEmailClick} className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition inline-flex items-center justify-center gap-2">
-                <Mail className="w-5 h-5" />
-                Email Us
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+    <main className="bg-bone">
+      <PageHero
+        src="/images/new-hero/hero-exterior-signage.webp"
+        alt="The Merritt Workspace building at 2246 Irving Street in Sloan's Lake, Denver"
+        blurDataURL={BLUR['hero-exterior-signage']}
+        eyebrow="Contact"
+        title={<>Come see it. Bring your laptop.</>}
+        lead="2246 Irving Street, Sloan's Lake. Call, text, email or fill in the form — someone here answers all four."
+      />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Contact Information */}
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Contact Information</h2>
+      <section className="mw-section">
+        <div className="mw-container">
+          <div className="grid gap-14 md:grid-cols-12 md:gap-16">
+            {/* Details */}
+            <div className="md:col-span-4">
+              <p className="mw-eyebrow mb-5">Find us</p>
+              <h2 className="mw-h3">2246 Irving Street</h2>
+              <p className="mt-2 mw-body">Denver, CO 80211</p>
 
-            {/* Location */}
-            <div className="mb-8 p-6 bg-white rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-start gap-4">
-                <MapPin className="w-6 h-6 text-burnt-orange-600 mt-1 flex-shrink-0" />
+              <dl className="mt-10 space-y-7 border-t border-clay pt-8">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Our Location</h3>
-                  <p className="text-gray-700 mb-2">
-                    <strong>2246 Irving Street</strong><br />
-                    Denver, CO 80211
-                  </p>
-                  <p className="text-sm text-burnt-orange-600 mb-4">
-                    Located in the heart of Sloan's Lake at 23rd and Irving St, next to the historic Landmark Merritt Church Building
-                  </p>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Car className="w-4 h-4" />
-                    <span>Just 3 minutes to I-25 • Walk, bike, or drive to work</span>
-                  </div>
+                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Phone</dt>
+                  <dd className="mt-1.5 text-[17px]">
+                    <a href="tel:7203579499" onClick={trackPhoneClick} className="mw-inline-link">
+                      (720) 357-9499
+                    </a>
+                  </dd>
                 </div>
-              </div>
-            </div>
-
-            {/* Contact Methods - Two Roles */}
-            <div className="space-y-6">
-              {/* Manager - New Members */}
-              <div className="p-6 bg-white rounded-xl shadow-sm border border-burnt-orange-200">
-                <div className="flex items-start gap-4">
-                  <Building2 className="w-6 h-6 text-burnt-orange-600 mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">New Members & Tours</h3>
-                    <p className="text-sm text-gray-500 mb-3">Interested in joining? Schedule a tour or ask about membership.</p>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-burnt-orange-600" />
-                        <a href="tel:720-357-9499" onClick={trackPhoneClick} className="text-burnt-orange-600 hover:underline">
-                          (720) 357-9499
-                        </a>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-burnt-orange-600" />
-                        <a href="mailto:manager@merrittworkspace.net" onClick={trackEmailClick} className="text-burnt-orange-600 hover:underline">
-                          manager@merrittworkspace.net
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Member Services - Existing Members */}
-              <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-200">
-                <div className="flex items-start gap-4">
-                  <MessageSquare className="w-6 h-6 text-burnt-orange-600 mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Member Services</h3>
-                    <p className="text-sm text-gray-500 mb-3">Already a member? Reach out for day-to-day support and inquiries.</p>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-burnt-orange-600" />
-                        <a href="tel:303-359-8337" onClick={trackPhoneClick} className="text-burnt-orange-600 hover:underline">
-                          (303) 359-8337
-                        </a>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-burnt-orange-600" />
-                        <a href="mailto:memberservices@merrittworkspace.net" onClick={trackEmailClick} className="text-burnt-orange-600 hover:underline">
-                          memberservices@merrittworkspace.net
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <Clock className="w-6 h-6 text-burnt-orange-600 mt-1" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Hours</h3>
-                  <div className="space-y-1 text-gray-700">
-                    <p><strong>Building Access:</strong> 24/7 for members</p>
-                    <p><strong>Office Hours:</strong> Monday - Friday, 9 AM - 5 PM</p>
-                    <p><strong>Tours & Support:</strong> Monday - Friday, 9 AM - 5 PM</p>
-                  </div>
+                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Email</dt>
+                  <dd className="mt-1.5 text-[17px]">
+                    <a
+                      href="mailto:memberservices@merrittworkspace.net"
+                      onClick={trackEmailClick}
+                      className="mw-inline-link break-words"
+                    >
+                      memberservices@merrittworkspace.net
+                    </a>
+                  </dd>
                 </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-6 bg-green-50 border border-green-200 rounded-xl">
-                <Calendar className="w-6 h-6 text-green-700 mt-1" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Schedule Your Free Trial Day</h3>
-                  <p className="text-gray-700 mb-3">
-                    Every potential new member gets a <strong>free trial day</strong> — work the space for a full day, on us, before committing to a membership. Includes a complimentary tour.
-                  </p>
-                  <a href="tel:720-357-9499" onClick={trackPhoneClick} className="bg-burnt-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-burnt-orange-700 transition inline-block">
-                    Call to Schedule
+                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Member access</dt>
+                  <dd className="mt-1.5 text-[17px] text-ink-60">24/7 by keycard</dd>
+                </div>
+                <div>
+                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Parking</dt>
+                  <dd className="mt-1.5 text-[17px] text-ink-60">22 free spots on site</dd>
+                </div>
+              </dl>
+
+              <div className="mt-10 border-t border-clay pt-8">
+                <p className="mw-eyebrow mb-4">Quick actions</p>
+                <div className="space-y-3">
+                  <Link href="/membership/apply" className="block text-[16px] text-ink-60 transition hover:text-ink">
+                    Apply for membership
+                  </Link>
+                  <Link href="/member-resources/meeting-rooms" className="block text-[16px] text-ink-60 transition hover:text-ink">
+                    Book a meeting room
+                  </Link>
+                  <Link href="/member-resources/snackshop" className="block text-[16px] text-ink-60 transition hover:text-ink">
+                    Order from the snackshop
+                  </Link>
+                  <a
+                    href="https://maps.google.com/?q=2246+Irving+Street,+Denver,+CO+80211"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-[16px] text-ink-60 transition hover:text-ink"
+                  >
+                    Get directions
                   </a>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Contact Form */}
-          <div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Send Us a Message</h2>
+            {/* Form */}
+            <div className="md:col-span-7 md:col-start-6">
+              <p className="mw-eyebrow mb-5">Send a message</p>
 
               {submitted ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Message Sent!</h3>
-                  <p className="text-gray-600 mb-4">
-                    Thanks for reaching out! We'll get back to you within 24 hours.
+                <div className="border-t border-clay pt-10">
+                  <h2 className="mw-h3">Message sent.</h2>
+                  <p className="mt-4 mw-body">
+                    Thanks for reaching out — we&rsquo;ll come back to you within
+                    24 hours. If it&rsquo;s urgent, call or text{' '}
+                    <a href="tel:7203579499" className="mw-inline-link">(720) 357-9499</a>.
                   </p>
                   <button
                     onClick={() => {
@@ -219,13 +169,13 @@ export default function ContactPage() {
                         website: '',
                       });
                     }}
-                    className="text-burnt-orange-600 hover:underline"
+                    className="mw-link mt-8"
                   >
-                    Send Another Message
+                    Send another message
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-7 border-t border-clay pt-10">
                   {/* Honeypot field - hidden from humans, bots will fill it */}
                   <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }}>
                     <label htmlFor="website">Website</label>
@@ -241,7 +191,7 @@ export default function ContactPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="inquiry_type" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="inquiry_type" className="mw-label">
                       What can we help you with?
                     </label>
                     <select
@@ -249,23 +199,17 @@ export default function ContactPage() {
                       name="inquiry_type"
                       value={formData.inquiry_type}
                       onChange={handleInputChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                      className="mw-input"
                     >
-                      <option value="general">General Information</option>
-                      <option value="trial_day">Book a Free Trial Day</option>
-                      <option value="tour">Schedule a Tour</option>
-                      <option value="membership">Membership Inquiry</option>
-                      <option value="meeting_room">Meeting Room Booking</option>
-                      <option value="current_member">Current Member Support</option>
-                      <option value="other">Other</option>
+                      {INQUIRY_TYPES.map(t => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
                     </select>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid gap-7 md:grid-cols-2">
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name *
-                      </label>
+                      <label htmlFor="name" className="mw-label">Full name *</label>
                       <input
                         type="text"
                         id="name"
@@ -273,14 +217,11 @@ export default function ContactPage() {
                         required
                         value={formData.name}
                         onChange={handleInputChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                        className="mw-input"
                       />
                     </div>
-
                     <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                        Email Address *
-                      </label>
+                      <label htmlFor="email" className="mw-label">Email *</label>
                       <input
                         type="email"
                         id="email"
@@ -288,112 +229,85 @@ export default function ContactPage() {
                         required
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                        className="mw-input"
                       />
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid gap-7 md:grid-cols-2">
                     <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                        Phone Number
-                      </label>
+                      <label htmlFor="phone" className="mw-label">Phone</label>
                       <input
                         type="tel"
                         id="phone"
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                        className="mw-input"
                       />
                     </div>
-
                     <div>
-                      <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
-                        Company
-                      </label>
+                      <label htmlFor="company" className="mw-label">Company</label>
                       <input
                         type="text"
                         id="company"
                         name="company"
                         value={formData.company}
                         onChange={handleInputChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                        className="mw-input"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                      Message *
-                    </label>
+                    <label htmlFor="message" className="mw-label">Message *</label>
                     <textarea
                       id="message"
                       name="message"
                       required
-                      rows={5}
+                      rows={6}
                       value={formData.message}
                       onChange={handleInputChange}
-                      placeholder="Tell us how we can help you..."
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-burnt-orange-500 focus:border-burnt-orange-500"
+                      className="mw-input resize-y"
                     />
                   </div>
 
                   {error && (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    <p className="border-l-2 border-accent pl-4 text-[15px] leading-relaxed text-ink">
                       {error}
-                    </div>
+                    </p>
                   )}
 
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full bg-burnt-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-burnt-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mw-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {submitting ? 'Sending Message...' : 'Send Message'}
+                    {submitting ? 'Sending message…' : 'Send message'}
                   </button>
                 </form>
               )}
             </div>
-
-            {/* Quick Links */}
-            <div className="mt-6 p-6 bg-burnt-orange-50 rounded-xl border border-burnt-orange-200">
-              <h3 className="font-semibold text-burnt-orange-900 mb-4">Quick Actions</h3>
-              <div className="space-y-2">
-                <a href="/membership" className="block text-burnt-orange-700 hover:text-burnt-orange-900 hover:underline">
-                  → Apply for Membership
-                </a>
-                <a href="/meeting-rooms" className="block text-burnt-orange-700 hover:text-burnt-orange-900 hover:underline">
-                  → Book a Meeting Room
-                </a>
-                <a href="/snackshop" className="block text-burnt-orange-700 hover:text-burnt-orange-900 hover:underline">
-                  → Order from Snackshop
-                </a>
-                <a href="https://maps.google.com/?q=2246+Irving+Street,+Denver,+CO+80211" target="_blank" className="block text-burnt-orange-700 hover:text-burnt-orange-900 hover:underline">
-                  → Get Directions
-                </a>
-              </div>
-            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Map Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Visit Our Historic Location</h2>
-            <p className="text-xl text-gray-600">
-              Located next to the historic Landmark Merritt Church Building in the heart of Sloan's Lake
+      {/* Map */}
+      <section className="mw-section-rule">
+        <div className="mw-container">
+          <div className="max-w-2xl">
+            <p className="mw-eyebrow mb-5">The block</p>
+            <h2 className="mw-h2">Next to the landmark Merritt church building.</h2>
+            <p className="mt-6 mw-body">
+              23rd and Irving, in the heart of Sloan&rsquo;s Lake — three minutes
+              to I-25 and a walk from the park.
             </p>
           </div>
-
-          {/* Map */}
-          <div className="rounded-xl overflow-hidden shadow-lg">
+          <div className="mt-12 h-[360px] w-full border border-clay md:mt-16 md:h-[460px]">
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3067.4953180826856!2d-105.03225422342487!3d39.75098609588881!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x876c7932ec70db2b%3A0x8c38dd4cf4df270d!2sMerritt%20Workspace!5e0!3m2!1sen!2sus!4v1759948992207!5m2!1sen!2sus"
               width="100%"
-              height="400"
+              height="100%"
               style={{ border: 0 }}
               allowFullScreen
               loading="lazy"

@@ -204,3 +204,13 @@ body {
   height: 1px;
   background: #DCD3C8;
 }
+
+/* Forms on marketing pages. */
+@layer components {
+  .mw-label {
+    @apply mb-2 block text-[13px] font-medium uppercase tracking-[0.14em] text-ink-60;
+  }
+  .mw-input {
+    @apply w-full border border-clay bg-bone px-4 py-3.5 text-[16px] text-ink transition placeholder:text-ink-60/60 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent;
+  }
+}

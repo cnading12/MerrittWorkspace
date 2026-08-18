@@ -1,17 +1,29 @@
 "use client";
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Clock, Key, Car, Calendar, Phone, Volume2, Heart, Coffee, Mail, MapPin, Shield, Users, Wifi, FileText } from 'lucide-react';
+import { Calendar, Clock, Coffee, Key, Mail, MapPin, Phone } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
+import PageHero from '@/components/marketing/PageHero';
+import { BLUR } from '@/components/marketing/blur';
 
 interface FAQItem {
   id: string;
   question: string;
   answer: string | JSX.Element;
   category: string;
-  icon: any;
 }
+
+const CATEGORIES = [
+  { id: 'all', name: 'All questions' },
+  { id: 'access', name: 'Access & security' },
+  { id: 'amenities', name: 'Amenities' },
+  { id: 'policies', name: 'Policies' },
+  { id: 'membership', name: 'Membership & billing' },
+  { id: 'location', name: 'Location & parking' },
+  { id: 'technical', name: 'Technical' },
+  { id: 'general', name: 'General' },
+];
 
 export default function FAQPage() {
   const [openItems, setOpenItems] = useState<string[]>(['access']); // Start with first item open
@@ -29,7 +41,6 @@ export default function FAQPage() {
     {
       id: 'access',
       category: 'access',
-      icon: Key,
       question: 'How do I get access to the building?',
       answer: (
         <div className="space-y-3">
@@ -50,7 +61,6 @@ export default function FAQPage() {
     {
       id: 'door-lock',
       category: 'access',
-      icon: Key,
       question: 'How do I lock and unlock the front door after hours?',
       answer: (
         <div className="space-y-4">
@@ -96,7 +106,6 @@ export default function FAQPage() {
     {
       id: 'parking',
       category: 'location',
-      icon: Car,
       question: 'Where do I park?',
       answer: (
         <div className="space-y-3">
@@ -120,7 +129,6 @@ export default function FAQPage() {
     {
       id: 'conference-rooms',
       category: 'amenities',
-      icon: Calendar,
       question: 'How do I book a conference room?',
       answer: (
         <div className="space-y-3">
@@ -146,7 +154,6 @@ export default function FAQPage() {
     {
       id: 'phone-calls',
       category: 'amenities',
-      icon: Phone,
       question: 'Where should I take Zoom calls and personal phone calls?',
       answer: (
         <div className="space-y-3">
@@ -175,7 +182,6 @@ export default function FAQPage() {
     {
       id: 'noise-policy',
       category: 'policies',
-      icon: Volume2,
       question: 'What are your noise policies in the workspace?',
       answer: (
         <div className="space-y-3">
@@ -201,7 +207,6 @@ export default function FAQPage() {
     {
       id: 'pets',
       category: 'policies',
-      icon: Heart,
       question: 'Can I bring my dog to the workspace?',
       answer: (
         <div className="space-y-3">
@@ -226,7 +231,6 @@ export default function FAQPage() {
     {
       id: 'snackshop',
       category: 'amenities',
-      icon: Coffee,
       question: 'How do I buy snacks and coffee?',
       answer: (
         <div className="space-y-3">
@@ -260,7 +264,6 @@ export default function FAQPage() {
     {
       id: 'event-space',
       category: 'amenities',
-      icon: Users,
       question: 'Can I use the Event Space next door?',
       answer: (
         <div className="space-y-3">
@@ -285,7 +288,6 @@ export default function FAQPage() {
     {
       id: 'wifi',
       category: 'technical',
-      icon: Wifi,
       question: 'How fast is the WiFi?',
       answer: (
         <div className="space-y-3">
@@ -308,7 +310,6 @@ export default function FAQPage() {
     {
       id: 'security',
       category: 'policies',
-      icon: Shield,
       question: 'How secure is the building?',
       answer: (
         <div className="space-y-3">
@@ -331,7 +332,6 @@ export default function FAQPage() {
     {
       id: 'cancellation-policy',
       category: 'membership',
-      icon: FileText,
       question: 'How do I cancel my membership? What is the cancellation policy?',
       answer: (
         <div className="space-y-4">
@@ -403,7 +403,6 @@ export default function FAQPage() {
     {
       id: 'contact',
       category: 'general',
-      icon: Mail,
       question: 'Who do I contact with additional questions?',
       answer: (
         <div className="space-y-3">
@@ -435,148 +434,127 @@ export default function FAQPage() {
     }
   ];
 
-  const categories = [
-    { id: 'all', name: 'All Questions', icon: Users },
-    { id: 'access', name: 'Access & Security', icon: Key },
-    { id: 'amenities', name: 'Amenities', icon: Coffee },
-    { id: 'policies', name: 'Policies', icon: Shield },
-    { id: 'membership', name: 'Membership & Billing', icon: FileText },
-    { id: 'location', name: 'Location & Parking', icon: Car },
-    { id: 'technical', name: 'Technical', icon: Wifi },
-    { id: 'general', name: 'General', icon: Mail }
-  ];
-
   const filteredFAQs = selectedCategory === 'all'
     ? faqData
     : faqData.filter(faq => faq.category === selectedCategory);
 
   return (
-    <main className="min-h-screen bg-gray-50 pt-16">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-burnt-orange-50 to-burnt-orange-100 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Frequently Asked Questions
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Find quick answers to common questions about Merritt Workspace.
-              Can't find what you're looking for? We're here to help!
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="mailto:memberservices@merrittworkspace.net" className="bg-burnt-orange-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-700 transition">
-                Email Us
-              </a>
-              <a href="tel:720-357-9499" className="border-2 border-burnt-orange-600 text-burnt-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-burnt-orange-600 hover:text-white transition">
-                Call: (720) 357-9499
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+    <main className="bg-bone">
+      <PageHero
+        src="/images/new-hero/community-counter.webp"
+        alt="A member working at the kitchen counter at Merritt Workspace in Sloan's Lake, Denver"
+        blurDataURL={BLUR['community-counter']}
+        eyebrow="Answers"
+        title={<>The questions people actually ask.</>}
+        lead="Access, parking, pets, billing, WiFi, the flex space. If it isn't here, call us."
+      />
 
-      {/* FAQ Content */}
-      <section className="py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Category Filter */}
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Browse by Category</h2>
-            <div className="flex flex-wrap gap-3 justify-center">
-              {categories.map(category => {
-                const IconComponent = category.icon;
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${selectedCategory === category.id
-                        ? 'bg-burnt-orange-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-burnt-orange-50 hover:text-burnt-orange-600 border border-gray-200'
+      <section className="mw-section">
+        <div className="mw-container">
+          <div className="grid gap-12 md:grid-cols-12 md:gap-14">
+            {/* Category filter — a sidebar on desktop, a scrolling row on phones. */}
+            {/* min-w-0: a grid child defaults to min-width auto, which would let the
+                scrolling filter row widen the page instead of scrolling. */}
+            <aside className="min-w-0 md:col-span-3">
+              <p className="mw-eyebrow mb-5">Browse</p>
+              <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-2 md:mx-0 md:flex-col md:gap-0 md:overflow-visible md:px-0 md:pb-0">
+                {CATEGORIES.map(category => {
+                  const active = selectedCategory === category.id;
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      aria-pressed={active}
+                      className={`min-h-[44px] whitespace-nowrap border-b-2 px-3 text-left text-[15px] transition md:whitespace-normal md:border-b md:border-l-2 md:border-b-clay md:px-0 md:py-3 md:pl-4 ${
+                        active
+                          ? 'border-accent font-medium text-ink md:border-l-accent'
+                          : 'border-transparent text-ink-60 hover:text-ink md:border-l-transparent'
                       }`}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    {category.name}
-                  </button>
-                );
-              })}
+                    >
+                      {category.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+
+            {/* Questions */}
+            <div className="min-w-0 md:col-span-8 md:col-start-5">
+              <div className="border-t border-clay">
+                {filteredFAQs.map((faq) => {
+                  const isOpen = openItems.includes(faq.id);
+                  return (
+                    <div key={faq.id} className="border-b border-clay">
+                      <button
+                        onClick={() => toggleItem(faq.id)}
+                        aria-expanded={isOpen}
+                        className="flex min-h-[44px] w-full items-start justify-between gap-6 py-6 text-left transition hover:opacity-70"
+                      >
+                        <h3 className="font-display text-xl font-semibold leading-snug tracking-tight text-ink md:text-2xl">
+                          {faq.question}
+                        </h3>
+                        <span
+                          aria-hidden="true"
+                          className={`mt-1.5 shrink-0 text-2xl font-light leading-none text-ink-60 transition-transform duration-200 ${
+                            isOpen ? 'rotate-45' : ''
+                          }`}
+                        >
+                          +
+                        </span>
+                      </button>
+
+                      {isOpen && (
+                        <div className="mw-legal max-w-2xl pb-7 text-[16px] leading-relaxed text-ink-60">
+                          {faq.answer}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {filteredFAQs.length === 0 && (
+                <p className="py-12 mw-body">No questions in this category yet.</p>
+              )}
             </div>
           </div>
-
-          {/* FAQ Items */}
-          <div className="space-y-4">
-            {filteredFAQs.map((faq) => {
-              const IconComponent = faq.icon;
-              const isOpen = openItems.includes(faq.id);
-
-              return (
-                <div
-                  key={faq.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
-                >
-                  <button
-                    onClick={() => toggleItem(faq.id)}
-                    className="w-full p-6 text-left hover:bg-gray-50 transition flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <IconComponent className="w-6 h-6 text-burnt-orange-600 flex-shrink-0" />
-                      <h3 className="text-lg font-semibold text-gray-900">{faq.question}</h3>
-                    </div>
-                    {isOpen ? (
-                      <ChevronUp className="w-5 h-5 text-gray-500 flex-shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-500 flex-shrink-0" />
-                    )}
-                  </button>
-
-                  {isOpen && (
-                    <div className="px-6 pb-6">
-                      <div className="pl-9 text-gray-700 leading-relaxed">
-                        {faq.answer}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {filteredFAQs.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-600">No questions found in this category.</p>
-            </div>
-          )}
         </div>
       </section>
 
-      {/* Still Have Questions */}
-      <section className="py-16 bg-burnt-orange-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Still Have Questions?</h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Our team is here to help you get the most out of your Merritt Workspace experience.
-          </p>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <Mail className="w-8 h-8 text-burnt-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Email Support</h3>
-              <p className="text-gray-600 mb-4">Get detailed answers to your questions</p>
+      {/* Still have questions */}
+      <section className="border-t border-clay bg-ink py-20 text-bone md:py-32">
+        <div className="mw-container">
+          <div className="max-w-3xl">
+            <p className="mb-5 text-[12px] font-medium uppercase tracking-[0.18em] text-bone/60 md:text-[13px]">
+              Still stuck
+            </p>
+            <h2 className="font-display text-[2rem] font-semibold leading-[1.02] tracking-tightest text-bone sm:text-4xl lg:text-[3.25rem]">
+              Ask us directly.
+            </h2>
+            <p className="mt-7 max-w-2xl text-[17px] leading-relaxed text-bone/70 md:text-lg">
+              Someone is on the other end of both of these. Email gets you a
+              considered answer; the phone gets you a fast one.
+            </p>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
               <a
                 href="mailto:memberservices@merrittworkspace.net"
-                className="bg-burnt-orange-600 text-white px-6 py-2 rounded-lg hover:bg-burnt-orange-700 transition inline-block"
+                className="mw-btn bg-accent text-white hover:bg-accent-deep"
               >
-                Send Email
+                Email member services
               </a>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <Phone className="w-8 h-8 text-burnt-orange-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Phone Support</h3>
-              <p className="text-gray-600 mb-4">Speak directly with our team</p>
               <a
                 href="tel:720-357-9499"
-                className="bg-burnt-orange-600 text-white px-6 py-2 rounded-lg hover:bg-burnt-orange-700 transition inline-block"
+                className="mw-btn border border-bone/40 text-bone hover:bg-bone hover:text-ink"
               >
-                Call Now
+                Call (720) 357-9499
               </a>
             </div>
+            <p className="mt-8 text-[15px] text-bone/60">
+              Not a member yet?{' '}
+              <Link href="/membership" className="border-b border-accent pb-0.5 text-bone hover:border-bone">
+                See membership options
+              </Link>.
+            </p>
           </div>
         </div>
       </section>
