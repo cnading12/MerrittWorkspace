@@ -425,18 +425,18 @@ export default function MembershipApplicationPage() {
 
   if (success) {
     return (
-      <main className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
+      <main className="min-h-screen bg-bone pt-20 flex items-center justify-center">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Application Submitted!</h1>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
-            <p className="text-gray-700 leading-relaxed">{success}</p>
+          <h1 className="font-display text-3xl font-semibold text-ink mb-4">Application Submitted!</h1>
+          <div className="bg-bone p-6 border border-clay mb-8">
+            <p className="text-ink-60 leading-relaxed">{success}</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/membership" className="bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 transition">
+            <Link href="/membership" className="bg-orange-600 text-white px-6 py-3 font-semibold hover:bg-orange-700 transition">
               View Membership Options
             </Link>
-            <Link href="/" className="border-2 border-orange-600 text-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 hover:text-white transition">
+            <Link href="/" className="border-2 border-orange-600 text-orange-600 px-6 py-3 font-semibold hover:bg-orange-600 hover:text-white transition">
               Back to Homepage
             </Link>
           </div>
@@ -446,28 +446,28 @@ export default function MembershipApplicationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 pt-16">
+    <main className="min-h-screen bg-bone pt-20">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-orange-50 to-orange-100 py-16">
+      <section className="bg-linen py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          <h1 className="font-display text-4xl md:text-5xl font-semibold text-ink mb-6">
             Apply for Membership
           </h1>
-          <p className="text-xl text-gray-600 mb-8">
+          <p className="text-xl text-ink-60 mb-8">
             Join our community of professionals in the heart of Sloan's Lake.
             Complete your application below to get started.
           </p>
-          <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
+          <div className="flex items-center justify-center gap-4 text-sm text-ink-60">
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
+              <CheckCircle className="w-4 h-4 text-accent" />
               <span>Free trial day included</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
+              <CheckCircle className="w-4 h-4 text-accent" />
               <span>No long-term contracts</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
+              <CheckCircle className="w-4 h-4 text-accent" />
               <span>1-2 day response time</span>
             </div>
           </div>
@@ -477,7 +477,7 @@ export default function MembershipApplicationPage() {
       {/* Alert Messages */}
       {error && (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="bg-red-50 border border-red-200 p-4">
             <div className="flex items-center">
               <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
               <p className="text-red-700">{error}</p>
@@ -492,18 +492,18 @@ export default function MembershipApplicationPage() {
           <form onSubmit={handleSubmitApplication} className="space-y-8">
 
             {/* Membership Selection */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-bone border border-clay p-6">
               <div className="flex items-center gap-3 mb-6">
                 <CreditCard className="w-6 h-6 text-orange-600" />
-                <h3 className="text-xl font-semibold text-gray-900">Choose Your Membership</h3>
+                <h3 className="font-display text-xl font-semibold text-ink">Choose Your Membership</h3>
               </div>
 
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-ink-60 mb-4">
                 Need more than one office or dedicated desk? Set the quantity for each plan you want — your charges below will roll up into one combined total.
               </p>
 
               {desksFull && (
-                <div className="mb-4 rounded-lg border-2 border-amber-300 bg-amber-50 p-4">
+                <div className="mb-4 border-2 border-amber-300 bg-amber-50 p-4">
                   <p className="text-sm font-semibold text-amber-900">
                     All {deskAvailability?.capacity ?? 25} dedicated desks on our shared floor are taken.
                   </p>
@@ -527,7 +527,7 @@ export default function MembershipApplicationPage() {
                   return (
                     <div
                       key={plan.id}
-                      className={`border-2 rounded-lg p-4 transition relative ${
+                      className={`border-2  p-4 transition relative ${
                         soldOut
                           ? 'border-gray-200 bg-gray-50 opacity-70'
                           : isSelected
@@ -539,9 +539,9 @@ export default function MembershipApplicationPage() {
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div>
-                          <h4 className="font-semibold text-gray-900">{plan.name}</h4>
-                          <p className="text-sm text-gray-600 mb-2">{plan.description}</p>
-                          <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{plan.category}</span>
+                          <h4 className="font-semibold text-ink">{plan.name}</h4>
+                          <p className="text-sm text-ink-60 mb-2">{plan.description}</p>
+                          <span className="text-xs bg-linen px-2 py-1 rounded text-ink-60">{plan.category}</span>
                           {plan.onlyWhenDesksFull && (
                             <span className="ml-2 text-xs bg-orange-100 px-2 py-1 rounded text-orange-800 font-medium">
                               Private &amp; lockable
@@ -552,35 +552,35 @@ export default function MembershipApplicationPage() {
                           {plan.recurrence === 'one_time' ? (
                             <>
                               <p className="text-2xl font-bold text-orange-600">${plan.price}</p>
-                              <p className="text-xs text-gray-500">one-time / day</p>
+                              <p className="text-xs text-ink-60">one-time / day</p>
                             </>
                           ) : (
                             <>
                               <p className="text-2xl font-bold text-orange-600">${plan.price}</p>
-                              <p className="text-xs text-gray-500">/month each</p>
+                              <p className="text-xs text-ink-60">/month each</p>
                             </>
                           )}
                         </div>
                       </div>
                       <div className="space-y-1 mb-4">
                         {plan.features.map((feature, idx) => (
-                          <div key={idx} className="flex items-center text-xs text-gray-600">
-                            <CheckCircle className="w-3 h-3 text-green-500 mr-2 flex-shrink-0" />
+                          <div key={idx} className="flex items-center text-xs text-ink-60">
+                            <CheckCircle className="w-3 h-3 text-accent mr-2 flex-shrink-0" />
                             {feature}
                           </div>
                         ))}
                       </div>
 
                       {soldOut ? (
-                        <div className="pt-3 border-t border-gray-200 text-sm text-gray-700">
-                          <span className="font-semibold text-gray-900">Fully occupied.</span>{' '}
+                        <div className="pt-3 border-t border-clay text-sm text-ink-60">
+                          <span className="font-semibold text-ink">Fully occupied.</span>{' '}
                           Every desk on the shared floor is spoken for, so this plan
                           can&apos;t be selected right now. Choose the Private Dedicated Desk
                           instead to join as a dedicated desk member today.
                         </div>
                       ) : (
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                        <span className="text-sm font-medium text-gray-700">
+                      <div className="flex items-center justify-between pt-3 border-t border-clay">
+                        <span className="text-sm font-medium text-ink-60">
                           {plan.recurrence === 'one_time' ? 'Days' : 'Quantity'}
                         </span>
                         <div className="flex items-center gap-2">
@@ -589,7 +589,7 @@ export default function MembershipApplicationPage() {
                             aria-label={`Decrease ${plan.name}`}
                             onClick={() => adjustQuantity(plan.id, -1)}
                             disabled={quantity === 0}
-                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="w-8 h-8 rounded-full border border-clay flex items-center justify-center hover:bg-linen disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             <Minus className="w-4 h-4" />
                           </button>
@@ -599,14 +599,14 @@ export default function MembershipApplicationPage() {
                             max={20}
                             value={quantity}
                             onChange={(e) => setQuantity(plan.id, parseInt(e.target.value, 10) || 0)}
-                            className="w-14 text-center p-2 border border-gray-300 rounded"
+                            className="w-14 text-center p-2 border border-clay rounded"
                             aria-label={`${plan.name} quantity`}
                           />
                           <button
                             type="button"
                             aria-label={`Increase ${plan.name}`}
                             onClick={() => adjustQuantity(plan.id, 1)}
-                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
+                            className="w-8 h-8 rounded-full border border-clay flex items-center justify-center hover:bg-linen"
                           >
                             <Plus className="w-4 h-4" />
                           </button>
@@ -626,11 +626,11 @@ export default function MembershipApplicationPage() {
               </div>
 
               {totals.anySelected && (
-                <div className="mt-6 p-5 rounded-lg border-2 border-orange-300 bg-orange-50">
+                <div className="mt-6 p-5 border-2 border-orange-300 bg-orange-50">
                   <h4 className="font-semibold text-orange-900 mb-3">Your Combined Charge</h4>
                   <div className="space-y-1 mb-4">
                     {totals.lines.map(({ plan, quantity, subtotal }) => (
-                      <div key={plan.id} className="flex justify-between text-sm text-gray-800">
+                      <div key={plan.id} className="flex justify-between text-sm text-ink">
                         <span>
                           {quantity} × {plan.name}
                         </span>
@@ -644,39 +644,39 @@ export default function MembershipApplicationPage() {
                   <div className="border-t border-orange-200 pt-3 space-y-1">
                     {totals.hasMonthly && (
                       <div className="flex justify-between items-baseline">
-                        <span className="text-gray-700">Total monthly</span>
+                        <span className="text-ink-60">Total monthly</span>
                         <span className="text-2xl font-bold text-orange-700">
                           ${totals.monthly.toLocaleString()}
-                          <span className="text-sm font-normal text-gray-600">/month</span>
+                          <span className="text-sm font-normal text-ink-60">/month</span>
                         </span>
                       </div>
                     )}
                     {totals.hasOneTime && (
                       <div className="flex justify-between items-baseline">
-                        <span className="text-gray-700">One-time charges</span>
+                        <span className="text-ink-60">One-time charges</span>
                         <span className="text-2xl font-bold text-orange-700">
                           ${totals.oneTime.toLocaleString()}
-                          <span className="text-sm font-normal text-gray-600"> one-time</span>
+                          <span className="text-sm font-normal text-ink-60"> one-time</span>
                         </span>
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-gray-600 mt-3">
+                  <p className="text-xs text-ink-60 mt-3">
                     All offices and dedicated desks you've selected will be billed together as a single charge.
                   </p>
                 </div>
               )}
 
               {/* Trial Day vs Direct Membership */}
-              <div className="mt-6 p-5 rounded-lg border-2 border-orange-200 bg-orange-50">
-                <p className="font-semibold text-gray-900 mb-1">
+              <div className="mt-6 p-5 border-2 border-orange-200 bg-orange-50">
+                <p className="font-semibold text-ink mb-1">
                   Are you applying for a trial day or to begin membership? <span className="text-red-500">*</span>
                 </p>
-                <p className="text-sm text-gray-700 mb-4">
+                <p className="text-sm text-ink-60 mb-4">
                   Please choose one. If you'd like to experience the workspace first, we'll send you everything you need to come in for a trial day right away.
                 </p>
                 <div className="space-y-3">
-                  <label className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition ${application.wants_trial_day === true ? 'border-orange-500 bg-white' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                  <label className={`flex items-start gap-3 p-3  border-2 cursor-pointer transition ${application.wants_trial_day === true ? 'border-orange-500 bg-white' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
                     <input
                       type="radio"
                       name="trial_choice"
@@ -685,14 +685,14 @@ export default function MembershipApplicationPage() {
                       className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500"
                     />
                     <div>
-                      <p className="font-medium text-gray-900">This is a trial day application</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-medium text-ink">This is a trial day application</p>
+                      <p className="text-sm text-ink-60">
                         I'd like to spend a full workday at Merritt Workspace before deciding on membership. Send me the trial day details now so I can plan my visit.
                       </p>
                     </div>
                   </label>
 
-                  <label className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition ${application.wants_trial_day === false ? 'border-orange-500 bg-white' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                  <label className={`flex items-start gap-3 p-3  border-2 cursor-pointer transition ${application.wants_trial_day === false ? 'border-orange-500 bg-white' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
                     <input
                       type="radio"
                       name="trial_choice"
@@ -701,8 +701,8 @@ export default function MembershipApplicationPage() {
                       className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500"
                     />
                     <div>
-                      <p className="font-medium text-gray-900">I'm ready to begin my membership — a trial day isn't necessary</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-medium text-ink">I'm ready to begin my membership — a trial day isn't necessary</p>
+                      <p className="text-sm text-ink-60">
                         I've already decided and would like to move straight to membership onboarding.
                       </p>
                     </div>
@@ -711,7 +711,7 @@ export default function MembershipApplicationPage() {
 
                 {application.wants_trial_day === true && (
                   <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-ink-60 mb-2">
                       Trial Day Date <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -720,9 +720,9 @@ export default function MembershipApplicationPage() {
                       value={application.trial_date}
                       onChange={(e) => setApplication(prev => ({ ...prev, trial_date: e.target.value }))}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full max-w-xs p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full max-w-xs p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
-                    <p className="text-xs text-gray-600 mt-2">
+                    <p className="text-xs text-ink-60 mt-2">
                       Choose the day you'd like to come in. Your preferred membership start date below can be different.
                     </p>
                   </div>
@@ -730,21 +730,21 @@ export default function MembershipApplicationPage() {
               </div>
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Start Date *</label>
+                <label className="block text-sm font-medium text-ink-60 mb-2">Preferred Start Date *</label>
                 <input
                   type="date"
                   required
                   value={application.start_date}
                   onChange={(e) => setApplication(prev => ({ ...prev, start_date: e.target.value }))}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                 />
-                <p className="text-xs text-gray-600 mt-2">
+                <p className="text-xs text-ink-60 mt-2">
                   When you'd like your membership to begin (independent of any trial day above).
                 </p>
               </div>
 
-              <div className="mt-4 p-4 rounded-lg border border-amber-300 bg-amber-50 flex gap-3">
+              <div className="mt-4 p-4 border border-amber-300 bg-amber-50 flex gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-amber-900 space-y-2">
                   <p className="font-semibold mb-1">Billing & Cancellation Notice</p>
@@ -776,94 +776,94 @@ export default function MembershipApplicationPage() {
             </div>
 
             {/* Personal Information */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-bone border border-clay p-6">
               <div className="flex items-center gap-3 mb-6">
                 <User className="w-6 h-6 text-orange-600" />
-                <h3 className="text-xl font-semibold text-gray-900">Personal Information</h3>
+                <h3 className="font-display text-xl font-semibold text-ink">Personal Information</h3>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">First Name *</label>
                   <input
                     type="text"
                     required
                     value={application.first_name}
                     onChange={(e) => setApplication(prev => ({ ...prev, first_name: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">Last Name *</label>
                   <input
                     type="text"
                     required
                     value={application.last_name}
                     onChange={(e) => setApplication(prev => ({ ...prev, last_name: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">Email Address *</label>
                   <input
                     type="email"
                     required
                     value={application.email}
                     onChange={(e) => setApplication(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">Phone Number *</label>
                   <input
                     type="tel"
                     required
                     value={application.phone}
                     onChange={(e) => setApplication(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
               </div>
             </div>
 
             {/* Professional Information */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-bone border border-clay p-6">
               <div className="flex items-center gap-3 mb-6">
                 <Briefcase className="w-6 h-6 text-orange-600" />
-                <h3 className="text-xl font-semibold text-gray-900">Professional Information</h3>
+                <h3 className="font-display text-xl font-semibold text-ink">Professional Information</h3>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">Company Name *</label>
                   <input
                     type="text"
                     required
                     value={application.company_name}
                     onChange={(e) => setApplication(prev => ({ ...prev, company_name: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Job Title *</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">Job Title *</label>
                   <input
                     type="text"
                     required
                     value={application.job_title}
                     onChange={(e) => setApplication(prev => ({ ...prev, job_title: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Industry *</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">Industry *</label>
                   <select
                     required
                     value={application.industry}
                     onChange={(e) => setApplication(prev => ({ ...prev, industry: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   >
                     <option value="">Select Industry</option>
                     {industryOptions.map(industry => (
@@ -873,43 +873,43 @@ export default function MembershipApplicationPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Team Size</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">Team Size</label>
                   <input
                     type="number"
                     min="1"
                     max="20"
                     value={application.team_size}
                     onChange={(e) => setApplication(prev => ({ ...prev, team_size: parseInt(e.target.value) || 1 }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn URL</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">LinkedIn URL</label>
                   <input
                     type="url"
                     value={application.linkedin_url}
                     onChange={(e) => setApplication(prev => ({ ...prev, linkedin_url: e.target.value }))}
                     placeholder="https://linkedin.com/in/yourprofile"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Website URL</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">Website URL</label>
                   <input
                     type="url"
                     value={application.website_url}
                     onChange={(e) => setApplication(prev => ({ ...prev, website_url: e.target.value }))}
                     placeholder="https://yourcompany.com"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
               </div>
 
               <div className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Work Style (select all that apply)</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-3">Work Style (select all that apply)</label>
                   <div className="grid md:grid-cols-2 gap-2">
                     {workStyleOptions.map(style => (
                       <label key={style} className="flex items-center">
@@ -919,7 +919,7 @@ export default function MembershipApplicationPage() {
                           onChange={(e) => handleWorkStyleChange(style, e.target.checked)}
                           className="mr-2 h-4 w-4 text-orange-600 rounded focus:ring-orange-500"
                         />
-                        <span className="text-sm text-gray-700">{style}</span>
+                        <span className="text-sm text-ink-60">{style}</span>
                       </label>
                     ))}
                   </div>
@@ -927,11 +927,11 @@ export default function MembershipApplicationPage() {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Meeting Frequency</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">Meeting Frequency</label>
                     <select
                       value={application.meeting_frequency}
                       onChange={(e) => setApplication(prev => ({ ...prev, meeting_frequency: e.target.value as any }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     >
                       <option value="rarely">Rarely</option>
                       <option value="monthly">Monthly</option>
@@ -941,12 +941,12 @@ export default function MembershipApplicationPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">How did you hear about us? *</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">How did you hear about us? *</label>
                     <select
                       required
                       value={application.referral_source}
                       onChange={(e) => setApplication(prev => ({ ...prev, referral_source: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     >
                       <option value="">Select source</option>
                       {referralSources.map(source => (
@@ -959,30 +959,30 @@ export default function MembershipApplicationPage() {
             </div>
 
             {/* References Intro */}
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">References</h3>
-              <p className="text-sm text-gray-700">
+            <div className="bg-orange-50 border border-orange-200 p-6">
+              <h3 className="font-display text-lg font-semibold text-ink mb-2">References</h3>
+              <p className="text-sm text-ink-60">
                 We ask every applicant for two references so we can verify your background. The form below lists <strong>four options across two categories</strong> — you only need to complete <strong>one option per category</strong> (two references total). Everything else can stay blank.
               </p>
-              <ul className="text-sm text-gray-700 mt-3 space-y-1 list-disc pl-5">
+              <ul className="text-sm text-ink-60 mt-3 space-y-1 list-disc pl-5">
                 <li><strong>Housing:</strong> your current or most recent mortgage company <em>or</em> landlord.</li>
                 <li><strong>Membership:</strong> a gym <em>or</em> another workspace where you are or have been a member.</li>
               </ul>
             </div>
 
             {/* Housing Reference */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-bone border border-clay p-6">
               <div className="flex items-center gap-3 mb-2">
                 <Home className="w-6 h-6 text-orange-600" />
-                <h3 className="text-xl font-semibold text-gray-900">Housing Reference</h3>
+                <h3 className="font-display text-xl font-semibold text-ink">Housing Reference</h3>
                 <span className="text-sm text-red-500">*</span>
               </div>
-              <p className="text-sm text-gray-600 mb-6">
+              <p className="text-sm text-ink-60 mb-6">
                 Choose <strong>one</strong>: your current or most recent <strong>mortgage company</strong> or <strong>landlord</strong>. You do not need to provide both.
               </p>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Reference Type *</label>
+                <label className="block text-sm font-medium text-ink-60 mb-2">Reference Type *</label>
                 <div className="flex flex-wrap gap-6">
                   <label className="flex items-center">
                     <input
@@ -993,7 +993,7 @@ export default function MembershipApplicationPage() {
                       onChange={() => updateHousingReference('type', 'mortgage')}
                       className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500"
                     />
-                    <span className="text-sm text-gray-700">Mortgage Company</span>
+                    <span className="text-sm text-ink-60">Mortgage Company</span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -1004,7 +1004,7 @@ export default function MembershipApplicationPage() {
                       onChange={() => updateHousingReference('type', 'landlord')}
                       className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500"
                     />
-                    <span className="text-sm text-gray-700">Landlord</span>
+                    <span className="text-sm text-ink-60">Landlord</span>
                   </label>
                 </div>
               </div>
@@ -1012,7 +1012,7 @@ export default function MembershipApplicationPage() {
               {application.housing_reference.type && (
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-ink-60 mb-2">
                       {application.housing_reference.type === 'mortgage' ? 'Mortgage Company *' : 'Landlord / Property Manager *'}
                     </label>
                     <input
@@ -1020,12 +1020,12 @@ export default function MembershipApplicationPage() {
                       required
                       value={application.housing_reference.company_name}
                       onChange={(e) => updateHousingReference('company_name', e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-ink-60 mb-2">
                       {application.housing_reference.type === 'mortgage' ? 'Loan Officer / Contact Name *' : 'Landlord Contact Name *'}
                     </label>
                     <input
@@ -1033,60 +1033,60 @@ export default function MembershipApplicationPage() {
                       required
                       value={application.housing_reference.contact_name}
                       onChange={(e) => updateHousingReference('contact_name', e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Phone *</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">Contact Phone *</label>
                     <input
                       type="tel"
                       required
                       value={application.housing_reference.contact_phone}
                       onChange={(e) => updateHousingReference('contact_phone', e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email *</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">Contact Email *</label>
                     <input
                       type="email"
                       required
                       value={application.housing_reference.contact_email}
                       onChange={(e) => updateHousingReference('contact_email', e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Property Address</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">Property Address</label>
                     <input
                       type="text"
                       value={application.housing_reference.property_address}
                       onChange={(e) => updateHousingReference('property_address', e.target.value)}
                       placeholder="Street, City, State"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">Start Date</label>
                     <input
                       type="date"
                       value={application.housing_reference.start_date}
                       onChange={(e) => updateHousingReference('start_date', e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">End Date <span className="text-gray-500 font-normal">(leave blank if current)</span></label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">End Date <span className="text-ink-60 font-normal">(leave blank if current)</span></label>
                     <input
                       type="date"
                       value={application.housing_reference.end_date}
                       onChange={(e) => updateHousingReference('end_date', e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                 </div>
@@ -1094,18 +1094,18 @@ export default function MembershipApplicationPage() {
             </div>
 
             {/* Membership Reference */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-bone border border-clay p-6">
               <div className="flex items-center gap-3 mb-2">
                 <Dumbbell className="w-6 h-6 text-orange-600" />
-                <h3 className="text-xl font-semibold text-gray-900">Membership Reference</h3>
+                <h3 className="font-display text-xl font-semibold text-ink">Membership Reference</h3>
                 <span className="text-sm text-red-500">*</span>
               </div>
-              <p className="text-sm text-gray-600 mb-6">
+              <p className="text-sm text-ink-60 mb-6">
                 Choose <strong>one</strong>: a <strong>gym</strong> or <strong>other workspace</strong> where you are or have been a member. You do not need to provide both.
               </p>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Reference Type *</label>
+                <label className="block text-sm font-medium text-ink-60 mb-2">Reference Type *</label>
                 <div className="flex flex-wrap gap-6">
                   <label className="flex items-center">
                     <input
@@ -1116,7 +1116,7 @@ export default function MembershipApplicationPage() {
                       onChange={() => updateMembershipReference('type', 'gym')}
                       className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500"
                     />
-                    <span className="text-sm text-gray-700">Gym</span>
+                    <span className="text-sm text-ink-60">Gym</span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -1127,7 +1127,7 @@ export default function MembershipApplicationPage() {
                       onChange={() => updateMembershipReference('type', 'workspace')}
                       className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500"
                     />
-                    <span className="text-sm text-gray-700">Other Workspace</span>
+                    <span className="text-sm text-ink-60">Other Workspace</span>
                   </label>
                 </div>
               </div>
@@ -1135,7 +1135,7 @@ export default function MembershipApplicationPage() {
               {application.membership_reference.type && (
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-ink-60 mb-2">
                       {application.membership_reference.type === 'gym' ? 'Gym Name *' : 'Workspace Name *'}
                     </label>
                     <input
@@ -1143,61 +1143,61 @@ export default function MembershipApplicationPage() {
                       required
                       value={application.membership_reference.facility_name}
                       onChange={(e) => updateMembershipReference('facility_name', e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name *</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">Contact Name *</label>
                     <input
                       type="text"
                       required
                       value={application.membership_reference.contact_name}
                       onChange={(e) => updateMembershipReference('contact_name', e.target.value)}
                       placeholder="Manager, membership rep, etc."
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Phone *</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">Contact Phone *</label>
                     <input
                       type="tel"
                       required
                       value={application.membership_reference.contact_phone}
                       onChange={(e) => updateMembershipReference('contact_phone', e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email *</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">Contact Email *</label>
                     <input
                       type="email"
                       required
                       value={application.membership_reference.contact_email}
                       onChange={(e) => updateMembershipReference('contact_email', e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Member Since</label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">Member Since</label>
                     <input
                       type="date"
                       value={application.membership_reference.start_date}
                       onChange={(e) => updateMembershipReference('start_date', e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">End Date <span className="text-gray-500 font-normal">(leave blank if current)</span></label>
+                    <label className="block text-sm font-medium text-ink-60 mb-2">End Date <span className="text-ink-60 font-normal">(leave blank if current)</span></label>
                     <input
                       type="date"
                       value={application.membership_reference.end_date}
                       onChange={(e) => updateMembershipReference('end_date', e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                 </div>
@@ -1205,72 +1205,72 @@ export default function MembershipApplicationPage() {
             </div>
 
             {/* Emergency Contact */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-bone border border-clay p-6">
               <div className="flex items-center gap-3 mb-6">
                 <Phone className="w-6 h-6 text-orange-600" />
-                <h3 className="text-xl font-semibold text-gray-900">Emergency Contact</h3>
+                <h3 className="font-display text-xl font-semibold text-ink">Emergency Contact</h3>
               </div>
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">Name *</label>
                   <input
                     type="text"
                     required
                     value={application.emergency_contact_name}
                     onChange={(e) => setApplication(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">Phone Number *</label>
                   <input
                     type="tel"
                     required
                     value={application.emergency_contact_phone}
                     onChange={(e) => setApplication(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Relationship *</label>
+                  <label className="block text-sm font-medium text-ink-60 mb-2">Relationship *</label>
                   <input
                     type="text"
                     required
                     value={application.emergency_contact_relationship}
                     onChange={(e) => setApplication(prev => ({ ...prev, emergency_contact_relationship: e.target.value }))}
                     placeholder="e.g., Spouse, Parent, Friend"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
               </div>
             </div>
 
             {/* Special Requirements */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-bone border border-clay p-6">
               <div className="flex items-center gap-3 mb-6">
                 <Calendar className="w-6 h-6 text-orange-600" />
-                <h3 className="text-xl font-semibold text-gray-900">Additional Information</h3>
+                <h3 className="font-display text-xl font-semibold text-ink">Additional Information</h3>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Special Requirements or Requests</label>
+                <label className="block text-sm font-medium text-ink-60 mb-2">Special Requirements or Requests</label>
                 <textarea
                   value={application.special_requirements}
                   onChange={(e) => setApplication(prev => ({ ...prev, special_requirements: e.target.value }))}
                   rows={3}
                   placeholder="Any specific needs, accessibility requirements, or special requests..."
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                 />
               </div>
             </div>
 
             {/* Agreements */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-bone border border-clay p-6">
               <div className="flex items-center gap-3 mb-6">
                 <Shield className="w-6 h-6 text-orange-600" />
-                <h3 className="text-xl font-semibold text-gray-900">Agreements</h3>
+                <h3 className="font-display text-xl font-semibold text-ink">Agreements</h3>
               </div>
               <div className="space-y-4">
                 <label className="flex items-start">
@@ -1281,11 +1281,11 @@ export default function MembershipApplicationPage() {
                     className="mt-1 mr-3 h-4 w-4 text-orange-600 rounded focus:ring-orange-500"
                   />
                   <div className="text-sm">
-                    <span className="text-gray-700">I agree to the </span>
+                    <span className="text-ink-60">I agree to the </span>
                     <a href="/terms" target="_blank" className="text-orange-600 underline">Terms &amp; Conditions</a>
-                    <span className="text-gray-700"> and </span>
+                    <span className="text-ink-60"> and </span>
                     <a href="/privacy" target="_blank" className="text-orange-600 underline">Privacy Policy</a>
-                    <span className="text-gray-700">. I understand that if my application is approved I will be required to sign the official Terms &amp; Conditions, Fee Agreement, and Member Agreement in the member portal before my membership begins.</span>
+                    <span className="text-ink-60">. I understand that if my application is approved I will be required to sign the official Terms &amp; Conditions, Fee Agreement, and Member Agreement in the member portal before my membership begins.</span>
                     <span className="text-red-500"> *</span>
                   </div>
                 </label>
@@ -1297,7 +1297,7 @@ export default function MembershipApplicationPage() {
                     onChange={(e) => setApplication(prev => ({ ...prev, marketing_consent: e.target.checked }))}
                     className="mt-1 mr-3 h-4 w-4 text-orange-600 rounded focus:ring-orange-500"
                   />
-                  <div className="text-sm text-gray-700">
+                  <div className="text-sm text-ink-60">
                     I would like to receive updates about community events and workspace news
                   </div>
                 </label>
@@ -1309,7 +1309,7 @@ export default function MembershipApplicationPage() {
               <button
                 type="submit"
                 disabled={submitting || !application.agrees_to_terms || !totals.anySelected}
-                className="w-full bg-orange-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                className="w-full bg-orange-600 text-white py-4 px-6 font-semibold hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-lg"
               >
                 {submitting ? (
                   <>
@@ -1321,7 +1321,7 @@ export default function MembershipApplicationPage() {
                 )}
               </button>
 
-              <p className="text-sm text-gray-600 text-center mt-4">
+              <p className="text-sm text-ink-60 text-center mt-4">
                 By submitting this application, you acknowledge that all information provided is accurate and complete.
               </p>
             </div>
