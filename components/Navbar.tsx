@@ -18,7 +18,7 @@ import { supabase } from '@/lib/supabase';
 // A route belongs here only once its page opens with <PageHero> (or the
 // homepage's own full-bleed hero). Adding one without that makes its nav
 // illegible over a light page body.
-const HERO_ROUTES = new Set(['/', '/about']);
+const HERO_ROUTES = new Set(['/', '/about', '/membership', '/membership/dedicated-desk', '/membership/private-office']);
 
 // The same links, order and destinations the bar has always had, lifted into
 // data so the mobile drawer can group them under section labels.
