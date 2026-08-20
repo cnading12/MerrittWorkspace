@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     url: "https://merrittworkspace.net/member-resources/snackshop",
     images: [
       {
-        url: "/images/hero/outside-hero.webp",
+        url: "/images/exterior/campus.webp",
         width: 1200,
         height: 630,
         alt: "Merritt Workspace coworking space in Sloan's Lake, Denver",

@@ -8,11 +8,11 @@ export default function AboutPage() {
   return (
     <main className="bg-bone">
       <PageHero
-        src="/images/new-hero/campus-church-corner.webp"
-        alt="The restored 1905 Merritt building at 23rd and Irving in Sloan's Lake, Denver"
-        blurDataURL={BLUR['campus-church-corner']}
+        src="/images/exterior/campus-corner.webp"
+        alt="The restored 1905 Merritt church building at 23rd and Irving in Sloan's Lake, Denver"
+        blurDataURL={BLUR['exterior/campus-corner']}
         eyebrow="About"
-        title={<>A landmark from 1905, still getting people in a room together.</>}
+        title={<>A church from 1905, still getting people in a room together.</>}
         lead="For over a century this was the heart of Sloan's Lake. It still is. The people in it just work for themselves now."
       />
 
@@ -34,7 +34,7 @@ export default function AboutPage() {
                   same room on purpose.
                 </p>
                 <p className="mw-body">
-                  He restored the main hall and the adjacent structure into
+                  He restored the sanctuary and the adjacent structure into
                   Merritt Workspace, keeping the soaring ceilings, the original
                   wood floors, the stained glass and the acoustics that make the
                   room what it is. The burnt orange concrete floors that run
@@ -42,7 +42,7 @@ export default function AboutPage() {
                   reason the whole place reads warm.
                 </p>
                 <p className="mw-body">
-                  That main hall is now the flex space and the café: member
+                  The former sanctuary is now the flex space and the café: member
                   gatherings, workshops, fitness classes. Next door, fourteen
                   offices and twenty-five dedicated desks hold everyone from
                   solo freelancers to teams of eight.
@@ -135,7 +135,7 @@ export default function AboutPage() {
             <div className="md:col-span-7">
               <div className="relative aspect-[3/2]">
                 <Image
-                  src="/images/hero/outside-hero.webp"
+                  src="/images/exterior/campus.webp"
                   alt="The Merritt Workspace building and the 1905 event space side by side on one lawn in Sloan's Lake, Denver"
                   fill
                   sizes="(max-width: 768px) 100vw, 58vw"

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     url: "https://merrittworkspace.net/membership",
     images: [
       {
-        url: "/images/hero/dedicated-desk.webp",
+        url: "/images/dedicated-desks/room-empty.webp",
         width: 1200,
         height: 630,
         alt: "Dedicated desk workspace at Merritt Workspace in Sloan's Lake, Denver",

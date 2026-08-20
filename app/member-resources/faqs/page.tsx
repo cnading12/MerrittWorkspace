@@ -452,9 +452,9 @@ export default function FAQPage() {
   return (
     <main className="bg-bone">
       <PageHero
-        src="/images/new-hero/community-counter.webp"
+        src="/images/amenities/kitchen-counter.webp"
         alt="A member working at the kitchen counter at Merritt Workspace in Sloan's Lake, Denver"
-        blurDataURL={BLUR['community-counter']}
+        blurDataURL={BLUR['amenities/kitchen-counter']}
         eyebrow="Answers"
         title={<>The questions people actually ask.</>}
         lead="Access, parking, pets, billing, WiFi, the flex space. If it isn't here, call us."

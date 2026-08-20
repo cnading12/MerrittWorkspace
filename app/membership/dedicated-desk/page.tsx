@@ -116,9 +116,9 @@ export default function DedicatedDeskPage() {
   return (
     <main className="bg-bone">
       <PageHero
-        src="/images/new-hero/desks-occupied-wide.webp"
-        alt="Members working at dedicated desks at Merritt Workspace, Sloan's Lake, Denver"
-        blurDataURL={BLUR['desks-occupied-wide']}
+        src="/images/dedicated-desks/pods-alt-angle.webp"
+        alt="Members at work in the butcher block desk pods at Merritt Workspace, Sloan's Lake, Denver"
+        blurDataURL={BLUR['dedicated-desks/pods-alt-angle']}
         eyebrow="Dedicated desk &middot; $200 a month"
         title={<>The same desk every day, in a room with twenty-five of them.</>}
         lead="Your own desk in the Sloan's Lake coworking room, with free access to the 1905 event space next door. Month to month, no long contract."
@@ -211,12 +211,12 @@ export default function DedicatedDeskPage() {
       <section className="relative">
         <div className="relative h-[70svh] min-h-[500px] w-full overflow-hidden md:h-[80svh] md:max-h-[820px]">
           <Image
-            src="/images/new-hero/flexspace-group-rosewindow.webp"
+            src="/images/flex-space/rose-window-group.webp"
             alt="Members gathered under the rose window in the restored 1905 flex space at Merritt Workspace"
             fill
             quality={88}
             placeholder="blur"
-            blurDataURL={BLUR['flexspace-group-rosewindow']}
+            blurDataURL={BLUR['flex-space/rose-window-group']}
             sizes="100vw"
             className="object-cover"
           />

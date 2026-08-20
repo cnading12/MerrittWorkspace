@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
               <body>
                 <div class="container">
                   <div style="background:#ffffff;text-align:center;padding:24px 20px 12px;border-radius:8px 8px 0 0;">
-                    <img src="https://merrittworkspace.net/images/hero/logo.png" alt="Merritt Workspace" width="200" style="display:inline-block;width:200px;max-width:75%;height:auto;border:0;" />
+                    <img src="https://merrittworkspace.net/images/brand/logo.png" alt="Merritt Workspace" width="200" style="display:inline-block;width:200px;max-width:75%;height:auto;border:0;" />
                   </div>
                   <div class="header">
                     <h2>New Contact Form Submission</h2>

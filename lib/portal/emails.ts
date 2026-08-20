@@ -6,7 +6,7 @@
 // Emails require absolute asset URLs — relative paths won't resolve in mail
 // clients. We use a PNG (not the navbar's WebP) for broad client support, e.g.
 // Outlook desktop doesn't render WebP.
-const LOGO_URL = 'https://merrittworkspace.net/images/hero/logo.png';
+const LOGO_URL = 'https://merrittworkspace.net/images/brand/logo.png';
 
 // White header band carrying the logo on white (as in the site navbar), placed
 // above the orange gradient banner so the logo stays crisp.

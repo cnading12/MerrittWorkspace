@@ -14,7 +14,7 @@ const membershipPlans = [
     description: 'Your own workspace in our vibrant coworking community',
     capacity: '1 person',
     privacy: 'Shared Space',
-    image: '/images/hero/dedicated-desk.webp',
+    image: '/images/dedicated-desks/room-empty.webp',
     blurDataURL: 'data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAACwAQCdASoKAA0ABUB8JZACdADYt8AAAOD9JmNTjrhhjajRJ8jDWLTrgAA=',
     color: 'burnt-orange',
     badge: 'Best Value',
@@ -41,7 +41,7 @@ const membershipPlans = [
     description: 'A single day at a dedicated desk. Perfect for trying us out or a one-off workday.',
     capacity: '1 person',
     privacy: 'Shared Space',
-    image: '/images/hero/dedicated-desk.webp',
+    image: '/images/dedicated-desks/room-empty.webp',
     blurDataURL: 'data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAACwAQCdASoKAA0ABUB8JZACdADYt8AAAOD9JmNTjrhhjajRJ8jDWLTrgAA=',
     color: 'burnt-orange',
     badge: 'Day Pass',
@@ -68,7 +68,7 @@ const membershipPlans = [
     description: 'Your own dedicated desk inside a private, lockable office area, outside the shared community space.',
     capacity: '1 person',
     privacy: 'Private Area',
-    image: '/images/private-offices/single.webp',
+    image: '/images/offices/single-alt.webp',
     blurDataURL: 'data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAACQAQCdASoKAA0ABUB8JZQC7ABpDmAAj/vsp3SQ/qO4OdwA',
     color: 'burnt-orange',
     badge: 'Private & Lockable',
@@ -95,7 +95,7 @@ const membershipPlans = [
     description: 'Private lockable office for individual professionals',
     capacity: '1 person',
     privacy: 'Private Office',
-    image: '/images/private-offices/single.webp',
+    image: '/images/offices/single-alt.webp',
     blurDataURL: 'data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAACQAQCdASoKAA0ABUB8JZQC7ABpDmAAj/vsp3SQ/qO4OdwA',
     color: 'blue',
     features: [
@@ -122,7 +122,7 @@ const membershipPlans = [
     description: 'Ideal for partnerships and small collaborative teams',
     capacity: '2 people',
     privacy: 'Private Office',
-    image: '/images/private-offices/2-desk.webp',
+    image: '/images/offices/two-desk.webp',
     blurDataURL: 'data:image/webp;base64,UklGRiwAAABXRUJQVlA4ICAAAABQAQCdASoKAA0AD8B8JQBdgCgAAP6/F7byZ3GAPAgAAA==',
     color: 'green',
     features: [
@@ -150,7 +150,7 @@ const membershipPlans = [
     description: 'Spacious office for established teams and growing companies',
     capacity: '4-8 people',
     privacy: 'Private Office',
-    image: '/images/private-offices/4-desk.webp',
+    image: '/images/offices/four-desk.webp',
     blurDataURL: 'data:image/webp;base64,UklGRjAAAABXRUJQVlA4ICQAAABQAQCdASoKAA0ABUB8JQBOgAAAAOc8gv7uy41SNTE8bIfgAAA=',
     color: 'purple',
     features: [
@@ -327,10 +327,13 @@ export default function MembershipPage() {
 
   return (
     <main className="bg-bone">
+      {/* objectPosition: a centre crop lands on the foreground chairs, so the
+          frame is biased up to hold the desks and the faces. */}
       <PageHero
-        src="/images/new-hero/hero-desks-occupied.webp"
-        alt="Members at work on the dedicated desk floor at Merritt Workspace in Sloan's Lake, Denver"
-        blurDataURL={BLUR['hero-desks-occupied']}
+        src="/images/dedicated-desks/members-talking.webp"
+        alt="Members talking between the dedicated desks at Merritt Workspace in Sloan's Lake, Denver"
+        blurDataURL={BLUR['dedicated-desks/members-talking']}
+        objectPosition="50% 18%"
         eyebrow="Membership"
         title={<>Desks and offices, month to month.</>}
         lead="No long lease, no tiered nonsense. Pick the space that fits the work, and change it when the work changes."

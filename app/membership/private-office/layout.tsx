@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     url: "https://merrittworkspace.net/membership/private-office",
     images: [
       {
-        url: "/images/private-offices/single.webp",
+        url: "/images/offices/single-alt.webp",
         width: 1200,
         height: 630,
         alt: "Private office space at Merritt Workspace in Sloan's Lake, Denver",

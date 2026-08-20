@@ -140,9 +140,9 @@ export default function PrivateOfficePage() {
   return (
     <main className="bg-bone">
       <PageHero
-        src="/images/new-hero/office-large-occupied.webp"
+        src="/images/offices/large-occupied.webp"
         alt="Members working in a private office at Merritt Workspace, Sloan's Lake, Denver"
-        blurDataURL={BLUR['office-large-occupied']}
+        blurDataURL={BLUR['offices/large-occupied']}
         eyebrow="Private offices &middot; $500 to $1,200"
         title={<>A room with a door that locks.</>}
         lead="Fourteen private offices in Sloan's Lake, sized for one person up to a team of eight. Business address, 24/7 access, month to month."
@@ -159,11 +159,11 @@ export default function PrivateOfficePage() {
             <figure>
               <div className="relative aspect-[3/2]">
                 <Image
-                  src="/images/new-hero/office-single-daylight.webp"
+                  src="/images/offices/single-daylight.webp"
                   alt="Single private office with an ultrawide monitor and window light at Merritt Workspace, Denver"
                   fill
                   placeholder="blur"
-                  blurDataURL={BLUR['office-single-daylight']}
+                  blurDataURL={BLUR['offices/single-daylight']}
                   sizes="(max-width: 768px) 100vw, 46vw"
                   className="object-cover"
                 />
@@ -175,11 +175,11 @@ export default function PrivateOfficePage() {
             <figure>
               <div className="relative aspect-[3/2]">
                 <Image
-                  src="/images/new-hero/office-large-team.webp"
+                  src="/images/offices/large-team.webp"
                   alt="A team at work in the large private office at Merritt Workspace, Denver"
                   fill
                   placeholder="blur"
-                  blurDataURL={BLUR['office-large-team']}
+                  blurDataURL={BLUR['offices/large-team']}
                   sizes="(max-width: 768px) 100vw, 46vw"
                   className="object-cover"
                 />

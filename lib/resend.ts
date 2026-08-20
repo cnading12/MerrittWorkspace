@@ -73,7 +73,7 @@ const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 // logo as a PNG rather than the navbar's WebP because several email clients
 // (notably Outlook desktop) don't render WebP.
 const SITE_URL = 'https://merrittworkspace.net';
-const LOGO_URL = `${SITE_URL}/images/hero/logo.png`;
+const LOGO_URL = `${SITE_URL}/images/brand/logo.png`;
 
 // White header band carrying the Merritt Workspace logo. Sits above the orange
 // gradient banner so the logo appears on white (as it does in the site navbar),

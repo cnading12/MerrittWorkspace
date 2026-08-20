@@ -72,9 +72,9 @@ export default function ContactPage() {
   return (
     <main className="bg-bone">
       <PageHero
-        src="/images/new-hero/hero-exterior-signage.webp"
+        src="/images/exterior/signage.webp"
         alt="The Merritt Workspace building at 2246 Irving Street in Sloan's Lake, Denver"
-        blurDataURL={BLUR['hero-exterior-signage']}
+        blurDataURL={BLUR['exterior/signage']}
         eyebrow="Contact"
         title={<>Come see it. Bring your laptop.</>}
         lead="2246 Irving Street, Sloan's Lake. Call, text, email or fill in the form. Someone here answers all four."

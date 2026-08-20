@@ -5,13 +5,13 @@ export default function LocalBusinessSchema() {
     "@id": "https://merrittworkspace.net/#organization",
     "name": "Merritt Workspace",
     "alternateName": "Merritt Workspace Coworking",
-    "description": "Premium coworking space in Sloan's Lake, Denver offering dedicated desks and private offices, with member access to our adjacent 1905 historic flex space. 24/7 access, 3 minutes to I-25, free on-site parking.",
+    "description": "Premium coworking space in Sloan's Lake, Denver offering dedicated desks and private offices, with member access to our adjacent 1905 historic church, now our flex and event space. 24/7 access, 3 minutes to I-25, free on-site parking.",
     "url": "https://merrittworkspace.net",
-    "logo": "https://merrittworkspace.net/images/hero/logo.png",
+    "logo": "https://merrittworkspace.net/images/brand/logo.png",
     "image": [
-      "https://merrittworkspace.net/images/hero/outside-hero.webp",
-      "https://merrittworkspace.net/images/hero/dedicated-desk.webp",
-      "https://merrittworkspace.net/images/private-offices/single.webp"
+      "https://merrittworkspace.net/images/exterior/campus.webp",
+      "https://merrittworkspace.net/images/dedicated-desks/room-empty.webp",
+      "https://merrittworkspace.net/images/offices/single-alt.webp"
     ],
     "telephone": "+1-720-357-9499",
     "email": "memberservices@merrittworkspace.net",

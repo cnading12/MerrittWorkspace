@@ -1,19 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
+import { BLUR } from '@/components/marketing/blur';
 
 // No client state on this page any more — the hero carousel is gone, so the
 // whole thing renders on the server.
-
-const blur = {
-  desks: 'data:image/webp;base64,UklGRkoAAABXRUJQVlA4ID4AAADwAQCdASoMAAgABABoJQBOgCPSWW11iYAA4ixCo32o/oU8WUer/9zMuI+gODPyUZk+J4KFNw0ZO4CN3wAAAA==',
-  counter: 'data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAADwAQCdASoMAAgABABoJYwCdAELWBiJ9YAA/kkaKkuyl86TL4qnjGWWDhCFmm3EAjU8YM4CWbRjcJAAAAA=',
-  single: 'data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAACwAQCdASoMAAgABABoJZQCdACRo1cAAP081GmnONyMV0dy+JL+dCfhvw88YqEsrqYNKE9BN8QkL5btQhDbgIAA',
-  team: 'data:image/webp;base64,UklGRlgAAABXRUJQVlA4IEwAAAAQAgCdASoMAAgABABoJbACdAEDoTdLkewAAPksQgkdY9d7j4T+1B0MHaF7PNj4dh8jIpteJfm/I5FiRWFWYcBIwNzYIHmHwfvSgAAA',
-  flex: 'data:image/webp;base64,UklGRlQAAABXRUJQVlA4IEgAAAAQAgCdASoMAAgABABoJagCdAECvetc3EAAAP7IqGrLRwmnZKbrk05eLnQUfrrNLvu883rsN2wJJGjHDWTLSNr2UZM01a0AAAA=',
-  conference: 'data:image/webp;base64,UklGRlAAAABXRUJQVlA4IEQAAADwAQCdASoMAAgABABoJbAC7ADdYysGmSAA/rZceg22u6TRvjc7gAO21l+MHJiYm8gOlUizk/lyIO1NX0WyMEavOYgAAA==',
-  exterior: 'data:image/webp;base64,UklGRkYAAABXRUJQVlA4IDoAAADQAQCdASoMAAgABABoJQBOgCKUijCLoAD+wFtkJGX2OWrDrWFF5yTcz/Fx4I5RsiuviJwmXG8NQgAA',
-};
 
 export default function HomePage() {
   return (
@@ -26,12 +17,12 @@ export default function HomePage() {
           this section and only takes its solid treatment on scroll. */}
       <section className="relative h-hero w-full overflow-hidden">
         <Image
-          src="/images/new-hero/desks-occupied-wide.webp"
+          src="/images/dedicated-desks/room-wide.webp"
           alt="Members working at dedicated desks at Merritt Workspace, a coworking space in Sloan's Lake, Denver"
           fill
           priority
           placeholder="blur"
-          blurDataURL={blur.desks}
+          blurDataURL={BLUR['dedicated-desks/room-wide']}
           sizes="100vw"
           quality={90}
           className="object-cover object-[50%_62%] md:object-center"
@@ -87,11 +78,11 @@ export default function HomePage() {
           <div className="grid items-center gap-10 md:grid-cols-12 md:gap-16">
             <div className="relative aspect-[4/3] md:col-span-7 md:aspect-[3/2]">
               <Image
-                src="/images/hero/dedicated-desk.webp"
+                src="/images/dedicated-desks/room-empty.webp"
                 alt="The dedicated desk room at Merritt Workspace, with butcher block desk pods and monitors, in Sloan's Lake, Denver"
                 fill
                 placeholder="blur"
-                blurDataURL={blur.desks}
+                blurDataURL={BLUR['dedicated-desks/room-empty']}
                 sizes="(max-width: 768px) 100vw, 58vw"
                 className="object-cover object-center"
               />
@@ -151,41 +142,40 @@ export default function HomePage() {
 
           {/* Two photographs, same landscape crop, same size, both with the
               room in use — an empty desk next to a full one read as two
-              different products. The captions describe the frame; the tiers
-              are set as type below rather than pinned to a room the photo may
-              not be. */}
+              different products. Single and Large are the two ends of the
+              range; Double is set as type below. */}
           <div className="mt-14 grid gap-8 md:mt-20 md:grid-cols-2 md:gap-10">
             <figure>
               <div className="relative aspect-[3/2]">
                 <Image
-                  src="/images/new-hero/office-large-occupied.webp"
-                  alt="Two members working at butcher block desks in a private office at Merritt Workspace, Sloan's Lake, Denver"
+                  src="/images/offices/single-occupied.webp"
+                  alt="A member working at the ultrawide monitor in a single private office at Merritt Workspace, Sloan's Lake, Denver"
                   fill
                   placeholder="blur"
-                  blurDataURL={blur.single}
+                  blurDataURL={BLUR['offices/single-occupied']}
                   sizes="(max-width: 768px) 100vw, 46vw"
                   className="object-cover"
                 />
               </div>
               <figcaption className="mt-4 text-[13px] uppercase tracking-[0.14em] text-ink-60">
-                Heads-down in a private office
+                Single office
               </figcaption>
             </figure>
 
             <figure>
               <div className="relative aspect-[3/2]">
                 <Image
-                  src="/images/new-hero/office-large-team.webp"
+                  src="/images/offices/large-team.webp"
                   alt="A team working together in the large private office at Merritt Workspace, Denver"
                   fill
                   placeholder="blur"
-                  blurDataURL={blur.team}
+                  blurDataURL={BLUR['offices/large-team']}
                   sizes="(max-width: 768px) 100vw, 46vw"
                   className="object-cover"
                 />
               </div>
               <figcaption className="mt-4 text-[13px] uppercase tracking-[0.14em] text-ink-60">
-                A team in the large office
+                Large office
               </figcaption>
             </figure>
           </div>
@@ -229,11 +219,11 @@ export default function HomePage() {
       <section className="relative">
         <div className="relative h-[86svh] min-h-[600px] w-full overflow-hidden md:h-[95svh] md:max-h-[1000px]">
           <Image
-            src="/images/new-hero/flexspace-group-rosewindow.webp"
+            src="/images/flex-space/rose-window-group.webp"
             alt="Members gathered under the stained glass rose window in the restored 1905 flex space at Merritt Workspace, Sloan's Lake, Denver"
             fill
             placeholder="blur"
-            blurDataURL={blur.flex}
+            blurDataURL={BLUR['flex-space/rose-window-group']}
             sizes="100vw"
             quality={90}
             className="object-cover object-center"
@@ -273,7 +263,7 @@ export default function HomePage() {
               <figure className="md:col-span-5">
                 <div className="relative aspect-[4/3]">
                   <Image
-                    src="/images/event-space/coffee-shop.webp"
+                    src="/images/flex-space/cafe.webp"
                     alt="Café seating with table service, hardwood floors and the original stained glass windows at Merritt Workspace, Sloan's Lake, Denver"
                     fill
                     sizes="(max-width: 768px) 100vw, 40vw"
@@ -290,7 +280,7 @@ export default function HomePage() {
                   {/* Both buildings in one frame — the only shot that makes the
                       shared campus legible. */}
                   <Image
-                    src="/images/hero/outside-hero.webp"
+                    src="/images/exterior/campus.webp"
                     alt="The Merritt Workspace building and the restored 1905 event space side by side on the same lawn at 23rd and Irving, Sloan's Lake, Denver"
                     fill
                     sizes="(max-width: 768px) 100vw, 56vw"
@@ -361,11 +351,11 @@ export default function HomePage() {
             <div className="md:col-span-7">
               <div className="relative aspect-[3/2]">
                 <Image
-                  src="/images/new-hero/conference-meeting.webp"
+                  src="/images/conference-room/meeting.webp"
                   alt="A team meeting in the conference room at Merritt Workspace coworking in Sloan's Lake, Denver"
                   fill
                   placeholder="blur"
-                  blurDataURL={blur.conference}
+                  blurDataURL={BLUR['conference-room/meeting']}
                   sizes="(max-width: 768px) 100vw, 58vw"
                   className="object-cover"
                 />
@@ -435,11 +425,11 @@ export default function HomePage() {
             <div className="md:col-span-7">
               <div className="relative aspect-[3/2]">
                 <Image
-                  src="/images/new-hero/hero-exterior-signage.webp"
+                  src="/images/exterior/signage.webp"
                   alt="Exterior of Merritt Workspace at 2246 Irving Street, a coworking space in Sloan's Lake, Denver"
                   fill
                   placeholder="blur"
-                  blurDataURL={blur.exterior}
+                  blurDataURL={BLUR['exterior/signage']}
                   sizes="(max-width: 768px) 100vw, 58vw"
                   className="object-cover"
                 />
