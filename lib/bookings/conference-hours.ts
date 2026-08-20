@@ -27,6 +27,14 @@
 
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { conferenceHoursPerMonth, getAllocations } from '@/lib/bookings/allocations';
+import {
+  getPoolOccupants,
+  isOfficePooledDesignation,
+  poolsPerOffice,
+} from '@/lib/bookings/officePool';
+
+// Re-exported so callers keep a single entry point for conference policy.
+export { isOfficePooledDesignation };
 
 const MT_TZ = 'America/Denver';
 
@@ -51,22 +59,6 @@ export async function monthlyIncludedHours(
   designation: string | null | undefined,
 ): Promise<number> {
   return conferenceHoursPerMonth(designation);
-}
-
-// Designations whose hours are pooled per office when the member has an
-// office_number. Kept as a local list (rather than importing portal types)
-// so this module stays dependency-light for unit tests.
-const OFFICE_POOLED_DESIGNATIONS = new Set([
-  'private_office_single',
-  'private_office_double',
-  'private_office_large',
-  'office_member',
-]);
-
-export function isOfficePooledDesignation(
-  designation: string | null | undefined
-): boolean {
-  return !!designation && OFFICE_POOLED_DESIGNATIONS.has(designation);
 }
 
 export interface MonthBounds {
@@ -162,40 +154,6 @@ export interface HoursSummary {
   has_day_pass?: boolean;
 }
 
-// Occupants of an office share a canonical key: office numbers are free text
-// on the members row, so match them the same way the seating chart does
-// (trimmed + uppercased).
-function officeKey(raw: string | null | undefined): string | null {
-  const v = (raw || '').trim().toUpperCase();
-  return v || null;
-}
-
-// Everyone currently occupying the given office: the paying primary plus any
-// office members. Cancelled/declined/archived members no longer hold a seat
-// and are excluded (their historical bookings also stop counting against the
-// pool, matching how a freed seat behaves elsewhere).
-async function getOfficeOccupants(officeNumber: string): Promise<
-  { id: string; designation: string | null }[]
-> {
-  const key = officeKey(officeNumber);
-  if (!key) return [];
-  const sb = getServiceSupabase();
-  const { data, error } = await sb
-    .from('members')
-    .select('id, designation, status, office_number, archived_at')
-    .not('office_number', 'is', null);
-  if (error) throw new Error(`conference-hours occupants query failed: ${error.message}`);
-  return (data || [])
-    .filter(
-      (m: any) =>
-        officeKey(m.office_number) === key &&
-        !m.archived_at &&
-        m.status !== 'cancelled' &&
-        m.status !== 'declined'
-    )
-    .map((m: any) => ({ id: m.id, designation: m.designation ?? null }));
-}
-
 // Allotment summary for the month containing `forDate` (YYYY-MM-DD), or the
 // current Mountain-Time month when omitted. When validating a booking, pass
 // the booking's date so the check runs against the month the booking actually
@@ -256,14 +214,9 @@ export async function getMemberHoursSummary(
 
   const bounds = forDate ? monthBoundsForDate(forDate) : denverMonthBounds();
 
-  const officeNumber = member.office_number || null;
-  if (officeNumber && isOfficePooledDesignation(member.designation)) {
-    let occupants = await getOfficeOccupants(officeNumber);
-    // Always include the requesting member, even if the occupants query
-    // missed them (e.g. status edge case) — their own bookings must count.
-    if (!occupants.some((o) => o.id === member.id)) {
-      occupants = [...occupants, { id: member.id, designation: member.designation }];
-    }
+  if (poolsPerOffice(member)) {
+    const officeNumber = member.office_number as string;
+    const occupants = await getPoolOccupants(member);
     // One allocations read for the whole office rather than one per occupant.
     const allocations = await getAllocations();
     const included = Math.max(

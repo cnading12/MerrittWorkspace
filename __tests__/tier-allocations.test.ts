@@ -229,7 +229,8 @@ describe('the migration seed and the built-in fallbacks agree', () => {
     const seeded: Record<string, { flex: number; conference: number }> = {};
     // Seed rows look like: ('dedicated_desk', 4, 4, 'note').
     const rowRe = /\(\s*'([a-z_]+)'\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,/g;
-    for (const m of sql.matchAll(rowRe)) {
+    let m: RegExpExecArray | null;
+    while ((m = rowRe.exec(sql)) !== null) {
       seeded[m[1]] = { flex: Number(m[2]), conference: Number(m[3]) };
     }
 

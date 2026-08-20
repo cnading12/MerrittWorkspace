@@ -1,6 +1,10 @@
 // Compute how many minutes of flex-space booking a member has used in a
 // given Mountain Time week (Monday 00:00 MT through next Monday 00:00 MT).
 // Cancelled bookings are excluded so cancelling frees up the time again.
+//
+// Pass several member ids to sum usage across an office's occupants — flex
+// allowances pool per office exactly as conference hours do. See
+// lib/bookings/officePool.ts.
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 
 const MT_TZ = 'America/Denver';
@@ -79,15 +83,19 @@ export function mountainWeekBounds(target: Date = new Date()): {
 }
 
 export async function getWeeklyMinutes(
-  memberId: string,
+  memberId: string | string[],
   target: Date = new Date()
 ): Promise<{ minutes: number; weekStart: Date; weekEnd: Date }> {
   const { start, end } = mountainWeekBounds(target);
+  const memberIds = Array.isArray(memberId) ? memberId : [memberId];
+  if (memberIds.length === 0) {
+    return { minutes: 0, weekStart: start, weekEnd: end };
+  }
   const sb = getServiceSupabase();
   const { data, error } = await sb
     .from('flex_bookings')
     .select('duration_minutes,start_time,status')
-    .eq('member_id', memberId)
+    .in('member_id', memberIds)
     .neq('status', 'cancelled')
     .gte('start_time', start.toISOString())
     .lt('start_time', end.toISOString());
@@ -98,5 +106,6 @@ export async function getWeeklyMinutes(
     (sum, row: any) => sum + (row.duration_minutes || 0),
     0
   );
+
   return { minutes, weekStart: start, weekEnd: end };
 }
