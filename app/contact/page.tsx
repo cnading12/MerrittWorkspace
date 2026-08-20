@@ -72,12 +72,12 @@ export default function ContactPage() {
   return (
     <main className="bg-bone">
       <PageHero
-        src="/images/new-hero/hero-exterior-signage.webp"
+        src="/images/exterior/signage.webp"
         alt="The Merritt Workspace building at 2246 Irving Street in Sloan's Lake, Denver"
-        blurDataURL={BLUR['hero-exterior-signage']}
+        blurDataURL={BLUR['exterior/signage']}
         eyebrow="Contact"
         title={<>Come see it. Bring your laptop.</>}
-        lead="2246 Irving Street, Sloan's Lake. Call, text, email or fill in the form — someone here answers all four."
+        lead="2246 Irving Street, Sloan's Lake. Call, text, email or fill in the form. Someone here answers all four."
       />
 
       <section className="mw-section">
@@ -112,11 +112,11 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Member access</dt>
-                  <dd className="mt-1.5 text-[17px] text-ink-60">24/7 by keycard</dd>
+                  <dd className="mt-1.5 text-[17px] text-ink-60">24/7 by access code</dd>
                 </div>
                 <div>
                   <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Parking</dt>
-                  <dd className="mt-1.5 text-[17px] text-ink-60">22 free spots on site</dd>
+                  <dd className="mt-1.5 text-[17px] text-ink-60">Free, on site</dd>
                 </div>
               </dl>
 
@@ -152,7 +152,7 @@ export default function ContactPage() {
                 <div className="border-t border-clay pt-10">
                   <h2 className="mw-h3">Message sent.</h2>
                   <p className="mt-4 mw-body">
-                    Thanks for reaching out — we&rsquo;ll come back to you within
+                    Thanks for reaching out. We&rsquo;ll come back to you within
                     24 hours. If it&rsquo;s urgent, call or text{' '}
                     <a href="tel:7203579499" className="mw-inline-link">(720) 357-9499</a>.
                   </p>
@@ -297,10 +297,10 @@ export default function ContactPage() {
         <div className="mw-container">
           <div className="max-w-2xl">
             <p className="mw-eyebrow mb-5">The block</p>
-            <h2 className="mw-h2">Next to the landmark Merritt church building.</h2>
+            <h2 className="mw-h2">Next to the landmark Merritt building.</h2>
             <p className="mt-6 mw-body">
-              23rd and Irving, in the heart of Sloan&rsquo;s Lake — three minutes
-              to I-25 and a walk from the park.
+              23rd and Irving, in the heart of Sloan&rsquo;s Lake, three minutes to
+              I-25 and a walk from the park.
             </p>
           </div>
           <div className="mt-12 h-[360px] w-full border border-clay md:mt-16 md:h-[460px]">

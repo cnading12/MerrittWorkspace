@@ -16,10 +16,10 @@ export const metadata: Metadata = {
     url: "https://merrittworkspace.net/about",
     images: [
       {
-        url: "/images/event-space/outside.webp",
+        url: "/images/flex-space/exterior.webp",
         width: 1200,
         height: 630,
-        alt: "Historic Merritt Church building, now Merritt Workspace in Sloan's Lake, Denver",
+        alt: "The historic Merritt Church building, now Merritt Workspace in Sloan's Lake, Denver",
       },
     ],
   },

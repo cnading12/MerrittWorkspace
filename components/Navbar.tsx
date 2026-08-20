@@ -182,7 +182,7 @@ export default function Navbar() {
             {/* Logo */}
             <Link href="/" className="shrink-0 hover:opacity-80 transition">
               <Image
-                src="/images/hero/logo.webp"
+                src="/images/brand/logo.webp"
                 alt="Merritt Workspace Logo"
                 width={180}
                 height={48}
@@ -352,7 +352,7 @@ export default function Navbar() {
             <div className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-3">
               <Link href="/" onClick={closeAllMenus} className="flex min-h-[44px] items-center">
                 <Image
-                  src="/images/hero/logo.webp"
+                  src="/images/brand/logo.webp"
                   alt="Merritt Workspace Logo"
                   width={150}
                   height={40}

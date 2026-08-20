@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     url: "https://merrittworkspace.net/member-resources/meeting-rooms",
     images: [
       {
-        url: "/images/hero/conference-room.webp",
+        url: "/images/conference-room/wide.webp",
         width: 1200,
         height: 630,
         alt: "Professional conference room available to rent at Merritt Workspace in Sloan's Lake, Denver",

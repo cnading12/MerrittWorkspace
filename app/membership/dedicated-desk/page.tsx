@@ -9,14 +9,14 @@ import { BLUR } from '@/components/marketing/blur';
 
 const WHATS_INCLUDED = [
   'Your own dedicated desk with storage',
-  '24/7 keycard access to a monitored building',
+  '24/7 access code entry to a monitored building',
   'Enterprise WiFi throughout the building',
   'Four hours of meeting room credit each month',
-  'Full kitchen, and all the coffee and tea you can drink',
+  'Full kitchen, and all the coffee, tea and beer you can drink',
   'Free flex space access next door until 4:30 daily',
   'Mail and package handling',
   'Four soundproof phone booths, first come first served',
-  'Pet friendly — bring the dog',
+  'Pet friendly, so bring the dog',
   'Month to month, no long-term contract',
 ];
 
@@ -24,7 +24,7 @@ export default function DedicatedDeskPage() {
   const includedFeatures = [
     {
       title: '24/7 Access',
-      description: 'Work on your schedule with round-the-clock building access'
+      description: 'Your own access code for round-the-clock building entry'
     },
     {
       title: 'High-Speed WiFi',
@@ -36,7 +36,7 @@ export default function DedicatedDeskPage() {
     },
     {
       title: 'Full Kitchen',
-      description: 'Coffee, microwave, refrigerator, and prep space'
+      description: 'Coffee, tea, beer, microwave, refrigerator, and prep space'
     },
     {
       title: '4 Phone Booths',
@@ -56,7 +56,7 @@ export default function DedicatedDeskPage() {
     },
     {
       title: 'FREE Flex Space Next Door',
-      description: 'Use our beautiful flex space in the adjacent building for meetings and events—free until 4:30 PM daily'
+      description: 'Use our beautiful flex space in the adjacent building for meetings and events, free until 4:30 PM daily'
     },
     {
       title: 'FREE Trial Day',
@@ -116,12 +116,12 @@ export default function DedicatedDeskPage() {
   return (
     <main className="bg-bone">
       <PageHero
-        src="/images/new-hero/desks-occupied-wide.webp"
-        alt="Members working at dedicated desks on the burnt orange floors at Merritt Workspace, Sloan's Lake, Denver"
-        blurDataURL={BLUR['desks-occupied-wide']}
+        src="/images/dedicated-desks/pods-alt-angle.webp"
+        alt="Members at work in the butcher block desk pods at Merritt Workspace, Sloan's Lake, Denver"
+        blurDataURL={BLUR['dedicated-desks/pods-alt-angle']}
         eyebrow="Dedicated desk &middot; $200 a month"
-        title={<>The same desk every day, in a room with twenty of them.</>}
-        lead="Your own desk in the Sloan's Lake coworking room, with free access to the 1905 church next door. Month to month, no long contract."
+        title={<>The same desk every day, in a room with twenty-five of them.</>}
+        lead="Your own desk in the Sloan's Lake coworking room, with free access to the 1905 event space next door. Month to month, no long contract."
       />
 
       {/* Sold-out notice — only once every floor desk is taken. */}
@@ -135,8 +135,8 @@ export default function DedicatedDeskPage() {
               <p className="mt-3 mw-body">
                 We&rsquo;re still accepting dedicated desk members. New members
                 are placed in a <strong className="font-semibold text-ink">Private
-                Dedicated Desk</strong> — your own desk inside a private,
-                lockable office area outside the shared community space — at{' '}
+                Dedicated Desk</strong>, your own desk inside a private,
+                lockable office area outside the shared community space, at{' '}
                 <strong className="font-semibold text-ink">$300/month</strong>{' '}
                 instead of $200. Everything else below is included exactly the same.
               </p>
@@ -211,12 +211,12 @@ export default function DedicatedDeskPage() {
       <section className="relative">
         <div className="relative h-[70svh] min-h-[500px] w-full overflow-hidden md:h-[80svh] md:max-h-[820px]">
           <Image
-            src="/images/new-hero/flexspace-group-rosewindow.webp"
-            alt="Members gathered under the rose window in the restored 1905 church flex space at Merritt Workspace"
+            src="/images/flex-space/rose-window-group.webp"
+            alt="Members gathered under the rose window in the restored 1905 flex space at Merritt Workspace"
             fill
             quality={88}
             placeholder="blur"
-            blurDataURL={BLUR['flexspace-group-rosewindow']}
+            blurDataURL={BLUR['flex-space/rose-window-group']}
             sizes="100vw"
             className="object-cover"
           />
@@ -226,7 +226,7 @@ export default function DedicatedDeskPage() {
               <div className="max-w-3xl">
                 <p className="mw-eyebrow-light mb-5">Included with every desk</p>
                 <h2 className="font-display text-[2.25rem] font-semibold leading-[1] tracking-tightest text-bone sm:text-5xl lg:text-[4rem]">
-                  The 1905 church next door, free until 4:30.
+                  The 1905 event space next door, free until 4:30.
                 </h2>
               </div>
             </div>

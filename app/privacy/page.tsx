@@ -114,7 +114,7 @@ export default function PrivacyPolicyPage() {
             <li>Secure password storage using industry-standard hashing</li>
             <li>Regular security audits and updates</li>
             <li>Access to personal information on a need-to-know basis</li>
-            <li>Physical security — keycard access and security cameras</li>
+            <li>Physical security: access codes, locking offices and security cameras</li>
             <li>PCI-compliant payment processing through Stripe</li>
           </ul>
           <p className="border-l-2 border-clay pl-5 text-[16px]">

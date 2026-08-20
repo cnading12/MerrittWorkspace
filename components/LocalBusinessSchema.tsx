@@ -5,13 +5,13 @@ export default function LocalBusinessSchema() {
     "@id": "https://merrittworkspace.net/#organization",
     "name": "Merritt Workspace",
     "alternateName": "Merritt Workspace Coworking",
-    "description": "Premium coworking space in Sloan's Lake, Denver offering dedicated desks and private offices—with member access to our adjacent 1905 historic church flex space. 24/7 access, 3 minutes to I-25, 22 free parking spots.",
+    "description": "Premium coworking space in Sloan's Lake, Denver offering dedicated desks and private offices, with member access to our adjacent 1905 historic church, now our flex and event space. 24/7 access, 3 minutes to I-25, free on-site parking.",
     "url": "https://merrittworkspace.net",
-    "logo": "https://merrittworkspace.net/images/hero/logo.png",
+    "logo": "https://merrittworkspace.net/images/brand/logo.png",
     "image": [
-      "https://merrittworkspace.net/images/hero/outside-hero.webp",
-      "https://merrittworkspace.net/images/hero/dedicated-desk.webp",
-      "https://merrittworkspace.net/images/private-offices/single.webp"
+      "https://merrittworkspace.net/images/exterior/campus.webp",
+      "https://merrittworkspace.net/images/dedicated-desks/room-empty.webp",
+      "https://merrittworkspace.net/images/offices/single-alt.webp"
     ],
     "telephone": "+1-720-357-9499",
     "email": "memberservices@merrittworkspace.net",
@@ -70,7 +70,7 @@ export default function LocalBusinessSchema() {
     "amenityFeature": [
       { "@type": "LocationFeatureSpecification", "name": "High-Speed WiFi", "value": true },
       { "@type": "LocationFeatureSpecification", "name": "24/7 Access", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Meeting Rooms", "value": true },
+      { "@type": "LocationFeatureSpecification", "name": "Conference Room", "value": true },
       { "@type": "LocationFeatureSpecification", "name": "Phone Booths", "value": true },
       { "@type": "LocationFeatureSpecification", "name": "Kitchen", "value": true },
       { "@type": "LocationFeatureSpecification", "name": "Free Coffee & Tea", "value": true },
@@ -136,7 +136,7 @@ export default function LocalBusinessSchema() {
           "itemOffered": {
             "@type": "Service",
             "name": "Large Team Office (4-8 Desks)",
-            "description": "Spacious private office for teams of 4-8 in West Denver. Includes 20 hours meeting room credits, professional business address, and priority event space booking."
+            "description": "Spacious private office for teams of 4-8 in Sloan's Lake, Denver. Includes 20 hours meeting room credits, professional business address, and priority event space booking."
           },
           "price": "1200",
           "priceCurrency": "USD",
