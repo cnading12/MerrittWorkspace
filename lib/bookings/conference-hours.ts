@@ -5,47 +5,41 @@
 // month (Mountain Time). Anything beyond the allotment is billed at the
 // hourly rate. Usage is summed from the conference_bookings table.
 //
+// The per-designation numbers live in the tier_allocations table (see
+// lib/bookings/allocations.ts) so they can be changed without a deploy.
+//
+// Only PEAK hours — weekdays 8:00 AM – 6:00 PM MT — draw on the allotment.
+// Evenings, nights and weekends are unlimited and free for every tier; the
+// booking routes split a booking with splitPeakHours (lib/bookings/peak.ts)
+// before consulting the allotment, and record off-peak hours with
+// included_hours = 0 so they never count against a month.
+//
 // Private offices POOL their hours: an office can have several occupants
 // (one paying "primary" member plus any number of $0 "office members"), and
-// they all draw from a single per-office allotment set by the primary's
-// designation (single 8 / double 12 / large 20). Usage by any occupant
-// counts against the shared pool. Members without an office keep their
-// personal allotment.
+// they all draw from a single per-office allotment — the highest allowance
+// among the occupants, in practice the paying primary's. Usage by any
+// occupant counts against the shared pool. Members without an office keep
+// their personal allotment.
 //
 // A per-member admin override (members.conference_hours_override) replaces
 // all of the above with a fixed personal monthly allotment — used for rare
 // special cases like approved non-members who may book the room.
 
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { conferenceHoursPerMonth, getAllocations } from '@/lib/bookings/allocations';
+import {
+  getPoolOccupants,
+  isOfficePooledDesignation,
+  poolsPerOffice,
+} from '@/lib/bookings/officePool';
+
+// Re-exported so callers keep a single entry point for conference policy.
+export { isOfficePooledDesignation };
 
 const MT_TZ = 'America/Denver';
 
 export const HOURLY_RATE_DOLLARS = 25;
 export const HOURLY_RATE_CENTS = 2500;
-
-// Free conference hours per calendar month, by membership designation.
-// Tiers chosen by the workspace: dedicated desk 4, private offices 8/12/20.
-// Everything else (one-day desk, flex, other) gets none.
-export const INCLUDED_MONTHLY_HOURS: Record<string, number> = {
-  dedicated_desk: 4,
-  // A private dedicated desk is the same product in a private room, so it
-  // carries the same personal allotment. Deliberately NOT pooled per office:
-  // two private-desk members can share a converted office and each keeps
-  // their own hours.
-  private_dedicated_desk: 4,
-  private_office_single: 8,
-  private_office_double: 12,
-  private_office_large: 20,
-  // Day-pass members don't get a monthly allotment — they get a per-DAY
-  // allotment (DAY_PASS_INCLUDED_HOURS_PER_DAY) on days they hold a
-  // confirmed pass. See the day-pass branch in getMemberHoursSummary.
-  one_day_dedicated_desk: 0,
-  flex: 0,
-  // Office members have no personal allotment — they draw from their
-  // office's shared pool (anchored by the primary member's designation).
-  office_member: 0,
-  other: 0,
-};
 
 // One Day Dedicated Desk policy: 1 hour of conference-room time per day,
 // only on days the member holds a confirmed day pass, with NO paid overage
@@ -58,25 +52,13 @@ export function isDayPassDesignation(
   return designation === 'one_day_dedicated_desk';
 }
 
-export function monthlyIncludedHours(designation: string | null | undefined): number {
-  if (!designation) return 0;
-  return INCLUDED_MONTHLY_HOURS[designation] ?? 0;
-}
-
-// Designations whose hours are pooled per office when the member has an
-// office_number. Kept as a local list (rather than importing portal types)
-// so this module stays dependency-light for unit tests.
-const OFFICE_POOLED_DESIGNATIONS = new Set([
-  'private_office_single',
-  'private_office_double',
-  'private_office_large',
-  'office_member',
-]);
-
-export function isOfficePooledDesignation(
-  designation: string | null | undefined
-): boolean {
-  return !!designation && OFFICE_POOLED_DESIGNATIONS.has(designation);
+// Monthly allotment for one designation. Async because the numbers come from
+// tier_allocations; the underlying read is cached per instance, so calling
+// this per member in a loop is cheap.
+export async function monthlyIncludedHours(
+  designation: string | null | undefined,
+): Promise<number> {
+  return conferenceHoursPerMonth(designation);
 }
 
 export interface MonthBounds {
@@ -172,40 +154,6 @@ export interface HoursSummary {
   has_day_pass?: boolean;
 }
 
-// Occupants of an office share a canonical key: office numbers are free text
-// on the members row, so match them the same way the seating chart does
-// (trimmed + uppercased).
-function officeKey(raw: string | null | undefined): string | null {
-  const v = (raw || '').trim().toUpperCase();
-  return v || null;
-}
-
-// Everyone currently occupying the given office: the paying primary plus any
-// office members. Cancelled/declined/archived members no longer hold a seat
-// and are excluded (their historical bookings also stop counting against the
-// pool, matching how a freed seat behaves elsewhere).
-async function getOfficeOccupants(officeNumber: string): Promise<
-  { id: string; designation: string | null }[]
-> {
-  const key = officeKey(officeNumber);
-  if (!key) return [];
-  const sb = getServiceSupabase();
-  const { data, error } = await sb
-    .from('members')
-    .select('id, designation, status, office_number, archived_at')
-    .not('office_number', 'is', null);
-  if (error) throw new Error(`conference-hours occupants query failed: ${error.message}`);
-  return (data || [])
-    .filter(
-      (m: any) =>
-        officeKey(m.office_number) === key &&
-        !m.archived_at &&
-        m.status !== 'cancelled' &&
-        m.status !== 'declined'
-    )
-    .map((m: any) => ({ id: m.id, designation: m.designation ?? null }));
-}
-
 // Allotment summary for the month containing `forDate` (YYYY-MM-DD), or the
 // current Mountain-Time month when omitted. When validating a booking, pass
 // the booking's date so the check runs against the month the booking actually
@@ -266,17 +214,17 @@ export async function getMemberHoursSummary(
 
   const bounds = forDate ? monthBoundsForDate(forDate) : denverMonthBounds();
 
-  const officeNumber = member.office_number || null;
-  if (officeNumber && isOfficePooledDesignation(member.designation)) {
-    let occupants = await getOfficeOccupants(officeNumber);
-    // Always include the requesting member, even if the occupants query
-    // missed them (e.g. status edge case) — their own bookings must count.
-    if (!occupants.some((o) => o.id === member.id)) {
-      occupants = [...occupants, { id: member.id, designation: member.designation }];
-    }
+  if (poolsPerOffice(member)) {
+    const officeNumber = member.office_number as string;
+    const occupants = await getPoolOccupants(member);
+    // One allocations read for the whole office rather than one per occupant.
+    const allocations = await getAllocations();
     const included = Math.max(
       0,
-      ...occupants.map((o) => monthlyIncludedHours(o.designation))
+      ...occupants.map(
+        (o) =>
+          (o.designation && allocations[o.designation]?.conferenceHoursPerMonth) || 0
+      )
     );
     const used = await getUsedIncludedHoursForMonth(
       occupants.map((o) => o.id),
@@ -292,7 +240,7 @@ export async function getMemberHoursSummary(
     };
   }
 
-  const included = monthlyIncludedHours(member.designation);
+  const included = await monthlyIncludedHours(member.designation);
   const used = await getUsedIncludedHoursForMonth(member.id, bounds);
   return { included, used, remaining: Math.max(0, included - used) };
 }

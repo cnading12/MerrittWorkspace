@@ -512,6 +512,15 @@ export default function AdminMemberDetailPage({
               {member.conference_hours_override === 1 ? '' : 's'}/mo (override)
             </div>
           )}
+          {member.flex_hours_override != null && (
+            <div
+              className="text-amber-700 font-medium"
+              title="Admin-set override: this member gets this many free flex-space hours per week regardless of designation, and is never pooled with an office. Edit it on the Members list page."
+            >
+              {member.flex_hours_override} free flex hr
+              {member.flex_hours_override === 1 ? '' : 's'}/wk (override)
+            </div>
+          )}
         </div>
       </div>
 

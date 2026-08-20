@@ -14,6 +14,8 @@ const ALLOWED_FIELDS = [
   'desk_number',
   // Monthly free conference-hours override (null = designation-based).
   'conference_hours_override',
+  // Weekly free flex-hours override (null = designation-based).
+  'flex_hours_override',
 ] as const;
 
 export async function GET(
@@ -211,6 +213,21 @@ export async function PATCH(
       if (v !== null && (!Number.isInteger(v) || v < 0)) {
         return NextResponse.json(
           { error: 'conference_hours_override must be null or a whole number ≥ 0' },
+          { status: 400 },
+        );
+      }
+    }
+    if ('flex_hours_override' in update) {
+      // Fractional is allowed here — flex is booked in half-hour steps — but
+      // the column is numeric(4,1), so anything finer would be rounded by the
+      // database and quietly disagree with what the admin typed.
+      const v = update.flex_hours_override;
+      if (
+        v !== null &&
+        (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || Math.round(v * 2) !== v * 2)
+      ) {
+        return NextResponse.json(
+          { error: 'flex_hours_override must be null or a number ≥ 0 in half-hour steps' },
           { status: 400 },
         );
       }

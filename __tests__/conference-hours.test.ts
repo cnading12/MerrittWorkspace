@@ -286,13 +286,17 @@ describe('getMemberHoursSummary (office shared pool)', () => {
     expect(inCall?.args[1]).not.toContain('mem-gone');
   });
 
-  it('an office member with no primary on the portal has a 0-hour pool (paid booking still possible)', async () => {
+  it('an office with only office members pools on the office-member allowance', async () => {
+    // office_member used to carry no personal hours, so an office with no
+    // paying primary on the portal pooled to zero. It now carries the
+    // small-office allowance (comped amenity access for non-profits), so such
+    // an office pools on that instead.
     setMembers([
       { id: 'mem-omar', designation: 'office_member', status: 'active', office_number: '110', archived_at: null },
     ]);
     setBookings([]);
     const summary = await getMemberHoursSummary(officeMember, '2026-08-05');
-    expect(summary).toMatchObject({ included: 0, used: 0, remaining: 0, pooled: true });
+    expect(summary).toMatchObject({ included: 14, used: 0, remaining: 14, pooled: true });
   });
 
   it('members without an office number keep their personal allotment', async () => {
@@ -301,7 +305,7 @@ describe('getMemberHoursSummary (office shared pool)', () => {
       { id: 'mem-solo', designation: 'private_office_single', office_number: null },
       '2026-08-05'
     );
-    expect(summary).toEqual({ included: 8, used: 0, remaining: 8 });
+    expect(summary).toEqual({ included: 14, used: 0, remaining: 14 });
   });
 
   it('always counts the requesting member in the pool even if the occupants query misses them', async () => {
@@ -396,15 +400,30 @@ describe('splitDuration', () => {
 });
 
 describe('monthlyIncludedHours', () => {
-  it('gives dedicated desk 4 hours and unknown designations none', () => {
-    expect(monthlyIncludedHours('dedicated_desk')).toBe(4);
-    expect(monthlyIncludedHours('flex')).toBe(0);
-    expect(monthlyIncludedHours(null)).toBe(0);
-    expect(monthlyIncludedHours('mystery')).toBe(0);
+  // Allowances now come from tier_allocations, so these resolve through the
+  // allocations module. With no rows in the mocked table they fall back to
+  // the built-in numbers, which is exactly the degraded path worth guarding.
+  it('gives dedicated desk 4 hours and unknown designations none', async () => {
+    expect(await monthlyIncludedHours('dedicated_desk')).toBe(4);
+    // Retired designations were left out of tier_allocations deliberately.
+    expect(await monthlyIncludedHours('flex')).toBe(0);
+    expect(await monthlyIncludedHours(null)).toBe(0);
+    expect(await monthlyIncludedHours('mystery')).toBe(0);
   });
 
-  it('gives office members no personal hours — theirs come from the office pool', () => {
-    expect(monthlyIncludedHours('office_member')).toBe(0);
+  it('gives the two office tiers the same allowance', async () => {
+    // Single and double are identical by design — never differentiate them.
+    expect(await monthlyIncludedHours('private_office_single')).toBe(14);
+    expect(await monthlyIncludedHours('private_office_double')).toBe(14);
+    expect(await monthlyIncludedHours('private_office_large')).toBe(20);
+  });
+
+  it('gives office members the provisional small-office allowance', async () => {
+    expect(await monthlyIncludedHours('office_member')).toBe(14);
+  });
+
+  it('gives a day pass none — its hour is granted per pass day instead', async () => {
+    expect(await monthlyIncludedHours('one_day_dedicated_desk')).toBe(0);
   });
 });
 

@@ -141,7 +141,7 @@ describe('buildSignupEmailFields', () => {
     expect(fields.costLine).toBe('$700.00 per month');
     expect(fields.seatType).toBe('office');
     expect(fields.seatNumber).toBe('104');
-    expect(fields.conferenceHoursLine).toBe('12 hours of conference-room time per month');
+    expect(fields.conferenceHoursLine).toBe('14 hours of conference-room time per month');
     // Office members pick an office, never a DD number.
     expect(fields.availableDesksLabel).toBeNull();
   });
