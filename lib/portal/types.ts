@@ -237,6 +237,24 @@ export const REQUIRED_DOC_TYPES: DocType[] = [
   'proof_of_address',
 ];
 
+// Community partners are organisations granted comped use of the facility,
+// not tenants: there is no lease, no billing and no address to verify, so
+// proof of address does not apply. We do still need photo ID for anyone who
+// can badge into the building after hours.
+export const COMMUNITY_PARTNER_DOC_TYPES: DocType[] = ['photo_id'];
+
+// Which documents a given member actually has to provide. Always use this
+// rather than REQUIRED_DOC_TYPES directly when a member is in hand — asking a
+// comped partner for proof of address would block them on a document that
+// makes no sense for them.
+export function requiredDocTypesFor(
+  designation: MemberDesignation | string | null | undefined,
+): DocType[] {
+  return designation === 'community_partner'
+    ? COMMUNITY_PARTNER_DOC_TYPES
+    : REQUIRED_DOC_TYPES;
+}
+
 export const DOC_TYPE_LABELS: Record<DocType, string> = {
   photo_id: 'Photo ID',
   proof_of_address: 'Proof of Address',

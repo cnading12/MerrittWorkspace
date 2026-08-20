@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
-import { REQUIRED_DOC_TYPES, DocType } from '@/lib/portal/types';
+import { requiredDocTypesFor, DocType } from '@/lib/portal/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       .select('doc_type')
       .eq('member_id', member.id);
     const have = new Set((existing || []).map((d: any) => d.doc_type));
-    const complete = REQUIRED_DOC_TYPES.every((t) => have.has(t));
+    const complete = requiredDocTypesFor(member.designation).every((t) => have.has(t));
     if (complete !== member.required_docs_complete) {
       await sb.from('members').update({ required_docs_complete: complete }).eq('id', member.id);
     }
