@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, Monitor, Wifi, Coffee, MapPin, CheckCircle, XCircle, Loader2, AlertCircle, CreditCard, Gift, Sparkles } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
+import PageHero from '@/components/marketing/PageHero';
+import { BLUR } from '@/components/marketing/blur';
 import { formatTime, calculateEndTime } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 
@@ -425,7 +427,7 @@ export default function MeetingRoomsPage() {
 
 📧 A confirmation email has been sent to ${bookingForm.email}
 
-✨ Your meeting room is ready to go!`);
+✨ Your conference room is ready to go!`);
         }
       } else {
         // For paid bookings, redirect to Stripe checkout
@@ -486,21 +488,18 @@ Your time slot is temporarily reserved.`);
   };
 
   return (
-    <div className="min-h-screen bg-bone pt-20">
-      {/* Hero Section */}
-      <section className="bg-linen py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="font-display text-4xl md:text-5xl font-semibold text-ink mb-6">
-              Professional Conference Room
-            </h1>
-            <p className="text-xl text-ink-60 mb-8 max-w-3xl mx-auto">
-              Book our state-of-the-art conference room with A/V equipment, high-speed wifi,
-              and a professional atmosphere. Members get simple booking with no payment required!
-            </p>
-          </div>
-        </div>
-      </section>
+    <div className="min-h-screen bg-bone">
+      {/* No pt-20: the hero starts at y=0 under the transparent navbar.
+          This route is listed in HERO_ROUTES in Navbar.tsx. */}
+      <PageHero
+        src="/images/conference-room/empty.webp"
+        alt="The glass-walled conference room at Merritt Workspace, with a 75-inch screen and seating for eight, in Sloan's Lake, Denver"
+        blurDataURL={BLUR['conference-room/empty']}
+        objectPosition="50% 55%"
+        eyebrow="Member resources"
+        title={<>The conference room.</>}
+        lead="Seats eight, with a 75-inch screen, conference calling and fast WiFi. Members book against the credit their membership already includes; everyone else books by the hour."
+      />
 
       {/* Error and Success Display */}
       {(error || successMessage) && (
@@ -560,7 +559,7 @@ Your time slot is temporarily reserved.`);
       {/* Booking Section */}
       <section className="py-16 bg-linen">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-display text-3xl font-semibold text-center text-ink mb-12">Book Your Meeting Room</h2>
+          <h2 className="font-display text-3xl font-semibold text-center text-ink mb-12">Book Your Conference Room</h2>
 
           {/* Date Selection */}
           <div className="mb-8">

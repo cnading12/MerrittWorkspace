@@ -16,7 +16,7 @@ import { supabase } from '@/lib/supabase';
 
 const NAV_LINKS = [
   { href: '/portal', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { href: '/portal/flex-space', label: 'Flex Space', icon: CalendarClock, exact: false },
+  { href: '/member-resources/flex-space', label: 'Flex Space', icon: CalendarClock, exact: false },
   { href: '/portal/activity', label: 'My Activity', icon: Receipt, exact: false },
 ];
 

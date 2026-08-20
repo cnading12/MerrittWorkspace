@@ -52,7 +52,7 @@ export default function PrivacyPolicyPage() {
           <h3>Usage information</h3>
           <ul>
             <li>Building access logs (entry and exit times)</li>
-            <li>Meeting room bookings and usage</li>
+            <li>Conference room bookings and usage</li>
             <li>Snackshop purchases</li>
             <li>Website usage data (IP address, browser type, pages visited)</li>
             <li>Security camera footage, in common areas only</li>
@@ -69,7 +69,7 @@ export default function PrivacyPolicyPage() {
           <ul>
             <li>Process membership applications and manage accounts</li>
             <li>Provide building access and security</li>
-            <li>Process meeting room bookings and payments</li>
+            <li>Process conference room bookings and payments</li>
             <li>Fulfil snackshop orders</li>
             <li>Provide member support</li>
           </ul>

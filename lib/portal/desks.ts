@@ -28,6 +28,16 @@ export const DESK_NUMBERS: readonly number[] = Array.from(
 // Total number of dedicated desks in the building.
 export const DESK_COUNT = DESK_NUMBERS.length;
 
+// PRIVATE dedicated desks: desks in private offices we've converted into
+// dedicated-desk areas, sold at the higher private rate once the shared floor
+// fills up (see lib/portal/pricing.ts and lib/portal/deskAvailability.ts).
+//
+// Unlike the floor-plan desks these have no individual numbers — a private-desk
+// member is recorded against the office they sit in, not a DD number — so the
+// count is a plain capacity rather than a list of labels. Bump this if more
+// offices are converted; it is the only place the number is written down.
+export const PRIVATE_DESK_COUNT = 4;
+
 // Human-readable description of the valid desk numbers, e.g.
 // "DD1–DD26 (there is no DD5)". Shared by the portal and onboarding copy so a
 // future removal only has to be recorded in REMOVED_DESK_NUMBERS.

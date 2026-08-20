@@ -67,7 +67,7 @@ export default function Footer() {
                 Membership
               </Link>
               <Link href="/member-resources/meeting-rooms" className="block text-bone/75 transition hover:text-bone">
-                Meeting rooms
+                Conference room
               </Link>
               <Link href="/member-resources/snackshop" className="block text-bone/75 transition hover:text-bone">
                 Snackshop

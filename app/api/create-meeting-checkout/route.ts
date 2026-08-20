@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       billed_hours
     } = await request.json();
 
-    console.log('🔷 Creating Stripe checkout session for meeting room:', {
+    console.log('🔷 Creating Stripe checkout session for conference room:', {
       booking_id,
       customer: customer_name,
       email: customer_email,
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       price_data: {
         currency: 'usd',
         product_data: {
-          name: `Meeting Room - ${room_name || 'Conference Room'}`,
+          name: `Conference Room - ${room_name || 'Conference Room'}`,
           description: `${new Date(booking_date).toLocaleDateString()} at ${start_time} - ${end_time} (${duration_hours} hour${duration_hours > 1 ? 's' : ''})`,
           metadata: {
             room_name: room_name || 'Conference Room',
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       billing_address_collection: 'required',
       custom_text: {
         submit: {
-          message: 'Your meeting room will be confirmed after payment!'
+          message: 'Your conference room will be confirmed after payment!'
         }
       },
       expires_at: Math.floor(Date.now() / 1000) + (30 * 60), // 30 minutes
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Meeting room Stripe checkout error:', error);
+    console.error('❌ Conference room Stripe checkout error:', error);
     
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(

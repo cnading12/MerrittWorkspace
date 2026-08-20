@@ -63,7 +63,7 @@ function MemberBookingSuccessContent() {
     if (!booking) return;
     
     const bookingText = `
-🎉 Meeting Room Booking Confirmed
+🎉 Conference Room Booking Confirmed
 
 📋 Booking ID: ${booking.id}
 👤 Name: ${booking.customer_name}
@@ -122,7 +122,7 @@ function MemberBookingSuccessContent() {
               href="/member-resources/meeting-rooms" 
               className="block bg-orange-600 text-white px-8 py-3 font-semibold hover:bg-orange-700 transition"
             >
-              Back to Meeting Rooms
+              Back to Conference Room
             </Link>
             <p className="text-sm text-ink-60">
               Need help? <Link href="/contact" className="text-orange-600 hover:underline font-medium">Contact Support</Link> or call <a href="tel:(720)357-9499" className="text-orange-600 hover:underline font-medium">(720) 357-9499</a>
@@ -151,7 +151,7 @@ function MemberBookingSuccessContent() {
             Member Booking Confirmed! 🎉
           </h1>
           <p className="text-xl md:text-2xl text-ink-60 mb-4">
-            Your meeting room has been reserved using your member hours.
+            Your conference room has been reserved using your member hours.
           </p>
           <p className="text-lg text-green-600 font-semibold mb-8">
             No payment required - it's all included in your membership!

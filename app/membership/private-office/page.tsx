@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
 import Image from 'next/image';
@@ -9,6 +9,23 @@ import { BLUR } from '@/components/marketing/blur';
 
 export default function PrivateOfficePage() {
   const [selectedPlan, setSelectedPlan] = useState<'single' | 'double' | 'large'>('single');
+
+  // Live room count from the admin seating chart. Null while the fetch is in
+  // flight, and left null if it fails — the page then prints no count at all
+  // rather than a number it can't stand behind.
+  const [officesLeft, setOfficesLeft] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/office-availability')
+      .then(r => r.json())
+      .then(d => {
+        if (!cancelled && d && !d.unavailable && typeof d.remaining === 'number') {
+          setOfficesLeft(d.remaining);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const privateOfficePlans = [
     {
@@ -22,7 +39,7 @@ export default function PrivateOfficePage() {
       features: [
         'Private lockable office',
         'Professional business address',
-        '8 hours meeting room credits/month',
+        '8 hours conference room credits/month',
         'Mail handling service',
         'Pet-friendly (dogs welcome)',
         'Personal storage solutions',
@@ -41,7 +58,7 @@ export default function PrivateOfficePage() {
       features: [
         'Private lockable office with 2 desks',
         'Professional business address',
-        '12 hours meeting room credits/month',
+        '12 hours conference room credits/month',
         'Mail and package handling',
         'Pet-friendly team space',
         'Multiple storage solutions',
@@ -61,7 +78,7 @@ export default function PrivateOfficePage() {
       features: [
         'Large private office (4-8 desks)',
         'Professional business address',
-        '20 hours meeting room credits/month',
+        '20 hours conference room credits/month',
         'Mail and package handling',
         'Multiple dedicated phone lines',
         'Team collaboration areas',
@@ -95,8 +112,8 @@ export default function PrivateOfficePage() {
       description: 'Full mail receiving and package management services'
     },
     {
-      title: 'Meeting Room Credits',
-      description: 'Monthly meeting room hours included (varies by plan)'
+      title: 'Conference Room Credits',
+      description: 'Monthly conference room hours included (varies by plan)'
     },
     {
       title: 'Phone Line Options',
@@ -172,16 +189,19 @@ export default function PrivateOfficePage() {
                 Single office
               </figcaption>
             </figure>
+            {/* Both frames in this pair show the room empty. An occupied
+                large office next to an empty single read as two different
+                products rather than two sizes of the same one. */}
             <figure>
               <div className="relative aspect-[3/2]">
                 <Image
-                  src="/images/offices/large-team.webp"
-                  alt="A team at work in the large private office at Merritt Workspace, Denver"
+                  src="/images/offices/four-desk.webp"
+                  alt="The large private office at Merritt Workspace, Denver, with butcher block desks and a whiteboard"
                   fill
                   placeholder="blur"
-                  blurDataURL={BLUR['offices/large-team']}
+                  blurDataURL={BLUR['offices/four-desk']}
                   sizes="(max-width: 768px) 100vw, 46vw"
-                  className="object-cover"
+                  className="object-cover object-center"
                 />
               </div>
               <figcaption className="mt-4 text-[13px] uppercase tracking-[0.14em] text-ink-60">
@@ -198,6 +218,16 @@ export default function PrivateOfficePage() {
           <div className="max-w-2xl">
             <p className="mw-eyebrow mb-5">Pick a size</p>
             <h2 className="mw-h2">Three sizes, one rate card.</h2>
+            {officesLeft !== null && (
+              <p className="mt-6 text-[15px] text-ink-60">
+                <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle" aria-hidden="true" />
+                {officesLeft === 0
+                  ? 'Every office is taken right now — ask us about the waiting list.'
+                  : officesLeft === 1
+                    ? '1 office is available right now.'
+                    : `${officesLeft} offices are available right now.`}
+              </p>
+            )}
           </div>
 
           {/* Tabs */}

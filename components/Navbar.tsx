@@ -18,7 +18,18 @@ import { supabase } from '@/lib/supabase';
 // A route belongs here only once its page opens with <PageHero> (or the
 // homepage's own full-bleed hero). Adding one without that makes its nav
 // illegible over a light page body.
-const HERO_ROUTES = new Set(['/', '/about', '/membership', '/membership/dedicated-desk', '/membership/private-office', '/member-resources/faqs', '/contact']);
+const HERO_ROUTES = new Set([
+  '/',
+  '/about',
+  '/membership',
+  '/membership/dedicated-desk',
+  '/membership/private-office',
+  '/member-resources/faqs',
+  '/member-resources/snackshop',
+  '/member-resources/meeting-rooms',
+  '/member-resources/flex-space',
+  '/contact',
+]);
 
 // The same links, order and destinations the bar has always had, lifted into
 // data so the mobile drawer can group them under section labels.
@@ -29,7 +40,8 @@ const NAV_GROUPS = [
     width: 'w-48',
     items: [
       { href: '/member-resources/snackshop', label: 'Snackshop' },
-      { href: '/member-resources/meeting-rooms', label: 'Meeting Rooms' },
+      { href: '/member-resources/meeting-rooms', label: 'Conference Room' },
+      { href: '/member-resources/flex-space', label: 'Flex Space' },
       { href: '/member-resources/faqs', label: "FAQ's" },
     ],
   },
@@ -267,7 +279,7 @@ export default function Navbar() {
                         <LayoutDashboard className="w-4 h-4" />
                         Dashboard
                       </Link>
-                      <Link href="/portal/flex-space" className={`flex items-center gap-2 ${itemClass}`} onClick={closeAllMenus}>
+                      <Link href="/member-resources/flex-space" className={`flex items-center gap-2 ${itemClass}`} onClick={closeAllMenus}>
                         <CalendarClock className="w-4 h-4" />
                         Flex Space
                       </Link>
@@ -435,7 +447,7 @@ export default function Navbar() {
                     </li>
                     <li>
                       <Link
-                        href="/portal/flex-space"
+                        href="/member-resources/flex-space"
                         onClick={closeAllMenus}
                         className="flex items-center gap-3 py-[7px] font-display text-[22px] leading-snug text-ink/80 active:text-ink"
                       >

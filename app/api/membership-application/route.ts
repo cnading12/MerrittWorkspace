@@ -552,7 +552,7 @@ function generateApplicantEmailHTML(data: {
 
             <p>While you wait, feel free to explore our amenities:</p>
             <ul>
-              <li>Premium meeting rooms with A/V equipment</li>
+              <li>Premium conference room with A/V equipment</li>
               <li>High-speed WiFi throughout the building</li>
               <li>On-site snackshop with fresh coffee and meals</li>
               <li>Secure building with 24/7 access</li>
@@ -606,7 +606,7 @@ What's Next:
 4. Free Trial Day: Experience working in our space with a full day trial
 
 Our Amenities:
-- Premium meeting rooms with A/V equipment
+- Premium conference room with A/V equipment
 - High-speed WiFi throughout the building
 - On-site snackshop with fresh coffee and meals
 - Secure building with 24/7 access
