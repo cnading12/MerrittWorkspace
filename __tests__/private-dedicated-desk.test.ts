@@ -44,9 +44,9 @@ describe('private dedicated desk membership rules', () => {
     expect(DESIGNATION_LABELS.private_dedicated_desk).toBe('Private Dedicated Desk');
   });
 
-  it('gets the same conference-room allotment as a shared dedicated desk', () => {
-    expect(monthlyIncludedHours('private_dedicated_desk')).toBe(
-      monthlyIncludedHours('dedicated_desk'),
+  it('gets the same conference-room allotment as a shared dedicated desk', async () => {
+    expect(await monthlyIncludedHours('private_dedicated_desk')).toBe(
+      await monthlyIncludedHours('dedicated_desk'),
     );
   });
 

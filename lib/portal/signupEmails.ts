@@ -27,7 +27,11 @@ import {
 } from './emails';
 import { DESIGNATION_LABELS, type MemberDesignation } from './types';
 import { isOneTimeDesignation } from './pricing';
-import { monthlyIncludedHours, DAY_PASS_INCLUDED_HOURS_PER_DAY } from '@/lib/bookings/conference-hours';
+import { DAY_PASS_INCLUDED_HOURS_PER_DAY } from '@/lib/bookings/conference-hours';
+import {
+  conferenceHoursPerMonth,
+  fallbackConferenceHours,
+} from '@/lib/bookings/allocations';
 import { listAvailableDesks, formatDeskList } from './deskAvailability';
 
 // Plain-English "what you signed up for" — the desks/office count behind each
@@ -76,7 +80,14 @@ function seatTypeFor(designation: MemberDesignation | null): 'desk' | 'office' |
   }
 }
 
-function conferenceHoursLine(designation: MemberDesignation | null): string | null {
+// `hours` is the live allowance from tier_allocations, resolved by the async
+// caller. This builder is synchronous (it composes one string inside a
+// template), so when the caller can't resolve it we fall back to the built-in
+// number rather than making the whole email chain async.
+function conferenceHoursLine(
+  designation: MemberDesignation | null,
+  hours: number | null | undefined,
+): string | null {
   if (!designation) return null;
   if (designation === 'one_day_dedicated_desk') {
     return `${DAY_PASS_INCLUDED_HOURS_PER_DAY} hour of conference-room time on each day you hold a pass`;
@@ -84,8 +95,10 @@ function conferenceHoursLine(designation: MemberDesignation | null): string | nu
   if (designation === 'office_member') {
     return "conference-room time shared from your office's monthly pool";
   }
-  const hours = monthlyIncludedHours(designation);
-  return hours > 0 ? `${hours} hours of conference-room time per month` : null;
+  const resolved = hours ?? fallbackConferenceHours(designation);
+  return resolved > 0
+    ? `${resolved} hours of conference-room time per month`
+    : null;
 }
 
 // Format a Unix-seconds billing anchor as a display date. Pinned to UTC
@@ -179,6 +192,10 @@ export function buildSignupEmailFields(opts: {
   member: SignupEmailMember;
   facts: SignupCheckoutFacts;
   availableDesks: string[];
+  // Live monthly conference allowance from tier_allocations. Omit and the
+  // built-in fallback is used — fine for tests, but a caller that can await
+  // should pass it so an edited allowance shows up in the email.
+  conferenceHours?: number | null;
 }) {
   const { member, facts } = opts;
   const designation = member.designation;
@@ -248,7 +265,7 @@ export function buildSignupEmailFields(opts: {
     startDateLabel,
     paymentMethodLabel,
     availableDesksLabel,
-    conferenceHoursLine: conferenceHoursLine(designation),
+    conferenceHoursLine: conferenceHoursLine(designation, opts.conferenceHours),
   };
 }
 
@@ -321,7 +338,15 @@ export async function sendSignupEmailsOnce(opts: {
     }
   }
 
-  const fields = buildSignupEmailFields({ member, facts, availableDesks });
+  // Resolve the live allowance so the welcome email quotes whatever
+  // tier_allocations currently says, not the built-in fallback.
+  const conferenceHours = await conferenceHoursPerMonth(member.designation);
+  const fields = buildSignupEmailFields({
+    member,
+    facts,
+    availableDesks,
+    conferenceHours,
+  });
 
   // --- Member welcome -----------------------------------------------------
   if (member.email && (await claimRecipient(member.id, 'signup_email_member_sent_at'))) {

@@ -5,47 +5,33 @@
 // month (Mountain Time). Anything beyond the allotment is billed at the
 // hourly rate. Usage is summed from the conference_bookings table.
 //
+// The per-designation numbers live in the tier_allocations table (see
+// lib/bookings/allocations.ts) so they can be changed without a deploy.
+//
+// Only PEAK hours — weekdays 8:00 AM – 6:00 PM MT — draw on the allotment.
+// Evenings, nights and weekends are unlimited and free for every tier; the
+// booking routes split a booking with splitPeakHours (lib/bookings/peak.ts)
+// before consulting the allotment, and record off-peak hours with
+// included_hours = 0 so they never count against a month.
+//
 // Private offices POOL their hours: an office can have several occupants
 // (one paying "primary" member plus any number of $0 "office members"), and
-// they all draw from a single per-office allotment set by the primary's
-// designation (single 8 / double 12 / large 20). Usage by any occupant
-// counts against the shared pool. Members without an office keep their
-// personal allotment.
+// they all draw from a single per-office allotment — the highest allowance
+// among the occupants, in practice the paying primary's. Usage by any
+// occupant counts against the shared pool. Members without an office keep
+// their personal allotment.
 //
 // A per-member admin override (members.conference_hours_override) replaces
 // all of the above with a fixed personal monthly allotment — used for rare
 // special cases like approved non-members who may book the room.
 
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { conferenceHoursPerMonth, getAllocations } from '@/lib/bookings/allocations';
 
 const MT_TZ = 'America/Denver';
 
 export const HOURLY_RATE_DOLLARS = 25;
 export const HOURLY_RATE_CENTS = 2500;
-
-// Free conference hours per calendar month, by membership designation.
-// Tiers chosen by the workspace: dedicated desk 4, private offices 8/12/20.
-// Everything else (one-day desk, flex, other) gets none.
-export const INCLUDED_MONTHLY_HOURS: Record<string, number> = {
-  dedicated_desk: 4,
-  // A private dedicated desk is the same product in a private room, so it
-  // carries the same personal allotment. Deliberately NOT pooled per office:
-  // two private-desk members can share a converted office and each keeps
-  // their own hours.
-  private_dedicated_desk: 4,
-  private_office_single: 8,
-  private_office_double: 12,
-  private_office_large: 20,
-  // Day-pass members don't get a monthly allotment — they get a per-DAY
-  // allotment (DAY_PASS_INCLUDED_HOURS_PER_DAY) on days they hold a
-  // confirmed pass. See the day-pass branch in getMemberHoursSummary.
-  one_day_dedicated_desk: 0,
-  flex: 0,
-  // Office members have no personal allotment — they draw from their
-  // office's shared pool (anchored by the primary member's designation).
-  office_member: 0,
-  other: 0,
-};
 
 // One Day Dedicated Desk policy: 1 hour of conference-room time per day,
 // only on days the member holds a confirmed day pass, with NO paid overage
@@ -58,9 +44,13 @@ export function isDayPassDesignation(
   return designation === 'one_day_dedicated_desk';
 }
 
-export function monthlyIncludedHours(designation: string | null | undefined): number {
-  if (!designation) return 0;
-  return INCLUDED_MONTHLY_HOURS[designation] ?? 0;
+// Monthly allotment for one designation. Async because the numbers come from
+// tier_allocations; the underlying read is cached per instance, so calling
+// this per member in a loop is cheap.
+export async function monthlyIncludedHours(
+  designation: string | null | undefined,
+): Promise<number> {
+  return conferenceHoursPerMonth(designation);
 }
 
 // Designations whose hours are pooled per office when the member has an
@@ -274,9 +264,14 @@ export async function getMemberHoursSummary(
     if (!occupants.some((o) => o.id === member.id)) {
       occupants = [...occupants, { id: member.id, designation: member.designation }];
     }
+    // One allocations read for the whole office rather than one per occupant.
+    const allocations = await getAllocations();
     const included = Math.max(
       0,
-      ...occupants.map((o) => monthlyIncludedHours(o.designation))
+      ...occupants.map(
+        (o) =>
+          (o.designation && allocations[o.designation]?.conferenceHoursPerMonth) || 0
+      )
     );
     const used = await getUsedIncludedHoursForMonth(
       occupants.map((o) => o.id),
@@ -292,7 +287,7 @@ export async function getMemberHoursSummary(
     };
   }
 
-  const included = monthlyIncludedHours(member.designation);
+  const included = await monthlyIncludedHours(member.designation);
   const used = await getUsedIncludedHoursForMonth(member.id, bounds);
   return { included, used, remaining: Math.max(0, included - used) };
 }
