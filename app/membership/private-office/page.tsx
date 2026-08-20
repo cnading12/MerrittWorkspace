@@ -116,7 +116,7 @@ export default function PrivateOfficePage() {
     },
     {
       title: 'Free Trial Day',
-      description: 'Spend a full workday in our space before you sign up — every potential new member qualifies'
+      description: 'Spend a full workday in our space before you sign up. Every potential new member qualifies'
     }
   ];
 
@@ -141,7 +141,7 @@ export default function PrivateOfficePage() {
     <main className="bg-bone">
       <PageHero
         src="/images/new-hero/office-large-occupied.webp"
-        alt="Members working in a private office on the burnt orange floors at Merritt Workspace, Sloan's Lake, Denver"
+        alt="Members working in a private office at Merritt Workspace, Sloan's Lake, Denver"
         blurDataURL={BLUR['office-large-occupied']}
         eyebrow="Private offices &middot; $500 to $1,200"
         title={<>A room with a door that locks.</>}
@@ -312,7 +312,7 @@ export default function PrivateOfficePage() {
               <Link href="/membership" className="border-b border-accent pb-0.5 text-bone hover:border-bone">
                 compare every membership option
               </Link>{' '}
-              first — the{' '}
+              first, the{' '}
               <Link href="/membership/dedicated-desk" className="border-b border-accent pb-0.5 text-bone hover:border-bone">
                 dedicated desk
               </Link>{' '}

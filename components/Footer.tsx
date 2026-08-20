@@ -16,9 +16,8 @@ export default function Footer() {
               Merritt Workspace
             </Link>
             <p className="mt-5 max-w-sm text-[15px] leading-relaxed text-bone/60">
-              An independent coworking space in Sloan&rsquo;s Lake, Denver, on
-              the burnt orange concrete floors of a building next to a restored
-              1905 church.
+              An independent coworking space in Sloan&rsquo;s Lake, Denver,
+              next to a restored 1905 event space on the same lawn.
             </p>
             <Link
               href="/contact"

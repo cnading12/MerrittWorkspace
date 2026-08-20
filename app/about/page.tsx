@@ -9,11 +9,11 @@ export default function AboutPage() {
     <main className="bg-bone">
       <PageHero
         src="/images/new-hero/campus-church-corner.webp"
-        alt="The restored 1905 Merritt church building at 23rd and Irving in Sloan's Lake, Denver"
+        alt="The restored 1905 Merritt building at 23rd and Irving in Sloan's Lake, Denver"
         blurDataURL={BLUR['campus-church-corner']}
         eyebrow="About"
-        title={<>A church from 1905, still getting people in a room together.</>}
-        lead="For over a century this was the heart of Sloan's Lake. It still is — the congregation just works for itself now."
+        title={<>A landmark from 1905, still getting people in a room together.</>}
+        lead="For over a century this was the heart of Sloan's Lake. It still is. The people in it just work for themselves now."
       />
 
       {/* The story — long-form, one column, a lot of air. */}
@@ -30,11 +30,11 @@ export default function AboutPage() {
                   When Merritt Church closed after serving Sloan&rsquo;s Lake for
                   more than a hundred years, Lance Nading bought it rather than
                   watch it come down. The idea was not to preserve a building.
-                  It was to keep the thing the building did — put people in the
+                  It was to keep the thing the building did: put people in the
                   same room on purpose.
                 </p>
                 <p className="mw-body">
-                  He restored the sanctuary and the adjacent structure into
+                  He restored the main hall and the adjacent structure into
                   Merritt Workspace, keeping the soaring ceilings, the original
                   wood floors, the stained glass and the acoustics that make the
                   room what it is. The burnt orange concrete floors that run
@@ -42,10 +42,10 @@ export default function AboutPage() {
                   reason the whole place reads warm.
                 </p>
                 <p className="mw-body">
-                  The former sanctuary is now the flex space and the café —
-                  member gatherings, workshops, fitness classes. Next door,
-                  fourteen offices and twenty-odd dedicated desks hold everyone
-                  from solo freelancers to teams of eight.
+                  That main hall is now the flex space and the café: member
+                  gatherings, workshops, fitness classes. Next door, fourteen
+                  offices and twenty-five dedicated desks hold everyone from
+                  solo freelancers to teams of eight.
                 </p>
               </div>
 
@@ -73,9 +73,9 @@ export default function AboutPage() {
             <div>
               <h3 className="mw-h3">Historic character</h3>
               <p className="mt-4 mw-body">
-                A restored 1905 landmark with original stained glass, soaring
-                ceilings and the burnt orange floors. It does not look like
-                anywhere else you could rent a desk in Denver.
+                A restored 1905 landmark with original stained glass and
+                soaring ceilings. It does not look like anywhere else you could
+                rent a desk in Denver.
               </p>
             </div>
             <div>
@@ -83,7 +83,7 @@ export default function AboutPage() {
               <p className="mt-4 mw-body">
                 We are the only business on a residential block. Members know
                 each other, and the neighborhood knows us. That is not a
-                marketing line — it is a consequence of where the building sits.
+                marketing line. It is a consequence of where the building sits.
               </p>
             </div>
             <div>
@@ -106,7 +106,7 @@ export default function AboutPage() {
               <p className="mw-eyebrow mb-5">The neighborhood</p>
               <h2 className="mw-h2">Quiet block, five minutes from everything.</h2>
               <p className="mt-6 mw-body">
-                23rd and Irving is a residential corner — trees, lawns, people
+                23rd and Irving is a residential corner: trees, lawns, people
                 walking dogs. It is also three minutes to I-25, five to Mile
                 High, and a short walk to Sloan&rsquo;s Lake Park and the cafés
                 and restaurants on the west side.
@@ -136,7 +136,7 @@ export default function AboutPage() {
               <div className="relative aspect-[3/2]">
                 <Image
                   src="/images/hero/outside-hero.webp"
-                  alt="The Merritt Workspace building and the 1905 church side by side on one lawn in Sloan's Lake, Denver"
+                  alt="The Merritt Workspace building and the 1905 event space side by side on one lawn in Sloan's Lake, Denver"
                   fill
                   sizes="(max-width: 768px) 100vw, 58vw"
                   className="object-cover"
@@ -151,7 +151,7 @@ export default function AboutPage() {
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  title="Merritt Workspace — 2246 Irving Street, Sloan's Lake, Denver"
+                  title="Merritt Workspace, 2246 Irving Street, Sloan's Lake, Denver"
                 />
               </div>
             </div>
@@ -171,7 +171,7 @@ export default function AboutPage() {
             </h2>
             <p className="mt-7 max-w-2xl text-[17px] leading-relaxed text-bone/70 md:text-lg">
               We honor what this building was by making it a place where real
-              community happens — where the work gets done, the connections are
+              community happens, where the work gets done, the connections are
               worth having, and you belong somewhere. That has been the job here
               for a hundred and nineteen years.
             </p>

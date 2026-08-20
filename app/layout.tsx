@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     url: "https://merrittworkspace.net",
     siteName: "Merritt Workspace",
     title: "Merritt Workspace | Coworking Space in Sloan's Lake, Denver",
-    description: "Premium coworking in Sloan's Lake with member access to our stunning 1905 church. Dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, 3 min to I-25.",
+    description: "Premium coworking in Sloan's Lake with member access to our stunning 1905 event space. Dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, 3 min to I-25.",
     images: [
       {
         url: "/images/og/home-og.jpg",
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Merritt Workspace | Coworking Space in Sloan's Lake, Denver",
-    description: "Premium coworking in Sloan's Lake with member access to our stunning 1905 church. Dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, 3 min to I-25.",
+    description: "Premium coworking in Sloan's Lake with member access to our stunning 1905 event space. Dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, 3 min to I-25.",
     images: ["/images/og/home-og.jpg"],
   },
   robots: {

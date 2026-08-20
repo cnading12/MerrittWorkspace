@@ -331,7 +331,7 @@ export default function FAQPage() {
               <ul className="space-y-1 text-ink-60 text-sm">
                 <li>• 24/7 building monitoring</li>
                 <li>• Unique access codes for each member</li>
-                <li>• Keycard access to private offices</li>
+                <li>• Individually locking private offices</li>
                 <li>• Well-lit parking and entrance areas</li>
                 <li>• Security cameras in common areas</li>
               </ul>

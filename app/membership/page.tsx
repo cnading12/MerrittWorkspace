@@ -23,7 +23,7 @@ const membershipPlans = [
       'Your own dedicated desk with storage',
       'High-speed WiFi',
       'Access to 4 private phone booths',
-      'Full kitchen with coffee',
+      'Full kitchen with coffee, tea and beer',
       '4 hours meeting room credits/month',
       'Mail and package handling',
       'Event space access until 4:30 PM',
@@ -38,7 +38,7 @@ const membershipPlans = [
     id: 'one_day_dedicated_desk',
     name: 'One Day Dedicated Desk',
     price: 30,
-    description: 'A single day at a dedicated desk — perfect for trying us out or a one-off workday.',
+    description: 'A single day at a dedicated desk. Perfect for trying us out or a one-off workday.',
     capacity: '1 person',
     privacy: 'Shared Space',
     image: '/images/hero/dedicated-desk.webp',
@@ -50,7 +50,7 @@ const membershipPlans = [
       'Full day of access',
       '1 hour of conference room time',
       'High-speed WiFi',
-      'Full kitchen with coffee',
+      'Full kitchen with coffee, tea and beer',
       'Printing access',
       'Phone booths on availability'
     ],
@@ -65,7 +65,7 @@ const membershipPlans = [
     id: 'private_dedicated_desk',
     name: 'Private Dedicated Desk',
     price: 300,
-    description: 'Your own dedicated desk inside a private, lockable office area — outside the shared community space.',
+    description: 'Your own dedicated desk inside a private, lockable office area, outside the shared community space.',
     capacity: '1 person',
     privacy: 'Private Area',
     image: '/images/private-offices/single.webp',
@@ -73,12 +73,12 @@ const membershipPlans = [
     color: 'burnt-orange',
     badge: 'Private & Lockable',
     features: [
-      'Private, lockable office area — outside the shared community space',
+      'Private, lockable office area, outside the shared community space',
       'Your own dedicated desk within that area',
       '24/7 building access',
       'High-speed WiFi',
       '4 hours meeting room credits/month',
-      'Full kitchen with coffee',
+      'Full kitchen with coffee, tea and beer',
       'Mail and package handling',
       'Access to 4 private phone booths',
       'Pet-friendly workspace',
@@ -181,7 +181,7 @@ const whyChooseFeatures = [
   },
   {
     title: 'Historic Character',
-    description: 'Beautifully restored space with distinctive burnt orange floors and unique charm.'
+    description: 'Beautifully restored space with high ceilings, natural light and a lot of character.'
   },
   {
     title: 'Vibrant Community',
@@ -293,7 +293,7 @@ export default function MembershipPage() {
         {soldOut && (
           <p className="mt-5 border-l-2 border-accent pl-4 text-[15px] leading-relaxed text-ink-60">
             <strong className="font-semibold text-ink">Every dedicated desk is currently taken.</strong>{' '}
-            We&rsquo;re still welcoming dedicated desk members — see the Private
+            We&rsquo;re still welcoming dedicated desk members. See the Private
             Dedicated Desk below, your own desk in a private, lockable area.
           </p>
         )}
@@ -453,7 +453,7 @@ export default function MembershipPage() {
               Work a full day here before you commit to anything.
             </h2>
             <p className="mt-7 max-w-2xl text-[17px] leading-relaxed text-bone/70 md:text-lg">
-              Every prospective member gets a free trial day — the desk, the
+              Every prospective member gets a free trial day: the desk, the
               coffee, the flex space, the whole thing. Then decide.
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">

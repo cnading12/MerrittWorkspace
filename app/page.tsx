@@ -10,7 +10,7 @@ const blur = {
   counter: 'data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAADwAQCdASoMAAgABABoJYwCdAELWBiJ9YAA/kkaKkuyl86TL4qnjGWWDhCFmm3EAjU8YM4CWbRjcJAAAAA=',
   single: 'data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAACwAQCdASoMAAgABABoJZQCdACRo1cAAP081GmnONyMV0dy+JL+dCfhvw88YqEsrqYNKE9BN8QkL5btQhDbgIAA',
   team: 'data:image/webp;base64,UklGRlgAAABXRUJQVlA4IEwAAAAQAgCdASoMAAgABABoJbACdAEDoTdLkewAAPksQgkdY9d7j4T+1B0MHaF7PNj4dh8jIpteJfm/I5FiRWFWYcBIwNzYIHmHwfvSgAAA',
-  church: 'data:image/webp;base64,UklGRlQAAABXRUJQVlA4IEgAAAAQAgCdASoMAAgABABoJagCdAECvetc3EAAAP7IqGrLRwmnZKbrk05eLnQUfrrNLvu883rsN2wJJGjHDWTLSNr2UZM01a0AAAA=',
+  flex: 'data:image/webp;base64,UklGRlQAAABXRUJQVlA4IEgAAAAQAgCdASoMAAgABABoJagCdAECvetc3EAAAP7IqGrLRwmnZKbrk05eLnQUfrrNLvu883rsN2wJJGjHDWTLSNr2UZM01a0AAAA=',
   conference: 'data:image/webp;base64,UklGRlAAAABXRUJQVlA4IEQAAADwAQCdASoMAAgABABoJbAC7ADdYysGmSAA/rZceg22u6TRvjc7gAO21l+MHJiYm8gOlUizk/lyIO1NX0WyMEavOYgAAA==',
   exterior: 'data:image/webp;base64,UklGRkYAAABXRUJQVlA4IDoAAADQAQCdASoMAAgABABoJQBOgCKUijCLoAD+wFtkJGX2OWrDrWFF5yTcz/Fx4I5RsiuviJwmXG8NQgAA',
 };
@@ -27,7 +27,7 @@ export default function HomePage() {
       <section className="relative h-hero w-full overflow-hidden">
         <Image
           src="/images/new-hero/desks-occupied-wide.webp"
-          alt="Members working at dedicated desks on the burnt orange concrete floors at Merritt Workspace, a coworking space in Sloan's Lake, Denver"
+          alt="Members working at dedicated desks at Merritt Workspace, a coworking space in Sloan's Lake, Denver"
           fill
           priority
           placeholder="blur"
@@ -54,13 +54,13 @@ export default function HomePage() {
                 Coworking in Sloan&rsquo;s Lake, Denver
               </p>
               <h1 className="font-display text-[2.15rem] font-semibold leading-[1] tracking-tightest text-bone sm:text-5xl md:text-7xl md:leading-[0.95] lg:text-[5.75rem]">
-                A desk, an office, and a 1905 church in Sloan&rsquo;s Lake.
+                A desk, an office, and a 1905 event space in Sloan&rsquo;s Lake.
               </h1>
             </div>
             <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-bone/85 md:mt-8 md:text-lg">
               Dedicated desks from $200 a month and private offices from $500,
-              in a West Denver coworking space three minutes from I-25 — with
-              22 free parking spots and coffee that never runs out.
+              three minutes from I-25, with free parking on site and coffee,
+              tea and beer included.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10 md:gap-4">
               <Link
@@ -87,13 +87,13 @@ export default function HomePage() {
           <div className="grid items-center gap-10 md:grid-cols-12 md:gap-16">
             <div className="relative aspect-[4/3] md:col-span-7 md:aspect-[3/2]">
               <Image
-                src="/images/new-hero/community-counter.webp"
-                alt="A member working at the kitchen counter beside the snackshop at Merritt Workspace coworking in Denver"
+                src="/images/hero/dedicated-desk.webp"
+                alt="The dedicated desk room at Merritt Workspace, with butcher block desk pods and monitors, in Sloan's Lake, Denver"
                 fill
                 placeholder="blur"
-                blurDataURL={blur.counter}
+                blurDataURL={blur.desks}
                 sizes="(max-width: 768px) 100vw, 58vw"
-                className="object-cover"
+                className="object-cover object-center"
               />
             </div>
 
@@ -106,15 +106,18 @@ export default function HomePage() {
               </h2>
               <p className="mt-6 text-[17px] leading-relaxed text-ink-60 md:text-lg">
                 Not a hot desk you fight for at nine in the morning. The same
-                desk every day, in a room with twenty of them, on the burnt
-                orange concrete floors this building is known for. Keycard
-                access around the clock, a numbered locker, four hours of
-                meeting room credit a month, and the coffee is included and
-                unmetered.
+                desk every day, in a room with twenty-five of them. Your own
+                access code gets you in around the clock, and the membership
+                comes with a numbered locker, four hours of meeting room credit
+                a month, and coffee, tea and beer on the house.
               </p>
               <p className="mt-5 text-[17px] leading-relaxed text-ink-60 md:text-lg">
-                Every membership includes free access to the flex space next
-                door until 4:30 each afternoon.
+                It also comes with the building next door. The café is open to
+                members through the day, with table seating, natural light and
+                the stained glass still in the windows, and the flex space
+                behind it is free to book until 4:30 every afternoon. Most
+                members use the desk for heads-down work and the café for
+                everything else.
               </p>
               <Link
                 href="/membership/dedicated-desk"
@@ -141,20 +144,22 @@ export default function HomePage() {
             </h2>
             <p className="mt-6 text-[17px] leading-relaxed text-ink-60 md:text-lg">
               Fourteen lockable offices with a business address, sized for one
-              person up to a team of eight — the most flexible office space in
-              Sloan&rsquo;s Lake, and every one of them on the orange floors.
+              person up to a team of eight, and the most flexible office space
+              in Sloan&rsquo;s Lake.
             </p>
           </div>
 
-          {/* Two photographs, same landscape crop, same size. There is no
-              current photo of the two-desk office, so the tiers are set as
-              type below rather than illustrated with a room they are not. */}
+          {/* Two photographs, same landscape crop, same size, both with the
+              room in use — an empty desk next to a full one read as two
+              different products. The captions describe the frame; the tiers
+              are set as type below rather than pinned to a room the photo may
+              not be. */}
           <div className="mt-14 grid gap-8 md:mt-20 md:grid-cols-2 md:gap-10">
             <figure>
               <div className="relative aspect-[3/2]">
                 <Image
-                  src="/images/new-hero/office-single-daylight.webp"
-                  alt="Single private office with an ultrawide monitor and window light at Merritt Workspace, Denver"
+                  src="/images/new-hero/office-large-occupied.webp"
+                  alt="Two members working at butcher block desks in a private office at Merritt Workspace, Sloan's Lake, Denver"
                   fill
                   placeholder="blur"
                   blurDataURL={blur.single}
@@ -163,7 +168,7 @@ export default function HomePage() {
                 />
               </div>
               <figcaption className="mt-4 text-[13px] uppercase tracking-[0.14em] text-ink-60">
-                Single office
+                Heads-down in a private office
               </figcaption>
             </figure>
 
@@ -171,7 +176,7 @@ export default function HomePage() {
               <div className="relative aspect-[3/2]">
                 <Image
                   src="/images/new-hero/office-large-team.webp"
-                  alt="A team working together in the large private office on the burnt orange floors at Merritt Workspace, Denver"
+                  alt="A team working together in the large private office at Merritt Workspace, Denver"
                   fill
                   placeholder="blur"
                   blurDataURL={blur.team}
@@ -180,7 +185,7 @@ export default function HomePage() {
                 />
               </div>
               <figcaption className="mt-4 text-[13px] uppercase tracking-[0.14em] text-ink-60">
-                Large office
+                A team in the large office
               </figcaption>
             </figure>
           </div>
@@ -218,17 +223,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── 4. The church ───────────────────────────────────────────────
+      {/* ─── 4. The flex space ─────────────────────────────────────────
           The differentiator. Full-bleed, tallest section on the page, the
           least competition for the photograph. */}
       <section className="relative">
         <div className="relative h-[86svh] min-h-[600px] w-full overflow-hidden md:h-[95svh] md:max-h-[1000px]">
           <Image
             src="/images/new-hero/flexspace-group-rosewindow.webp"
-            alt="Members gathered under the stained glass rose window in the restored 1905 church flex space at Merritt Workspace, Sloan's Lake, Denver"
+            alt="Members gathered under the stained glass rose window in the restored 1905 flex space at Merritt Workspace, Sloan's Lake, Denver"
             fill
             placeholder="blur"
-            blurDataURL={blur.church}
+            blurDataURL={blur.flex}
             sizes="100vw"
             quality={90}
             className="object-cover object-center"
@@ -242,41 +247,67 @@ export default function HomePage() {
                   The flex space
                 </p>
                 <h2 className="font-display text-[2.25rem] font-semibold leading-[1] tracking-tightest text-bone sm:text-5xl lg:text-[4.5rem]">
-                  The 1905 church next door.
+                  A 1905 event space, right next door.
                 </h2>
                 <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-bone/85 md:text-lg">
-                  A restored sanctuary with the original stained glass, a
-                  hardwood floor, a projector and a sound system — and it is
-                  free to members every day until 4:30. Run a workshop in it,
-                  hold an all-hands, bring a client, or take your laptop to the
-                  café seating when you want a different room. No other
-                  coworking space in Denver has anything like it.
+                  A restored hall with the original stained glass, a hardwood
+                  floor, a projector and a sound system, free to members every
+                  day until 4:30. Run a workshop in it, hold an all-hands,
+                  bring a client, or take your laptop to the café seating when
+                  you want a different room. No other coworking space in Denver
+                  has anything like it.
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* The after-4:30 note, set quietly against the church exterior. */}
+        {/* The café and the campus, then the after-4:30 note. */}
         <div className="border-t border-clay bg-bone">
-          <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-16 sm:px-8 md:grid-cols-12 md:gap-16 md:py-24">
-            {/* Native 1.89 ratio — a 3/2 crop clipped the church tower. */}
-            <div className="relative aspect-[189/100] md:col-span-5">
-              {/* Both buildings in one frame — the only shot that makes the
-                  shared campus legible. */}
-              <Image
-                src="/images/hero/outside-hero.webp"
-                alt="The Merritt Workspace building and the restored 1905 church side by side on the same lawn at 23rd and Irving, Sloan's Lake, Denver"
-                fill
-                sizes="(max-width: 768px) 100vw, 42vw"
-                className="object-cover"
-              />
+          <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 md:py-24">
+            {/* 5/7 split: a 4:3 café frame and a 1.89 campus frame land at
+                near-identical heights, so the row reads as one band. A 3/2
+                crop on the campus shot clipped the tower, hence the native
+                ratio on each. */}
+            <div className="grid gap-8 md:grid-cols-12 md:gap-10">
+              <figure className="md:col-span-5">
+                <div className="relative aspect-[4/3]">
+                  <Image
+                    src="/images/event-space/coffee-shop.webp"
+                    alt="Café seating with table service, hardwood floors and the original stained glass windows at Merritt Workspace, Sloan's Lake, Denver"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 40vw"
+                    className="object-cover"
+                  />
+                </div>
+                <figcaption className="mt-4 text-[13px] uppercase tracking-[0.14em] text-ink-60">
+                  The café, open to members all day
+                </figcaption>
+              </figure>
+
+              <figure className="md:col-span-7">
+                <div className="relative aspect-[189/100]">
+                  {/* Both buildings in one frame — the only shot that makes the
+                      shared campus legible. */}
+                  <Image
+                    src="/images/hero/outside-hero.webp"
+                    alt="The Merritt Workspace building and the restored 1905 event space side by side on the same lawn at 23rd and Irving, Sloan's Lake, Denver"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 56vw"
+                    className="object-cover"
+                  />
+                </div>
+                <figcaption className="mt-4 text-[13px] uppercase tracking-[0.14em] text-ink-60">
+                  Two buildings, one lawn
+                </figcaption>
+              </figure>
             </div>
-            <div className="md:col-span-7 md:pl-6">
+
+            <div className="mt-14 max-w-2xl md:mt-16">
               <h3 className="font-display text-2xl font-semibold leading-tight tracking-tight text-ink md:text-3xl">
                 After 4:30, the room changes hands.
               </h3>
-              <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-ink-60 md:text-lg">
+              <p className="mt-4 text-[17px] leading-relaxed text-ink-60 md:text-lg">
                 In the evenings and on weekends the space becomes{' '}
                 <a
                   href="https://merrittwellness.net"
@@ -286,9 +317,9 @@ export default function HomePage() {
                 >
                   Merritt Wellness
                 </a>
-                {' '}— yoga, fitness and wellness classes. Workspace members book
-                it at a discount for evening events, and take the classes at a
-                member rate.
+                , with yoga, fitness and wellness classes. Workspace members
+                book it at a discount for evening events, and take the classes
+                at a member rate.
               </p>
             </div>
           </div>
@@ -306,24 +337,24 @@ export default function HomePage() {
                 What comes with it
               </p>
               <h2 className="font-display text-[2rem] font-semibold leading-[1.02] tracking-tightest text-ink sm:text-4xl lg:text-[3.25rem]">
-                Meeting rooms, coffee, and a locker with your name on it.
+                A conference room, coffee, and a locker of your own.
               </h2>
               <p className="mt-6 text-[17px] leading-relaxed text-ink-60 md:text-lg">
-                Two conference rooms with 75-inch screens and conference
-                calling, bookable from the member portal and drawn against the
-                credit your membership already includes. Phone booths when a
-                call needs a door. Enterprise WiFi and 24/7 keycard entry to a
-                monitored building.
+                A conference room with a 75-inch screen and conference calling,
+                bookable from the member portal and drawn against the credit
+                your membership already includes. Phone booths when a call
+                needs a door. Enterprise WiFi, a numbered locker, and a 24/7
+                access code for a monitored building.
               </p>
               <p className="mt-5 text-[17px] leading-relaxed text-ink-60 md:text-lg">
                 A full kitchen, a snackshop you can charge to your account, and
-                all the coffee and tea you can drink.
+                all the coffee, tea and beer you can drink.
               </p>
               <Link
                 href="/member-resources/meeting-rooms"
                 className="mt-8 inline-block border-b border-accent pb-1 text-[15px] font-medium text-accent-deep transition hover:border-accent-deep"
               >
-                Meeting rooms and rates
+                The conference room and rates
               </Link>
             </div>
 
@@ -331,7 +362,7 @@ export default function HomePage() {
               <div className="relative aspect-[3/2]">
                 <Image
                   src="/images/new-hero/conference-meeting.webp"
-                  alt="A team meeting in the glass-walled conference room at Merritt Workspace coworking in Sloan's Lake, Denver"
+                  alt="A team meeting in the conference room at Merritt Workspace coworking in Sloan's Lake, Denver"
                   fill
                   placeholder="blur"
                   blurDataURL={blur.conference}
@@ -358,8 +389,8 @@ export default function HomePage() {
                 Coworking at 2246 Irving Street, Sloan&rsquo;s Lake.
               </h2>
               <p className="mt-6 max-w-md text-[17px] leading-relaxed text-ink-60 md:text-lg">
-                At 23rd and Irving in West Denver, next to the landmark Merritt
-                church building. Three minutes to I-25, five to Mile High, and
+                At 23rd and Irving in Sloan&rsquo;s Lake, next to the landmark
+                Merritt building. Three minutes to I-25, five to Mile High, and
                 a walk from Sloan&rsquo;s Lake Park, the cafés and the
                 restaurants on the west side.
               </p>
@@ -371,11 +402,11 @@ export default function HomePage() {
                 </div>
                 <div>
                   <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Desks</dt>
-                  <dd className="mt-1 font-display text-3xl font-semibold text-ink">20+</dd>
+                  <dd className="mt-1 font-display text-3xl font-semibold text-ink">25</dd>
                 </div>
                 <div>
                   <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Parking</dt>
-                  <dd className="mt-1 font-display text-3xl font-semibold text-ink">22 free</dd>
+                  <dd className="mt-1 font-display text-3xl font-semibold text-ink">Free on site</dd>
                 </div>
                 <div>
                   <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Access</dt>
