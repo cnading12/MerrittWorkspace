@@ -26,6 +26,11 @@ export type MemberDesignation =
   // same office_number column. Joins via the existing-member flow and
   // stays status='pending' until an admin approves them.
   | 'office_member'
+  // A non-profit organisation granted comped use of the conference room and
+  // flex space. Not a member and not an office occupant, so never pooled —
+  // each arrangement is negotiated individually and the hours are set per
+  // member through conference_hours_override / flex_hours_override.
+  | 'community_partner'
   | 'flex'
   | 'other';
 
@@ -37,6 +42,31 @@ export const OFFICE_DESIGNATIONS: MemberDesignation[] = [
   'private_office_large',
   'office_member',
 ];
+
+// Designations whose hours are negotiated per member rather than set by a
+// tier, so the admin members page shows the override inputs for them.
+//
+// The overrides still WORK on any member if a value is already stored — the
+// booking code honours whatever it finds, and hiding a set value would make
+// it impossible to clear. This list only decides where the controls appear,
+// so the row for an ordinary member stays uncluttered.
+export const OVERRIDE_ELIGIBLE_DESIGNATIONS: MemberDesignation[] = [
+  'community_partner',
+];
+
+export function showsHoursOverrides(member: {
+  designation: MemberDesignation | string | null;
+  conference_hours_override?: number | null;
+  flex_hours_override?: number | null;
+}): boolean {
+  return (
+    OVERRIDE_ELIGIBLE_DESIGNATIONS.includes(
+      member.designation as MemberDesignation,
+    ) ||
+    member.conference_hours_override != null ||
+    member.flex_hours_override != null
+  );
+}
 
 // The designations that PAY for (and therefore anchor) a private office.
 export const PRIMARY_OFFICE_DESIGNATIONS: MemberDesignation[] = [
@@ -86,6 +116,10 @@ export interface Member {
   // non-members given portal access to book the conference room) instead of
   // creating a designation for them. See lib/bookings/conference-hours.ts.
   conference_hours_override: number | null;
+  // Admin-set weekly flex-space hours. NULL = use the designation allowance
+  // from tier_allocations. Fractional because flex is booked in half hours.
+  // See lib/bookings/flex-hours.ts.
+  flex_hours_override: number | null;
   last_pinged_at: string | null;
   // Soft-archive: set when a former (cancelled, once-paying) member is removed
   // from the active roster. Archived members keep all their data (documents,
@@ -220,6 +254,7 @@ export const DESIGNATION_LABELS: Record<MemberDesignation, string> = {
   private_office_double: 'Private Office — Double',
   private_office_large: 'Private Office — Large',
   office_member: 'Office Member',
+  community_partner: 'Community Partner',
   flex: 'Flex',
   other: 'Other',
 };

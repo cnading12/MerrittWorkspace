@@ -14,6 +14,11 @@
 // Beyond the allowance, members can still book: the excess is billed at the
 // flex hourly rate, mirroring how conference-room overage works. Being out of
 // hours limits what is free, not what is possible.
+//
+// A per-member admin override (members.flex_hours_override) replaces all of
+// the above with a fixed personal weekly allowance, and is never pooled. It
+// exists for community partners, whose comped access is negotiated
+// individually rather than set by a tier.
 
 import { getAllocations, flexHoursPerWeek } from '@/lib/bookings/allocations';
 import { getPoolOccupants, poolsPerOffice } from '@/lib/bookings/officePool';
@@ -66,11 +71,25 @@ export async function getMemberFlexSummary(
     id: string;
     designation: string | null;
     office_number?: string | null;
+    flex_hours_override?: number | null;
   },
   target: Date = new Date(),
 ): Promise<FlexSummary> {
   const { start, end } = mountainWeekBounds(target);
   const base = { weekStart: start.toISOString(), weekEnd: end.toISOString() };
+
+  // An admin-set override beats everything: designation allowance and office
+  // pooling alike. It is a personal weekly allowance.
+  if (member.flex_hours_override != null) {
+    const allowedMinutes = hoursToMinutes(Number(member.flex_hours_override) || 0);
+    const { minutes: usedMinutes } = await getWeeklyMinutes(member.id, target);
+    return {
+      ...base,
+      allowedMinutes,
+      usedMinutes,
+      remainingMinutes: Math.max(0, allowedMinutes - usedMinutes),
+    };
+  }
 
   if (poolsPerOffice(member)) {
     const officeNumber = member.office_number as string;

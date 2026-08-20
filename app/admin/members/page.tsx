@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import type { Member } from '@/lib/portal/types';
-import { DESIGNATION_LABELS } from '@/lib/portal/types';
+import { DESIGNATION_LABELS, showsHoursOverrides } from '@/lib/portal/types';
 import { shouldShowTrialBadge } from '@/lib/portal/trial';
 import SeatingChart from './SeatingChart';
 import {
@@ -647,22 +647,55 @@ export default function AdminMembersPage() {
                     }}
                     className="border rounded px-2 py-1 text-sm"
                   />
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    placeholder="Free conf hrs/mo (override)"
-                    defaultValue={m.conference_hours_override ?? ''}
-                    onBlur={(e) => {
-                      const raw = e.target.value.trim();
-                      const v = raw === '' ? null : Math.max(0, Math.floor(Number(raw)));
-                      if (raw !== '' && Number.isNaN(v)) return;
-                      if (v !== (m.conference_hours_override ?? null))
-                        patchMember(m.id, { conference_hours_override: v });
-                    }}
-                    className="border rounded px-2 py-1 text-sm"
-                    title="Overrides this member's free conference-room hours per month, regardless of designation. Leave blank for the normal designation-based hours. Use for special cases (e.g. approved non-members who may book the room)."
-                  />
+                  {/* Negotiated-hours overrides. Shown only for community
+                      partners — whose comped access is agreed case by case —
+                      or for any member who already has a value stored, so an
+                      override set earlier can still be seen and cleared. */}
+                  {showsHoursOverrides(m) && (
+                    <>
+                      <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        placeholder="Free conf hrs/mo (override)"
+                        defaultValue={m.conference_hours_override ?? ''}
+                        onBlur={(e) => {
+                          const raw = e.target.value.trim();
+                          const v = raw === '' ? null : Math.max(0, Math.floor(Number(raw)));
+                          if (raw !== '' && Number.isNaN(v)) return;
+                          if (v !== (m.conference_hours_override ?? null))
+                            patchMember(m.id, { conference_hours_override: v });
+                        }}
+                        className="border rounded px-2 py-1 text-sm"
+                        title="Overrides this member's free conference-room hours per month, regardless of designation. Leave blank for the normal designation-based hours."
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.5}
+                        placeholder="Free flex hrs/wk (override)"
+                        defaultValue={m.flex_hours_override ?? ''}
+                        onBlur={(e) => {
+                          const raw = e.target.value.trim();
+                          if (raw === '') {
+                            if (m.flex_hours_override != null)
+                              patchMember(m.id, { flex_hours_override: null });
+                            return;
+                          }
+                          const n = Number(raw);
+                          if (!Number.isFinite(n) || n < 0) return;
+                          // The column is numeric(4,1) and flex is booked in
+                          // half hours, so snap rather than let the database
+                          // round to something the admin didn't type.
+                          const v = Math.round(n * 2) / 2;
+                          if (v !== (m.flex_hours_override ?? null))
+                            patchMember(m.id, { flex_hours_override: v });
+                        }}
+                        className="border rounded px-2 py-1 text-sm"
+                        title="Overrides this member's free flex-space hours per week, regardless of designation, and is never pooled with an office. Leave blank for the normal designation-based hours."
+                      />
+                    </>
+                  )}
                   {m.designation === 'office_member' && m.status === 'pending' ? (
                     <>
                       <button

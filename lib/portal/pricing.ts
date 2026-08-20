@@ -69,6 +69,14 @@ export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
     label: 'Office Member',
     monthly_cost_cents: 0,
   },
+  // Comped facility access for a non-profit organisation. Never sold, so it
+  // does not appear on the application form — it exists here so an admin can
+  // set the designation and have the $0 cost applied consistently.
+  community_partner: {
+    designation: 'community_partner',
+    label: 'Community Partner',
+    monthly_cost_cents: 0,
+  },
 };
 
 export function isOneTimeDesignation(

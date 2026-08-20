@@ -38,9 +38,15 @@ export const FALLBACK_ALLOCATIONS: Record<string, TierAllocation> = {
   // Day passes include no flex access at all. Their conference time is 1 hr
   // on pass days, granted by DAY_PASS_INCLUDED_HOURS_PER_DAY rather than here.
   one_day_dedicated_desk: { flexHoursPerWeek: 0, conferenceHoursPerMonth: 0 },
-  // Comped amenity access for non-profits we've granted use of the facility.
-  // Provisional small-office values so their booking pages work.
+  // An office occupant someone else pays for. Their allowance almost always
+  // comes from the office pool (the highest among occupants), so this only
+  // applies to an office whose paying primary isn't on the portal.
   office_member: { flexHoursPerWeek: 6, conferenceHoursPerMonth: 14 },
+  // Comped non-profit access. Zero by design: each arrangement is negotiated
+  // individually, so the real hours come from the per-member admin overrides.
+  // A partner with no override set gets nothing included and pays the
+  // standard overage rate — a safe default rather than a free-for-all.
+  community_partner: { flexHoursPerWeek: 0, conferenceHoursPerMonth: 0 },
 };
 
 // A designation with no row and no fallback (the retired 'flex' and 'other'

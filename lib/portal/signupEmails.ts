@@ -45,6 +45,7 @@ const SPACE_SUMMARY: Record<MemberDesignation, string> = {
   private_office_double: 'Private office — 2 desks',
   private_office_large: 'Private office — 4 to 8 desks',
   office_member: "Additional occupant of a private office (billed to the office's primary member)",
+  community_partner: 'Community partner — comped use of the conference room and flex space',
   flex: 'Flex membership — no fixed seat',
   other: 'Custom membership',
 };
