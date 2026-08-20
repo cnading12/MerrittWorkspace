@@ -1,4 +1,56 @@
 -- ============================================================
+-- community_partner: comped facility access for non-profit organisations.
+--
+-- These are not members and not office occupants — they are organisations
+-- granted use of the conference room and flex space at no charge. They were
+-- previously carried as 'office_member', which is the wrong home: that
+-- designation means an occupant of an office someone else pays for, and its
+-- allowance POOLS per office. A partner that ever had an office_number set
+-- would silently start drawing down a paying member's hours.
+--
+-- Their allowance is deliberately NOT unlimited and NOT a tier default. Each
+-- arrangement is negotiated individually, so the hours are set per member by
+-- an admin through the two override columns below. Their tier_allocations
+-- row is 0/0, so a partner with no override set gets nothing included and
+-- pays the standard overage rate — a safe default rather than a free-for-all.
+-- ============================================================
+alter table public.members
+  drop constraint if exists members_designation_check;
+
+alter table public.members
+  add constraint members_designation_check
+  check (designation in (
+    'dedicated_desk',
+    'one_day_dedicated_desk',
+    'private_dedicated_desk',
+    'private_office_single',
+    'private_office_double',
+    'private_office_large',
+    'office_member',
+    'community_partner',
+    'flex',
+    'other'
+  ));
+
+comment on constraint members_designation_check on public.members is
+  'office_member = non-paying occupant of a private office someone else pays for; linked to the office via office_number. private_dedicated_desk = paying dedicated-desk member seated in a private office converted into a dedicated-desk area, also linked via office_number. community_partner = comped non-profit access, never pooled, hours set per member via the override columns.';
+
+-- Weekly flex-space override, mirroring the existing monthly conference one.
+--
+--   NULL  → use the designation's tier_allocations allowance (the default)
+--   N ≥ 0 → this member gets exactly N flex hours per week, personally,
+--           regardless of designation or office pooling.
+--
+-- Fractional because flex bookings are made in half-hour steps.
+alter table public.members
+  add column if not exists flex_hours_override numeric(4,1)
+  check (flex_hours_override is null or flex_hours_override >= 0);
+
+comment on column public.members.flex_hours_override is
+  'Admin-set weekly flex-space hours for this member. NULL = use the designation allowance from tier_allocations. Set for community partners, whose access is negotiated individually.';
+
+
+-- ============================================================
 -- tier_allocations: per-designation booking allowances.
 --
 -- Flex-space and conference-room allowances used to be hardcoded:
@@ -81,14 +133,14 @@ values
   ('private_office_double',  6, 14,  'Small office. Identical to single by design — never differentiate them in UI or logic.'),
   ('private_office_large',   8, 20,  'Large office. The only tier where per-office pooling has real effect.'),
   ('one_day_dedicated_desk', 0,  0,  'Day pass: no flex access at all; conference is 1 hr on pass days via DAY_PASS_INCLUDED_HOURS_PER_DAY, not this row.'),
-  ('office_member',          6, 14,  'PROVISIONAL — does not map to a product we sell. Small-office values so the two live accounts keep working; to be remapped.'),
+  ('office_member',          6, 14,  'Additional occupant of an office someone else pays for. Pooling means the primary''s allowance is what normally applies.'),
   -- Preserves today's behavior for a product the site starts selling
   -- automatically once all 25 shared desks are claimed (see
   -- lib/portal/deskAvailability.ts and the sold-out notice on
   -- /membership/dedicated-desk). Zero holders today. Delete this row if you
   -- want private-desk members to get no allowance at all.
   ('private_dedicated_desk', 4,  4,  'Same as dedicated_desk: same product in a private room, $300/mo.'),
-  -- Zero by design: a community partner''s hours are set per member by an
+  -- Zero by design: a community partner's hours are set per member by an
   -- admin (members.flex_hours_override / conference_hours_override), because
   -- each arrangement is negotiated individually. This row exists so the
   -- designation resolves to a defined allowance rather than an unknown one.
@@ -108,55 +160,3 @@ alter table public.tier_allocations enable row level security;
 drop policy if exists tier_allocations_admin_all on public.tier_allocations;
 create policy tier_allocations_admin_all on public.tier_allocations
   for all using (public.is_admin()) with check (public.is_admin());
-
-
--- ============================================================
--- community_partner: comped facility access for non-profit organisations.
---
--- These are not members and not office occupants — they are organisations
--- granted use of the conference room and flex space at no charge. They were
--- previously carried as 'office_member', which is the wrong home: that
--- designation means an occupant of an office someone else pays for, and its
--- allowance POOLS per office. A partner that ever had an office_number set
--- would silently start drawing down a paying member's hours.
---
--- Their allowance is deliberately NOT unlimited and NOT a tier default. Each
--- arrangement is negotiated individually, so the hours are set per member by
--- an admin through the two override columns below. The tier_allocations row
--- above is 0/0, so a partner with no override set gets nothing included and
--- pays the standard overage rate — a safe default rather than a free-for-all.
--- ============================================================
-alter table public.members
-  drop constraint if exists members_designation_check;
-
-alter table public.members
-  add constraint members_designation_check
-  check (designation in (
-    'dedicated_desk',
-    'one_day_dedicated_desk',
-    'private_dedicated_desk',
-    'private_office_single',
-    'private_office_double',
-    'private_office_large',
-    'office_member',
-    'community_partner',
-    'flex',
-    'other'
-  ));
-
-comment on constraint members_designation_check on public.members is
-  'office_member = non-paying occupant of a private office someone else pays for; linked to the office via office_number. private_dedicated_desk = paying dedicated-desk member seated in a private office converted into a dedicated-desk area, also linked via office_number. community_partner = comped non-profit access, never pooled, hours set per member via the override columns.';
-
--- Weekly flex-space override, mirroring the existing monthly conference one.
---
---   NULL  → use the designation's tier_allocations allowance (the default)
---   N ≥ 0 → this member gets exactly N flex hours per week, personally,
---           regardless of designation or office pooling.
---
--- Fractional because flex bookings are made in half-hour steps.
-alter table public.members
-  add column if not exists flex_hours_override numeric(4,1)
-  check (flex_hours_override is null or flex_hours_override >= 0);
-
-comment on column public.members.flex_hours_override is
-  'Admin-set weekly flex-space hours for this member. NULL = use the designation allowance from tier_allocations. Set for community partners, whose access is negotiated individually.';
