@@ -19,6 +19,15 @@
 //   • Stripe auto-pay is optional; the portal exposes a "keep my current
 //     billing" path that leaves the member without a Stripe subscription.
 //
+// It also handles COMMUNITY PARTNERS (membership_type 'community_partner'):
+// non-profit organisations granted comped use of the conference room and flex
+// space. They occupy no desk and no office, so neither assignment column is
+// required. Like office members they start `status = 'pending'` and do nothing
+// until an admin approves them — the approval is what makes the public form
+// safe, since anyone can claim to be a partner. At approval the admin sets
+// their negotiated hours via the two override fields. Photo ID is collected
+// afterwards in the portal (see requiredDocTypesFor in lib/portal/types.ts).
+//
 // This route also handles OFFICE MEMBERS (membership_type 'office_member'):
 // additional people working out of a private office that someone else (the
 // office's primary member) pays for. They get a real portal account at $0/mo
@@ -140,6 +149,10 @@ export async function POST(request: NextRequest) {
     }
 
     const isOfficeMember = designation === 'office_member';
+    // Community partners follow the same admin-approval path as office
+    // members: a real portal account that stays locked until staff say so.
+    const isCommunityPartner = designation === 'community_partner';
+    const needsApproval = isOfficeMember || isCommunityPartner;
 
     const email = (body.email as string).trim().toLowerCase();
     const sb = getServiceSupabase();
@@ -214,8 +227,9 @@ export async function POST(request: NextRequest) {
         is_existing_member: true,
         decided_at: new Date().toISOString(),
         payload: {
-          existing_member: !isOfficeMember,
+          existing_member: !needsApproval,
           office_member: isOfficeMember,
+          community_partner: isCommunityPartner,
           office_number: officeNumber,
           desk_number: deskNumber,
           designation_label: plan.label,
@@ -243,6 +257,11 @@ export async function POST(request: NextRequest) {
     //      everything. Their only paperwork is the Terms & Conditions
     //      checkbox (recorded below), so the docs/agreements gates are
     //      pre-satisfied.
+    //    • Community partners follow the same pending path, but keep
+    //      `required_docs_complete = false`: they still owe us photo ID,
+    //      which they upload in the portal once approved. Their office and
+    //      desk columns stay null — that is what keeps them out of any
+    //      office's pooled hours.
     const { data: member, error: memErr } = await sb
       .from('members')
       .upsert(
@@ -253,16 +272,25 @@ export async function POST(request: NextRequest) {
           last_name: body.last_name,
           phone: body.phone,
           company_name: body.company_name || null,
-          status: isOfficeMember ? 'pending' : 'active',
+          status: needsApproval ? 'pending' : 'active',
           application_id: appRow.id,
           designation,
           monthly_cost_cents: plan.monthly_cost_cents,
           office_number: officeNumber,
           desk_number: deskNumber,
-          is_legacy_member: !isOfficeMember,
+          is_legacy_member: !needsApproval,
           ...(isOfficeMember
             ? {
                 required_docs_complete: true,
+                agreement_signed: true,
+                onboarding_unlocked: false,
+              }
+            : {}),
+          ...(isCommunityPartner
+            ? {
+                // Photo ID is still outstanding — collected in the portal
+                // after approval, so this stays false on purpose.
+                required_docs_complete: false,
                 agreement_signed: true,
                 onboarding_unlocked: false,
               }
@@ -277,9 +305,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: memErr.message }, { status: 500 });
     }
 
-    // Record the Terms & Conditions acceptance for office members so the
-    // agreement trail is auditable even though they skip the signing UI.
-    if (isOfficeMember) {
+    // Record the Terms & Conditions acceptance for office members and
+    // community partners so the agreement trail is auditable even though they
+    // skip the signing UI.
+    if (needsApproval) {
       const { error: agreementErr } = await sb.from('member_agreements').upsert(
         {
           member_id: member.id,
@@ -375,6 +404,48 @@ export async function POST(request: NextRequest) {
       } catch (e) {
         console.error('❌ Failed to send office-member request email:', e);
       }
+    } else if (process.env.RESEND_API_KEY && isCommunityPartner) {
+      // Partners get their own notification rather than the legacy-migration
+      // one: nothing about them is legacy, and the approver needs to be told
+      // that hours don't come from a tier — they have to set them by hand.
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const adminUrl = `${process.env.NEXT_PUBLIC_BASE_URL || ''}/admin/members`;
+        const html = `
+          <div style="font-family:Arial,sans-serif;line-height:1.5;color:#333;">
+            <h2 style="color:#ed7611;">Community Partner Request — Approval Needed</h2>
+            <p><strong>${body.first_name} ${body.last_name}</strong> signed up as a
+            community partner ($0/mo — comped use of the conference room and flex
+            space).</p>
+            <table style="border-collapse:collapse;">
+              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Name</td><td>${body.first_name} ${body.last_name}</td></tr>
+              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Email</td><td>${email}</td></tr>
+              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Phone</td><td>${body.phone}</td></tr>
+              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Organisation</td><td>${body.company_name || '—'}</td></tr>
+            </table>
+            <p style="margin-top:18px;"><strong>Only approve this if you have actually
+            agreed comped access with this organisation</strong> — anyone can submit
+            the form, and the approval is the only gate.</p>
+            <p>They are <strong>pending</strong> until you approve them. When you do,
+            set their negotiated hours in the two override fields on their row
+            (<em>Free conf hrs/mo</em> and <em>Free flex hrs/wk</em>) — partners get
+            <strong>no included hours by default</strong>, so leaving these blank
+            means everything they book is charged at the standard rate.</p>
+            <p>They still owe us <strong>photo ID</strong>, which they upload in the
+            portal once approved.</p>
+            <p><a href="${adminUrl}">Open the admin members page</a></p>
+          </div>
+        `;
+        await resend.emails.send({
+          from: PORTAL_ONBOARDING_FROM,
+          to: [MANAGER_EMAIL, MEMBER_SERVICES_EMAIL],
+          replyTo: PORTAL_REPLY_TO,
+          subject: `Community Partner Request — ${body.company_name || `${body.first_name} ${body.last_name}`}`,
+          html,
+        });
+      } catch (e) {
+        console.error('❌ Failed to send community-partner request email:', e);
+      }
     } else if (process.env.RESEND_API_KEY) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
@@ -419,9 +490,10 @@ export async function POST(request: NextRequest) {
       ok: true,
       member_id: member.id,
       email,
-      // Office members land in the portal with a "waiting for approval"
-      // banner; the client uses this to set expectations after sign-in.
-      pending_approval: isOfficeMember,
+      // Office members and community partners land in the portal with a
+      // "waiting for approval" banner; the client uses this to set
+      // expectations after sign-in.
+      pending_approval: needsApproval,
     });
   } catch (e: any) {
     console.error('💥 Existing-member migration error:', e);

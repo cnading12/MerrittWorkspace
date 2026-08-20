@@ -24,13 +24,14 @@ type PlanId =
   | 'private_office_single'
   | 'private_office_double'
   | 'private_office_large'
-  | 'office_member';
+  | 'office_member'
+  | 'community_partner';
 
 interface PlanDef {
   id: PlanId;
   label: string;
   monthly: number;
-  needs: 'desk' | 'office';
+  needs: 'desk' | 'office' | 'none';
   blurb: string;
 }
 
@@ -70,6 +71,14 @@ const PLANS: PlanDef[] = [
     needs: 'office',
     blurb:
       'You work in a private office that a colleague or your company already pays for. Free account — staff approves your request.',
+  },
+  {
+    id: 'community_partner',
+    label: 'Community Partner — non-profit with comped access',
+    monthly: 0,
+    needs: 'none',
+    blurb:
+      "Your organisation has been granted use of the conference room and flex space at no charge. Free account — staff approves your request and sets your hours. Only for organisations we've already agreed this with.",
   },
 ];
 
@@ -331,6 +340,10 @@ export default function ExistingMemberMigrationPage() {
             ))}
           </div>
 
+          {/* A community partner occupies neither a desk nor an office —
+              leaving both columns empty is exactly what keeps them out of any
+              office's pooled hours — so this block is skipped for them. */}
+          {selectedPlan.needs !== 'none' && (
           <div className="mt-4">
             {selectedPlan.needs === 'desk' ? (
               <>
@@ -380,11 +393,31 @@ export default function ExistingMemberMigrationPage() {
               </p>
             )}
           </div>
+          )}
         </section>
 
         <section className="bg-linen border border-clay p-4 text-sm text-ink-60 space-y-2">
           <p className="font-semibold text-ink">After you submit</p>
-          {planId === 'office_member' ? (
+          {planId === 'community_partner' ? (
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>You&apos;ll be signed straight into your member portal.</li>
+              <li>
+                Our staff reviews and approves your request. This only goes
+                through if we&apos;ve already agreed comped access with your
+                organisation.
+              </li>
+              <li>
+                Once approved, upload a photo ID from your portal — we need it
+                for anyone who can enter the building.
+              </li>
+              <li>
+                You can then book the conference room and the flex space using
+                the hours we&apos;ve agreed with you. <strong>There is no
+                charge</strong> for those hours; anything beyond them is billed
+                at the standard rate.
+              </li>
+            </ol>
+          ) : planId === 'office_member' ? (
             <ol className="list-decimal pl-5 space-y-1">
               <li>You&apos;ll be signed straight into your member portal.</li>
               <li>

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import OfficeMemberDashboard from './OfficeMemberDashboard';
+import CommunityPartnerDashboard from './CommunityPartnerDashboard';
 import type { Member, MemberDocument, PaymentHistoryRow } from '@/lib/portal/types';
 import { DESIGNATION_LABELS } from '@/lib/portal/types';
 import {
@@ -296,6 +297,21 @@ function PortalDashboard() {
   // onboarding pipeline below.
   if (member.designation === 'office_member') {
     return <OfficeMemberDashboard member={member} onSignOut={signOut} />;
+  }
+
+  // Community partners (comped non-profit access) likewise skip the
+  // onboarding pipeline — no fee agreement, no payment, no proof of address.
+  // The one thing they still owe us is photo ID, which their dashboard
+  // collects.
+  if (member.designation === 'community_partner') {
+    return (
+      <CommunityPartnerDashboard
+        member={member}
+        documents={documents}
+        onSignOut={signOut}
+        onMemberChange={setMember}
+      />
+    );
   }
 
   const onboardingLocked = !member.onboarding_unlocked;

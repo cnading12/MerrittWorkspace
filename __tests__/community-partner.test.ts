@@ -197,3 +197,20 @@ describe('where the admin override controls appear', () => {
     ).toBe(true);
   });
 });
+
+describe('what paperwork a partner owes', () => {
+  it('asks a partner for photo ID only', async () => {
+    const { requiredDocTypesFor } = await import('@/lib/portal/types');
+    // No lease and no billing address, so proof of address does not apply —
+    // requiring it would block them on a document that makes no sense.
+    expect(requiredDocTypesFor('community_partner')).toEqual(['photo_id']);
+  });
+
+  it('leaves the requirements for everyone else alone', async () => {
+    const { requiredDocTypesFor, REQUIRED_DOC_TYPES } = await import('@/lib/portal/types');
+    expect(requiredDocTypesFor('dedicated_desk')).toEqual(REQUIRED_DOC_TYPES);
+    expect(requiredDocTypesFor('private_office_large')).toEqual(REQUIRED_DOC_TYPES);
+    expect(requiredDocTypesFor(null)).toEqual(REQUIRED_DOC_TYPES);
+    expect(REQUIRED_DOC_TYPES).toEqual(['photo_id', 'proof_of_address']);
+  });
+});
