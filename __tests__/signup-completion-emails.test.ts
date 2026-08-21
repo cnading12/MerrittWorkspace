@@ -363,10 +363,12 @@ describe('signupCompletedStaffEmail', () => {
   });
 
   it('puts issuing an access code on the to-do list until one exists', () => {
-    expect(signupCompletedStaffEmail(base).html).toContain('Issue their 24/7 access code');
+    expect(signupCompletedStaffEmail(base).html).toContain(
+      'issue their 24/7 access code'
+    );
     expect(
       signupCompletedStaffEmail({ ...base, hasAccessCode: true }).html
-    ).not.toContain('Issue their 24/7 access code');
+    ).not.toContain('issue their 24/7 access code');
   });
 
   it('asks staff to verify the seat once the member has claimed one', () => {

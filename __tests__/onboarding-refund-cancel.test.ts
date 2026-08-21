@@ -34,6 +34,7 @@ const state = {
   lastMemberUpdate: null as any,
   lastPaymentUpdate: null as any,
   lastPaymentUpsert: null as any,
+  lastPaymentInsert: null as any,
   feeAgreement: { metadata: { payment_method: 'card' } } as any,
   isAdmin: true,
 };
@@ -68,8 +69,43 @@ function resetState() {
   state.lastMemberUpdate = null;
   state.lastPaymentUpdate = null;
   state.lastPaymentUpsert = null;
+  state.lastPaymentInsert = null;
   state.feeAgreement = { metadata: { payment_method: 'card' } };
   state.isAdmin = true;
+}
+
+// Filter-aware query builder for `payment_history`. The routes chain
+// different combinations of eq/is/not/order/limit ahead of a terminal
+// maybeSingle(), so record the filters and apply them to the single row held
+// in `state.payment` instead of hard-coding one chain shape.
+function paymentHistoryQuery() {
+  const filters: Array<(row: any) => boolean> = [];
+  function match() {
+    const row = state.payment;
+    if (!row) return null;
+    return filters.every((f) => f(row)) ? { ...row } : null;
+  }
+  const builder: any = {
+    eq: (col: string, val: any) => {
+      filters.push((row) => row[col] === val);
+      return builder;
+    },
+    // PostgREST `.is(col, null)` — column IS NULL.
+    is: (col: string, val: any) => {
+      filters.push((row) => (row[col] ?? null) === val);
+      return builder;
+    },
+    // PostgREST `.not(col, 'is', null)` — column IS NOT NULL.
+    not: (col: string, _op: string, val: any) => {
+      filters.push((row) => (row[col] ?? null) !== val);
+      return builder;
+    },
+    order: () => builder,
+    limit: () => builder,
+    maybeSingle: () => Promise.resolve({ data: match(), error: null }),
+    single: () => Promise.resolve({ data: match(), error: null }),
+  };
+  return builder;
 }
 
 // ---------------------------------------------------------------------------
@@ -96,7 +132,19 @@ vi.mock('@/lib/portal/supabaseAdmin', () => ({
             state.lastMemberUpdate = fields;
             Object.assign(state.member, fields);
             return {
-              eq: () => Promise.resolve({ data: null, error: null }),
+              // Some routes await `.eq(...)` directly; the checkout webhook
+              // chains `.eq(...).select(...).maybeSingle()` to read the row
+              // back. Return a thenable that supports both.
+              eq: () => ({
+                select: () => ({
+                  maybeSingle: () =>
+                    Promise.resolve({ data: { ...state.member }, error: null }),
+                  single: () =>
+                    Promise.resolve({ data: { ...state.member }, error: null }),
+                }),
+                then: (resolve: any, reject: any) =>
+                  Promise.resolve({ data: null, error: null }).then(resolve, reject),
+              }),
             };
           },
         };
@@ -114,17 +162,14 @@ vi.mock('@/lib/portal/supabaseAdmin', () => ({
       }
       if (table === 'payment_history') {
         return {
-          select: () => ({
-            eq: (_col: string, _val: string) => ({
-              eq: (_col2: string, _val2: string) => ({
-                order: () => ({
-                  limit: () => ({
-                    maybeSingle: () => Promise.resolve({ data: state.payment, error: null }),
-                  }),
-                }),
-              }),
-            }),
-          }),
+          select: () => paymentHistoryQuery(),
+          insert: (row: any) => {
+            state.lastPaymentInsert = row;
+            // Keep the row queryable so the routes' "have we already
+            // recorded this PaymentIntent?" checks behave like the real DB.
+            state.payment = { ...row };
+            return Promise.resolve({ data: null, error: null });
+          },
           update: (fields: any) => {
             state.lastPaymentUpdate = fields;
             return {
@@ -149,8 +194,19 @@ vi.mock('@/lib/portal/supabaseAdmin', () => ({
           }),
         };
       }
+      // Tables with no bespoke fixture (e.g. subscription_creation_failures,
+      // day_passes). Accept the write chains the routes use so an unstubbed
+      // table never turns into a 500 that masks the behaviour under test.
       return {
-        select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
+        select: () => ({
+          eq: () => ({
+            single: () => Promise.resolve({ data: null, error: null }),
+            maybeSingle: () => Promise.resolve({ data: null, error: null }),
+          }),
+        }),
+        insert: () => Promise.resolve({ data: null, error: null }),
+        update: () => ({ eq: () => Promise.resolve({ data: null, error: null }) }),
+        upsert: () => Promise.resolve({ data: null, error: null }),
       };
     },
   }),
@@ -190,6 +246,14 @@ const mockStripePaymentIntentRetrieve = vi.fn().mockResolvedValue({
   payment_method: 'pm_test123',
 });
 const mockStripeCustomerUpdate = vi.fn().mockResolvedValue({ id: 'cus_test123' });
+// The Subscriptions API needs a real Product ID, so the webhook resolves one
+// through getMembershipProductId() -> stripe.products.list/create.
+const mockStripeProductsList = vi.fn().mockResolvedValue({
+  data: [{ id: 'prod_membership', metadata: { merritt_membership: '1' } }],
+});
+const mockStripeProductsCreate = vi
+  .fn()
+  .mockResolvedValue({ id: 'prod_membership' });
 const mockStripeRefundCreate = vi.fn().mockResolvedValue({
   id: 're_test123',
   amount: 50000,
@@ -208,6 +272,10 @@ vi.mock('stripe', () => {
       customers = {
         create: mockStripeCustomerCreate,
         update: mockStripeCustomerUpdate,
+      };
+      products = {
+        list: mockStripeProductsList,
+        create: mockStripeProductsCreate,
       };
       checkout = { sessions: { create: mockStripeCheckoutCreate } };
       subscriptions = {
@@ -324,6 +392,41 @@ describe('create-subscription', () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error).toMatch(/already exists/i);
+  });
+
+  it('returns 409 when an initial Checkout payment was already recorded', async () => {
+    // The duplicate-charge fail-safe: a succeeded payment with no invoice ID
+    // is the upfront Checkout charge, so a second "Set up auto-pay" click
+    // must not open another session.
+    state.payment = {
+      id: 'ph-1',
+      member_id: 'm-1',
+      status: 'succeeded',
+      stripe_invoice_id: null,
+      stripe_payment_intent_id: 'pi_initial',
+      amount_cents: 75000,
+    };
+    const res = await createSubscription(makeAuthReq());
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toMatch(/already received your initial payment/i);
+    expect(mockStripeCheckoutCreate).not.toHaveBeenCalled();
+  });
+
+  it('still opens Checkout when the only succeeded payment came from an invoice', async () => {
+    // Recurring invoice payments carry a stripe_invoice_id, so they are not
+    // the initial Checkout charge and must not trip the fail-safe.
+    state.payment = {
+      id: 'ph-2',
+      member_id: 'm-1',
+      status: 'succeeded',
+      stripe_invoice_id: 'inv_123',
+      stripe_payment_intent_id: 'pi_recurring',
+      amount_cents: 50000,
+    };
+    const res = await createSubscription(makeAuthReq());
+    expect(res.status).toBe(200);
+    expect(mockStripeCheckoutCreate).toHaveBeenCalled();
   });
 
   it('creates a Stripe customer and checkout session on first call', async () => {
