@@ -57,7 +57,7 @@ export default function HomePage() {
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10 md:gap-4">
               <Link
-                href="/contact"
+                href="/membership/apply?trial=1"
                 className="inline-flex items-center justify-center bg-accent px-7 py-4 text-[15px] font-medium text-white transition hover:bg-accent-deep"
               >
                 Book a free trial day
@@ -408,7 +408,7 @@ export default function HomePage() {
 
               <div className="mt-12">
                 <Link
-                  href="/contact"
+                  href="/membership/apply?trial=1"
                   className="inline-flex items-center justify-center bg-accent px-7 py-4 text-[15px] font-medium text-white transition hover:bg-accent-deep"
                 >
                   Book a free trial day

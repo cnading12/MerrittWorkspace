@@ -20,7 +20,7 @@ export default function Footer() {
               next to a restored 1905 event space on the same lawn.
             </p>
             <Link
-              href="/contact"
+              href="/membership/apply?trial=1"
               className="mt-8 inline-flex items-center justify-center bg-accent px-6 py-3.5 text-[15px] font-medium text-white transition hover:bg-accent-deep"
             >
               Book a free trial day

@@ -267,6 +267,19 @@ export default function MembershipApplicationPage() {
     marketing_consent: false
   });
 
+  // Arriving from a "Book a free trial day" CTA. Those buttons land here with
+  // ?trial=1 rather than on the contact form, so pre-answer the trial question
+  // for them. Read off window.location instead of useSearchParams so this page
+  // does not need a Suspense boundary to stay statically rendered.
+  const [arrivedForTrial, setArrivedForTrial] = useState(false);
+  useEffect(() => {
+    const trial = new URLSearchParams(window.location.search).get('trial');
+    if (trial === '1' || trial === 'true') {
+      setArrivedForTrial(true);
+      setApplication(prev => (prev.wants_trial_day === null ? { ...prev, wants_trial_day: true } : prev));
+    }
+  }, []);
+
   const getQuantity = (planId: PlanId): number =>
     application.selected_plans.find(p => p.plan_id === planId)?.quantity ?? 0;
 
@@ -457,6 +470,16 @@ export default function MembershipApplicationPage() {
             Join our community of professionals in the heart of Sloan's Lake.
             Complete your application below to get started.
           </p>
+          {arrivedForTrial && (
+            <div className="mx-auto mb-8 max-w-2xl border border-accent/40 bg-bone p-4 text-left">
+              <p className="text-[15px] leading-relaxed text-ink">
+                <span className="font-semibold">Booking a free trial day?</span> You're in the
+                right place &mdash; the trial day is arranged through this application. We've
+                already marked you down as a trial day applicant; just pick the date you'd like
+                to come in further down the form.
+              </p>
+            </div>
+          )}
           <div className="flex items-center justify-center gap-4 text-sm text-ink-60">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-accent" />

@@ -530,7 +530,7 @@ export default function MembershipPage() {
               <Link href="/membership/apply" className="mw-btn bg-accent text-white hover:bg-accent-deep">
                 Apply today
               </Link>
-              <Link href="/contact" className="mw-btn border border-bone/40 text-bone hover:bg-bone hover:text-ink">
+              <Link href="/membership/apply?trial=1" className="mw-btn border border-bone/40 text-bone hover:bg-bone hover:text-ink">
                 Book a free trial day
               </Link>
             </div>

@@ -7,6 +7,26 @@ import { trackFormSubmission, trackPhoneClick, trackEmailClick } from '@/lib/gta
 import PageHero from '@/components/marketing/PageHero';
 import { BLUR } from '@/components/marketing/blur';
 
+// The two desks people reach us at. Keep these distinct on the page: the
+// manager handles everyone who is not a member yet, member services handles
+// everyone who is.
+const CONTACT_DESKS = [
+  {
+    title: 'New members & tours',
+    who: "Not a member yet? Book a free trial day, schedule a tour, or ask about pricing, plans and availability. This is the manager's line.",
+    phone: '(720) 357-9499',
+    phoneHref: '7203579499',
+    email: 'manager@merrittworkspace.net',
+  },
+  {
+    title: 'Member services',
+    who: 'Already a member? Day-to-day support \u2014 access codes, billing, conference room bookings, the snack shop, anything in the building.',
+    phone: '(303) 359-8337',
+    phoneHref: '3033598337',
+    email: 'memberservices@merrittworkspace.net',
+  },
+];
+
 const INQUIRY_TYPES = [
   { value: 'general', label: 'General Information' },
   { value: 'trial_day', label: 'Book a Free Trial Day' },
@@ -89,26 +109,46 @@ export default function ContactPage() {
               <h2 className="mw-h3">2246 Irving Street</h2>
               <p className="mt-2 mw-body">Denver, CO 80211</p>
 
+              {/* Two desks, two lines. Spelling out which is which up front
+                  saves prospective members and current members from guessing. */}
+              <div className="mt-10 border-t border-clay pt-8">
+                <p className="mw-eyebrow mb-6">Who to contact</p>
+                <div className="space-y-8">
+                  {CONTACT_DESKS.map(desk => (
+                    <div key={desk.title}>
+                      <h3 className="text-[18px] font-semibold text-ink">{desk.title}</h3>
+                      <p className="mt-1.5 text-[15px] leading-relaxed text-ink-60">{desk.who}</p>
+                      <dl className="mt-4 space-y-2.5 border-l-2 border-clay pl-4">
+                        <div className="flex flex-wrap items-baseline gap-x-3">
+                          <dt className="w-14 shrink-0 text-[13px] uppercase tracking-[0.14em] text-ink-60">Call</dt>
+                          <dd className="text-[17px]">
+                            <a href={`tel:${desk.phoneHref}`} onClick={trackPhoneClick} className="mw-inline-link">
+                              {desk.phone}
+                            </a>
+                          </dd>
+                        </div>
+                        <div className="flex flex-wrap items-baseline gap-x-3">
+                          <dt className="w-14 shrink-0 text-[13px] uppercase tracking-[0.14em] text-ink-60">Email</dt>
+                          <dd className="min-w-0 text-[17px]">
+                            <a
+                              href={`mailto:${desk.email}`}
+                              onClick={trackEmailClick}
+                              className="mw-inline-link break-words"
+                            >
+                              {desk.email}
+                            </a>
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <dl className="mt-10 space-y-7 border-t border-clay pt-8">
                 <div>
-                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Phone</dt>
-                  <dd className="mt-1.5 text-[17px]">
-                    <a href="tel:7203579499" onClick={trackPhoneClick} className="mw-inline-link">
-                      (720) 357-9499
-                    </a>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Email</dt>
-                  <dd className="mt-1.5 text-[17px]">
-                    <a
-                      href="mailto:memberservices@merrittworkspace.net"
-                      onClick={trackEmailClick}
-                      className="mw-inline-link break-words"
-                    >
-                      memberservices@merrittworkspace.net
-                    </a>
-                  </dd>
+                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Office hours</dt>
+                  <dd className="mt-1.5 text-[17px] text-ink-60">Monday &ndash; Friday, 9am &ndash; 5pm</dd>
                 </div>
                 <div>
                   <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Member access</dt>
@@ -123,6 +163,9 @@ export default function ContactPage() {
               <div className="mt-10 border-t border-clay pt-8">
                 <p className="mw-eyebrow mb-4">Quick actions</p>
                 <div className="space-y-3">
+                  <Link href="/membership/apply?trial=1" className="block text-[16px] text-ink-60 transition hover:text-ink">
+                    Book a free trial day
+                  </Link>
                   <Link href="/membership/apply" className="block text-[16px] text-ink-60 transition hover:text-ink">
                     Apply for membership
                   </Link>
@@ -205,6 +248,17 @@ export default function ContactPage() {
                         <option key={t.value} value={t.value}>{t.label}</option>
                       ))}
                     </select>
+                    {formData.inquiry_type === 'trial_day' && (
+                      <p className="mt-3 text-[15px] leading-relaxed text-ink-60">
+                        Trial days are arranged through the membership application &mdash; it
+                        collects the date you want and sends your trial day details straight
+                        back.{' '}
+                        <Link href="/membership/apply?trial=1" className="mw-inline-link">
+                          Book a free trial day
+                        </Link>
+                        . Or send the message below and we&rsquo;ll set it up for you.
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid gap-7 md:grid-cols-2">
