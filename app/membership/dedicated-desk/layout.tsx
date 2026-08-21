@@ -16,10 +16,10 @@ export const metadata: Metadata = {
     url: "https://merrittworkspace.net/membership/dedicated-desk",
     images: [
       {
-        url: "/images/dedicated-desks/room-empty.webp",
+        url: "/images/og/home-og.jpg",
         width: 1200,
         height: 630,
-        alt: "Dedicated desk workspace at Merritt Workspace in Sloan's Lake, Denver - $200/month",
+        alt: "Members at work in the dedicated desk room at Merritt Workspace in Sloan's Lake, Denver - $200/month",
       },
     ],
   },
