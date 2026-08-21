@@ -16,18 +16,19 @@ export default function HomePage() {
       {/* Starts at y=0 with nothing above it: the navbar is transparent over
           this section and only takes its solid treatment on scroll. */}
       <section className="relative h-hero w-full overflow-hidden">
-        {/* Biased up: a centre crop lands on the foreground chairs and cuts
-            the faces, which are what this frame is for. */}
+        {/* Biased down: the desks and the people at them sit in the lower half
+            of this frame, so a centre crop on a wide viewport trades them for
+            ceiling. */}
         <Image
-          src="/images/dedicated-desks/members-talking.webp"
-          alt="Members talking between the dedicated desks at Merritt Workspace, a coworking space in Sloan's Lake, Denver"
+          src="/images/dedicated-desks/room-wide.webp"
+          alt="Members at work in the butcher block desk pods at Merritt Workspace, a coworking space in Sloan's Lake, Denver"
           fill
           priority
           placeholder="blur"
-          blurDataURL={BLUR['dedicated-desks/members-talking']}
+          blurDataURL={BLUR['dedicated-desks/room-wide']}
           sizes="100vw"
           quality={90}
-          className="object-cover object-[50%_28%] md:object-[50%_32%]"
+          className="object-cover object-[50%_60%]"
         />
         {/* Directional scrim, only under the text. */}
         <div className="absolute inset-0 scrim-bottom md:hidden" aria-hidden="true" />
@@ -257,10 +258,10 @@ export default function HomePage() {
         {/* The café and the campus, then the after-4:30 note. */}
         <div className="border-t border-clay bg-bone">
           <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 md:py-24">
-            {/* 5/7 split: a 4:3 café frame and a 1.89 campus frame land at
-                near-identical heights, so the row reads as one band. A 3/2
-                crop on the campus shot clipped the tower, hence the native
-                ratio on each. */}
+            {/* 5/7 split: a 4:3 café frame and a 1.89 hall frame land at
+                near-identical heights, so the row reads as one band. The hall
+                shot is natively 4:3 with an empty floor across the bottom, so
+                its crop is biased up onto the windows and the seating. */}
             <div className="grid gap-8 md:grid-cols-12 md:gap-10">
               <figure className="md:col-span-5">
                 <div className="relative aspect-[4/3]">
@@ -279,18 +280,18 @@ export default function HomePage() {
 
               <figure className="md:col-span-7">
                 <div className="relative aspect-[189/100]">
-                  {/* Both buildings in one frame — the only shot that makes the
-                      shared campus legible. */}
+                  {/* The hall as members actually find it: seating out, screen
+                      down, ping-pong table off to the side. */}
                   <Image
-                    src="/images/exterior/campus.webp"
-                    alt="The Merritt Workspace building and the restored 1905 event space side by side on the same lawn at 23rd and Irving, Sloan's Lake, Denver"
+                    src="/images/flex-space/hall-1.webp"
+                    alt="The restored 1905 hall at Merritt Workspace, with original stained glass, a hardwood floor, a projector screen, rows of seating and a ping-pong table, in Sloan's Lake, Denver"
                     fill
                     sizes="(max-width: 768px) 100vw, 56vw"
-                    className="object-cover"
+                    className="object-cover object-[50%_35%]"
                   />
                 </div>
                 <figcaption className="mt-4 text-[13px] uppercase tracking-[0.14em] text-ink-60">
-                  Two buildings, one lawn
+                  The hall next door, free to book
                 </figcaption>
               </figure>
             </div>
