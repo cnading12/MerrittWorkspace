@@ -33,7 +33,7 @@
 // (which answers "is THIS desk taken?").
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { DESK_COUNT } from './desks';
+import { DESK_COUNT, PRIVATE_DESK_COUNT } from './desks';
 import { DESK_SPACES, canonicalizeSpaceNumber } from './seating';
 
 // The minimal member shape the capacity math needs. Kept structural (rather
@@ -67,6 +67,9 @@ export interface DeskCapacity {
   // member's own desk from the "taken" side so their current choice still
   // appears in their dropdown.
   availableDesks: string[];
+  // The other desk product — desks in converted private offices. Carried here
+  // so one members query answers both questions.
+  privateDesk: PrivateDeskCapacity;
 }
 
 // A member row only counts if they still hold their seat. Archived members
@@ -145,6 +148,7 @@ export function summarizeDeskCapacity(input: {
     remainingCount: Math.max(0, DESK_COUNT - takenCount),
     isFull: takenCount >= DESK_COUNT,
     availableDesks: DESK_SPACES.filter((d) => !claimedByOthers.has(d)),
+    privateDesk: summarizePrivateDeskCapacity(members),
   };
 }
 
@@ -179,6 +183,43 @@ export async function getDeskCapacity(
     manualDeskNumbers: (manual || []).map((r: { space_number: string }) => r.space_number),
     excludeMemberId: opts.excludeMemberId,
   });
+}
+
+// ---------------------------------------------------------------------------
+// PRIVATE dedicated desks
+// ---------------------------------------------------------------------------
+// The other dedicated-desk product: a desk inside a private office we've
+// converted into a dedicated-desk area, sold at the higher private rate. These
+// have no DD numbers of their own — a private-desk member is recorded against
+// the office they sit in — so availability is a straight headcount against
+// PRIVATE_DESK_COUNT rather than a list of free labels.
+//
+// "Taken" uses the same seat-holding rule as the shared floor (holdsSeat): a
+// member counts from the moment they hold the seat until they're archived,
+// which is what keeps a desk in someone's notice period off the market.
+
+export interface PrivateDeskCapacity {
+  capacity: number;
+  takenCount: number;
+  remainingCount: number;
+  isFull: boolean;
+}
+
+export function summarizePrivateDeskCapacity(
+  members: DeskCapacityMember[],
+): PrivateDeskCapacity {
+  let takenCount = 0;
+  for (const m of members) {
+    if (!holdsSeat(m)) continue;
+    if (m.designation !== 'private_dedicated_desk') continue;
+    takenCount++;
+  }
+  return {
+    capacity: PRIVATE_DESK_COUNT,
+    takenCount,
+    remainingCount: Math.max(0, PRIVATE_DESK_COUNT - takenCount),
+    isFull: takenCount >= PRIVATE_DESK_COUNT,
+  };
 }
 
 export async function listAvailableDesks(

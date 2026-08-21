@@ -16,16 +16,18 @@ export default function HomePage() {
       {/* Starts at y=0 with nothing above it: the navbar is transparent over
           this section and only takes its solid treatment on scroll. */}
       <section className="relative h-hero w-full overflow-hidden">
+        {/* Biased up: a centre crop lands on the foreground chairs and cuts
+            the faces, which are what this frame is for. */}
         <Image
-          src="/images/dedicated-desks/room-wide.webp"
-          alt="Members working at dedicated desks at Merritt Workspace, a coworking space in Sloan's Lake, Denver"
+          src="/images/dedicated-desks/members-talking.webp"
+          alt="Members talking between the dedicated desks at Merritt Workspace, a coworking space in Sloan's Lake, Denver"
           fill
           priority
           placeholder="blur"
-          blurDataURL={BLUR['dedicated-desks/room-wide']}
+          blurDataURL={BLUR['dedicated-desks/members-talking']}
           sizes="100vw"
           quality={90}
-          className="object-cover object-[50%_62%] md:object-center"
+          className="object-cover object-[50%_28%] md:object-[50%_32%]"
         />
         {/* Directional scrim, only under the text. */}
         <div className="absolute inset-0 scrim-bottom md:hidden" aria-hidden="true" />
@@ -99,7 +101,7 @@ export default function HomePage() {
                 Not a hot desk you fight for at nine in the morning. The same
                 desk every day, in a room with twenty-five of them. Your own
                 access code gets you in around the clock, and the membership
-                comes with a numbered locker, four hours of meeting room credit
+                comes with a numbered locker, four hours of conference room credit
                 a month, and coffee, tea and beer on the house.
               </p>
               <p className="mt-5 text-[17px] leading-relaxed text-ink-60 md:text-lg">

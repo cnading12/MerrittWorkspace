@@ -198,7 +198,7 @@ export default function OfficeMemberDashboard({
             </a>
 
             <a
-              href="/portal/flex-space"
+              href="/member-resources/flex-space"
               className="block bg-bone border p-5 hover:border-gray-400 transition-colors"
             >
               <div className="font-semibold text-ink">🧘 Flex space</div>

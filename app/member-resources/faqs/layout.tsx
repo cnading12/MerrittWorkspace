@@ -2,7 +2,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Coworking FAQs | Hours, Pricing & Amenities",
-  description: "Answers to common questions about Merritt Workspace: membership pricing, 24/7 access, parking, meeting rooms, amenities, and touring our Sloan's Lake, Denver coworking space.",
+  description: "Answers to common questions about Merritt Workspace: membership pricing, 24/7 access, parking, conference room, amenities, and touring our Sloan's Lake, Denver coworking space.",
   keywords: [
     "coworking space Sloan's Lake",
     "Denver coworking FAQ",
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Coworking FAQs | Merritt Workspace Denver",
-    description: "Membership pricing, 24/7 access, parking, meeting rooms, and amenities at our Sloan's Lake, Denver coworking space.",
+    description: "Membership pricing, 24/7 access, parking, conference room, and amenities at our Sloan's Lake, Denver coworking space.",
     url: "https://merrittworkspace.net/member-resources/faqs",
     images: [
       {

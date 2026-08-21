@@ -26,7 +26,7 @@ const INQUIRY_LABELS: Record<string, string> = {
     trial_day: 'Book a Free Trial Day',
     tour: 'Schedule a Tour',
     membership: 'Membership Inquiry',
-    meeting_room: 'Meeting Room Booking',
+    meeting_room: 'Conference Room Booking',
     current_member: 'Current Member Support',
     other: 'Other',
 };

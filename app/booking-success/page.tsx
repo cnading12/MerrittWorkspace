@@ -109,7 +109,7 @@ function BookingSuccessContent() {
               href="/member-resources/meeting-rooms" 
               className="block bg-orange-600 text-white px-6 py-2 hover:bg-orange-700 transition"
             >
-              {error?.includes('canceled') ? 'Try Booking Again' : 'Back to Meeting Rooms'}
+              {error?.includes('canceled') ? 'Try Booking Again' : 'Back to Conference Room'}
             </Link>
           </div>
         </div>
@@ -128,7 +128,7 @@ function BookingSuccessContent() {
           <p className="text-xl text-ink-60 mb-6">
             {booking.is_member_booking 
               ? 'Your member booking has been confirmed using your monthly hours.'
-              : 'Your payment has been processed and your meeting room is reserved.'
+              : 'Your payment has been processed and your conference room is reserved.'
             }
           </p>
           <div className="inline-flex items-center bg-bone px-6 py-3 rounded-full">

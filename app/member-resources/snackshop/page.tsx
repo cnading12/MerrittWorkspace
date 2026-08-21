@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { ShoppingCart, Coffee, Cookie, Zap, CheckCircle, AlertCircle, Loader2, Plus, Minus, CreditCard, User, Sparkles } from 'lucide-react';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
+import PageHero from '@/components/marketing/PageHero';
+import { BLUR } from '@/components/marketing/blur';
 import { supabase } from '@/lib/supabase';
 import { SNACK_PRODUCTS } from '@/lib/snackshop/products';
 
@@ -322,20 +324,18 @@ export default function SimpleSnackshopPage() {
     };
 
     return (
-        <div className="min-h-screen bg-bone pt-20">
-            {/* Hero Section */}
-            <section className="bg-linen py-16">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center">
-                        <h1 className="font-display text-4xl md:text-5xl font-semibold text-ink mb-6">
-                            Merritt Snackshop
-                        </h1>
-                        <p className="text-xl text-ink-60 mb-8 max-w-3xl mx-auto">
-                            Select your items and quantities from our kitchen. Secure payment processing with immediate pickup!
-                        </p>
-                    </div>
-                </div>
-            </section>
+        <div className="min-h-screen bg-bone">
+            {/* No pt-20: the hero starts at y=0 under the transparent navbar.
+                This route is listed in HERO_ROUTES in Navbar.tsx. */}
+            <PageHero
+                src="/images/amenities/kitchen-counter.webp"
+                alt="The snackshop case and kitchen counter at Merritt Workspace, a coworking space in Sloan's Lake, Denver"
+                blurDataURL={BLUR['amenities/kitchen-counter']}
+                objectPosition="50% 45%"
+                eyebrow="Member resources"
+                title={<>The Merritt Snackshop.</>}
+                lead="Snacks, drinks and quick meals in the kitchen, a few steps from your desk. Pick what you want, pay here, take it with you."
+            />
 
             {/* Alerts */}
             {error && (

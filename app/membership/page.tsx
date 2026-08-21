@@ -24,13 +24,43 @@ const membershipPlans = [
       'High-speed WiFi',
       'Access to 4 private phone booths',
       'Full kitchen with coffee, tea and beer',
-      '4 hours meeting room credits/month',
+      '4 hours conference room credits/month',
       'Mail and package handling',
       'Event space access until 4:30 PM',
       'Pet-friendly workspace',
       'Community networking events'
     ],
     ideal_for: 'Freelancers, consultants, and remote workers',
+    category: 'shared',
+    link: '/membership/dedicated-desk'
+  },
+  // The second desk product: a desk inside a private office we've converted
+  // into a dedicated-desk area. Advertised alongside the shared-floor desk with
+  // its own live count — see PRIVATE_DESK_PLAN_ID below.
+  {
+    id: 'private_dedicated_desk',
+    name: 'Private Dedicated Desk',
+    price: 300,
+    description: 'Your own dedicated desk inside a private, lockable office area, outside the shared community space.',
+    capacity: '1 person',
+    privacy: 'Private Area',
+    image: '/images/offices/single-alt.webp',
+    blurDataURL: 'data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAACQAQCdASoKAA0ABUB8JZQC7ABpDmAAj/vsp3SQ/qO4OdwA',
+    color: 'burnt-orange',
+    badge: 'Private & Lockable',
+    features: [
+      'Private, lockable office area, outside the shared community space',
+      'Your own dedicated desk within that area',
+      '24/7 building access',
+      'High-speed WiFi',
+      '4 hours conference room credits/month',
+      'Full kitchen with coffee, tea and beer',
+      'Mail and package handling',
+      'Access to 4 private phone booths',
+      'Pet-friendly workspace',
+      'Community networking events'
+    ],
+    ideal_for: 'Members who want a dedicated desk with real privacy and a door that locks',
     category: 'shared',
     link: '/membership/dedicated-desk'
   },
@@ -58,36 +88,6 @@ const membershipPlans = [
     category: 'shared',
     link: '/membership/apply'
   },
-  // Only shown once every desk on the shared floor is spoken for — see
-  // PRIVATE_DESK_PLAN_ID below and lib/portal/deskAvailability.ts. Until then
-  // we don't advertise it at all.
-  {
-    id: 'private_dedicated_desk',
-    name: 'Private Dedicated Desk',
-    price: 300,
-    description: 'Your own dedicated desk inside a private, lockable office area, outside the shared community space.',
-    capacity: '1 person',
-    privacy: 'Private Area',
-    image: '/images/offices/single-alt.webp',
-    blurDataURL: 'data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAACQAQCdASoKAA0ABUB8JZQC7ABpDmAAj/vsp3SQ/qO4OdwA',
-    color: 'burnt-orange',
-    badge: 'Private & Lockable',
-    features: [
-      'Private, lockable office area, outside the shared community space',
-      'Your own dedicated desk within that area',
-      '24/7 building access',
-      'High-speed WiFi',
-      '4 hours meeting room credits/month',
-      'Full kitchen with coffee, tea and beer',
-      'Mail and package handling',
-      'Access to 4 private phone booths',
-      'Pet-friendly workspace',
-      'Community networking events'
-    ],
-    ideal_for: 'Members who want a dedicated desk with real privacy and a door that locks',
-    category: 'shared',
-    link: '/membership/dedicated-desk'
-  },
   {
     id: 'private_office_single',
     name: 'Single Desk Office',
@@ -103,7 +103,7 @@ const membershipPlans = [
       'Professional business address',
       '24/7 building access',
       'High-speed WiFi',
-      '8 hours meeting room credits/month',
+      '8 hours conference room credits/month',
       'Mail handling service',
       'Personal storage solutions',
       'Dedicated phone line option',
@@ -130,7 +130,7 @@ const membershipPlans = [
       'Professional business address',
       '24/7 building access',
       'High-speed WiFi',
-      '12 hours meeting room credits/month',
+      '12 hours conference room credits/month',
       'Mail and package handling',
       'Team collaboration area',
       'Multiple storage solutions',
@@ -158,7 +158,7 @@ const membershipPlans = [
       'Professional business address',
       '24/7 building access',
       'High-speed WiFi',
-      '20 hours meeting room credits/month',
+      '20 hours conference room credits/month',
       'Mail and package handling',
       'Multiple dedicated phone lines',
       'Team collaboration areas',
@@ -197,7 +197,7 @@ const whyChooseFeatures = [
   },
   {
     title: 'Full-Service Amenities',
-    description: 'On-site snackshop, meeting rooms, high-speed WiFi, and everything you need to be productive.'
+    description: 'On-site snackshop, conference room, high-speed WiFi, and everything you need to be productive.'
   }
 ];
 
@@ -224,9 +224,41 @@ const processSteps = [
   }
 ];
 
-// The dedicated desk inside a converted private office. Hidden from the
-// public catalog until every desk on the shared floor is spoken for.
+// The dedicated desk inside a converted private office. Always listed, with a
+// live count of how many are left, so a prospect can see both desk products
+// rather than discovering the second one only after the first sells out.
 const PRIVATE_DESK_PLAN_ID = 'private_dedicated_desk';
+
+// Live seat counts, read from the admin seating chart via the public
+// availability endpoints. `null` anywhere means "we don't know yet" — the fetch
+// is in flight or it failed — and every consumer treats that as "say nothing"
+// rather than printing a zero it can't stand behind.
+interface DeskAvailability {
+  remaining: number | null;
+  isFull: boolean;
+  private_desk?: { capacity: number; remaining: number | null; isFull: boolean };
+}
+interface OfficeAvailability {
+  remaining: number | null;
+  isFull: boolean;
+}
+
+// One line of "what's actually free right now", or nothing at all when the
+// number is unknown. Never renders a bare "0 left" without saying so in words.
+function AvailabilityNote({ count, singular, plural, fullText }: {
+  count: number | null | undefined;
+  singular: string;
+  plural: string;
+  fullText: string;
+}) {
+  if (typeof count !== 'number') return null;
+  return (
+    <p className="mt-5 text-[15px] text-ink-60">
+      <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle" aria-hidden="true" />
+      {count === 0 ? fullText : `${count} ${count === 1 ? singular : plural} available right now.`}
+    </p>
+  );
+}
 
 // Comparison rows. `true` renders the included mark, `false` an em dash,
 // anything else prints as-is.
@@ -235,7 +267,7 @@ const COMPARE_ROWS: { label: string; values: (string | boolean)[] }[] = [
   { label: 'Capacity', values: ['1 person', '1 person', '2 people', '4–8 people'] },
   { label: 'Privacy', values: ['Shared space', 'Private office', 'Private office', 'Private office'] },
   { label: '24/7 access', values: [true, true, true, true] },
-  { label: 'Meeting room credit', values: ['4 hrs/mo', '8 hrs/mo', '12 hrs/mo', '20 hrs/mo'] },
+  { label: 'Conference room credit', values: ['4 hrs/mo', '8 hrs/mo', '12 hrs/mo', '20 hrs/mo'] },
   { label: 'Business address', values: [false, true, true, true] },
   { label: 'Phone booths', values: [true, true, true, true] },
   { label: 'Pet friendly', values: ['Common areas', true, true, true] },
@@ -251,23 +283,27 @@ function CompareCell({ value }: { value: string | boolean }) {
 }
 
 export default function MembershipPage() {
-  // Best-effort availability check. Unknown (fetch in flight or failed) shows
-  // the normal catalog: standard dedicated desk on offer, private tier hidden.
-  const [desksFull, setDesksFull] = useState(false);
+  // Best-effort availability check against the seating chart. A failed or
+  // in-flight fetch leaves these null, which prints no counts at all — the
+  // catalog itself never depends on the answer.
+  const [desks, setDesks] = useState<DeskAvailability | null>(null);
+  const [offices, setOffices] = useState<OfficeAvailability | null>(null);
+
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/desk-availability')
-      .then(r => r.json())
-      .then(d => {
-        if (!cancelled && d && !d.unavailable) setDesksFull(d.isFull === true);
-      })
-      .catch(() => {});
+    const load = <T,>(url: string, set: (v: T) => void) =>
+      fetch(url)
+        .then(r => r.json())
+        .then(d => { if (!cancelled && d && !d.unavailable) set(d as T); })
+        .catch(() => {});
+    load<DeskAvailability>('/api/desk-availability', setDesks);
+    load<OfficeAvailability>('/api/office-availability', setOffices);
     return () => { cancelled = true; };
   }, []);
 
-  const sharedPlans = membershipPlans.filter(
-    plan => plan.category === 'shared' && (plan.id !== PRIVATE_DESK_PLAN_ID || desksFull)
-  );
+  const desksFull = desks?.isFull === true;
+
+  const sharedPlans = membershipPlans.filter(plan => plan.category === 'shared');
   const privatePlans = membershipPlans.filter(plan => plan.category === 'private');
 
   const renderPlan = (plan: typeof membershipPlans[number]) => {
@@ -276,6 +312,12 @@ export default function MembershipPage() {
     // rather than an unannounced price rise.
     const soldOut = plan.id === 'dedicated_desk' && desksFull;
     const perDay = plan.id === 'one_day_dedicated_desk';
+    // Shown on the two recurring desk products only. A day pass isn't a seat,
+    // and offices carry their own count on the section header instead.
+    const seatsLeft =
+      plan.id === 'dedicated_desk' ? desks?.remaining
+      : plan.id === PRIVATE_DESK_PLAN_ID ? desks?.private_desk?.remaining
+      : null;
 
     return (
       <div key={plan.id} className="flex flex-col border-t border-clay pt-8">
@@ -302,6 +344,15 @@ export default function MembershipPage() {
           {plan.capacity} &middot; {plan.privacy}
         </p>
 
+        {!soldOut && (
+          <AvailabilityNote
+            count={seatsLeft}
+            singular="desk"
+            plural="desks"
+            fullText="Currently full — ask us about the waiting list."
+          />
+        )}
+
         <ul className="mt-5 flex-grow space-y-2">
           {plan.features.slice(0, 5).map((feature, i) => (
             <li key={i} className="text-[15px] leading-relaxed text-ink-60">{feature}</li>
@@ -327,13 +378,13 @@ export default function MembershipPage() {
 
   return (
     <main className="bg-bone">
-      {/* objectPosition: a centre crop lands on the foreground chairs, so the
-          frame is biased up to hold the desks and the faces. */}
+      {/* A second angle on the desk room, so the three desk pages
+          (home / here / dedicated desk) never repeat the same frame. */}
       <PageHero
-        src="/images/dedicated-desks/members-talking.webp"
-        alt="Members talking between the dedicated desks at Merritt Workspace in Sloan's Lake, Denver"
-        blurDataURL={BLUR['dedicated-desks/members-talking']}
-        objectPosition="50% 18%"
+        src="/images/dedicated-desks/pods-alt-angle.webp"
+        alt="An alternate view across the dedicated desk pods at Merritt Workspace in Sloan's Lake, Denver"
+        blurDataURL={BLUR['dedicated-desks/pods-alt-angle']}
+        objectPosition="50% 40%"
         eyebrow="Membership"
         title={<>Desks and offices, month to month.</>}
         lead="No long lease, no tiered nonsense. Pick the space that fits the work, and change it when the work changes."
@@ -344,7 +395,13 @@ export default function MembershipPage() {
         <div className="mw-container">
           <div className="max-w-2xl">
             <p className="mw-eyebrow mb-5">Shared workspace</p>
-            <h2 className="mw-h2">A desk of your own on the shared floor.</h2>
+            <h2 className="mw-h2">A desk of your own, on the floor or behind a door.</h2>
+            <p className="mt-6 mw-body">
+              Two ways to have a desk that is yours every day: one on the shared
+              coworking floor, or one inside a private, lockable office we&rsquo;ve
+              converted into a dedicated-desk area. Same membership, same
+              amenities &mdash; the private option just adds a door.
+            </p>
           </div>
           <div className="mt-14 grid gap-x-10 gap-y-14 md:mt-20 md:grid-cols-2 lg:grid-cols-3">
             {sharedPlans.map(renderPlan)}
@@ -358,6 +415,16 @@ export default function MembershipPage() {
           <div className="max-w-2xl">
             <p className="mw-eyebrow mb-5">Private offices</p>
             <h2 className="mw-h2">Fourteen lockable rooms, one to eight people.</h2>
+            <p className="mt-6 mw-body">
+              A room of your own with a door that locks and a business address,
+              billed month to month like everything else.
+            </p>
+            <AvailabilityNote
+              count={offices?.remaining}
+              singular="office is"
+              plural="offices are"
+              fullText="Every office is taken right now — ask us about the waiting list."
+            />
           </div>
           <div className="mt-14 grid gap-x-10 gap-y-14 md:mt-20 md:grid-cols-2 lg:grid-cols-3">
             {privatePlans.map(renderPlan)}

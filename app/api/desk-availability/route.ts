@@ -14,7 +14,7 @@
 import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { getDeskCapacity } from '@/lib/portal/deskAvailability';
-import { DESK_COUNT } from '@/lib/portal/desks';
+import { DESK_COUNT, PRIVATE_DESK_COUNT } from '@/lib/portal/desks';
 import {
   DEDICATED_DESK_MONTHLY_CENTS,
   PRIVATE_DEDICATED_DESK_MONTHLY_CENTS,
@@ -32,6 +32,12 @@ export async function GET() {
       isFull: capacity.isFull,
       dedicated_desk_cents: DEDICATED_DESK_MONTHLY_CENTS,
       private_dedicated_desk_cents: PRIVATE_DEDICATED_DESK_MONTHLY_CENTS,
+      private_desk: {
+        capacity: capacity.privateDesk.capacity,
+        taken: capacity.privateDesk.takenCount,
+        remaining: capacity.privateDesk.remainingCount,
+        isFull: capacity.privateDesk.isFull,
+      },
     });
   } catch (e: any) {
     // Never break a marketing page over this. Failing "not full" keeps the
@@ -47,6 +53,14 @@ export async function GET() {
       unavailable: true,
       dedicated_desk_cents: DEDICATED_DESK_MONTHLY_CENTS,
       private_dedicated_desk_cents: PRIVATE_DEDICATED_DESK_MONTHLY_CENTS,
+      // Nulls, not zeros: the page must be able to tell "we don't know" from
+      // "none left" and simply say nothing about counts.
+      private_desk: {
+        capacity: PRIVATE_DESK_COUNT,
+        taken: null,
+        remaining: null,
+        isFull: false,
+      },
     });
   }
 }

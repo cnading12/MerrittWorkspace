@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
   summarizeDeskCapacity,
+  summarizePrivateDeskCapacity,
   getDeskCapacity,
   listAvailableDesks,
   type DeskCapacityMember,
 } from '@/lib/portal/deskAvailability';
 import { DESK_SPACES } from '@/lib/portal/seating';
-import { DESK_COUNT } from '@/lib/portal/desks';
+import { DESK_COUNT, PRIVATE_DESK_COUNT } from '@/lib/portal/desks';
 
 // Guards the rule that decides whether the shared coworking floor is FULL —
 // the switch that stops new members from taking a floor-plan desk and starts
@@ -340,5 +341,62 @@ describe('getDeskCapacity', () => {
     expect(desks).toContain('DD4');
     expect(desks).not.toContain('DD6');
     expect(desks).toHaveLength(DESK_COUNT - 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PRIVATE dedicated desks — desks inside converted private offices
+// ---------------------------------------------------------------------------
+
+describe('summarizePrivateDeskCapacity', () => {
+  it('reports every private desk free when nobody holds one', () => {
+    const c = summarizePrivateDeskCapacity([]);
+    expect(c.capacity).toBe(PRIVATE_DESK_COUNT);
+    expect(c.takenCount).toBe(0);
+    expect(c.remainingCount).toBe(PRIVATE_DESK_COUNT);
+    expect(c.isFull).toBe(false);
+  });
+
+  it('counts only private-desk members, not floor-desk ones', () => {
+    const c = summarizePrivateDeskCapacity([
+      member('p1', { designation: 'private_dedicated_desk' }),
+      member('floor', { designation: 'dedicated_desk', desk_number: 'DD4' }),
+      member('office', { designation: 'private_office_single' }),
+    ]);
+    expect(c.takenCount).toBe(1);
+    expect(c.remainingCount).toBe(PRIVATE_DESK_COUNT - 1);
+  });
+
+  it('does not count a private-desk member who has been archived', () => {
+    const c = summarizePrivateDeskCapacity([
+      member('gone', { designation: 'private_dedicated_desk', archived_at: '2026-01-01' }),
+    ]);
+    expect(c.takenCount).toBe(0);
+  });
+
+  it('keeps counting a cancelled private-desk member until they are archived', () => {
+    const c = summarizePrivateDeskCapacity([
+      member('leaving', { designation: 'private_dedicated_desk', status: 'cancelled' }),
+    ]);
+    expect(c.takenCount).toBe(1);
+  });
+
+  it('is full once every private desk is held, and never goes negative', () => {
+    const holders = Array.from({ length: PRIVATE_DESK_COUNT + 2 }, (_, i) =>
+      member(`p${i}`, { designation: 'private_dedicated_desk' }),
+    );
+    const c = summarizePrivateDeskCapacity(holders);
+    expect(c.isFull).toBe(true);
+    expect(c.remainingCount).toBe(0);
+  });
+
+  it('rides along on the shared-floor summary so one query answers both', () => {
+    const c = summarizeDeskCapacity({
+      members: [member('p1', { designation: 'private_dedicated_desk' })],
+      manualDeskNumbers: [],
+    });
+    expect(c.privateDesk.takenCount).toBe(1);
+    // A private-desk member sits outside the 25 floor desks entirely.
+    expect(c.takenCount).toBe(0);
   });
 });

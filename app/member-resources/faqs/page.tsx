@@ -143,11 +143,11 @@ export default function FAQPage() {
       question: 'How do I book a conference room?',
       answer: (
         <div className="space-y-3">
-          <p>Booking our first-class meeting rooms is easy:</p>
+          <p>Booking our first-class conference room is easy:</p>
           <div className="space-y-3">
             <div className="flex items-start">
               <Calendar className="w-4 h-4 text-accent-deep mt-1 mr-2 flex-shrink-0" />
-              <span>Visit our <Link href="/meeting-rooms" className="text-accent-deep hover:underline font-semibold">Meeting Rooms page</Link> and click 'Book Now'</span>
+              <span>Visit our <Link href="/member-resources/meeting-rooms" className="text-accent-deep hover:underline font-semibold">Conference Room page</Link> and click 'Book Now'</span>
             </div>
             <div className="bg-linen p-4 border border-clay">
               <h4 className="font-semibold text-ink-60 mb-2">📅 Member Benefits:</h4>
@@ -249,7 +249,7 @@ export default function FAQPage() {
           <div className="space-y-3">
             <div className="flex items-start">
               <Coffee className="w-4 h-4 text-accent-deep mt-1 mr-2 flex-shrink-0" />
-              <span>Visit our <Link href="/snackshop" className="text-accent-deep hover:underline font-semibold">Snackshop page</Link> to browse and order</span>
+              <span>Visit our <Link href="/member-resources/snackshop" className="text-accent-deep hover:underline font-semibold">Snackshop page</Link> to browse and order</span>
             </div>
             <div className="bg-linen p-4 border border-clay">
               <h4 className="font-semibold text-accent-deep mb-2">🛒 How It Works:</h4>

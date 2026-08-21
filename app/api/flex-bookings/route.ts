@@ -340,7 +340,7 @@ export async function POST(req: NextRequest) {
           durationMinutes,
           weeklyMinutesUsed: usedMinutes + durationMinutes,
           weeklyMinutesAllowed: MAX_WEEKLY_MINUTES,
-          cancelUrl: `${baseUrl}/portal/flex-space`,
+          cancelUrl: `${baseUrl}/member-resources/flex-space`,
         });
         const resend = new Resend(process.env.RESEND_API_KEY);
         const memberLabel =

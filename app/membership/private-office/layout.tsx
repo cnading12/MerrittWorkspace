@@ -2,7 +2,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Private Office Rental Denver | From $500/mo | Sloan's Lake",
-  description: "Private lockable offices in Sloan's Lake, Denver from $500/mo. 1-8 person offices with professional business address, 24/7 access, meeting room credits. 3 min to I-25. Tour today!",
+  description: "Private lockable offices in Sloan's Lake, Denver from $500/mo. 1-8 person offices with professional business address, 24/7 access, conference room credits. 3 min to I-25. Tour today!",
   keywords: [
     "private office rental Denver",
     "office space Sloan's Lake",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Private Office Rental Denver | From $500/mo | Sloan's Lake",
-    description: "Lockable private offices for 1-8 people. Business address, 24/7 access, meeting rooms. Historic 1905 building in Denver's Sloan's Lake neighborhood.",
+    description: "Lockable private offices for 1-8 people. Business address, 24/7 access, conference room. Historic 1905 building in Denver's Sloan's Lake neighborhood.",
     url: "https://merrittworkspace.net/membership/private-office",
     images: [
       {

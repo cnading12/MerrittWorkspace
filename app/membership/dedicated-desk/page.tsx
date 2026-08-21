@@ -11,7 +11,7 @@ const WHATS_INCLUDED = [
   'Your own dedicated desk with storage',
   '24/7 access code entry to a monitored building',
   'Enterprise WiFi throughout the building',
-  'Four hours of meeting room credit each month',
+  'Four hours of conference room credit each month',
   'Full kitchen, and all the coffee, tea and beer you can drink',
   'Free flex space access next door until 4:30 daily',
   'Mail and package handling',
@@ -98,27 +98,38 @@ export default function DedicatedDeskPage() {
     }
   ];
 
-  // Once every desk on the shared floor is spoken for we keep welcoming
-  // dedicated desk members, but at the private rate in a converted office.
-  // Nothing about that is shown until then. See lib/portal/deskAvailability.ts.
-  const [desksFull, setDesksFull] = useState(false);
+  // Live seat counts from the admin seating chart. Null means the fetch is in
+  // flight or failed, in which case no count is printed at all — the page reads
+  // exactly as it did before, minus the numbers.
+  const [availability, setAvailability] = useState<{
+    remaining: number | null;
+    isFull: boolean;
+    private_desk?: { remaining: number | null; isFull: boolean };
+  } | null>(null);
   useEffect(() => {
     let cancelled = false;
     fetch('/api/desk-availability')
       .then(r => r.json())
       .then(d => {
-        if (!cancelled && d && !d.unavailable) setDesksFull(d.isFull === true);
+        if (!cancelled && d && !d.unavailable) setAvailability(d);
       })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
+  // Once every desk on the shared floor is spoken for we keep welcoming
+  // dedicated desk members, but at the private rate in a converted office.
+  // See lib/portal/deskAvailability.ts.
+  const desksFull = availability?.isFull === true;
+  const floorDesksLeft = availability?.remaining;
+  const privateDesksLeft = availability?.private_desk?.remaining;
+
   return (
     <main className="bg-bone">
       <PageHero
-        src="/images/dedicated-desks/pods-alt-angle.webp"
+        src="/images/dedicated-desks/room-wide.webp"
         alt="Members at work in the butcher block desk pods at Merritt Workspace, Sloan's Lake, Denver"
-        blurDataURL={BLUR['dedicated-desks/pods-alt-angle']}
+        blurDataURL={BLUR['dedicated-desks/room-wide']}
         eyebrow="Dedicated desk &middot; $200 a month"
         title={<>The same desk every day, in a room with twenty-five of them.</>}
         lead="Your own desk in the Sloan's Lake coworking room, with free access to the 1905 event space next door. Month to month, no long contract."
@@ -161,6 +172,14 @@ export default function DedicatedDeskPage() {
                 Month to month. No long-term contract, no signing fee, and a free
                 trial day before you decide anything.
               </p>
+              {typeof floorDesksLeft === 'number' && floorDesksLeft > 0 && (
+                <p className="mt-5 text-[15px] text-ink-60">
+                  <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle" aria-hidden="true" />
+                  {floorDesksLeft === 1
+                    ? '1 desk available right now.'
+                    : `${floorDesksLeft} desks available right now.`}
+                </p>
+              )}
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link href="/membership/apply" className="mw-btn-primary">
                   Apply for a desk
@@ -173,6 +192,30 @@ export default function DedicatedDeskPage() {
                 Or call and text{' '}
                 <a href="tel:7203579499" className="mw-inline-link">(720) 357-9499</a>.
               </p>
+
+              {!desksFull && (
+                <div className="mt-10 border-t border-clay pt-8">
+                  <p className="mw-eyebrow mb-4">Also available</p>
+                  <h3 className="font-display text-xl font-semibold text-ink md:text-2xl">
+                    A private dedicated desk, $300 a month.
+                  </h3>
+                  <p className="mt-3 mw-body">
+                    The same membership, but your desk sits inside a private,
+                    lockable office area rather than on the shared floor. Useful
+                    if you take calls all day or handle anything confidential.
+                  </p>
+                  {typeof privateDesksLeft === 'number' && (
+                    <p className="mt-4 text-[15px] text-ink-60">
+                      <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle" aria-hidden="true" />
+                      {privateDesksLeft === 0
+                        ? 'All private desks are taken right now.'
+                        : privateDesksLeft === 1
+                          ? '1 private desk available right now.'
+                          : `${privateDesksLeft} private desks available right now.`}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="md:col-span-6 md:col-start-7">

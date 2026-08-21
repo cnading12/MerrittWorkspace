@@ -12,7 +12,7 @@ const INQUIRY_TYPES = [
   { value: 'trial_day', label: 'Book a Free Trial Day' },
   { value: 'tour', label: 'Schedule a Tour' },
   { value: 'membership', label: 'Membership Inquiry' },
-  { value: 'meeting_room', label: 'Meeting Room Booking' },
+  { value: 'meeting_room', label: 'Conference Room Booking' },
   { value: 'current_member', label: 'Current Member Support' },
   { value: 'other', label: 'Other' },
 ];
@@ -127,7 +127,7 @@ export default function ContactPage() {
                     Apply for membership
                   </Link>
                   <Link href="/member-resources/meeting-rooms" className="block text-[16px] text-ink-60 transition hover:text-ink">
-                    Book a meeting room
+                    Book a conference room
                   </Link>
                   <Link href="/member-resources/snackshop" className="block text-[16px] text-ink-60 transition hover:text-ink">
                     Order from the snackshop
