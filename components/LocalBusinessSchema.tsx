@@ -76,7 +76,7 @@ export default function LocalBusinessSchema() {
       { "@type": "LocationFeatureSpecification", "name": "Free Coffee & Tea", "value": true },
       { "@type": "LocationFeatureSpecification", "name": "Mail Handling", "value": true },
       { "@type": "LocationFeatureSpecification", "name": "Event Space", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Pet-Friendly", "value": true },
+      { "@type": "LocationFeatureSpecification", "name": "Pet-Friendly (Private Offices Only)", "value": true },
       { "@type": "LocationFeatureSpecification", "name": "Free Parking", "value": true }
     ],
     "hasOfferCatalog": {
@@ -88,7 +88,7 @@ export default function LocalBusinessSchema() {
           "itemOffered": {
             "@type": "Service",
             "name": "Dedicated Desk",
-            "description": "Your own permanent desk in our collaborative coworking space in Sloan's Lake, Denver. Includes 24/7 access, high-speed WiFi, 4 hours meeting room credits, and all-you-can-drink coffee and tea."
+            "description": "Your own permanent desk in our collaborative coworking space in Sloan's Lake, Denver. Includes 24/7 access, high-speed WiFi, 4 hours monthly meeting room credits, 4 hours weekly flex space credits, and all-you-can-drink coffee and tea."
           },
           "price": "200",
           "priceCurrency": "USD",
@@ -104,7 +104,7 @@ export default function LocalBusinessSchema() {
           "itemOffered": {
             "@type": "Service",
             "name": "Single Private Office",
-            "description": "Private lockable office for 1 person in Denver's Sloan's Lake neighborhood. Includes professional business address, 8 hours meeting room credits, and 24/7 building access."
+            "description": "Private lockable office for 1 person in Denver's Sloan's Lake neighborhood. Includes professional business address, 14 hours monthly meeting room credits, 6 hours weekly flex space credits, and 24/7 building access."
           },
           "price": "500",
           "priceCurrency": "USD",
@@ -120,7 +120,7 @@ export default function LocalBusinessSchema() {
           "itemOffered": {
             "@type": "Service",
             "name": "2-Desk Private Office",
-            "description": "Private lockable office for 2 people near I-25 in Denver. Includes professional business address, 12 hours meeting room credits, and 24/7 access."
+            "description": "Private lockable office for 2 people near I-25 in Denver. Includes professional business address, 14 hours monthly meeting room credits, 6 hours weekly flex space credits, and 24/7 access."
           },
           "price": "700",
           "priceCurrency": "USD",
@@ -136,7 +136,7 @@ export default function LocalBusinessSchema() {
           "itemOffered": {
             "@type": "Service",
             "name": "Large Team Office (4-8 Desks)",
-            "description": "Spacious private office for teams of 4-8 in Sloan's Lake, Denver. Includes 20 hours meeting room credits, professional business address, and priority event space booking."
+            "description": "Spacious private office for teams of 4-8 in Sloan's Lake, Denver. Includes 20 hours monthly meeting room credits, 8 hours weekly flex space credits, professional business address, and priority event space booking."
           },
           "price": "1200",
           "priceCurrency": "USD",

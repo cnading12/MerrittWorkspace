@@ -542,7 +542,7 @@ Your time slot is temporarily reserved.`);
                   <strong>Members:</strong> included hours each month
                 </p>
                 <p className="text-sm text-orange-700">
-                  Dedicated desk: 4 hrs · Private office: 8–20 hrs / month. Extra time billed at ${HOURLY_RATE}/hr.
+                  Dedicated desk: 4 hrs · Private office: 14–20 hrs / month. Extra time billed at ${HOURLY_RATE}/hr.
                 </p>
                 <p className="text-orange-800 pt-1">
                   <strong>Guests &amp; non-members:</strong> ${HOURLY_RATE}/hour

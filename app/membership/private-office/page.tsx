@@ -39,9 +39,10 @@ export default function PrivateOfficePage() {
       features: [
         'Private lockable office',
         'Professional business address',
-        '8 hours conference room credits/month',
+        '14 hours conference room credits/month',
+        '6 hours flex space credits/week',
         'Mail handling service',
-        'Pet-friendly (dogs welcome)',
+        'Pet-friendly (dogs welcome in your office)',
         'Personal storage solutions',
         'Dedicated phone line option',
         'Free trial day before you commit'
@@ -58,9 +59,10 @@ export default function PrivateOfficePage() {
       features: [
         'Private lockable office with 2 desks',
         'Professional business address',
-        '12 hours conference room credits/month',
+        '14 hours conference room credits/month',
+        '6 hours flex space credits/week',
         'Mail and package handling',
-        'Pet-friendly team space',
+        'Pet-friendly team space (dogs stay in your office)',
         'Multiple storage solutions',
         'Team collaboration area',
         'Priority event space access',
@@ -79,6 +81,7 @@ export default function PrivateOfficePage() {
         'Large private office (4-8 desks)',
         'Professional business address',
         '20 hours conference room credits/month',
+        '8 hours flex space credits/week',
         'Mail and package handling',
         'Multiple dedicated phone lines',
         'Team collaboration areas',
@@ -112,8 +115,8 @@ export default function PrivateOfficePage() {
       description: 'Full mail receiving and package management services'
     },
     {
-      title: 'Conference Room Credits',
-      description: 'Monthly conference room hours included (varies by plan)'
+      title: 'Conference & Flex Space Credits',
+      description: 'Monthly conference room hours and weekly flex space hours included (14 hrs/mo and 6 hrs/wk for a single or 2-desk office, 20 and 8 for a large one)'
     },
     {
       title: 'Phone Line Options',
@@ -125,7 +128,7 @@ export default function PrivateOfficePage() {
     },
     {
       title: 'Pet-Friendly',
-      description: 'Bring your dog to work - they can stay in your private office'
+      description: 'Dogs are welcome in private offices — the one membership tier that allows them. They stay in your office rather than the shared floor.'
     },
     {
       title: 'Premium Storage',

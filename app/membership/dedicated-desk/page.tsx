@@ -13,10 +13,9 @@ const WHATS_INCLUDED = [
   'Enterprise WiFi throughout the building',
   'Four hours of conference room credit each month',
   'Full kitchen, and all the coffee, tea and beer you can drink',
-  'Free flex space access next door until 4:30 daily',
+  'Four hours of flex space credit each week, next door until 4:30 daily',
   'Mail and package handling',
-  'Four soundproof phone booths, first come first served',
-  'Pet friendly, so bring the dog',
+  'Five soundproof phone booths, first come first served',
   'Month to month, no long-term contract',
 ];
 
@@ -39,8 +38,8 @@ export default function DedicatedDeskPage() {
       description: 'Coffee, tea, beer, microwave, refrigerator, and prep space'
     },
     {
-      title: '4 Phone Booths',
-      description: 'Private soundproof booths for calls and video meetings (first-come, first-served)'
+      title: '5 Phone Booths',
+      description: 'Private soundproof booths for calls and video meetings, first-come, first-served. The perk desk members reach for most.'
     },
     {
       title: 'Meeting Credits',
@@ -51,12 +50,8 @@ export default function DedicatedDeskPage() {
       description: 'Professional mail receiving and package management'
     },
     {
-      title: 'Pet-Friendly',
-      description: 'Bring your well-behaved dog to work with you'
-    },
-    {
-      title: 'FREE Flex Space Next Door',
-      description: 'Use our beautiful flex space in the adjacent building for meetings and events, free until 4:30 PM daily'
+      title: '4 Hours of Flex Space a Week',
+      description: 'Book the 1905 event space next door for meetings, workshops and events — four hours a week included, weekdays until 4:30 PM'
     },
     {
       title: 'FREE Trial Day',
