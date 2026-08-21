@@ -15,11 +15,14 @@ import FlexBooking from '@/components/flex/FlexBooking';
 export default function FlexSpacePage() {
   return (
     <main className="bg-bone">
+      {/* The point of this page is that the room is a whole other building, so
+          the hero shows both of them on the one lawn. The x bias only bites on
+          a portrait viewport, where it keeps the 1905 building in frame. */}
       <PageHero
-        src="/images/flex-space/hall-1.webp"
-        alt="The restored 1905 hall at Merritt Workspace, with original stained glass, a hardwood floor, a projector screen and rows of seating, in Sloan's Lake, Denver"
-        blurDataURL={BLUR['flex-space/hall-1']}
-        objectPosition="50% 55%"
+        src="/images/exterior/campus.webp"
+        alt="The Merritt Workspace building and the restored 1905 event space side by side on the same lawn at 23rd and Irving, Sloan's Lake, Denver"
+        blurDataURL={BLUR['exterior/campus']}
+        objectPosition="62% 50%"
         eyebrow="Member resources &middot; Flex space"
         title={<>A 1905 event space, right next door.</>}
         lead="A restored hall with the original stained glass, a hardwood floor, a projector and a sound system — free to book with your membership, every weekday until 4:30."
@@ -44,7 +47,8 @@ export default function FlexSpacePage() {
                 Run an all-hands in it. Teach something. Bring a client
                 somewhere that isn&rsquo;t a coffee shop. Or take your laptop to
                 the café at the front when you just want a different room to
-                work in for an afternoon.
+                work in for an afternoon. There is a ping-pong table in the hall
+                too, out whenever the chairs are pushed back.
               </p>
             </div>
 
@@ -147,6 +151,25 @@ export default function FlexSpacePage() {
                 café for everything else.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Member gatherings. Deliberately undated: there is no fixed cadence
+          yet, and a published schedule we then miss reads worse than none. Put
+          real dates in here once they exist. */}
+      <section className="mw-section-rule">
+        <div className="mw-container">
+          <div className="max-w-2xl">
+            <p className="mw-eyebrow mb-5">Member gatherings</p>
+            <h2 className="mw-h2">Lunches and happy hours, on us.</h2>
+            <p className="mt-6 mw-body">
+              Every so often we clear the hall and put something on for members
+              and their guests — a networking lunch, a happy hour, an excuse to
+              meet the people working on the other side of the wall. They are
+              free, they are not on a set schedule, and we let members know in
+              advance.
+            </p>
           </div>
         </div>
       </section>

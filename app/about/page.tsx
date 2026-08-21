@@ -7,10 +7,14 @@ import { BLUR } from '@/components/marketing/blur';
 export default function AboutPage() {
   return (
     <main className="bg-bone">
+      {/* The source frame is 4:3 and its bottom third is all lawn, so a centre
+          crop fills the hero with grass and clips the tower. Biasing the crop
+          up sits the building in the middle of the band that actually shows. */}
       <PageHero
-        src="/images/exterior/campus-corner.webp"
+        src="/images/flex-space/exterior.webp"
         alt="The restored 1905 Merritt church building at 23rd and Irving in Sloan's Lake, Denver"
-        blurDataURL={BLUR['exterior/campus-corner']}
+        blurDataURL={BLUR['flex-space/exterior']}
+        objectPosition="50% 18%"
         eyebrow="About"
         title={<>A church from 1905, still getting people in a room together.</>}
         lead="For over a century this was the heart of Sloan's Lake. It still is. The people in it just work for themselves now."
