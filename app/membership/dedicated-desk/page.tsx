@@ -126,13 +126,14 @@ export default function DedicatedDeskPage() {
 
   return (
     <main className="bg-bone">
-      {/* Biased up: the faces are the point of this frame and a centre crop in
-          a short hero lands on the foreground chairs instead. */}
+      {/* Two members at their own desks, which is what this page sells. Biased
+          down: the pods and the people at them sit below the middle of the
+          frame, and a centre crop in a short hero trades them for ceiling. */}
       <PageHero
-        src="/images/dedicated-desks/members-talking.webp"
-        alt="Members talking between the dedicated desks at Merritt Workspace, Sloan's Lake, Denver"
-        blurDataURL={BLUR['dedicated-desks/members-talking']}
-        objectPosition="50% 30%"
+        src="/images/dedicated-desks/two-members.webp"
+        alt="Two members working at their own dedicated desks, with a lockable storage pedestal between the pods, at Merritt Workspace in Sloan's Lake, Denver"
+        blurDataURL={BLUR['dedicated-desks/two-members']}
+        objectPosition="50% 55%"
         eyebrow="Dedicated desk &middot; $200 a month"
         title={<>The same desk every day, in a room with twenty-five of them.</>}
         lead="Your own desk in the Sloan's Lake coworking room, with free access to the 1905 event space next door. Month to month, no long contract."
