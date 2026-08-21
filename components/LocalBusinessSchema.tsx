@@ -10,7 +10,7 @@ export default function LocalBusinessSchema() {
     "logo": "https://merrittworkspace.net/images/brand/logo.png",
     "image": [
       "https://merrittworkspace.net/images/exterior/campus.webp",
-      "https://merrittworkspace.net/images/dedicated-desks/room-empty.webp",
+      "https://merrittworkspace.net/images/og/home-og.jpg",
       "https://merrittworkspace.net/images/offices/single-alt.webp"
     ],
     "telephone": "+1-720-357-9499",
