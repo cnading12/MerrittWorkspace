@@ -79,13 +79,17 @@ export default function HomePage() {
       <section className="py-20 md:py-32">
         <div className="mx-auto max-w-[1400px]">
           <div className="grid items-center gap-10 md:grid-cols-12 md:gap-16">
+            {/* The cohort shot: the section is about the room being full of
+                people who keep the same desk, so the photograph shows them.
+                Natively 3:2, so the desktop frame is an exact fit and only the
+                4:3 mobile crop takes anything off the sides. */}
             <div className="relative aspect-[4/3] md:col-span-7 md:aspect-[3/2]">
               <Image
-                src="/images/dedicated-desks/room-empty.webp"
-                alt="The dedicated desk room at Merritt Workspace, with butcher block desk pods and monitors, in Sloan's Lake, Denver"
+                src="/images/dedicated-desks/members-talking.webp"
+                alt="Members talking between the butcher block desk pods in the dedicated desk room at Merritt Workspace, Sloan's Lake, Denver"
                 fill
                 placeholder="blur"
-                blurDataURL={BLUR['dedicated-desks/room-empty']}
+                blurDataURL={BLUR['dedicated-desks/members-talking']}
                 sizes="(max-width: 768px) 100vw, 58vw"
                 className="object-cover object-center"
               />
