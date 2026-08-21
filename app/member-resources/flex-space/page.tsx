@@ -37,11 +37,11 @@ export default function FlexSpacePage() {
               <h2 className="mw-h2">Not a meeting room. A whole building.</h2>
               <p className="mt-6 mw-body">
                 The building next door is a restored 1905 church, and members
-                get the run of it during the working day. The hall seats around
-                sixty in rows, or clears completely for a workshop, a class or a
-                launch. The stained glass is original, the floor is the original
-                hardwood, and there is a projector, a drop-down screen and a
-                sound system already in the room.
+                get the run of it during the working day. The hall seats a
+                hundred comfortably in rows, or clears completely for a
+                workshop, a class or a launch. The stained glass is original,
+                the floor is the original hardwood, and there is a projector, a
+                drop-down screen and a sound system already in the room.
               </p>
               <p className="mt-5 mw-body">
                 Run an all-hands in it. Teach something. Bring a client
@@ -82,8 +82,9 @@ export default function FlexSpacePage() {
               <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Included</dt>
               <dd className="mt-2 font-display text-3xl font-semibold text-ink">4 hrs<span className="text-base font-normal text-ink-60"> /week</span></dd>
               <dd className="mt-2 text-[15px] leading-relaxed text-ink-60">
-                With a dedicated desk. Offices get six to eight. The week resets
-                Monday morning and hours don&rsquo;t roll over.
+                With a dedicated desk. Single and 2-desk offices get six, large
+                offices eight. The week resets Monday morning and hours
+                don&rsquo;t roll over.
               </dd>
             </div>
             <div>

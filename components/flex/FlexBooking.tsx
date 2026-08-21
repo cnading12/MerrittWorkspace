@@ -210,7 +210,10 @@ export default function FlexBooking() {
   }
 
   // Signed out: the room is described in full above this point, so all that's
-  // missing is a way in.
+  // missing is a way in. Two audiences land here — members who aren't signed
+  // in, and non-members who just want to rent the hall. The second group used
+  // to hit a dead end; they now get pointed at Merritt Wellness, which handles
+  // public bookings of the same building outside member hours.
   if (!token) {
     return (
       <div className="border border-clay bg-bone p-6 md:p-8">
@@ -227,6 +230,24 @@ export default function FlexBooking() {
           <Link href="/membership" className="mw-btn-ghost">
             See membership options
           </Link>
+        </div>
+
+        <div className="mt-8 border-t border-clay pt-6">
+          <h4 className="font-display text-lg font-semibold text-ink">
+            Not a member?
+          </h4>
+          <p className="mt-3 mw-body">
+            You can still book the hall. Evening, weekend and public bookings
+            run through Merritt Wellness, which shares the building.
+          </p>
+          <a
+            href="https://www.merrittwellness.net/booking"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-5 inline-block border-b border-accent pb-1 text-[15px] font-medium text-accent-deep transition hover:border-accent-deep"
+          >
+            Book as a non-member at Merritt Wellness
+          </a>
         </div>
       </div>
     );

@@ -103,15 +103,16 @@ export default function HomePage() {
                 desk every day, in a room with twenty-five of them. Your own
                 access code gets you in around the clock, and the membership
                 comes with a numbered locker, four hours of conference room credit
-                a month, and coffee, tea and beer on the house.
+                a month, five soundproof phone booths for when a call needs a
+                door, and coffee, tea and beer on the house.
               </p>
               <p className="mt-5 text-[17px] leading-relaxed text-ink-60 md:text-lg">
                 It also comes with the building next door. The café is open to
                 members through the day, with table seating, natural light and
                 the stained glass still in the windows, and the flex space
-                behind it is free to book until 4:30 every afternoon. Most
-                members use the desk for heads-down work and the café for
-                everything else.
+                behind it comes with four hours of booking credit a week, free
+                until 4:30 every afternoon. Most members use the desk for
+                heads-down work and the café for everything else.
               </p>
               <Link
                 href="/membership/dedicated-desk"
@@ -186,21 +187,21 @@ export default function HomePage() {
           <div className="mt-14 grid gap-y-8 border-t border-clay pt-10 sm:grid-cols-3 sm:gap-8 md:mt-20">
             <div>
               <h3 className="font-display text-2xl font-semibold text-ink">Single</h3>
-              <p className="mt-1.5 text-[15px] text-ink-60">One person · 8 hours of meeting credit</p>
+              <p className="mt-1.5 text-[15px] text-ink-60">One person · 14 hrs/mo meeting credit · 6 hrs/wk flex space</p>
               <p className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
                 $500<span className="text-base font-normal text-ink-60"> /mo</span>
               </p>
             </div>
             <div>
               <h3 className="font-display text-2xl font-semibold text-ink">Double</h3>
-              <p className="mt-1.5 text-[15px] text-ink-60">Two people · 12 hours of meeting credit</p>
+              <p className="mt-1.5 text-[15px] text-ink-60">Two people · 14 hrs/mo meeting credit · 6 hrs/wk flex space</p>
               <p className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
                 $700<span className="text-base font-normal text-ink-60"> /mo</span>
               </p>
             </div>
             <div>
               <h3 className="font-display text-2xl font-semibold text-ink">Large</h3>
-              <p className="mt-1.5 text-[15px] text-ink-60">Four to eight people · 20 hours of meeting credit</p>
+              <p className="mt-1.5 text-[15px] text-ink-60">Four to eight people · 20 hrs/mo meeting credit · 8 hrs/wk flex space</p>
               <p className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
                 $1,200<span className="text-base font-normal text-ink-60"> /mo</span>
               </p>
@@ -244,11 +245,13 @@ export default function HomePage() {
                 </h2>
                 <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-bone/85 md:text-lg">
                   A restored hall with the original stained glass, a hardwood
-                  floor, a projector and a sound system, free to members every
-                  day until 4:30. Run a workshop in it, hold an all-hands,
-                  bring a client, or take your laptop to the café seating when
-                  you want a different room. No other coworking space in Denver
-                  has anything like it.
+                  floor, a projector and a sound system, seating a hundred
+                  comfortably. Every membership includes weekly booking credit
+                  &mdash; four hours a week with a desk, six to eight with an
+                  office &mdash; free every day until 4:30. Run a workshop in
+                  it, hold an all-hands, bring a client, or take your laptop to
+                  the café seating when you want a different room. No other
+                  coworking space in Denver has anything like it.
                 </p>
               </div>
             </div>
@@ -335,8 +338,8 @@ export default function HomePage() {
               <p className="mt-6 text-[17px] leading-relaxed text-ink-60 md:text-lg">
                 A conference room with a 75-inch screen and conference calling,
                 bookable from the member portal and drawn against the credit
-                your membership already includes. Phone booths when a call
-                needs a door. Enterprise WiFi, a numbered locker, and a 24/7
+                your membership already includes. Five soundproof phone booths
+                for when a call needs a door. Enterprise WiFi, a numbered locker, and a 24/7
                 access code for a monitored building.
               </p>
               <p className="mt-5 text-[17px] leading-relaxed text-ink-60 md:text-lg">

@@ -22,12 +22,12 @@ const membershipPlans = [
       '24/7 building access',
       'Your own dedicated desk with storage',
       'High-speed WiFi',
-      'Access to 4 private phone booths',
+      'Access to 5 private phone booths',
       'Full kitchen with coffee, tea and beer',
       '4 hours conference room credits/month',
+      '4 hours flex space credits/week',
       'Mail and package handling',
       'Event space access until 4:30 PM',
-      'Pet-friendly workspace',
       'Community networking events'
     ],
     ideal_for: 'Freelancers, consultants, and remote workers',
@@ -54,10 +54,10 @@ const membershipPlans = [
       '24/7 building access',
       'High-speed WiFi',
       '4 hours conference room credits/month',
+      '4 hours flex space credits/week',
       'Full kitchen with coffee, tea and beer',
       'Mail and package handling',
-      'Access to 4 private phone booths',
-      'Pet-friendly workspace',
+      'Access to 5 private phone booths',
       'Community networking events'
     ],
     ideal_for: 'Members who want a dedicated desk with real privacy and a door that locks',
@@ -82,7 +82,8 @@ const membershipPlans = [
       'High-speed WiFi',
       'Full kitchen with coffee, tea and beer',
       'Printing access',
-      'Phone booths on availability'
+      'Phone booths on availability',
+      'Flex space not included with day passes'
     ],
     ideal_for: 'Travelers, drop-ins, and anyone wanting to try the space',
     category: 'shared',
@@ -103,12 +104,13 @@ const membershipPlans = [
       'Professional business address',
       '24/7 building access',
       'High-speed WiFi',
-      '8 hours conference room credits/month',
+      '14 hours conference room credits/month',
+      '6 hours flex space credits/week',
       'Mail handling service',
       'Personal storage solutions',
       'Dedicated phone line option',
       'Priority phone booth access',
-      'Pet-friendly (dogs welcome)',
+      'Dog-friendly (private offices only)',
       'Community events'
     ],
     ideal_for: 'Solo professionals needing complete privacy',
@@ -130,13 +132,14 @@ const membershipPlans = [
       'Professional business address',
       '24/7 building access',
       'High-speed WiFi',
-      '12 hours conference room credits/month',
+      '14 hours conference room credits/month',
+      '6 hours flex space credits/week',
       'Mail and package handling',
       'Team collaboration area',
       'Multiple storage solutions',
       'Dedicated phone line option',
       'Priority event space access',
-      'Pet-friendly team space',
+      'Dog-friendly (private offices only)',
       'Community events'
     ],
     ideal_for: 'Small teams and business partnerships',
@@ -159,13 +162,14 @@ const membershipPlans = [
       '24/7 building access',
       'High-speed WiFi',
       '20 hours conference room credits/month',
+      '8 hours flex space credits/week',
       'Mail and package handling',
       'Multiple dedicated phone lines',
       'Team collaboration areas',
       'Priority event space booking',
       'Monthly snackshop credits',
       'Extensive storage solutions',
-      'Pet-friendly team space',
+      'Dog-friendly (private offices only)',
       'Dedicated team support'
     ],
     ideal_for: 'Growing teams and established companies',
@@ -205,22 +209,22 @@ const processSteps = [
   {
     number: 1,
     title: 'Apply Online',
-    description: 'Complete our simple application form with your details and preferences'
+    description: 'Start online and pick your route: book a free trial day first, or go straight to the full application if you already know what you want.'
   },
   {
     number: 2,
-    title: 'Schedule Tour',
-    description: 'We\'ll contact you within 1-2 days to schedule your complimentary tour'
+    title: 'Free Trial Day',
+    description: 'A full day working here, on us — the desk, the coffee, the flex space. Take it before you decide, or skip it and apply directly.'
   },
   {
     number: 3,
-    title: 'Free Trial Day',
-    description: 'Every potential new member gets a full complimentary day to work the space before committing'
+    title: 'Tour If You Want One',
+    description: 'Tours are available whenever you ask, but they are not required. Plenty of members join off a trial day alone.'
   },
   {
     number: 4,
-    title: 'Move In!',
-    description: 'Complete membership setup and start enjoying your new workspace'
+    title: 'Complete Setup',
+    description: 'Sign the agreement, set up billing, and get your 24/7 access code. Then the desk is yours.'
   }
 ];
 
@@ -267,10 +271,11 @@ const COMPARE_ROWS: { label: string; values: (string | boolean)[] }[] = [
   { label: 'Capacity', values: ['1 person', '1 person', '2 people', '4–8 people'] },
   { label: 'Privacy', values: ['Shared space', 'Private office', 'Private office', 'Private office'] },
   { label: '24/7 access', values: [true, true, true, true] },
-  { label: 'Conference room credit', values: ['4 hrs/mo', '8 hrs/mo', '12 hrs/mo', '20 hrs/mo'] },
+  { label: 'Conference room credit', values: ['4 hrs/mo', '14 hrs/mo', '14 hrs/mo', '20 hrs/mo'] },
+  { label: 'Flex space credit', values: ['4 hrs/wk', '6 hrs/wk', '6 hrs/wk', '8 hrs/wk'] },
   { label: 'Business address', values: [false, true, true, true] },
-  { label: 'Phone booths', values: [true, true, true, true] },
-  { label: 'Pet friendly', values: ['Common areas', true, true, true] },
+  { label: 'Phone booths', values: ['5, shared', '5, shared', '5, shared', '5, shared'] },
+  { label: 'Dogs allowed', values: [false, true, true, true] },
   { label: 'Lockable storage', values: [true, true, true, true] },
 ];
 
@@ -496,7 +501,7 @@ export default function MembershipPage() {
         <div className="mw-container">
           <div className="max-w-2xl">
             <p className="mw-eyebrow mb-5">How it works</p>
-            <h2 className="mw-h2">Four steps, about a week.</h2>
+            <h2 className="mw-h2">Four steps, and you set the pace.</h2>
           </div>
           <ol className="mt-14 grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-4 md:mt-20">
             {processSteps.map(step => (

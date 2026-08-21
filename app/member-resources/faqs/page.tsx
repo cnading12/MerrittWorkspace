@@ -173,7 +173,7 @@ export default function FAQPage() {
             <div className="bg-linen p-4 border border-clay">
               <h4 className="font-semibold text-ink-60 mb-2">📞 Phone Booth Options:</h4>
               <ul className="space-y-1 text-ink-60 text-sm">
-                <li>• <strong>Three dedicated phone booths</strong> - first come, first served</li>
+                <li>• <strong>Five dedicated phone booths</strong> - first come, first served</li>
                 <li>• No reservations required</li>
                 <li>• Perfect for Zoom calls and personal calls</li>
               </ul>
