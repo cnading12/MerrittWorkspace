@@ -130,7 +130,7 @@ export default function HomePage() {
                 members through the day, with table seating, natural light and
                 the stained glass still in the windows, and the flex space
                 behind it comes with four hours of booking credit a week, free
-                until 4:30 every afternoon. Most members use the desk for
+                until 4:00 every afternoon. Most members use the desk for
                 heads-down work and the café for everything else.
               </p>
               <Link
@@ -267,7 +267,7 @@ export default function HomePage() {
                   floor, a projector and a sound system, seating a hundred
                   comfortably. Every membership includes weekly booking credit
                   &mdash; four hours a week with a desk, six to eight with an
-                  office &mdash; free every day until 4:30. Run a workshop in
+                  office &mdash; free every day until 4:00. Run a workshop in
                   it, hold an all-hands, bring a client, or take your laptop to
                   the café seating when you want a different room. No other
                   coworking space in Denver has anything like it.
@@ -277,7 +277,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* The café and the campus, then the after-4:30 note. */}
+        {/* The café and the campus, then the after-4:00 note. */}
         <div className="border-t border-clay bg-bone">
           <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 md:py-24">
             {/* 5/7 split: a 4:3 café frame and a 1.89 hall frame land at
@@ -320,7 +320,7 @@ export default function HomePage() {
 
             <div className="mt-14 max-w-2xl md:mt-16">
               <h3 className="font-display text-2xl font-semibold leading-tight tracking-tight text-ink md:text-3xl">
-                After 4:30, the room changes hands.
+                After 4:00, the room changes hands.
               </h3>
               <p className="mt-4 text-[17px] leading-relaxed text-ink-60 md:text-lg">
                 In the evenings and on weekends the space becomes{' '}

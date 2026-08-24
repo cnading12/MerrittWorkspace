@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { BUSINESS, MEETING_ROOM, PLANS, POLICIES } from '@/lib/seo/business';
+import { BUSINESS_HOURS_FULL } from '@/lib/hours';
 
 /**
  * The whole business on one screen, as labelled term/definition pairs.
@@ -23,7 +24,7 @@ const FACTS: { term: string; value: React.ReactNode }[] = [
   { term: 'Address', value: BUSINESS.address.full },
   { term: 'Neighborhood', value: `${BUSINESS.neighborhood}, west Denver — ${BUSINESS.crossStreets}` },
   { term: 'Member access', value: '24 hours a day, 7 days a week, with a personal keypad code' },
-  { term: 'Staffed hours', value: 'Monday to Friday, 9am to 5pm, for tours and support' },
+  { term: 'Business hours', value: `${BUSINESS_HOURS_FULL} — walk in, no code needed` },
   { term: 'Parking', value: 'Free, on site and on the street. No permit, no daily charge.' },
   { term: 'Dedicated desks', value: `From $${desk.price} a month` },
   { term: 'Private offices', value: `From $${office.price} a month, for one to eight people` },

@@ -31,9 +31,10 @@ themselves.
 
 ### One source of truth for every fact
 
-`lib/seo/business.ts` and `lib/seo/faqs.ts` now hold the address, phone, three
-different sets of hours, every plan and price, the amenities, the policies and
-every question-and-answer on the site. The JSON-LD, `/llms.txt`, the FAQ page and
+`lib/seo/business.ts` and `lib/seo/faqs.ts` now hold the address, phone, every
+plan and price, the amenities, the policies and every question-and-answer on
+the site. Hours are not restated here — they are read from `lib/hours.ts`, which
+already serves the portal, the booking routes and transactional email. The JSON-LD, `/llms.txt`, the FAQ page and
 the new homepage facts block all read from them.
 
 Change a price in one place and the visible page, the structured data and the
@@ -86,9 +87,12 @@ from ever reading the `noindex` it already carries.
 
 ### Structured data
 
-- Business, `WebSite` and `Place` nodes in one `@graph`, with the three sets of
-  hours labelled separately (24/7 member access; building unlocked 8–6; staffed
-  9–5) instead of collapsed into one ambiguous range.
+- Business, `WebSite` and `Place` nodes in one `@graph`, with the two clocks
+  labelled separately in words — 24/7 member access, and business hours when
+  the door is simply unlocked — instead of collapsed into one ambiguous range.
+  Both read their times from `lib/hours.ts`, the same module the portal, the
+  booking routes and the transactional email use, so the hours an assistant
+  reports cannot drift from the hours a member is held to.
 - Every membership as a `Product` with a priced `Offer` at its own URL.
 - The conference room as a bookable `Service` — the one thing here a
   non-member can buy, and the answer to "meeting room rental Denver".

@@ -313,7 +313,7 @@ export function accessCodeIssuedEmail(opts: {
         </p>
         <div class="highlight">
           <p style="margin:0 0 8px;"><strong>You do not need this code during business hours.</strong> The main entrance is unlocked <strong>${BUILDING_OPEN_HOURS}</strong> — during those hours just walk in.</p>
-          <p style="margin:0;">Use the code only <strong>outside those hours</strong>: late evenings, weekends, and holidays.</p>
+          <p style="margin:0;">Use the code only <strong>outside those hours</strong>: before 7:30 AM, after 5:30 PM, weekends, and holidays.</p>
         </div>
         <p><strong>How to use the keypad:</strong> Watch this short tutorial on locking and unlocking the front door with your access code:</p>
         <p style="text-align:center;">
@@ -334,7 +334,7 @@ export function accessCodeIssuedEmail(opts: {
       '',
       `You do NOT need this code during business hours. The main entrance is unlocked ${BUILDING_OPEN_HOURS} — during those hours just walk in.`,
       '',
-      'Use the code only outside those hours: late evenings, weekends, and holidays.',
+      'Use the code only outside those hours: before 7:30 AM, after 5:30 PM, weekends, and holidays.',
       '',
       'How to use the keypad: watch this short tutorial on locking and unlocking the front door with your access code:',
       `    ${ACCESS_CODE_VIDEO_URL}`,
@@ -798,9 +798,14 @@ export function neverPaidCancelledStaffEmail(opts: {
 export const WIFI_NETWORK = 'merrittcowork';
 export const WIFI_PASSWORD = 'Merritt23X';
 
-// Staffed/unlocked hours. Outside this window the front door is locked and a
-// personal access code is required — the single most-asked new-member question.
-export const BUILDING_OPEN_HOURS = '8:00 AM – 6:00 PM, Monday through Friday';
+// Imported (not just re-exported) because the templates below interpolate it.
+import { BUILDING_OPEN_HOURS } from '@/lib/hours';
+
+export { BUILDING_OPEN_HOURS };
+
+// Unlocked hours. Outside this window the front door is locked and a personal
+// access code is required — the single most-asked new-member question. Defined
+// in lib/hours.ts and re-exported so existing importers keep working.
 
 export function signupCompletedMemberEmail(opts: {
   firstName: string;
@@ -899,7 +904,7 @@ export function signupCompletedMemberEmail(opts: {
         <div class="info-card">
           <h3 style="margin-top:0;">🔐 Building access — when you actually need a code</h3>
           <p style="margin:0 0 8px;">The front door is <strong>unlocked ${BUILDING_OPEN_HOURS}</strong>. During those hours just walk in — no code needed.</p>
-          <p style="margin:0 0 8px;">Your personal access code is only required <strong>outside those hours: evenings, weekends, and holidays</strong>. It's included with your membership at no extra charge.</p>
+          <p style="margin:0 0 8px;">Your personal access code is only required <strong>outside those hours: before 7:30 AM, after 5:30 PM, weekends, and holidays</strong>. It's included with your membership at no extra charge.</p>
           <p style="margin:0;">Request yours from the <strong>Onboarding</strong> tab of your portal (or email member services). We'll send the code along with a short video showing how to lock and unlock the front door with the keypad. Please keep both confidential — the code is tied to your account.</p>
         </div>
 
@@ -957,7 +962,7 @@ export function signupCompletedMemberEmail(opts: {
       deskActionText,
       'BUILDING ACCESS — WHEN YOU ACTUALLY NEED A CODE',
       `  The front door is unlocked ${BUILDING_OPEN_HOURS}. During those hours just walk in — no code needed.`,
-      '  Your personal access code is only required outside those hours: evenings, weekends, and holidays. It is included with your membership at no extra charge.',
+      '  Your personal access code is only required outside those hours: before 7:30 AM, after 5:30 PM, weekends, and holidays. It is included with your membership at no extra charge.',
       "  Request yours from the Onboarding tab of your portal (or email member services). We'll send the code along with a short video showing how to lock and unlock the front door with the keypad. Please keep both confidential.",
       '',
       'WIFI',
@@ -1028,7 +1033,7 @@ export function signupCompletedStaffEmail(opts: {
   const todos: string[] = [];
   if (!opts.hasAccessCode) {
     todos.push(
-      'Generate on Alarm.com and issue their 24/7 access code once they request it (they were told codes are only needed outside 8 AM – 6 PM weekdays).'
+      'Generate on Alarm.com and issue their 24/7 access code once they request it (they were told codes are only needed on weekends and outside 7:30 AM – 5:30 PM on weekdays).'
     );
   }
   if (opts.seatType && !opts.seatNumber) {

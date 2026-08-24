@@ -11,9 +11,11 @@ Next.js 14 (App Router) + Supabase + Stripe + Resend, deployed on Vercel.
 
 ## Business facts have one source — `lib/seo/`
 
-`lib/seo/business.ts` (address, phone, hours, plans, prices, amenities,
-policies) and `lib/seo/faqs.ts` (every question and answer) are the canonical
-copy of every public fact about the business. The JSON-LD in
+`lib/seo/business.ts` (address, phone, plans, prices, amenities, policies) and
+`lib/seo/faqs.ts` (every question and answer) are the canonical copy of every
+public fact about the business. Hours are the one thing they do **not** own:
+those live in `lib/hours.ts`, which the portal and booking routes already read,
+and `lib/seo/` quotes from it rather than keeping a second copy. The JSON-LD in
 `components/LocalBusinessSchema.tsx` and `components/seo/*`, the `/llms.txt` and
 `/llms-full.txt` routes, the homepage facts block and the FAQ page all render
 from them.

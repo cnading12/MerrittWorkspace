@@ -3,6 +3,7 @@ import robots from '@/app/robots';
 import { buildLlmsFullTxt, buildLlmsTxt } from '@/lib/seo/llms';
 import { BUSINESS, MEETING_ROOM, PLANS, SITE_URL } from '@/lib/seo/business';
 import { FAQS } from '@/lib/seo/faqs';
+import { ACCESS_CODE_WHEN_NEEDED, BUSINESS_HOURS_FULL } from '@/lib/hours';
 
 // These guard the machine-readable surfaces — robots.txt, /llms.txt, the FAQ
 // data behind the FAQPage markup. Their whole value is that a crawler or an AI
@@ -86,14 +87,20 @@ describe('/llms-full.txt', () => {
     expect(txt.toLowerCase()).toContain('open to non-members: yes');
   });
 
-  it('distinguishes the three sets of hours', () => {
+  it('keeps 24/7 member access and the unlocked-door window apart', () => {
     expect(txt).toContain(BUSINESS.hours.memberAccess);
-    expect(txt).toContain(BUSINESS.hours.buildingUnlocked);
-    expect(txt).toContain(BUSINESS.hours.staffed);
+    expect(txt).toContain(BUSINESS.hours.business);
+    expect(txt).toContain(BUSINESS.hours.accessCodeNeeded);
   });
 });
 
 describe('fact consistency', () => {
+  it('quotes the door policy from lib/hours, not a second copy of it', () => {
+    expect(BUSINESS.hours.business).toContain(BUSINESS_HOURS_FULL);
+    expect(BUSINESS.hours.accessCodeNeeded).toContain(ACCESS_CODE_WHEN_NEEDED);
+    expect(buildLlmsFullTxt()).toContain(BUSINESS_HOURS_FULL);
+  });
+
   it('never quotes a membership price the plan table does not have', () => {
     const known = new Set(PLANS.map(p => `$${p.price}`));
     known.add(`$${MEETING_ROOM.hourlyRate}`); // hourly room rate

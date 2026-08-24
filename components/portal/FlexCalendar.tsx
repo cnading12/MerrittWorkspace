@@ -1,17 +1,20 @@
 "use client";
 
 // Read-only weekly availability calendar for the flex space page. Shows
-// Mon–Fri 9:00 AM – 4:30 PM Mountain Time and overlays busy windows fetched
+// Mon–Fri 8:00 AM – 4:00 PM Mountain Time and overlays busy windows fetched
 // from /api/flex-bookings/availability so members can see what's already
 // reserved before booking. Booking submission is unchanged — this is a
 // purely visual aid.
 import { useEffect, useMemo, useState } from 'react';
+// The grid must span exactly the bookable window, so it reads the same
+// constants the booking endpoint validates against rather than its own copy.
+import { FLEX_OPEN_MINUTES, FLEX_CLOSE_MINUTES } from '@/lib/hours';
 
 const MT_TZ = 'America/Denver';
-const OPEN_MINUTES = 9 * 60;       // 9:00 AM
-const CLOSE_MINUTES = 16 * 60 + 30; // 4:30 PM
+const OPEN_MINUTES = FLEX_OPEN_MINUTES;   // 8:00 AM
+const CLOSE_MINUTES = FLEX_CLOSE_MINUTES; // 4:00 PM
 const SLOT_MINUTES = 30;
-const SLOT_COUNT = (CLOSE_MINUTES - OPEN_MINUTES) / SLOT_MINUTES; // 15
+const SLOT_COUNT = (CLOSE_MINUTES - OPEN_MINUTES) / SLOT_MINUTES; // 16
 const CELL_HEIGHT_PX = 28;
 
 interface BusyWindow {
@@ -29,8 +32,8 @@ interface DayCol {
   weekdayShort: string;
   monthDay: string;
   isoDate: string; // YYYY-MM-DD in MT
-  startMs: number; // 9:00 MT instant
-  endMs: number;   // 4:30 MT instant
+  startMs: number; // 8:00 MT instant
+  endMs: number;   // 4:00 MT instant
   isToday: boolean;
 }
 

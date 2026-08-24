@@ -10,6 +10,12 @@
  * change it here and every machine-readable surface follows.
  */
 
+import {
+  ACCESS_CODE_WHEN_NEEDED,
+  BUSINESS_HOURS_FULL,
+  FLEX_WINDOW_LABEL,
+} from '@/lib/hours';
+
 export const SITE_URL = 'https://merrittworkspace.net';
 
 export const BUSINESS = {
@@ -54,13 +60,18 @@ export const BUSINESS = {
   mapUrl: 'https://www.google.com/maps?cid=10105178442159244045',
 
   /**
-   * Three different clocks, and prospects conflate them constantly. Named
-   * separately so a machine reader can keep them apart.
+   * Two different clocks, and prospects conflate them constantly. Named
+   * separately, and phrased so either one still makes sense quoted alone.
+   *
+   * The times themselves come from `lib/hours.ts`, which is what the portal,
+   * the booking routes and the transactional email read — so the hours an
+   * assistant reports can never drift from the hours a member is actually
+   * held to.
    */
   hours: {
-    memberAccess: '24 hours a day, 7 days a week, for members with an access code',
-    buildingUnlocked: 'Monday to Friday, 8:00am to 6:00pm (no access code needed)',
-    staffed: 'Monday to Friday, 9:00am to 5:00pm (staffed for tours and support)',
+    memberAccess: '24 hours a day, 7 days a week, for members with a personal access code',
+    business: `${BUSINESS_HOURS_FULL} — the building is unlocked, no access code is needed, and staff are on site for tours and support`,
+    accessCodeNeeded: `A personal access code is only needed outside those hours — ${ACCESS_CODE_WHEN_NEEDED} — and is included with every membership`,
   },
 
   parking: 'Free. A private lot directly in front of the building, plus free street parking on 23rd and Irving.',
@@ -243,8 +254,8 @@ export const FLEX_SPACE = {
   description:
     'A restored 1905 hall on the same lawn, with the original stained glass, a hardwood ' +
     'floor, a projector and a sound system, seating about a hundred. Free for members to ' +
-    'book against their weekly credit, every day until 4:30pm.',
-  freeUntil: '4:30pm',
+    `book against their weekly credit, ${FLEX_WINDOW_LABEL}.`,
+  bookableWindow: FLEX_WINDOW_LABEL,
   eveningUse:
     'In the evenings and at weekends the hall operates as Merritt Wellness, running yoga, ' +
     'fitness and wellness classes. Workspace members book it at a discount for evening ' +

@@ -7,6 +7,7 @@ import {
   PRICE_RANGE,
   SITE_URL,
 } from '@/lib/seo/business';
+import { BUSINESS_CLOSES_24H, BUSINESS_OPENS_24H } from '@/lib/hours';
 import JsonLd from '@/components/seo/JsonLd';
 
 /**
@@ -56,8 +57,10 @@ export default function LocalBusinessSchema() {
     },
     hasMap: BUSINESS.mapUrl,
 
-    // Three distinct clocks, which prospects and models alike tend to collapse
-    // into one. Each specification carries a description saying which is which.
+    // Two clocks, which prospects and models alike collapse into one. Each
+    // specification says in words which of the two it is, and both read their
+    // times from `lib/hours.ts` so they cannot drift from the door policy the
+    // portal and the transactional email quote.
     openingHoursSpecification: [
       {
         '@type': 'OpeningHoursSpecification',
@@ -69,16 +72,9 @@ export default function LocalBusinessSchema() {
       {
         '@type': 'OpeningHoursSpecification',
         dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-        opens: '08:00',
-        closes: '18:00',
-        description: `Building unlocked, no access code required: ${BUSINESS.hours.buildingUnlocked}`,
-      },
-      {
-        '@type': 'OpeningHoursSpecification',
-        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-        opens: '09:00',
-        closes: '17:00',
-        description: `Staffed for tours and support: ${BUSINESS.hours.staffed}`,
+        opens: BUSINESS_OPENS_24H,
+        closes: BUSINESS_CLOSES_24H,
+        description: `Business hours. ${BUSINESS.hours.business}. ${BUSINESS.hours.accessCodeNeeded}.`,
       },
     ],
 

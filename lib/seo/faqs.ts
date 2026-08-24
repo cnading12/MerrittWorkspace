@@ -10,6 +10,8 @@
  * surrounding page, should still produce something true and useful.
  */
 
+import { ACCESS_CODE_WHEN_NEEDED, BUSINESS_HOURS_FULL, FLEX_WINDOW_LABEL } from '@/lib/hours';
+
 export type FaqCategory =
   | 'joining'
   | 'pricing'
@@ -134,7 +136,7 @@ export const FAQS: Faq[] = [
     audience: 'member',
     question: 'How do I get into the building? Do I need an access code?',
     answer:
-      'Monday to Friday between 8am and 6pm the building is unlocked and no access code is needed — just walk in the main entrance.\n\nOutside those hours — late evenings, weekends and holidays — the door is locked and you use your personal keypad code. The code is included with your membership at no extra charge and works 24 hours a day. Request one from your member portal or by emailing member services.',
+      `Monday to Friday between 7:30am and 5:30pm the building is unlocked and no access code is needed — just walk in the main entrance.\n\nOutside that window — ${ACCESS_CODE_WHEN_NEEDED} — the door is locked and you use your personal keypad code. The code is included with your membership at no extra charge and works 24 hours a day once issued. Request one from your member portal or by emailing member services.\n\nIn short: coming in on a weekday between 7:30am and 5:30pm, you do not need a code at all.`,
   },
   {
     id: 'twenty-four-seven',
@@ -142,7 +144,7 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'Is there 24/7 access?',
     answer:
-      'Yes. Every membership includes a personal keypad code that works 24 hours a day, 7 days a week, including weekends and holidays. The building is monitored around the clock, with security cameras in the common areas and individually locking private offices.\n\nStaff are on site Monday to Friday, 9am to 5pm, for tours and support.',
+      `Yes. Every membership includes a personal keypad code that works 24 hours a day, 7 days a week, including weekends and holidays. The building is monitored around the clock, with security cameras in the common areas and individually locking private offices.\n\nDuring business hours — ${BUSINESS_HOURS_FULL} — the front door is simply unlocked, so no code is needed and staff are on site for tours and support. The code is what gets you in outside that window: ${ACCESS_CODE_WHEN_NEEDED}.`,
   },
   {
     id: 'door-lock',
@@ -150,7 +152,7 @@ export const FAQS: Faq[] = [
     audience: 'member',
     question: 'How do I lock and unlock the front door after hours?',
     answer:
-      'The front door uses a keypad. You only need it outside business hours; Monday to Friday, 8am to 6pm, the door is already unlocked.\n\nFor security reasons the keypad tutorial video is not hosted publicly. It was sent to you in the email titled "Your Merritt Workspace Access Code" when your code was issued — check your inbox and spam folder. If you cannot find it, email memberservices@merrittworkspace.net.\n\nThe keypad has a backlight that activates as you approach, so it works in low light.',
+      `The front door uses a keypad. You only need it outside business hours: ${ACCESS_CODE_WHEN_NEEDED}. During business hours (${BUSINESS_HOURS_FULL}) the door is already unlocked.\n\nFor security reasons the keypad tutorial video is not hosted publicly. It was sent to you in the email titled "Your Merritt Workspace Access Code" when your code was issued — check your inbox and spam folder. If you cannot find it, email memberservices@merrittworkspace.net.\n\nThe keypad has a backlight that activates as you approach, so it works in low light.`,
   },
   {
     id: 'security',
@@ -194,7 +196,7 @@ export const FAQS: Faq[] = [
     audience: 'member',
     question: 'Where do I take Zoom calls and phone calls?',
     answer:
-      'There are five soundproof phone booths, first come first served, with no reservation needed. They are intended for calls and video meetings.\n\nOther options: the flex space when it is not occupied (available until 4:30pm), and the outdoor patio. Private office members should close the door during calls.',
+      'There are five soundproof phone booths, first come first served, with no reservation needed. They are intended for calls and video meetings.\n\nOther options: the flex space when it is not occupied (bookable weekdays until 4:00pm), and the outdoor patio. Private office members should close the door during calls.',
   },
   {
     id: 'event-space',
@@ -202,7 +204,7 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'What is the flex space, and can members use it?',
     answer:
-      'The flex space is a restored 1905 hall on the same lawn as the workspace, with the original stained glass, a hardwood floor, a projector and a sound system, seating about a hundred. In front of it is a cafe area with permanent seating that members use all day.\n\nEvery membership includes weekly booking credit in the hall — 4 hours a week with a dedicated desk, 6 with a single or 2-desk office, 8 with a large team office — free every day until 4:30pm. Members run workshops, all-hands meetings and client sessions in it.\n\nIn the evenings and at weekends the hall operates as Merritt Wellness, with yoga and fitness classes. Workspace members book it at a discount for evening events and take classes at a member rate.',
+      `The flex space is a restored 1905 hall on the same lawn as the workspace, with the original stained glass, a hardwood floor, a projector and a sound system, seating about a hundred. In front of it is a cafe area with permanent seating that members use all day.\n\nEvery membership includes weekly booking credit in the hall — 4 hours a week with a dedicated desk, 6 with a single or 2-desk office, 8 with a large team office — free to book ${FLEX_WINDOW_LABEL}. Members run workshops, all-hands meetings and client sessions in it.\n\nIn the evenings and at weekends the hall operates as Merritt Wellness, with yoga and fitness classes. Workspace members book it at a discount for evening events and take classes at a member rate.`,
   },
   {
     id: 'coffee-kitchen',
@@ -262,7 +264,7 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'How do I get in touch?',
     answer:
-      'Email memberservices@merrittworkspace.net or call or text (720) 357-9499. Staffed office hours are Monday to Friday, 9am to 5pm, and emails are typically answered within four hours on a business day.\n\nYou can also visit in person at 2246 Irving Street, Denver, CO 80211.',
+      `Email memberservices@merrittworkspace.net or call or text (720) 357-9499. Business hours are ${BUSINESS_HOURS_FULL}, and emails are typically answered within four hours on a business day.\n\nYou can also visit in person at 2246 Irving Street, Denver, CO 80211.`,
   },
 ];
 

@@ -149,12 +149,12 @@ export default function ContactPage() {
 
               <dl className="mt-10 space-y-7 border-t border-clay pt-8">
                 <div>
-                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Office hours</dt>
-                  <dd className="mt-1.5 text-[17px] text-ink-60">Monday &ndash; Friday, 9am &ndash; 5pm</dd>
+                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Business hours</dt>
+                  <dd className="mt-1.5 text-[17px] text-ink-60">Monday &ndash; Friday, 7:30am &ndash; 5:30pm</dd>
                 </div>
                 <div>
                   <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Member access</dt>
-                  <dd className="mt-1.5 text-[17px] text-ink-60">24/7 by access code</dd>
+                  <dd className="mt-1.5 text-[17px] text-ink-60">24/7 &mdash; access code needed outside business hours and on weekends</dd>
                 </div>
                 <div>
                   <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Parking</dt>

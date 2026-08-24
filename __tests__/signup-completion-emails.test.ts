@@ -261,8 +261,8 @@ describe('signupCompletedMemberEmail', () => {
       expect(text).toContain('1 dedicated desk in the shared coworking space');
       expect(text).toContain('merrittcowork');
       expect(text).toContain('Merritt23X');
-      expect(text).toContain('8:00 AM – 6:00 PM, Monday through Friday');
-      expect(text).toContain('evenings, weekends, and holidays');
+      expect(text).toContain('7:30 AM – 5:30 PM, Monday through Friday');
+      expect(text).toContain('before 7:30 AM, after 5:30 PM, weekends, and holidays');
     }
     expect(tpl.subject).toContain('Dana');
   });
