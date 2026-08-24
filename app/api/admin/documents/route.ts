@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
       const { data: appData, error: appErr } = await sb
         .from('member_applications')
         .select(
-          'id, email, first_name, last_name, phone, company_name, membership_type, start_date, status, created_at, decided_at'
+          'id, email, first_name, last_name, phone, company_name, membership_type, start_date, status, created_at, decided_at, id_document_path, application_kind, trial_date'
         )
         .order('created_at', { ascending: false });
       if (appErr) throw new Error(appErr.message);
@@ -96,11 +96,27 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      applications = rawApps.map((a: any) => ({
-        ...a,
-        view_url: `/api/admin/applications/${a.id}/view`,
-        member: membersByEmail.get(a.email) || null,
-      }));
+      // Trial applications carry a photo ID uploaded at submission time (the
+      // full application collects it later, in the portal). Sign it here so
+      // staff can actually look at it before the person walks in — a required
+      // ID nobody can view would be theatre.
+      applications = await Promise.all(
+        rawApps.map(async (a: any) => {
+          let idViewUrl: string | null = null;
+          if (a.id_document_path) {
+            const { data: signed } = await sb.storage
+              .from('member-documents')
+              .createSignedUrl(a.id_document_path, 3600);
+            idViewUrl = signed?.signedUrl || null;
+          }
+          return {
+            ...a,
+            view_url: `/api/admin/applications/${a.id}/view`,
+            id_view_url: idViewUrl,
+            member: membersByEmail.get(a.email) || null,
+          };
+        })
+      );
     }
 
     // Photo IDs attached to non-member conference-room bookings.

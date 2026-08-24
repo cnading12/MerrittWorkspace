@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { MemberApplication } from '@/lib/portal/types';
 import { readTrialFlag, readTrialDate } from '@/lib/portal/trial';
+import { isTrialApplication } from '@/lib/portal/trialApplication';
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
@@ -35,7 +36,21 @@ interface CardProps {
   onView: (id: string) => void;
 }
 
-function TrialCard({ app, onDecide, onView }: CardProps) {
+interface TrialCardProps extends CardProps {
+  // Short-form trial applications (application_kind = 'trial') carry no plan,
+  // no references and no emergency contact, so there is nothing to approve —
+  // the API refuses it. They convert by completing the full application,
+  // which is what `onSendApplication` invites them to do.
+  //
+  // Legacy rows — full applications submitted before the split, which ticked
+  // the old "this is a trial day application" radio — do have all of that,
+  // so they keep Approve.
+  shortForm: boolean;
+  onSendApplication: (id: string) => void;
+  sending: boolean;
+}
+
+function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sending }: TrialCardProps) {
   return (
     <div className="bg-orange-50 border-2 border-orange-500 border-l-8 rounded-lg p-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -45,7 +60,9 @@ function TrialCard({ app, onDecide, onView }: CardProps) {
               TRIAL DAY APPLICANT
             </span>
             <span className="text-xs text-orange-800">
-              Trial info already emailed to applicant
+              {shortForm
+                ? 'Trial info emailed · photo ID on file · nothing to approve'
+                : 'Trial info already emailed to applicant'}
             </span>
           </div>
           <div className="font-semibold text-gray-900 text-lg">
@@ -68,10 +85,14 @@ function TrialCard({ app, onDecide, onView }: CardProps) {
             </div>
             <div className="bg-white border border-gray-200 rounded p-2.5">
               <div className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                Preferred Start
+                {shortForm ? 'Wants to try' : 'Preferred Start'}
               </div>
               <div className="text-base font-bold text-gray-900">
-                {formatDate(app.start_date)}
+                {shortForm
+                  ? app.membership_type?.startsWith('private_office')
+                    ? 'Private office'
+                    : 'Dedicated desk'
+                  : formatDate(app.start_date)}
               </div>
             </div>
           </div>
@@ -87,17 +108,28 @@ function TrialCard({ app, onDecide, onView }: CardProps) {
           >
             View application
           </button>
-          <button
-            onClick={() => onDecide(app.id, 'approve')}
-            className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700"
-          >
-            Approve
-          </button>
+          {shortForm ? (
+            <button
+              onClick={() => onSendApplication(app.id)}
+              disabled={sending}
+              className="bg-orange-600 text-white px-3 py-1.5 rounded text-sm hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Emails them a membership application prefilled with what they gave us for the trial day"
+            >
+              {sending ? 'Sending…' : 'Send membership application'}
+            </button>
+          ) : (
+            <button
+              onClick={() => onDecide(app.id, 'approve')}
+              className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700"
+            >
+              Approve
+            </button>
+          )}
           <button
             onClick={() => onDecide(app.id, 'decline')}
             className="border border-red-600 text-red-600 px-3 py-1.5 rounded text-sm hover:bg-red-50"
           >
-            Decline
+            {shortForm ? 'Dismiss' : 'Decline'}
           </button>
         </div>
       </div>
@@ -162,6 +194,7 @@ export default function AdminApplicationsPage() {
   const [apps, setApps] = useState<MemberApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -211,6 +244,28 @@ export default function AdminApplicationsPage() {
       win.document.close();
     } catch (e: any) {
       writeError(win, e.message || 'Failed to open application');
+    }
+  }
+
+  // Email a trial applicant a membership application prefilled from their
+  // trial day. The row stays in the list — they have not applied yet, and
+  // staff may well want to send it again.
+  async function sendMembershipApplication(id: string) {
+    if (!token) return;
+    setSendingId(id);
+    try {
+      const res = await fetch(`/api/admin/applications/${id}/send-membership-application`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.error || 'Failed to send the membership application');
+        return;
+      }
+      alert(`Membership application sent to ${data.sent_to}.`);
+    } finally {
+      setSendingId(null);
     }
   }
 
@@ -271,12 +326,20 @@ export default function AdminApplicationsPage() {
               🟧 TRIAL DAY APPLICANTS · {trialApps.length}
             </h2>
             <span className="text-xs opacity-90">
-              Sorted by upcoming trial date · trial info already emailed
+              Sorted by upcoming trial date · these are visits, not decisions
             </span>
           </div>
           <div className="bg-orange-100/40 border-2 border-t-0 border-orange-600 rounded-b-lg p-3 space-y-3">
             {trialApps.map((a) => (
-              <TrialCard key={a.id} app={a} onDecide={decide} onView={viewApplication} />
+              <TrialCard
+                key={a.id}
+                app={a}
+                shortForm={isTrialApplication(a)}
+                onDecide={decide}
+                onView={viewApplication}
+                onSendApplication={sendMembershipApplication}
+                sending={sendingId === a.id}
+              />
             ))}
           </div>
         </section>

@@ -3,6 +3,7 @@ import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { sendOnboardingMagicLink } from '@/lib/portal/magicLink';
 import { planForMembershipType } from '@/lib/portal/pricing';
+import { isTrialApplication } from '@/lib/portal/trialApplication';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,26 @@ export async function POST(
       .single();
     if (error || !app) {
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+    }
+
+    // A trial-day application is not a membership application and must not
+    // be approved into one. It carries no plan, no references, and no
+    // emergency contact — approving it would create a `members` row at a
+    // guessed price and email a portal invitation to someone who only asked
+    // to sit at a desk for a day. They convert by completing the full
+    // application (see the resume link in the post-trial email), and that
+    // submission is what gets approved.
+    //
+    // Declining stays available: it is how staff clear a trial row out of the
+    // queue once the visit is done.
+    if (action === 'approve' && isTrialApplication(app)) {
+      return NextResponse.json(
+        {
+          error:
+            'This is a trial day application, not a membership application. Send them the membership application to fill in, then approve that.',
+        },
+        { status: 400 }
+      );
     }
 
     if (action === 'decline') {

@@ -198,22 +198,67 @@ export async function POST(request: NextRequest) {
       };
 
       // First attempt: include the new dedicated trial columns.
-      let { error } = await sb.from('member_applications').insert({
-        ...baseRow,
-        wants_trial_day: wantsTrial,
-        trial_date: trialDate,
-      });
+      let { data: insertedRow, error } = await sb
+        .from('member_applications')
+        .insert({
+          ...baseRow,
+          wants_trial_day: wantsTrial,
+          trial_date: trialDate,
+          application_kind: 'full',
+        })
+        .select('id')
+        .single();
 
       // If the trial columns don't exist yet (migration not applied), retry
       // without them — the trial info is still preserved in `payload`.
-      if (error && /column .* does not exist|wants_trial_day|trial_date/i.test(error.message || '')) {
+      if (error && /column .* does not exist|wants_trial_day|trial_date|application_kind/i.test(error.message || '')) {
         console.warn('⚠️ Trial-day columns missing; persisting trial info to payload only. Apply migration 20260428_trial_day_applicants.sql to enable column-level filtering.');
-        const retry = await sb.from('member_applications').insert(baseRow);
+        const retry = await sb.from('member_applications').insert(baseRow).select('id').single();
+        insertedRow = retry.data;
         error = retry.error;
       }
 
       if (error) {
         console.error('❌ Failed to persist application to member_applications:', error);
+      }
+
+      // Arrived from the post-trial "finish your application" link. Close the
+      // loop on the trial row: mark it converted so the follow-up cron stops
+      // chasing them, and carry their photo ID across so the portal does not
+      // ask for a document they already handed over.
+      //
+      // All best effort. A full application that saved is a full application
+      // whether or not we managed to tie it back to a trial from weeks ago.
+      const resumeToken = typeof applicationData.resume_token === 'string'
+        ? applicationData.resume_token.trim()
+        : '';
+      if (resumeToken && insertedRow?.id) {
+        try {
+          const { data: trialRow, error: trialLookupError } = await sb
+            .from('member_applications')
+            .select('id, id_document_path')
+            .eq('resume_token', resumeToken)
+            .maybeSingle();
+          if (trialLookupError) {
+            console.error('⚠️ Could not look up trial row for resume token:', trialLookupError);
+          } else if (trialRow) {
+            const { error: linkError } = await sb
+              .from('member_applications')
+              .update({ converted_to_application_id: insertedRow.id })
+              .eq('id', trialRow.id);
+            if (linkError) console.error('⚠️ Could not link trial application to full application:', linkError);
+
+            if (trialRow.id_document_path) {
+              const { error: carryError } = await sb
+                .from('member_applications')
+                .update({ id_document_path: trialRow.id_document_path })
+                .eq('id', insertedRow.id);
+              if (carryError) console.error('⚠️ Could not carry trial photo ID forward:', carryError);
+            }
+          }
+        } catch (linkErr) {
+          console.error('⚠️ Unexpected error linking trial application:', linkErr);
+        }
       }
     } catch (e) {
       console.error('❌ Unexpected error persisting application:', e);
