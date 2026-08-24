@@ -3,7 +3,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Flex Space & Event Venue | Sloan's Lake Denver",
   description:
-    "A restored 1905 hall next door to Merritt Workspace in Sloan's Lake, Denver. Original stained glass, hardwood floor, projector and sound system — free to book with membership, weekdays until 4:30.",
+    "A restored 1905 hall next door to Merritt Workspace in Sloan's Lake, Denver. Original stained glass, hardwood floor, projector and sound system — free to book with membership, weekdays until 4:00.",
   keywords: [
     "event space rental Denver",
     "workshop space Sloan's Lake",
