@@ -9,6 +9,29 @@ Next.js 14 (App Router) + Supabase + Stripe + Resend, deployed on Vercel.
 - Scheduled jobs are Vercel Cron entries in `vercel.json`, implemented under
   `app/api/cron/`, and authenticated with a `CRON_SECRET` bearer token.
 
+## Business facts have one source — `lib/seo/`
+
+`lib/seo/business.ts` (address, phone, hours, plans, prices, amenities,
+policies) and `lib/seo/faqs.ts` (every question and answer) are the canonical
+copy of every public fact about the business. The JSON-LD in
+`components/LocalBusinessSchema.tsx` and `components/seo/*`, the `/llms.txt` and
+`/llms-full.txt` routes, the homepage facts block and the FAQ page all render
+from them.
+
+Change a price or an hour **there**, not in the page that displays it. Search
+engines and AI assistants cross-check the visible page against the structured
+data against the plain-text file; when those disagree, they hedge or quote a
+competitor instead. `__tests__/seo-facts.test.ts` guards the parts of that
+agreement a machine can check.
+
+FAQ answers are plain text on purpose: the same string is the page copy, the
+`acceptedAnswer` in FAQPage markup, and a section of `/llms-full.txt`. Write
+each one so it is still true and useful quoted on its own, with no page around
+it.
+
+`AI_SEARCH.md` explains the whole approach, and lists the off-site work
+(Google Business Profile, reviews, directories) that code cannot do.
+
 ## Supabase keep-alive — do not remove
 
 `app/api/cron/supabase-keep-alive` runs **daily** and issues one `head: true`

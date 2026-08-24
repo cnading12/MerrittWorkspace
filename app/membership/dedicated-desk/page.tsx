@@ -6,6 +6,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import PageHero from '@/components/marketing/PageHero';
 import { BLUR } from '@/components/marketing/blur';
+import FaqBlock from '@/components/marketing/FaqBlock';
+import { SITE_URL } from '@/lib/seo/business';
 
 const WHATS_INCLUDED = [
   'Your own dedicated desk with storage',
@@ -343,6 +345,16 @@ export default function DedicatedDeskPage() {
           </div>
         </div>
       </section>
+
+      {/* Visible answers plus the FAQPage markup for them — the two always
+          ship together, so the structured data can never describe content a
+          visitor cannot see. */}
+      <FaqBlock
+        ids={['how-much-does-it-cost', 'day-pass', 'free-trial', 'twenty-four-seven']}
+        id={`${SITE_URL}/membership/dedicated-desk#faq`}
+        eyebrow="About the desks"
+        heading="What a desk costs, and how to try one."
+      />
 
       <Footer />
     </main>
