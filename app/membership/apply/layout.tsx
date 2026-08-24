@@ -1,17 +1,23 @@
 import { Metadata } from "next";
+import PageSchema from "@/components/seo/PageSchema";
+
+const TITLE = "Apply for Membership | Merritt Denver";
+const DESCRIPTION =
+  "Apply for a desk, a private office or a free trial day at Merritt Workspace in Sloan's Lake, Denver. Short application, no long lease, 24/7 access and free parking. 3 min to I-25.";
 
 export const metadata: Metadata = {
-  title: "Apply for Membership | Coworking in Sloan's Lake Denver",
-  description: "Apply for a dedicated desk or private office at Merritt Workspace in Sloan's Lake, Denver. Quick application, 24/7 access, free parking. 3 min to I-25.",
+  title: TITLE,
+  description: DESCRIPTION,
   keywords: [
     "coworking membership Denver",
+    "coworking free trial Denver",
     "dedicated desk Denver",
     "private office rental Denver",
-    "coworking space Sloan's Lake"
   ],
   openGraph: {
     title: "Apply for Membership | Merritt Workspace Denver",
-    description: "Apply for a dedicated desk or private office in Sloan's Lake, Denver. 24/7 access, free parking, 3 min to I-25.",
+    description:
+      "Apply for a desk, a private office or a free trial day in Sloan's Lake, Denver. 24/7 access, free parking, no long lease.",
     url: "https://merrittworkspace.net/membership/apply",
     images: [
       {
@@ -21,6 +27,13 @@ export const metadata: Metadata = {
         alt: "Members at work in the dedicated desk room at Merritt Workspace in Sloan's Lake, Denver",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Apply for Membership | Merritt Workspace Denver",
+    description:
+      "Apply for a desk, a private office or a free trial day in Sloan's Lake, Denver.",
+    images: ["/images/og/home-og.jpg"],
   },
   alternates: {
     canonical: "https://merrittworkspace.net/membership/apply",
@@ -32,5 +45,15 @@ export default function ApplyLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <PageSchema
+        path="/membership/apply"
+        name="Apply"
+        description={DESCRIPTION}
+        ancestors={[{ name: "Membership", path: "/membership" }]}
+      />
+      {children}
+    </>
+  );
 }

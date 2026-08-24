@@ -2,7 +2,14 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import AdminNav from './AdminNav';
 
-export const metadata = { title: 'Admin | Merritt Workspace' };
+export const metadata = {
+  title: 'Admin | Merritt Workspace',
+  // Staff screens. Noindexed rather than robots.txt-disallowed for the same
+  // reason as the member portal: a blocked crawl means Google never reads the
+  // noindex, so a URL it discovers from a link can still surface as a bare
+  // result.
+  robots: { index: false, follow: false },
+};
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (

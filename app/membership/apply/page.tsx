@@ -298,6 +298,24 @@ export default function MembershipApplicationPage() {
     });
   };
 
+  // Arriving from a CTA that already named a plan — the day pass page's "Book a
+  // day pass" button, for instance — lands here with ?plan=<id>. Pre-select it
+  // so the visitor is not dropped into a six-option picker having already
+  // chosen. Same window.location read as the ?trial=1 handler above, and for
+  // the same reason: useSearchParams would force a Suspense boundary and cost
+  // this page its static render.
+  const [planPreselected, setPlanPreselected] = useState(false);
+  useEffect(() => {
+    if (planPreselected) return;
+    const requested = new URLSearchParams(window.location.search).get('plan');
+    if (requested && membershipPlans.some(plan => plan.id === requested)) {
+      setQuantity(requested as PlanId, 1);
+      setPlanPreselected(true);
+    }
+    // Runs once on mount; `planPreselected` guards a re-entry if it ever does not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const adjustQuantity = (planId: PlanId, delta: number) =>
     setQuantity(planId, getQuantity(planId) + delta);
 

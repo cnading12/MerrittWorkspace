@@ -152,10 +152,11 @@ export default function FAQPage() {
             <div className="bg-linen p-4 border border-clay">
               <h4 className="font-semibold text-ink-60 mb-2">📅 Member Benefits:</h4>
               <ul className="space-y-1 text-ink-60 text-sm">
-                <li>• <strong>Two FREE hours</strong> of conference room time per month</li>
-                <li>• After free hours: $30/hour</li>
+                <li>• <strong>Included hours every month:</strong> 4 hours on a dedicated desk, 14&ndash;20 hours on a private office</li>
+                <li>• Beyond your included hours: $25/hour, the same rate guests pay</li>
+                <li>• Sessions run 1&ndash;4 hours; the room seats 8</li>
                 <li>• Easy online booking system</li>
-                <li>• Rooms include 75" Smart TV, WiFi, and A/V equipment</li>
+                <li>• 75&quot; display, fast WiFi, and A/V equipment</li>
               </ul>
             </div>
           </div>
@@ -232,7 +233,7 @@ export default function FAQPage() {
               </ul>
             </div>
             <div className="bg-red-50 p-4 border border-red-200">
-              <h4 className="font-semibold text-red-800 mb-2">❌ Dedicated & Mobile Desk</h4>
+              <h4 className="font-semibold text-red-800 mb-2">❌ Dedicated Desks & Day Passes</h4>
               <p className="text-red-700 text-sm">Unfortunately, pets are not permitted in the shared workspace areas.</p>
             </div>
           </div>

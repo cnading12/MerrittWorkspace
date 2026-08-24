@@ -1,18 +1,26 @@
 import { Metadata } from "next";
+import PageSchema from "@/components/seo/PageSchema";
+import { serviceNode } from "@/lib/seo/schema";
+
+const TITLE = "Dedicated Desk $200/mo | Denver Coworking";
+const DESCRIPTION =
+  "Your own desk in Denver's Sloan's Lake for $200/month — 24/7 access, free parking, a locker, 4hrs monthly conference room credit and 4hrs weekly flex space. Private lockable desks $300/mo. Book a free trial day.";
 
 export const metadata: Metadata = {
-  title: "Dedicated Desk $200/mo | Coworking Space Sloan's Lake Denver",
-  description: "Dedicated desk in Denver's Sloan's Lake — $200/month. 24/7 access, high-speed WiFi, 4hr conference room credits, 4hr weekly flex space credits, free coffee & tea. 3 min to I-25.",
+  title: TITLE,
+  description: DESCRIPTION,
   keywords: [
     "dedicated desk Denver",
     "coworking space Sloan's Lake",
     "shared office space Denver",
-    "hot desk Denver",
-    "coworking near I-25 Denver"
+    "desk rental Denver",
+    "coworking near I-25 Denver",
+    "monthly desk rental Denver",
   ],
   openGraph: {
-    title: "Dedicated Desk $200/mo | Coworking Space Sloan's Lake Denver",
-    description: "Dedicated desk — $200/month. 24/7 access, WiFi, conference and flex space credits, unlimited coffee. Best value coworking in Denver.",
+    title: TITLE,
+    description:
+      "A desk of your own for $200/month — 24/7 access, free parking, conference room and flex space credits, coffee, tea and beer included.",
     url: "https://merrittworkspace.net/membership/dedicated-desk",
     images: [
       {
@@ -22,6 +30,13 @@ export const metadata: Metadata = {
         alt: "Members at work in the dedicated desk room at Merritt Workspace in Sloan's Lake, Denver - $200/month",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description:
+      "A desk of your own for $200/month in Sloan's Lake, Denver. 24/7 access, free parking, conference room and flex space credits.",
+    images: ["/images/og/home-og.jpg"],
   },
   alternates: {
     canonical: "https://merrittworkspace.net/membership/dedicated-desk",
@@ -33,5 +48,25 @@ export default function DedicatedDeskLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <PageSchema
+        path="/membership/dedicated-desk"
+        name="Dedicated Desk"
+        description={DESCRIPTION}
+        ancestors={[{ name: "Membership", path: "/membership" }]}
+        nodes={[
+          serviceNode({
+            path: "/membership/dedicated-desk",
+            name: "Dedicated Desk Coworking",
+            description:
+              "A permanent desk of your own in a Sloan's Lake, Denver coworking space, on the shared floor or inside a private lockable area, with 24/7 access, free parking, conference room and flex space credits.",
+            offerNames: ["Dedicated Desk", "Private Dedicated Desk"],
+            image: "/images/dedicated-desks/room-wide.webp",
+          }),
+        ]}
+      />
+      {children}
+    </>
+  );
 }
