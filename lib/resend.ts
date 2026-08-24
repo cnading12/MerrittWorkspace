@@ -1152,7 +1152,7 @@ export const nonMemberConferenceRoomOnboarding = (data: {
               <table class="kv">
                 <tr><td>Address</td><td>2246 Irving Street, Denver, CO 80211</td></tr>
                 <tr><td>Neighborhood</td><td>Sloan's Lake — 3 minutes to I-25</td></tr>
-                <tr><td>Hours</td><td>Building open Mon–Fri, 8:00 AM – 6:00 PM</td></tr>
+                <tr><td>Hours</td><td>Building open Mon–Fri, 7:30 AM – 5:30 PM</td></tr>
                 <tr><td>Parking</td><td>Onsite parking available</td></tr>
               </table>
             </div>
@@ -1160,7 +1160,7 @@ export const nonMemberConferenceRoomOnboarding = (data: {
             <div class="info-block">
               <h3>When you arrive</h3>
               <ul>
-                <li>No front desk — just let yourself in through the main entrance during building hours (8:00 AM – 6:00 PM).</li>
+                <li>No front desk — just let yourself in through the main entrance during building hours (7:30 AM – 5:30 PM).</li>
                 <li>Head to ${data.roomName}; it will be reserved under your name for your booking window.</li>
                 <li>Feel free to use the kitchen, snack shop, phone booths, and bathrooms while you're here.</li>
               </ul>
@@ -1257,12 +1257,12 @@ Time: ${data.booking.start_time} – ${data.booking.end_time}
 WHERE TO FIND US
 Address:      2246 Irving Street, Denver, CO 80211
 Neighborhood: Sloan's Lake — 3 minutes to I-25
-Hours:        Building open Mon–Fri, 8:00 AM – 6:00 PM
+Hours:        Building open Mon–Fri, 7:30 AM – 5:30 PM
 Parking:      Onsite parking available
 
 WHEN YOU ARRIVE
 - No front desk — just let yourself in through the main entrance during
-  building hours (8:00 AM – 6:00 PM).
+  building hours (7:30 AM – 5:30 PM).
 - Head to ${data.roomName}; it will be reserved under your name for your
   booking window.
 - Feel free to use the kitchen, snack shop, phone booths, and bathrooms

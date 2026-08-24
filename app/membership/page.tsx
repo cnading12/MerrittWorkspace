@@ -27,7 +27,7 @@ const membershipPlans = [
       '4 hours conference room credits/month',
       '4 hours flex space credits/week',
       'Mail and package handling',
-      'Event space access until 4:30 PM',
+      'Event space access until 4:00 PM',
       'Community networking events'
     ],
     ideal_for: 'Freelancers, consultants, and remote workers',

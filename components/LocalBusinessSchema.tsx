@@ -40,9 +40,9 @@ export default function LocalBusinessSchema() {
       {
         "@type": "OpeningHoursSpecification",
         "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        "opens": "09:00",
-        "closes": "17:00",
-        "description": "Office hours for tours and support"
+        "opens": "07:30",
+        "closes": "17:30",
+        "description": "Business hours — building unlocked, staff on site for tours and support"
       }
     ],
     "priceRange": "$200 - $1200/month",

@@ -13,7 +13,7 @@ const WHATS_INCLUDED = [
   'Enterprise WiFi throughout the building',
   'Four hours of conference room credit each month',
   'Full kitchen, and all the coffee, tea and beer you can drink',
-  'Four hours of flex space credit each week, next door until 4:30 daily',
+  'Four hours of flex space credit each week, next door until 4:00 daily',
   'Mail and package handling',
   'Five soundproof phone booths, first come first served',
   'Month to month, no long-term contract',
@@ -51,7 +51,7 @@ export default function DedicatedDeskPage() {
     },
     {
       title: '4 Hours of Flex Space a Week',
-      description: 'Book the 1905 event space next door for meetings, workshops and events — four hours a week included, weekdays until 4:30 PM'
+      description: 'Book the 1905 event space next door for meetings, workshops and events — four hours a week included, weekdays until 4:00 PM'
     },
     {
       title: 'FREE Trial Day',
@@ -268,7 +268,7 @@ export default function DedicatedDeskPage() {
               <div className="max-w-3xl">
                 <p className="mw-eyebrow-light mb-5">Included with every desk</p>
                 <h2 className="font-display text-[2.25rem] font-semibold leading-[1] tracking-tightest text-bone sm:text-5xl lg:text-[4rem]">
-                  The 1905 event space next door, free until 4:30.
+                  The 1905 event space next door, free until 4:00.
                 </h2>
               </div>
             </div>
