@@ -1,12 +1,25 @@
-// app/api/test-email/route.ts - Diagnostic: test different FROM addresses
+// app/api/test-email/route.ts - Diagnostic: test different FROM addresses.
+//
+// ADMIN ONLY. This route sends real email through Resend, so leaving it
+// unauthenticated let anyone on the internet burn our sending quota, get our
+// domain flagged for spam, and read back Resend's response payload (message
+// ids + internal addresses). It is a staff diagnostic, not a public endpoint.
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { requireAdmin, PortalError } from '@/lib/portal/auth';
 
 export const dynamic = 'force-dynamic';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function GET(request: NextRequest) {
+    try {
+        await requireAdmin(request);
+    } catch (e: any) {
+        const status = e instanceof PortalError ? e.status : 500;
+        return NextResponse.json({ error: e.message }, { status });
+    }
+
     if (!process.env.RESEND_API_KEY) {
         return NextResponse.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 });
     }

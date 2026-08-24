@@ -48,6 +48,7 @@ import { planForMembershipType } from '@/lib/portal/pricing';
 import { normalizeDeskNumber, deskTakenMessage } from '@/lib/portal/desks';
 import { findDeskClaim, manualOccupantMatchesName } from '@/lib/portal/deskClaims';
 import { PORTAL_ONBOARDING_FROM, PORTAL_REPLY_TO } from '@/lib/portal/emails';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,8 +74,23 @@ function normalizeAssignment(value: string | undefined): string | null {
   return v ? v : null;
 }
 
+// Public form that creates an auth user and emails staff. Throttled per IP
+// so it can't be used to mass-create accounts or flood the inbox.
+const EXISTING_MEMBER_RATE_LIMIT = { windowMs: 60 * 60 * 1000, max: 5 };
+
 export async function POST(request: NextRequest) {
   try {
+    const limit = checkRateLimit(
+      `existing-member-application:${getClientIp(request)}`,
+      EXISTING_MEMBER_RATE_LIMIT
+    );
+    if (limit.limited) {
+      return NextResponse.json(
+        { error: 'Too many submissions. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } }
+      );
+    }
+
     const body = (await request.json()) as ExistingMemberPayload;
 
     const required: (keyof ExistingMemberPayload)[] = [

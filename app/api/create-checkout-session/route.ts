@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getUserFromRequest } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { priceCart } from '@/lib/snackshop/products';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil', // Updated to latest version
@@ -70,8 +71,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Server-authoritative pricing from the catalog. The client sends whole
+    // cart objects, but only the product id and quantity of each are trusted:
+    // this route used to build Stripe line items straight from the client's
+    // own `item.price`, so a tampered payload could buy the whole snack shop
+    // for a cent. `priceCart` re-derives every price (and validates the
+    // quantities) from SNACK_PRODUCTS, exactly as the member one-click path
+    // already did.
+    let priced;
+    try {
+      priced = priceCart(cart_items);
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message || 'Invalid cart' }, { status: 400 });
+    }
+
     // Create line items for Stripe
-    const line_items = cart_items.map((item: any) => ({
+    const line_items = priced.items.map((item) => ({
       price_data: {
         currency: 'usd',
         product_data: {
@@ -102,7 +117,7 @@ export async function POST(request: NextRequest) {
         customer_email,
         office_number,
         notes: notes || '',
-        cart_items: JSON.stringify(cart_items),
+        cart_items: JSON.stringify(priced.items),
         ...(memberId ? { member_id: memberId } : {}),
       },
       // Add shipping address collection if needed
@@ -139,10 +154,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('❌ Stripe checkout error:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to create payment session',
-        details: error.message 
-      },
+      { error: 'Failed to create payment session' },
       { status: 500 }
     );
   }

@@ -17,6 +17,7 @@
 // keep-alive endpoint is a free way for anyone to hammer the database, and a
 // skipped run is cheap here given the slack above.
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'node:crypto';
 import { Resend } from 'resend';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import {
@@ -37,6 +38,19 @@ import {
 export const dynamic = 'force-dynamic';
 
 const DENVER_TZ = 'America/Denver';
+
+// Constant-time comparison of the incoming bearer token against CRON_SECRET.
+// A plain `!==` on secrets leaks their content through response timing; the
+// window is small over a network, but the fix is one line.
+function bearerMatches(header: string, secret: string): boolean {
+  const prefix = 'Bearer ';
+  if (!header.startsWith(prefix)) return false;
+  const provided = Buffer.from(header.slice(prefix.length));
+  const expected = Buffer.from(secret);
+  if (provided.length !== expected.length) return false;
+  return timingSafeEqual(provided, expected);
+}
+
 
 // Best effort: the alert must never be the reason a failed run fails
 // differently, and the non-2xx below is the primary signal either way.
@@ -101,7 +115,7 @@ export async function GET(req: NextRequest) {
     );
   }
   const auth = req.headers.get('authorization') || '';
-  if (auth !== `Bearer ${secret}`) {
+  if (!bearerMatches(auth, secret)) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 

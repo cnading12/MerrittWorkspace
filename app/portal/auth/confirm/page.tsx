@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
@@ -12,7 +12,25 @@ import { supabase } from '@/lib/supabase';
 // needed. This bypasses Supabase's `/auth/v1/verify` redirect, which
 // silently falls back to the Site URL when the redirect_to isn't on
 // the dashboard allowlist.
+// useSearchParams() forces this subtree to render on the client, so Next
+// requires it to sit under a Suspense boundary — without one the whole route
+// fails to prerender at build time.
 export default function ConfirmAuthPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-md mx-auto bg-bone p-8 border border-clay">
+          <h1 className="font-display text-2xl font-semibold text-ink mb-2">Signing you in…</h1>
+          <p className="text-sm text-ink-60">Verifying your one-time link, please wait.</p>
+        </div>
+      }
+    >
+      <ConfirmAuthContent />
+    </Suspense>
+  );
+}
+
+function ConfirmAuthContent() {
   const router = useRouter();
   const params = useSearchParams();
   const [error, setError] = useState<string | null>(null);
