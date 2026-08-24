@@ -14,7 +14,7 @@ import {
   webSiteNode,
 } from '@/lib/seo/schema';
 import { PRICES, SITE_URL } from '@/lib/seo/site';
-import { DAY_PASS_FAQS, FAQS } from '@/lib/seo/faqs';
+import { CAFE_FAQS, FAQS } from '@/lib/seo/faqs';
 import { MEMBERSHIP_PLANS } from '@/lib/portal/pricing';
 
 const root = join(__dirname, '..');
@@ -28,7 +28,7 @@ describe('advertised prices match what we actually charge', () => {
   const cases: [keyof typeof PRICES, string][] = [
     ['dedicatedDesk', 'dedicated_desk'],
     ['privateDedicatedDesk', 'private_dedicated_desk'],
-    ['dayPass', 'one_day_dedicated_desk'],
+    ['cafeMembership', 'cafe_membership'],
     ['privateOfficeSingle', 'private_office_single'],
     ['privateOfficeDouble', 'private_office_double'],
     ['privateOfficeLarge', 'private_office_large'],
@@ -69,7 +69,7 @@ describe('organization node', () => {
 
   it('offers every sellable plan, priced in whole dollars', () => {
     const names = OFFERS.map((o) => o.name);
-    expect(names).toContain('Day Pass — Dedicated Desk');
+    expect(names).toContain('Café Membership');
     expect(names).toContain('Dedicated Desk');
     expect(names).toContain('Conference Room Rental');
     for (const o of OFFERS) {
@@ -107,12 +107,12 @@ describe('breadcrumbs', () => {
 describe('serviceNode', () => {
   it('reuses catalog offers so a product page cannot quote its own price', () => {
     const node = serviceNode({
-      path: '/day-pass',
-      name: 'Coworking Day Pass',
+      path: '/membership/cafe',
+      name: 'Café Membership',
       description: 'x',
-      offerNames: ['Day Pass — Dedicated Desk'],
+      offerNames: ['Café Membership'],
     });
-    expect(node.offers.price).toBe(String(PRICES.dayPass));
+    expect(node.offers.price).toBe(String(PRICES.cafeMembership));
   });
 
   it('refuses to build against an offer that does not exist', () => {
@@ -141,7 +141,7 @@ describe('FAQ structured data', () => {
   });
 
   it('answers every question with real prose', () => {
-    for (const { question, answer } of [...FAQS, ...DAY_PASS_FAQS]) {
+    for (const { question, answer } of [...FAQS, ...CAFE_FAQS]) {
       expect(question.length, question).toBeGreaterThan(10);
       expect(answer.length, question).toBeGreaterThan(40);
       // Markup in an answer is a rich-result violation, not just untidy.
@@ -149,11 +149,11 @@ describe('FAQ structured data', () => {
     }
   });
 
-  it('renders the day pass FAQs it marks up, as Google requires', () => {
-    const page = read('app/day-pass/page.tsx');
-    expect(page).toContain('DAY_PASS_FAQS');
-    const node = faqPageNode('/day-pass', DAY_PASS_FAQS);
-    expect(node.mainEntity).toHaveLength(DAY_PASS_FAQS.length);
+  it('renders the café FAQs it marks up, as Google requires', () => {
+    const page = read('app/membership/cafe/page.tsx');
+    expect(page).toContain('CAFE_FAQS');
+    const node = faqPageNode('/membership/cafe', CAFE_FAQS);
+    expect(node.mainEntity).toHaveLength(CAFE_FAQS.length);
     expect(node.mainEntity[0]['@type']).toBe('Question');
     expect(node.mainEntity[0].acceptedAnswer['@type']).toBe('Answer');
   });
@@ -164,9 +164,9 @@ describe('the emitted graph', () => {
     const data = graph([
       organizationNode(),
       webSiteNode(),
-      webPageNode({ path: '/day-pass', name: 'Day Pass', description: 'x' }),
-      breadcrumbNode([{ name: 'Day Pass', path: '/day-pass' }]),
-      faqPageNode('/day-pass', DAY_PASS_FAQS),
+      webPageNode({ path: '/membership/cafe', name: 'Café Membership', description: 'x' }),
+      breadcrumbNode([{ name: 'Café Membership', path: '/membership/cafe' }]),
+      faqPageNode('/membership/cafe', CAFE_FAQS),
     ]);
     const parsed = JSON.parse(JSON.stringify(data));
     expect(parsed['@context']).toBe('https://schema.org');
@@ -178,6 +178,55 @@ describe('the emitted graph', () => {
 
   it('never emits undefined, which JSON.stringify would silently drop', () => {
     expect(JSON.stringify(graph([organizationNode(), webSiteNode()]))).not.toContain('undefined');
+  });
+});
+
+describe('the retired day pass', () => {
+  // Day passes are no longer sold. The designation, the day_passes table and
+  // the portal's repeat-purchase route all survive so existing holders keep
+  // working — but nothing a prospective member can reach may offer one.
+  const customerFacing = [
+    'app/membership/(overview)/page.tsx',
+    'app/membership/apply/page.tsx',
+    'app/sitemap.ts',
+    'components/Navbar.tsx',
+    'components/Footer.tsx',
+    'lib/seo/schema.ts',
+    'lib/seo/site.ts',
+  ];
+
+  it.each(customerFacing)('%s no longer offers it', (path) => {
+    expect(read(path)).not.toContain('one_day_dedicated_desk');
+  });
+
+  // Checking the plan id alone is not enough: the id was gone from these files
+  // while the marketing copy in them still advertised "$30 day passes", which
+  // is what a prospect and a crawler actually read.
+  const marketingCopy = [
+    'app/layout.tsx',
+    'app/membership/(overview)/layout.tsx',
+    'app/membership/(overview)/page.tsx',
+    'app/membership/cafe/layout.tsx',
+    'app/member-resources/faqs/page.tsx',
+    'components/Navbar.tsx',
+    'components/Footer.tsx',
+    'lib/seo/faqs.ts',
+    'lib/seo/schema.ts',
+  ];
+
+  it.each(marketingCopy)('%s does not still advertise one in prose', (path) => {
+    expect(read(path)).not.toMatch(/day pass/i);
+  });
+
+  it('is absent from the offer catalog', () => {
+    const names = OFFERS.map((o) => o.name).join(' ');
+    expect(names).not.toMatch(/day pass/i);
+  });
+
+  it('keeps the designation so existing holders stay valid', () => {
+    // Deleting it would orphan live members rows and the day_passes table.
+    expect(read('lib/portal/types.ts')).toContain('one_day_dedicated_desk');
+    expect(read('lib/portal/pricing.ts')).toContain('one_day_dedicated_desk');
   });
 });
 
@@ -204,7 +253,7 @@ describe('crawl directives', () => {
       '/membership',
       '/membership/dedicated-desk',
       '/membership/private-office',
-      '/day-pass',
+      '/membership/cafe',
       '/member-resources/meeting-rooms',
       '/member-resources/flex-space',
       '/member-resources/faqs',
@@ -220,7 +269,7 @@ describe('page metadata', () => {
   const routes = [
     'app/about',
     'app/contact',
-    'app/day-pass',
+    'app/membership/cafe',
     'app/membership/(overview)',
     'app/membership/apply',
     'app/membership/dedicated-desk',

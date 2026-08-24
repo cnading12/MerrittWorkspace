@@ -49,7 +49,8 @@ export const SAME_AS = [
 export const PRICES = {
   dedicatedDesk: 200,
   privateDedicatedDesk: 300,
-  dayPass: 30,
+  /** Cafe-side open seating. Capped at CAFE_MEMBER_LIMIT places. */
+  cafeMembership: 100,
   privateOfficeSingle: 500,
   privateOfficeDouble: 700,
   privateOfficeLarge: 1200,
@@ -57,7 +58,7 @@ export const PRICES = {
   conferenceHourly: 25,
 } as const;
 
-export const PRICE_RANGE = `$${PRICES.dayPass} - $${PRICES.privateOfficeLarge}`;
+export const PRICE_RANGE = `$${PRICES.cafeMembership} - $${PRICES.privateOfficeLarge}`;
 
 /** Neighbourhoods we genuinely serve — these are the local intent queries. */
 export const AREAS_SERVED = [

@@ -17,7 +17,7 @@ const pages: { path: string; lastModified: string; changeFrequency: MetadataRout
   { path: '/membership', lastModified: '2026-08-24', changeFrequency: 'weekly', priority: 0.9 },
   { path: '/membership/dedicated-desk', lastModified: '2026-08-24', changeFrequency: 'monthly', priority: 0.9 },
   { path: '/membership/private-office', lastModified: '2026-08-24', changeFrequency: 'monthly', priority: 0.9 },
-  { path: '/day-pass', lastModified: '2026-08-24', changeFrequency: 'monthly', priority: 0.9 },
+  { path: '/membership/cafe', lastModified: '2026-08-24', changeFrequency: 'monthly', priority: 0.9 },
   { path: '/member-resources/meeting-rooms', lastModified: '2026-08-24', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/membership/apply', lastModified: '2026-08-24', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/contact', lastModified: '2026-08-24', changeFrequency: 'monthly', priority: 0.8 },

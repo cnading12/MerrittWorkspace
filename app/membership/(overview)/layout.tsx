@@ -5,7 +5,7 @@ import { SITE_URL } from "@/lib/seo/site";
 
 const TITLE = "Coworking Memberships & Pricing | Denver";
 const DESCRIPTION =
-  "Compare every workspace at Merritt Workspace in Sloan's Lake, Denver: $30 day passes, dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, free parking, no long lease. 3 min to I-25.";
+  "Compare every workspace at Merritt Workspace in Sloan's Lake, Denver: café memberships from $100/mo, dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, free parking, no long lease. 3 min to I-25.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -15,13 +15,13 @@ export const metadata: Metadata = {
     "coworking prices Denver",
     "dedicated desk Denver",
     "private office rental Denver",
-    "day pass coworking Denver",
+    "affordable coworking Denver",
     "Sloan's Lake office space",
   ],
   openGraph: {
     title: "Coworking Memberships & Pricing | Merritt Workspace Denver",
     description:
-      "$30 day passes, dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, free parking, 3 min to I-25 in Sloan's Lake, Denver.",
+      "Café memberships from $100/mo, dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, free parking, 3 min to I-25 in Sloan's Lake, Denver.",
     url: "https://merrittworkspace.net/membership",
     images: [
       {
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Coworking Memberships & Pricing | Merritt Workspace Denver",
     description:
-      "$30 day passes, dedicated desks from $200/mo, private offices from $500/mo in Sloan's Lake, Denver.",
+      "Café memberships from $100/mo, dedicated desks from $200/mo, private offices from $500/mo in Sloan's Lake, Denver.",
     images: ["/images/og/home-og.jpg"],
   },
   alternates: {
@@ -73,7 +73,7 @@ export default function MembershipOverviewLayout({
           {
             "@type": "OfferCatalog",
             "@id": `${SITE_URL}/membership#catalog`,
-            name: "Merritt Workspace Memberships and Day Passes",
+            name: "Merritt Workspace Memberships",
             provider: { "@id": ORGANIZATION_ID },
             itemListElement: OFFERS,
           },

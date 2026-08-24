@@ -64,11 +64,11 @@ function offer(name: string, description: string, price: number, unit: 'month' |
 /** Every sellable thing, in the order a prospect meets them. */
 export const OFFERS: Node[] = [
   offer(
-    'Day Pass — Dedicated Desk',
-    `A single day at a dedicated desk in our Sloan's Lake, Denver coworking space. Includes one hour of conference room time, high-speed WiFi, printing, and the full kitchen with coffee, tea and beer. No membership or commitment required.`,
-    PRICES.dayPass,
-    'day',
-    '/day-pass',
+    'Café Membership',
+    `Open seating on the cafe side of our restored 1905 flex space in Sloan's Lake, Denver. No assigned desk, but the full run of the amenities — free coffee, tea and beer, high-speed WiFi, printing and free on-site parking — plus 2 hours of conference room credit a month and 2 hours of flex space credit a week. Limited to 15 members.`,
+    PRICES.cafeMembership,
+    'month',
+    '/membership/cafe',
   ),
   offer(
     'Dedicated Desk',
@@ -122,7 +122,7 @@ export function organizationNode(): Node {
     name: BUSINESS.name,
     legalName: BUSINESS.legalName,
     alternateName: BUSINESS.alternateName,
-    description: `Independent coworking space in Sloan's Lake, Denver. Dedicated desks from $${PRICES.dedicatedDesk} a month, private offices from $${PRICES.privateOfficeSingle}, and $${PRICES.dayPass} day passes — with 24/7 access, free on-site parking, and a restored 1905 event space on the same lawn.`,
+    description: `Independent coworking space in Sloan's Lake, Denver. Cafe memberships from $${PRICES.cafeMembership} a month, dedicated desks from $${PRICES.dedicatedDesk}, and private offices from $${PRICES.privateOfficeSingle} — with 24/7 access, free on-site parking, and a restored 1905 event space on the same lawn.`,
     url: SITE_URL,
     logo: {
       '@type': 'ImageObject',
@@ -198,7 +198,7 @@ export function organizationNode(): Node {
     })),
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
-      name: 'Coworking Memberships and Day Passes',
+      name: 'Coworking Memberships',
       itemListElement: OFFERS,
     },
     makesOffer: OFFERS,
@@ -209,7 +209,7 @@ export function organizationNode(): Node {
       'Office Space Rental',
       'Private Office Rental',
       'Meeting Room Rental',
-      'Day Pass Coworking',
+      'Coworking Memberships',
       'Remote Work',
       'Event Space Rental',
     ],

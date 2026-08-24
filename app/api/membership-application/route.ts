@@ -33,7 +33,13 @@ const PLAN_CATALOG: Record<string, { label: string; price_cents: number; recurre
   // shared coworking floor. Only offered on the application form once all 25
   // floor desks are spoken for — see lib/portal/deskAvailability.ts.
   private_dedicated_desk:  { label: 'Private Dedicated Desk',     price_cents: 30000,  recurrence: 'monthly'  },
-  one_day_dedicated_desk:  { label: 'One Day Dedicated Desk',     price_cents: 3000,   recurrence: 'one_time' },
+  // Open seating on the café side of the flex space — no desk, half a desk's
+  // booking allowance, capped at CAFE_MEMBER_LIMIT places.
+  cafe_membership:         { label: 'Café Membership',            price_cents: 10000,  recurrence: 'monthly'  },
+  // NOTE: 'one_day_dedicated_desk' is deliberately absent. Day passes are no
+  // longer sold, and itemizeSelectedPlans drops any plan_id missing from this
+  // catalog — so a stale form that still posts one prices it at nothing rather
+  // than quietly selling a product we retired.
   private_office_single:   { label: 'Private Office — Single',    price_cents: 50000,  recurrence: 'monthly'  },
   private_office_double:   { label: 'Private Office — Double',    price_cents: 70000,  recurrence: 'monthly'  },
   private_office_large:    { label: 'Private Office — Large',     price_cents: 120000, recurrence: 'monthly'  },
@@ -139,6 +145,23 @@ export async function POST(request: NextRequest) {
       }
     }
     applicationData.dedicated_desk_floor_full = deskFloorFull;
+
+    // Same treatment for the cafe tier, and for the same reason: the form hides
+    // it once the fifteen places are gone, but a stale page can still post one.
+    // We take the application either way — someone may be about to leave — and
+    // flag it so the reviewer knows approving it makes a sixteenth member
+    // rather than discovering that later.
+    let cafeFull = false;
+    if (itemized.lines.some((l) => l.plan_id === 'cafe_membership')) {
+      try {
+        const { getServiceSupabase } = await import('@/lib/portal/supabaseAdmin');
+        const { getCafeCapacity } = await import('@/lib/portal/cafeAvailability');
+        cafeFull = (await getCafeCapacity(getServiceSupabase())).isFull;
+      } catch (e) {
+        console.error('Could not check cafe-membership availability for application', e);
+      }
+    }
+    applicationData.cafe_membership_full = cafeFull;
 
     // Make these available to email helpers below by attaching them onto the
     // applicationData object passed through.

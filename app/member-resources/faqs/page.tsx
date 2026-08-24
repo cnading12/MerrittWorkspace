@@ -233,7 +233,7 @@ export default function FAQPage() {
               </ul>
             </div>
             <div className="bg-red-50 p-4 border border-red-200">
-              <h4 className="font-semibold text-red-800 mb-2">❌ Dedicated Desks & Day Passes</h4>
+              <h4 className="font-semibold text-red-800 mb-2">❌ Dedicated Desks &amp; Caf&eacute; Membership</h4>
               <p className="text-red-700 text-sm">Unfortunately, pets are not permitted in the shared workspace areas.</p>
             </div>
           </div>

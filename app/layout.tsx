@@ -22,9 +22,9 @@ const body = Inter({
 
 const TITLE = "Coworking Space in Sloan's Lake, Denver | Merritt Workspace";
 const DESCRIPTION =
-  "Independent coworking in Sloan's Lake, Denver. Dedicated desks from $200/mo, private offices from $500/mo, $30 day passes. 24/7 access, free parking, 3 min to I-25, and a restored 1905 event space next door. Free trial day available.";
+  "Independent coworking in Sloan's Lake, Denver. Café memberships from $100/mo, dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, free parking, 3 min to I-25, and a restored 1905 event space next door. Free trial day available.";
 const SOCIAL_DESCRIPTION =
-  "Independent coworking in Sloan's Lake, Denver, with a restored 1905 event space on the same lawn. Desks from $200/mo, offices from $500/mo, $30 day passes. 24/7 access, free parking.";
+  "Independent coworking in Sloan's Lake, Denver, with a restored 1905 event space on the same lawn. Café memberships from $100/mo, desks from $200/mo, offices from $500/mo. 24/7 access, free parking.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     "coworking space Sloan's Lake",
     "dedicated desk Denver",
     "private office rental Denver",
-    "day pass coworking Denver",
+    "affordable coworking Denver",
     "meeting room rental Denver",
     "coworking near I-25 Denver",
     "Sloan's Lake office space",

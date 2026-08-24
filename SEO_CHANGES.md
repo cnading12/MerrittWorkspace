@@ -27,7 +27,7 @@ root layout, and each page adds only what it specifically describes.
 | Page | Nodes it now carries |
 |---|---|
 | every page | `CoworkingSpace`, `WebSite` |
-| `/day-pass` | `WebPage`, `BreadcrumbList`, `Service` ($30/day), `FAQPage` |
+| `/membership/cafe` | `WebPage`, `BreadcrumbList`, `Service` ($100/mo), `FAQPage` |
 | `/member-resources/faqs` | `WebPage`, `BreadcrumbList`, `FAQPage` (13 Q&As) |
 | `/membership` | `WebPage`, `BreadcrumbList`, `OfferCatalog` (all 7 offers) |
 | `/membership/dedicated-desk` | `WebPage`, `BreadcrumbList`, `Service` ($200 + $300) |
@@ -42,7 +42,7 @@ and offer data** on every product page, and the flex space registered as a
 venue in its own right rather than as one of our amenities.
 
 Also added to the business node: a `GeoCircle` service radius, nine named
-neighbourhoods, the day pass and private dedicated desk (both previously
+neighbourhoods, the café membership and private dedicated desk (both previously
 missing from the catalog), the conference room as a sellable offer, and a
 `logo` as a proper `ImageObject`.
 
@@ -57,24 +57,28 @@ Shortened the template to `%s | Merritt Workspace` and rewrote all eleven page
 titles to land at 55–61 characters with it attached. `/contact` went from 92
 characters to 55. A test now fails if any title exceeds the budget.
 
-### 3. A page for the day pass
+### 3. A page for the café membership
 
-The $30 day pass has existed since April as one row in a comparison table. It
-had no page, so it could not rank. "Day pass Denver" and "drop in coworking
-Denver" are the highest-intent local searches available to us — somebody typing
-them wants a desk today — and a comparison table loses those every time.
+*(This section originally described a `/day-pass` landing page. Day passes were
+retired before this branch merged — the coworking floor is effectively sold out,
+and a day pass hands over a desk for a day. The page was replaced by the tier
+that took its place; see "Café membership" below.)*
 
-`/day-pass` is a real landing page: who books one, what the $30 includes, how to
-get here and park, and four FAQs (rendered on the page *and* marked up, as
-Google requires). It links into the application with `?plan=one_day_dedicated_desk`,
-and the apply form now pre-selects a plan from that parameter instead of
-dropping arrivals into a six-option picker.
+`/membership/cafe` is a real landing page for the $100/month café tier: why it
+exists, what the price includes, the fifteen-place cap, and four FAQs (rendered
+on the page *and* marked up, as Google requires). It links into the application
+with `?plan=cafe_membership`, and the apply form pre-selects a plan from that
+parameter rather than dropping arrivals into a six-option picker.
+
+It targets the searches the day-pass page was aimed at — people who want in
+cheaply and soon — but for a product we can actually deliver: "affordable
+coworking Denver", "cafe coworking Denver", "part time coworking Denver".
 
 ### 4. Crawl and indexing
 
 - **Sitemap:** `lastModified` was `new Date()` on every entry, which claimed all
   thirteen pages changed on every deploy. Crawlers discount a sitemap that does
-  that. Now real dates. Added `/day-pass`; dropped the two noindexed legal pages
+  that. Now real dates. Added `/membership/cafe`; dropped the two noindexed legal pages
   (listing a noindexed URL is an error in Search Console).
 - **robots.txt:** stopped disallowing `/_next/`. It holds the CSS and JS, and a
   renderer that cannot fetch them judges the layout on an unstyled page.
@@ -120,7 +124,7 @@ marked-up answers against the page:
 
 ### Verification
 
-- `npm test` — 392 passing, including 55 new SEO tests.
+- `npm test` — 447 passing, including 73 SEO tests and 16 for the café tier.
 - `npm run build` — compiles, type-checks, 42 static pages.
 - Served the production build and asserted against the real HTML: every page's
   title length, canonical, robots directive and JSON-LD graph; no duplicate

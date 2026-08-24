@@ -62,7 +62,7 @@ export default function Footer() {
               page links to every other, so it is what spreads authority across
               the site and how a crawler reaches the pages the nav buries. The
               old single column reached five of them and left the two
-              highest-intent pages — day passes and private offices — with no
+              highest-intent pages — café membership and private offices — with no
               site-wide link at all. */}
           <div className="grid grid-cols-2 gap-8 md:col-span-3">
             <div>
@@ -74,7 +74,7 @@ export default function Footer() {
                   ['/membership', 'All memberships'],
                   ['/membership/dedicated-desk', 'Dedicated desks'],
                   ['/membership/private-office', 'Private offices'],
-                  ['/day-pass', 'Day passes'],
+                  ['/membership/cafe', 'Café membership'],
                   ['/member-resources/meeting-rooms', 'Conference room'],
                   ['/member-resources/flex-space', 'Flex space'],
                 ].map(([href, label]) => (
