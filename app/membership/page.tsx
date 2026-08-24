@@ -5,6 +5,8 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import PageHero from '@/components/marketing/PageHero';
 import { BLUR } from '@/components/marketing/blur';
+import FaqBlock from '@/components/marketing/FaqBlock';
+import { SITE_URL } from '@/lib/seo/business';
 
 const membershipPlans = [
   {
@@ -27,7 +29,7 @@ const membershipPlans = [
       '4 hours conference room credits/month',
       '4 hours flex space credits/week',
       'Mail and package handling',
-      'Event space access until 4:30 PM',
+      'Event space access until 4:00 PM',
       'Community networking events'
     ],
     ideal_for: 'Freelancers, consultants, and remote workers',
@@ -542,6 +544,16 @@ export default function MembershipPage() {
           </div>
         </div>
       </section>
+
+      {/* Visible answers plus the FAQPage markup for them — the two always
+          ship together, so the structured data can never describe content a
+          visitor cannot see. */}
+      <FaqBlock
+        ids={['how-much-does-it-cost', 'commitment', 'day-pass', 'free-trial', 'how-to-join', 'business-address']}
+        id={`${SITE_URL}/membership#faq`}
+        eyebrow="Before you apply"
+        heading="What the price covers, and what you are committing to."
+      />
 
       <Footer />
     </main>

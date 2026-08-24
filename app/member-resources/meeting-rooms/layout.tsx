@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+import MeetingRoomSchema from "@/components/seo/MeetingRoomSchema";
 
 export const metadata: Metadata = {
   title: "Meeting & Conference Room Rental | Sloan's Lake Denver",
@@ -33,5 +35,16 @@ export default function MeetingRoomsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <MeetingRoomSchema />
+      <BreadcrumbSchema
+        trail={[
+          { name: "Member resources", path: "/member-resources/meeting-rooms" },
+          { name: "Conference room", path: "/member-resources/meeting-rooms" },
+        ]}
+      />
+      {children}
+    </>
+  );
 }

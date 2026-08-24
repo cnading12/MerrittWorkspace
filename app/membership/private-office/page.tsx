@@ -6,6 +6,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import PageHero from '@/components/marketing/PageHero';
 import { BLUR } from '@/components/marketing/blur';
+import FaqBlock from '@/components/marketing/FaqBlock';
+import { SITE_URL } from '@/lib/seo/business';
 
 export default function PrivateOfficePage() {
   const [selectedPlan, setSelectedPlan] = useState<'single' | 'double' | 'large'>('single');
@@ -362,6 +364,16 @@ export default function PrivateOfficePage() {
           </div>
         </div>
       </section>
+
+      {/* Visible answers plus the FAQPage markup for them — the two always
+          ship together, so the structured data can never describe content a
+          visitor cannot see. */}
+      <FaqBlock
+        ids={['team-office', 'business-address', 'pets', 'commitment']}
+        id={`${SITE_URL}/membership/private-office#faq`}
+        eyebrow="About the offices"
+        heading="What comes with a private office."
+      />
 
       <Footer />
     </main>

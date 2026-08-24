@@ -1,177 +1,240 @@
+import {
+  AMENITIES,
+  BUSINESS,
+  MEETING_ROOM,
+  PLANS,
+  POLICIES,
+  PRICE_RANGE,
+  SITE_URL,
+} from '@/lib/seo/business';
+import { BUSINESS_CLOSES_24H, BUSINESS_OPENS_24H } from '@/lib/hours';
+import JsonLd from '@/components/seo/JsonLd';
+
+/**
+ * The site-wide entity graph: who this business is, where it is, what it costs,
+ * and what the site itself is.
+ *
+ * Every value is read from `lib/seo/business.ts`, which is also what generates
+ * `/llms.txt` and the FAQ answers. A retrieval engine that cross-checks the
+ * JSON-LD against the visible page against the plain-text file finds the same
+ * numbers three times — which is the difference between being quoted with
+ * confidence and being skipped for a competitor whose facts agree with
+ * themselves.
+ */
 export default function LocalBusinessSchema() {
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "CoworkingSpace",
-    "@id": "https://merrittworkspace.net/#organization",
-    "name": "Merritt Workspace",
-    "alternateName": "Merritt Workspace Coworking",
-    "description": "Premium coworking space in Sloan's Lake, Denver offering dedicated desks and private offices, with member access to our adjacent 1905 historic church, now our flex and event space. 24/7 access, 3 minutes to I-25, free on-site parking.",
-    "url": "https://merrittworkspace.net",
-    "logo": "https://merrittworkspace.net/images/brand/logo.png",
-    "image": [
-      "https://merrittworkspace.net/images/exterior/campus.webp",
-      "https://merrittworkspace.net/images/og/home-og.jpg",
-      "https://merrittworkspace.net/images/offices/single-alt.webp"
+  const organization = {
+    '@type': 'CoworkingSpace',
+    '@id': `${SITE_URL}/#organization`,
+    name: BUSINESS.name,
+    alternateName: BUSINESS.alternateName,
+    description: BUSINESS.summary,
+    url: SITE_URL,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${SITE_URL}/images/brand/logo.png`,
+      caption: `${BUSINESS.name} logo`,
+    },
+    image: [
+      `${SITE_URL}/images/exterior/campus.webp`,
+      `${SITE_URL}/images/og/home-og.jpg`,
+      `${SITE_URL}/images/offices/single-alt.webp`,
+      `${SITE_URL}/images/flex-space/rose-window-group.webp`,
     ],
-    "telephone": "+1-720-357-9499",
-    "email": "memberservices@merrittworkspace.net",
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": "2246 Irving Street",
-      "addressLocality": "Denver",
-      "addressRegion": "CO",
-      "postalCode": "80211",
-      "addressCountry": "US"
+    telephone: BUSINESS.telephone,
+    email: BUSINESS.email,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: BUSINESS.address.street,
+      addressLocality: BUSINESS.address.locality,
+      addressRegion: BUSINESS.address.region,
+      postalCode: BUSINESS.address.postalCode,
+      addressCountry: BUSINESS.address.country,
     },
-    "geo": {
-      "@type": "GeoCoordinates",
-      "latitude": 39.75098609588881,
-      "longitude": -105.03225422342487
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: BUSINESS.geo.latitude,
+      longitude: BUSINESS.geo.longitude,
     },
-    "hasMap": "https://www.google.com/maps?cid=10105178442159244045",
-    "openingHoursSpecification": [
+    hasMap: BUSINESS.mapUrl,
+
+    // Two clocks, which prospects and models alike collapse into one. Each
+    // specification says in words which of the two it is, and both read their
+    // times from `lib/hours.ts` so they cannot drift from the door policy the
+    // portal and the transactional email quote.
+    openingHoursSpecification: [
       {
-        "@type": "OpeningHoursSpecification",
-        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-        "opens": "00:00",
-        "closes": "23:59",
-        "description": "24/7 member access"
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+        opens: '00:00',
+        closes: '23:59',
+        description: `Member access with a personal keypad code: ${BUSINESS.hours.memberAccess}`,
       },
       {
-        "@type": "OpeningHoursSpecification",
-        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        "opens": "09:00",
-        "closes": "17:00",
-        "description": "Office hours for tours and support"
-      }
-    ],
-    "priceRange": "$200 - $1200/month",
-    "currenciesAccepted": "USD",
-    "paymentAccepted": ["Credit Card", "Debit Card"],
-    "areaServed": [
-      {
-        "@type": "City",
-        "name": "Denver",
-        "sameAs": "https://en.wikipedia.org/wiki/Denver"
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        opens: BUSINESS_OPENS_24H,
+        closes: BUSINESS_CLOSES_24H,
+        description: `Business hours. ${BUSINESS.hours.business}. ${BUSINESS.hours.accessCodeNeeded}.`,
       },
+    ],
+
+    priceRange: PRICE_RANGE,
+    currenciesAccepted: 'USD',
+    paymentAccepted: ['Credit Card', 'Debit Card'],
+    smokingAllowed: false,
+    publicAccess: false,
+    isAccessibleForFree: false,
+
+    areaServed: [
+      { '@type': 'City', name: 'Denver', sameAs: 'https://en.wikipedia.org/wiki/Denver' },
       {
-        "@type": "Neighborhood",
-        "name": "Sloan's Lake",
-        "containedInPlace": {
-          "@type": "City",
-          "name": "Denver"
-        }
+        '@type': 'Neighborhood',
+        name: "Sloan's Lake",
+        containedInPlace: { '@type': 'City', name: 'Denver' },
       },
-      {
-        "@type": "Neighborhood",
-        "name": "West Denver"
-      }
+      { '@type': 'Neighborhood', name: 'West Denver' },
+      { '@type': 'Neighborhood', name: 'Highlands' },
+      { '@type': 'Neighborhood', name: 'West Colfax' },
+      { '@type': 'Neighborhood', name: 'Berkeley' },
+      { '@type': 'City', name: 'Edgewater' },
+      { '@type': 'City', name: 'Lakewood' },
     ],
-    "amenityFeature": [
-      { "@type": "LocationFeatureSpecification", "name": "High-Speed WiFi", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "24/7 Access", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Conference Room", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Phone Booths", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Kitchen", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Free Coffee & Tea", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Mail Handling", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Event Space", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Pet-Friendly (Private Offices Only)", "value": true },
-      { "@type": "LocationFeatureSpecification", "name": "Free Parking", "value": true }
-    ],
-    "hasOfferCatalog": {
-      "@type": "OfferCatalog",
-      "name": "Coworking Memberships",
-      "itemListElement": [
-        {
-          "@type": "Offer",
-          "itemOffered": {
-            "@type": "Service",
-            "name": "Dedicated Desk",
-            "description": "Your own permanent desk in our collaborative coworking space in Sloan's Lake, Denver. Includes 24/7 access, high-speed WiFi, 4 hours monthly meeting room credits, 4 hours weekly flex space credits, and all-you-can-drink coffee and tea."
+
+    amenityFeature: AMENITIES.map(name => ({
+      '@type': 'LocationFeatureSpecification',
+      name,
+      value: true,
+    })),
+
+    // Every purchasable thing in one catalog, prices included, so a model that
+    // reads only this node still gets the whole price list right.
+    hasOfferCatalog: {
+      '@type': 'OfferCatalog',
+      name: 'Coworking memberships and room rental',
+      itemListElement: [
+        ...PLANS.map(plan => ({
+          '@type': 'Offer',
+          name: plan.name,
+          url: plan.url,
+          price: String(plan.price),
+          priceCurrency: 'USD',
+          availability: 'https://schema.org/InStock',
+          itemOffered: {
+            '@type': 'Service',
+            name: plan.name,
+            description: `${plan.summary} For ${plan.capacity.toLowerCase()}. ${plan.privacy}.`,
           },
-          "price": "200",
-          "priceCurrency": "USD",
-          "priceSpecification": {
-            "@type": "UnitPriceSpecification",
-            "price": "200",
-            "priceCurrency": "USD",
-            "unitText": "month"
-          }
+          priceSpecification: {
+            '@type': 'UnitPriceSpecification',
+            price: String(plan.price),
+            priceCurrency: 'USD',
+            unitText: plan.unit,
+          },
+        })),
+        {
+          '@type': 'Offer',
+          name: 'Conference room rental (hourly, open to non-members)',
+          url: MEETING_ROOM.bookingUrl,
+          price: String(MEETING_ROOM.hourlyRate),
+          priceCurrency: 'USD',
+          availability: 'https://schema.org/InStock',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Conference room rental',
+            description: `Conference room seating ${MEETING_ROOM.seats}, with a 75-inch screen and conference calling. Bookable by anyone at $${MEETING_ROOM.hourlyRate} per hour.`,
+          },
+          priceSpecification: {
+            '@type': 'UnitPriceSpecification',
+            price: String(MEETING_ROOM.hourlyRate),
+            priceCurrency: 'USD',
+            unitCode: 'HUR',
+            unitText: 'hour',
+          },
         },
-        {
-          "@type": "Offer",
-          "itemOffered": {
-            "@type": "Service",
-            "name": "Single Private Office",
-            "description": "Private lockable office for 1 person in Denver's Sloan's Lake neighborhood. Includes professional business address, 14 hours monthly meeting room credits, 6 hours weekly flex space credits, and 24/7 building access."
-          },
-          "price": "500",
-          "priceCurrency": "USD",
-          "priceSpecification": {
-            "@type": "UnitPriceSpecification",
-            "price": "500",
-            "priceCurrency": "USD",
-            "unitText": "month"
-          }
-        },
-        {
-          "@type": "Offer",
-          "itemOffered": {
-            "@type": "Service",
-            "name": "2-Desk Private Office",
-            "description": "Private lockable office for 2 people near I-25 in Denver. Includes professional business address, 14 hours monthly meeting room credits, 6 hours weekly flex space credits, and 24/7 access."
-          },
-          "price": "700",
-          "priceCurrency": "USD",
-          "priceSpecification": {
-            "@type": "UnitPriceSpecification",
-            "price": "700",
-            "priceCurrency": "USD",
-            "unitText": "month"
-          }
-        },
-        {
-          "@type": "Offer",
-          "itemOffered": {
-            "@type": "Service",
-            "name": "Large Team Office (4-8 Desks)",
-            "description": "Spacious private office for teams of 4-8 in Sloan's Lake, Denver. Includes 20 hours monthly meeting room credits, 8 hours weekly flex space credits, professional business address, and priority event space booking."
-          },
-          "price": "1200",
-          "priceCurrency": "USD",
-          "priceSpecification": {
-            "@type": "UnitPriceSpecification",
-            "price": "1200",
-            "priceCurrency": "USD",
-            "unitText": "month"
-          }
-        }
-      ]
+      ],
     },
-    "sameAs": [
-      "https://www.instagram.com/themerritthouse/",
-      "https://www.facebook.com/profile.php?id=61577369304992",
-      "https://www.google.com/maps?cid=10105178442159244045",
-      "https://www.merrittwellness.net"
+
+    // Plain-language answers to the questions that decide a recommendation.
+    // `knowsAbout` is the loosest slot in the vocabulary and the one most often
+    // surfaced verbatim, so it carries facts rather than keywords.
+    knowsAbout: [
+      'Coworking',
+      'Private office rental',
+      'Meeting room and conference room rental',
+      'Hot desks and dedicated desks',
+      'Remote work and hybrid work',
+      'Event and workshop space',
+      'Business address and mail handling',
+      `Membership terms: ${POLICIES.term}`,
+      `Free trial: ${POLICIES.trial}`,
+      `Parking: ${BUSINESS.parking}`,
     ],
-    "foundingDate": "2023",
-    "knowsAbout": [
-      "Coworking",
-      "Office Space Rental",
-      "Remote Work",
-      "Business Services",
-      "Meeting Room Rental"
-    ],
-    "slogan": "Where Work Meets Community",
-    "isAccessibleForFree": false,
-    "publicAccess": false
+
+    makesOffer: PLANS.map(plan => ({
+      '@type': 'Offer',
+      name: plan.name,
+      price: String(plan.price),
+      priceCurrency: 'USD',
+      url: plan.url,
+    })),
+
+    sameAs: [...BUSINESS.socialProfiles],
+    foundingDate: BUSINESS.founded,
+    slogan: BUSINESS.slogan,
+    numberOfEmployees: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 10 },
+    potentialAction: {
+      '@type': 'ReserveAction',
+      name: 'Book a free trial day',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${SITE_URL}/membership/apply?trial=1`,
+        actionPlatform: [
+          'https://schema.org/DesktopWebPlatform',
+          'https://schema.org/MobileWebPlatform',
+        ],
+      },
+      result: { '@type': 'Reservation', name: 'Free trial day at Merritt Workspace' },
+    },
   };
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-    />
-  );
+  const website = {
+    '@type': 'WebSite',
+    '@id': `${SITE_URL}/#website`,
+    url: SITE_URL,
+    name: BUSINESS.name,
+    description: BUSINESS.summary,
+    publisher: { '@id': `${SITE_URL}/#organization` },
+    inLanguage: 'en-US',
+  };
+
+  // The building itself, as a place distinct from the business that occupies
+  // it — this is what a "where is it / can I park" question resolves against.
+  const place = {
+    '@type': 'Place',
+    '@id': `${SITE_URL}/#place`,
+    name: `${BUSINESS.name}, ${BUSINESS.address.street}`,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: BUSINESS.address.street,
+      addressLocality: BUSINESS.address.locality,
+      addressRegion: BUSINESS.address.region,
+      postalCode: BUSINESS.address.postalCode,
+      addressCountry: BUSINESS.address.country,
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: BUSINESS.geo.latitude,
+      longitude: BUSINESS.geo.longitude,
+    },
+    hasMap: BUSINESS.mapUrl,
+    publicAccess: false,
+    amenityFeature: [
+      { '@type': 'LocationFeatureSpecification', name: 'Free on-site parking', value: true },
+      { '@type': 'LocationFeatureSpecification', name: 'Free street parking', value: true },
+      { '@type': 'LocationFeatureSpecification', name: 'Historic 1905 building', value: true },
+    ],
+    containedInPlace: { '@type': 'Place', name: "Sloan's Lake, Denver, Colorado" },
+  };
+
+  return <JsonLd schema={{ '@context': 'https://schema.org', '@graph': [organization, website, place] }} />;
 }

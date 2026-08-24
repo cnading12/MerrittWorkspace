@@ -69,8 +69,14 @@ export default function Footer() {
               <Link href="/member-resources/meeting-rooms" className="block text-bone/75 transition hover:text-bone">
                 Conference room
               </Link>
+              <Link href="/member-resources/flex-space" className="block text-bone/75 transition hover:text-bone">
+                Flex space
+              </Link>
               <Link href="/member-resources/snackshop" className="block text-bone/75 transition hover:text-bone">
                 Snackshop
+              </Link>
+              <Link href="/member-resources/faqs" className="block text-bone/75 transition hover:text-bone">
+                FAQs
               </Link>
               <Link href="/about" className="block text-bone/75 transition hover:text-bone">
                 About

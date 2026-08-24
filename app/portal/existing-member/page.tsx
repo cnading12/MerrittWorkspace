@@ -427,9 +427,10 @@ export default function ExistingMemberMigrationPage() {
               <li>
                 Once approved you can book the conference room (using your
                 office&apos;s shared included hours), shop the snack shop, and
-                request a building access code (only needed for late-evening
-                and weekend entry — the building is unlocked Mon – Fri, 8:00 AM
-                – 6:00 PM). <strong>There is no charge</strong> — your
+                request a building access code (only needed for weekend entry,
+                or on weekdays before 7:30 AM or after 5:30 PM — the building is
+                unlocked Mon – Fri, 7:30 AM – 5:30 PM).
+                <strong>There is no charge</strong> — your
                 office&apos;s primary member covers the space.
               </li>
             </ol>

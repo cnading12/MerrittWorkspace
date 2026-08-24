@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+import MembershipSchema from "@/components/seo/MembershipSchema";
 
 export const metadata: Metadata = {
   title: "Dedicated Desk $200/mo | Coworking Space Sloan's Lake Denver",
@@ -33,5 +35,16 @@ export default function DedicatedDeskLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <MembershipSchema planIds={["dedicated_desk", "private_dedicated_desk", "one_day_dedicated_desk"]} />
+      <BreadcrumbSchema
+        trail={[
+          { name: "Membership", path: "/membership" },
+          { name: "Dedicated desk", path: "/membership/dedicated-desk" },
+        ]}
+      />
+      {children}
+    </>
+  );
 }

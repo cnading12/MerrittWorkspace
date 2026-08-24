@@ -211,7 +211,7 @@ export default function OfficeMemberDashboard({
             <div className="bg-bone border p-5">
               <div className="font-semibold text-ink">🔑 After-hours access code</div>
               <p className="text-sm text-green-800 mt-1 font-medium">
-                No code needed Mon – Fri, 8:00 AM – 6:00 PM — the door is unlocked.
+                No code needed Mon – Fri, 7:30 AM – 5:30 PM — the door is unlocked.
               </p>
               <p className="text-sm text-ink-60 mt-1">
                 {member.access_code ? (
@@ -222,7 +222,7 @@ export default function OfficeMemberDashboard({
                     </code>
                   </>
                 ) : (
-                  'Only coming in during late evenings or on weekends? Request a personal access code and staff will email it to you.'
+                  'Only coming in before 7:30 AM, after 5:30 PM, or on weekends? Request a personal access code and staff will email it to you.'
                 )}
               </p>
               {!member.access_code && (

@@ -83,10 +83,10 @@ export async function POST(
               <ul>
                 <li>Book the conference room using your office's shared included hours</li>
                 <li>Order from the snack shop</li>
-                <li>Request a building access code — only needed for late-evening and weekend entry</li>
+                <li>Request a building access code — only needed for weekend entry, or on weekdays before 7:30 AM or after 5:30 PM</li>
               </ul>
               <p><strong>You don't need an access code during business hours.</strong> The
-              building is unlocked Monday through Friday, 8:00 AM – 6:00 PM — just walk in.</p>
+              building is unlocked Monday through Friday, 7:30 AM – 5:30 PM — just walk in.</p>
               <p><a href="${portalUrl}">Open your member portal</a> to get started.</p>
             </div>
           `
