@@ -521,11 +521,14 @@ export interface FeeAgreementContext {
   oneTime?: boolean;
   // When true, the member is an existing member who migrated into the portal
   // from manual/paper billing (`members.is_legacy_member`). Their Fee
-  // Agreement is a rate acknowledgement only: nothing is collected at
+  // Agreement is a rate acknowledgement only: the portal collects nothing at
   // signing — no prorated first month, no last-month deposit, no card fee —
   // and billing simply continues on the 1st of each cycle. Rendering one
   // through the standard template would show a first + last deposit total
-  // they never agreed to and were never charged.
+  // they never agreed to and were never charged *here*. Whatever first/last
+  // was collected at their original enrollment predates the portal, so the
+  // legacy document speaks to that deposit conditionally rather than
+  // asserting it does or does not exist.
   legacy?: boolean;
   // YYYY-MM-DD of the billing cycle a legacy member's auto-pay would start
   // on, captured at sign time (`metadata.next_billing_cycle`). Legacy only.
@@ -628,7 +631,7 @@ function pad(label: string, value: string, width = 22): string {
 // Width of the `-----` rules bounding the fee table, so amounts can be
 // flush-right against them the way the standard template's are.
 const FEE_TABLE_WIDTH = 77;
-const NOT_COLLECTED = 'not collected — existing member';
+const NOT_COLLECTED = 'not collected at portal signup';
 
 function rightAlign(label: string, value: string, width = FEE_TABLE_WIDTH): string {
   const gap = Math.max(1, width - label.length - value.length);
@@ -652,11 +655,12 @@ function formatIsoDateLabel(iso: string | null | undefined): string | null {
 }
 
 // Existing members who migrated into the portal signed a rate
-// acknowledgement, not the standard first + last fee schedule: nothing was
-// collected at signing and nothing is held as a deposit. This mirrors the
-// document they actually saw and signed in the portal
-// (LegacyFeeAgreementSection in app/portal/page.tsx), so the archived copy
-// staff can pull up matches it line for line.
+// acknowledgement, not the standard first + last fee schedule: the portal
+// collected nothing at signing. This mirrors the document they actually saw
+// and signed (LegacyFeeAgreementSection in app/portal/page.tsx), so the
+// archived copy staff can pull up matches it line for line. Deposits from
+// their original enrollment are handled conditionally — the portal has no
+// record of them, so the document neither promises nor denies one.
 function renderLegacyFeeAgreementText(ctx: FeeAgreementContext): string {
   const { member: m } = ctx;
   const nextCycleLabel = formatIsoDateLabel(ctx.nextBillingCycleIso);
@@ -682,20 +686,32 @@ This page shall act as a binding agreement between Merritt Workspace and the
 Member, as named above. Member is an EXISTING Merritt Workspace member who
 migrated from manual billing into the member portal. *Please note* This is a
 rate acknowledgement only. NO first month's membership fee, NO Last Months
-Membership Fee deposit, and NO proration are collected, and no credit card
-processing fee is assessed. Nothing was due at signing. Member's existing
-membership continues uninterrupted at the rate stated below, billed on the
-1st of each billing cycle.
+Membership Fee deposit, NO proration, and NO credit card processing fee are
+collected under this Agreement, and nothing was due at signing. Member's
+existing membership continues uninterrupted at the rate stated below, billed
+on the 1st of each billing cycle.
+
+Any amounts previously collected from Member at the time of their original
+enrollment with Merritt Workspace — including any First Months Membership
+Fee and any Last Months Membership Fee held as a deposit — are unaffected by
+this Agreement and remain in place on their original terms.
 
 ${autoPaySentence}
 
 CANCELLATION POLICY ACKNOWLEDGMENT: To cancel, Member must deliver written
 notice no fewer than thirty (30) calendar days prior to the intended last
-day of membership. Because no Last Months Membership Fee was collected from
-Member at signing, there is no deposit to be applied to Member's final month
-and none to be forfeited for insufficient notice; Member's final month is
-invoiced in the ordinary course. All other cancellation terms in Section 4
-of the Terms and Conditions apply.
+day of membership. This notice requirement applies in full, without regard
+to what was or was not collected at Member's original enrollment.
+
+If a Last Months Membership Fee was collected from Member at their original
+enrollment, it continues to be held by Merritt Workspace as a deposit:
+provided proper thirty (30) day notice is given, it will be applied to
+Member's final month of membership and Member will not be invoiced for that
+month; if Member fails to provide a full thirty (30) days' written notice,
+Member forfeits that deposit to Merritt Workspace as liquidated damages. If
+no such fee was collected, Member's final month is invoiced in the ordinary
+course. All other cancellation terms in Section 4 of the Terms and
+Conditions apply.
 
 MEMBERSHIP DESCRIPTION                                               TOTAL
 -----------------------------------------------------------------------------

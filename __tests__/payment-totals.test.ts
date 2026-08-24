@@ -156,7 +156,7 @@ describe('renderFeeAgreementText — existing (legacy) member', () => {
     expect(text).toContain('Existing Member Rate Acknowledgement');
     expect(text).toContain('DUE AT SIGNING');
     expect(text).toContain('$0.00');
-    expect(text).toContain('not collected — existing member');
+    expect(text).toContain('not collected at portal signup');
     // The monthly rate is the only dollar figure they committed to.
     expect(text).toContain('$325.00 / month');
 
@@ -191,18 +191,30 @@ describe('renderFeeAgreementText — existing (legacy) member', () => {
     }
   });
 
-  it('does not describe a deposit that can be applied or forfeited', () => {
+  it('conditions the deposit on whether one was collected at original enrollment', () => {
     const text = renderFeeAgreementText({
       ...baseCtx,
       legacy: true,
       nextBillingCycleIso: '2026-06-01',
     });
-    // The standard cancellation acknowledgment says the last month's fee is
-    // "collected at sign-up and held as a deposit" — untrue here.
-    expect(text).not.toContain('collected at sign-up');
-    expect(text).toContain('no deposit to be applied');
-    // The 30-day notice requirement still stands.
+
+    // A first + last was likely collected when they originally enrolled, off
+    // the portal — we have no record of it either way. So the document must
+    // neither assert a deposit exists nor deny it. The standard template
+    // states flatly that the fee "is collected at sign-up and held as a
+    // deposit"; the legacy one conditions both the credit and the forfeiture.
+    expect(text).not.toContain('is collected at sign-up and held as a deposit');
+    expect(text).toContain('If a Last Months Membership Fee was collected');
+    expect(text).toContain('it will be applied to');
+    expect(text).toContain('forfeits that deposit');
+    expect(text).toMatch(/If\s+no such fee was collected/);
+
+    // Deposits taken at original enrollment survive this agreement.
+    expect(text).toMatch(/are unaffected by\s+this Agreement/);
+
+    // The 30-day notice requirement stands unconditionally.
     expect(text).toContain('thirty (30) calendar days');
+    expect(text).toContain('without regard');
   });
 
   it('still renders first + last for a standard (non-legacy) member', () => {
