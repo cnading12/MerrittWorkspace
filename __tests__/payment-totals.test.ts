@@ -4,6 +4,7 @@ import {
   calculateFeeAgreementTotals,
   calculateProratedFirstMonthCents,
   parseStartDate,
+  renderFeeAgreementText,
 } from '@/lib/portal/legal';
 
 // These tests guard the contract between three places that all need to
@@ -111,5 +112,107 @@ describe('billingCycleAnchorAfter', () => {
     // Start = May 1; anchor = June 1 (the *next* full-month charge).
     expect(d.getUTCMonth()).toBe(5);
     expect(d.getUTCDate()).toBe(1);
+  });
+});
+
+// Existing members who migrated into the portal (`is_legacy_member`) are
+// charged nothing at signup — no prorated first month, no last-month
+// deposit, no card fee. Their archived Fee Agreement has to say that. It
+// used to render through the standard template, which showed a first + last
+// deposit Grand Total they never agreed to and were never charged.
+describe('renderFeeAgreementText — existing (legacy) member', () => {
+  const baseCtx = {
+    member: {
+      name: 'Dana Reyes',
+      street: '2246 Irving St',
+      cityStateZip: 'Denver, CO 80211',
+      phone: '303-555-0142',
+      email: 'dana@example.com',
+    },
+    invoicing: {
+      companyName: '',
+      street: '',
+      cityStateZip: '',
+      contactName: 'Dana Reyes',
+      phone: '',
+      email: '',
+    },
+    designationLabel: 'Dedicated Desk',
+    monthlyCostCents: 32500,
+    termStart: 'June 1, 2026',
+    termEnd: 'June 30, 2026',
+    paymentMethod: 'card' as const,
+    signedDate: '5/20/2026',
+    memberTitle: 'Owner',
+  };
+
+  it('collects nothing at signing and names no deposit amount', () => {
+    const text = renderFeeAgreementText({
+      ...baseCtx,
+      legacy: true,
+      nextBillingCycleIso: '2026-06-01',
+    });
+
+    expect(text).toContain('Existing Member Rate Acknowledgement');
+    expect(text).toContain('DUE AT SIGNING');
+    expect(text).toContain('$0.00');
+    expect(text).toContain('not collected — existing member');
+    // The monthly rate is the only dollar figure they committed to.
+    expect(text).toContain('$325.00 / month');
+
+    // No prorated first month, no deposit charge, no card fee — the three
+    // amounts the standard template would have invented for them.
+    expect(text).not.toContain('First Months Membership Fee (prorated)');
+    expect(text).not.toContain('3.5% Credit Card Fee');
+    expect(text).not.toContain('GRAND TOTAL');
+    // $325.00 appears as the monthly rate; it must never appear as a
+    // last-month deposit line item.
+    expect(text).not.toMatch(/Last Months Membership Fee \(deposit\):\s+\$\d/);
+  });
+
+  it('states when auto-pay would begin, and omits the date if unknown', () => {
+    const withDate = renderFeeAgreementText({
+      ...baseCtx,
+      legacy: true,
+      nextBillingCycleIso: '2026-06-01',
+    });
+    expect(withDate).toContain('June 1, 2026');
+
+    // Older legacy agreements may predate `next_billing_cycle`; a malformed
+    // or missing value must degrade to the generic sentence, not throw.
+    for (const iso of [null, undefined, 'not-a-date']) {
+      const without = renderFeeAgreementText({
+        ...baseCtx,
+        legacy: true,
+        nextBillingCycleIso: iso as any,
+      });
+      expect(without).toContain('the 1st of the next billing cycle');
+      expect(without).not.toContain('June 1, 2026');
+    }
+  });
+
+  it('does not describe a deposit that can be applied or forfeited', () => {
+    const text = renderFeeAgreementText({
+      ...baseCtx,
+      legacy: true,
+      nextBillingCycleIso: '2026-06-01',
+    });
+    // The standard cancellation acknowledgment says the last month's fee is
+    // "collected at sign-up and held as a deposit" — untrue here.
+    expect(text).not.toContain('collected at sign-up');
+    expect(text).toContain('no deposit to be applied');
+    // The 30-day notice requirement still stands.
+    expect(text).toContain('thirty (30) calendar days');
+  });
+
+  it('still renders first + last for a standard (non-legacy) member', () => {
+    const text = renderFeeAgreementText({ ...baseCtx, legacy: false });
+    const totals = calculateFeeAgreementTotals(32500, 'card', false);
+
+    expect(text).toContain('First Months Membership Fee (prorated)');
+    expect(text).toContain('Last Months Membership Fee');
+    expect(text).toContain('GRAND TOTAL');
+    expect(text).toContain(`$${(totals.grandTotalCents / 100).toFixed(2)}`);
+    expect(text).not.toContain('Existing Member Rate Acknowledgement');
   });
 });

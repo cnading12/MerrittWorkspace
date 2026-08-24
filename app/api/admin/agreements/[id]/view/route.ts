@@ -92,6 +92,12 @@ function buildDocumentBody(
   if (agreement.agreement_type === 'fee_agreement') {
     const meta = agreement.metadata || {};
     const invoicing = meta.invoicing || {};
+    // Existing members who migrated into the portal signed a rate
+    // acknowledgement with nothing due at signing — no prorated first month,
+    // no last-month deposit, no card fee. They also never supplied separate
+    // invoicing details or a start/end term, so the standard template's
+    // fields would be blank and its totals would be fiction.
+    const legacy = Boolean(meta.legacy_member);
     const ctx: FeeAgreementContext = {
       member: {
         name: memberName,
@@ -117,6 +123,8 @@ function buildDocumentBody(
       signedDate,
       memberTitle: meta.member_title || null,
       oneTime: Boolean(meta.one_time),
+      legacy,
+      nextBillingCycleIso: meta.next_billing_cycle || null,
     };
     return escapeHtml(renderFeeAgreementText(ctx));
   }

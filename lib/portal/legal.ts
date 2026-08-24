@@ -519,6 +519,17 @@ export interface FeeAgreementContext {
   // When true, the member is on a single-day pass and the fee is billed
   // as one upfront charge — no first/last month, no recurring renewal.
   oneTime?: boolean;
+  // When true, the member is an existing member who migrated into the portal
+  // from manual/paper billing (`members.is_legacy_member`). Their Fee
+  // Agreement is a rate acknowledgement only: nothing is collected at
+  // signing — no prorated first month, no last-month deposit, no card fee —
+  // and billing simply continues on the 1st of each cycle. Rendering one
+  // through the standard template would show a first + last deposit total
+  // they never agreed to and were never charged.
+  legacy?: boolean;
+  // YYYY-MM-DD of the billing cycle a legacy member's auto-pay would start
+  // on, captured at sign time (`metadata.next_billing_cycle`). Legacy only.
+  nextBillingCycleIso?: string | null;
 }
 
 export interface FeeAgreementTotals {
@@ -614,7 +625,102 @@ function pad(label: string, value: string, width = 22): string {
   return `${(label + ':').padEnd(width)} ${value}`;
 }
 
+// Width of the `-----` rules bounding the fee table, so amounts can be
+// flush-right against them the way the standard template's are.
+const FEE_TABLE_WIDTH = 77;
+const NOT_COLLECTED = 'not collected — existing member';
+
+function rightAlign(label: string, value: string, width = FEE_TABLE_WIDTH): string {
+  const gap = Math.max(1, width - label.length - value.length);
+  return `${label}${' '.repeat(gap)}${value}`;
+}
+
+// Human label for a YYYY-MM-DD stored in agreement metadata. Returns null
+// for a missing or malformed value so callers can just omit the sentence.
+function formatIsoDateLabel(iso: string | null | undefined): string | null {
+  if (typeof iso !== 'string' || !iso) return null;
+  try {
+    return parseStartDate(iso).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+  } catch {
+    return null;
+  }
+}
+
+// Existing members who migrated into the portal signed a rate
+// acknowledgement, not the standard first + last fee schedule: nothing was
+// collected at signing and nothing is held as a deposit. This mirrors the
+// document they actually saw and signed in the portal
+// (LegacyFeeAgreementSection in app/portal/page.tsx), so the archived copy
+// staff can pull up matches it line for line.
+function renderLegacyFeeAgreementText(ctx: FeeAgreementContext): string {
+  const { member: m } = ctx;
+  const nextCycleLabel = formatIsoDateLabel(ctx.nextBillingCycleIso);
+  const autoPaySentence = nextCycleLabel
+    ? `If Member elects to set up auto-pay from the member portal's Payments
+tab, the automatic charge will begin on ${nextCycleLabel} (the 1st of the
+next billing cycle) and run on the 1st of every month thereafter.`
+    : `If Member elects to set up auto-pay from the member portal's Payments
+tab, the automatic charge will begin on the 1st of the next billing cycle
+and run on the 1st of every month thereafter.`;
+
+  return `
+MERRITT WORKSPACE FEE AGREEMENT
+Existing Member Rate Acknowledgement
+
+MEMBER INFORMATION
+${pad('Contact Name', m.name)}        ${pad('Company Federal ID#', m.federalId || '')}
+${pad('Street Address', m.street)}    ${pad('Telephone', m.phone)}
+${pad('City/State/ZIP', m.cityStateZip)}    ${pad('Email', m.email)}
+
+DESCRIPTION OF SIGNATURE PAGE
+This page shall act as a binding agreement between Merritt Workspace and the
+Member, as named above. Member is an EXISTING Merritt Workspace member who
+migrated from manual billing into the member portal. *Please note* This is a
+rate acknowledgement only. NO first month's membership fee, NO Last Months
+Membership Fee deposit, and NO proration are collected, and no credit card
+processing fee is assessed. Nothing was due at signing. Member's existing
+membership continues uninterrupted at the rate stated below, billed on the
+1st of each billing cycle.
+
+${autoPaySentence}
+
+CANCELLATION POLICY ACKNOWLEDGMENT: To cancel, Member must deliver written
+notice no fewer than thirty (30) calendar days prior to the intended last
+day of membership. Because no Last Months Membership Fee was collected from
+Member at signing, there is no deposit to be applied to Member's final month
+and none to be forfeited for insufficient notice; Member's final month is
+invoiced in the ordinary course. All other cancellation terms in Section 4
+of the Terms and Conditions apply.
+
+MEMBERSHIP DESCRIPTION                                               TOTAL
+-----------------------------------------------------------------------------
+${ctx.designationLabel}
+${rightAlign('Monthly Membership Fee:', `${usd(ctx.monthlyCostCents)} / month`)}
+${rightAlign('First Months Membership Fee:', NOT_COLLECTED)}
+${rightAlign('Last Months Membership Fee (deposit):', NOT_COLLECTED)}
+-----------------------------------------------------------------------------
+${rightAlign('DUE AT SIGNING', usd(0))}
+
+MEMBER ACKNOWLEDGMENT
+I, ${m.name}, am an existing Merritt Workspace member at the rate of
+${usd(ctx.monthlyCostCents)}/month. I agree to pay any amount currently owed and to
+continue paying this monthly rate on the 1st of each billing cycle.
+
+MEMBER                                MERRITT WORKSPACE
+Name Printed:  ${m.name}              Name Printed:  ${MERRITT_SIGNATORY.name}
+Title Printed: ${ctx.memberTitle || ''}              Title Printed: ${MERRITT_SIGNATORY.title}
+Signature:     [electronically signed]   Signature:     [on file]
+Date:          ${ctx.signedDate}              Date:          ${ctx.signedDate}
+`;
+}
+
 export function renderFeeAgreementText(ctx: FeeAgreementContext): string {
+  if (ctx.legacy) return renderLegacyFeeAgreementText(ctx);
   const totals = calculateFeeAgreementTotals(
     ctx.monthlyCostCents,
     ctx.paymentMethod,
