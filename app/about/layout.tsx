@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
 export const metadata: Metadata = {
   title: "About Us | Historic 1905 Church Coworking Space Denver",
@@ -33,5 +34,10 @@ export default function AboutLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <BreadcrumbSchema trail={[{ name: "About", path: "/about" }]} />
+      {children}
+    </>
+  );
 }

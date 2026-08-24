@@ -6,6 +6,8 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import PageHero from '@/components/marketing/PageHero';
 import { BLUR } from '@/components/marketing/blur';
+import FaqBlock from '@/components/marketing/FaqBlock';
+import { SITE_URL } from '@/lib/seo/business';
 import { formatTime, calculateEndTime } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 
@@ -941,6 +943,16 @@ Your time slot is temporarily reserved.`);
           </Link>
         </div>
       </section>
+
+      {/* Visible answers plus the FAQPage markup for them — the two always
+          ship together, so the structured data can never describe content a
+          visitor cannot see. */}
+      <FaqBlock
+        ids={['conference-room-non-members', 'conference-rooms']}
+        id={`${SITE_URL}/member-resources/meeting-rooms#faq`}
+        eyebrow="Booking the room"
+        heading="Rates, included hours and who can book."
+      />
 
       <Footer />
     </div>

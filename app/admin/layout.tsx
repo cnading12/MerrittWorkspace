@@ -2,7 +2,12 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import AdminNav from './AdminNav';
 
-export const metadata = { title: 'Admin | Merritt Workspace' };
+// Staff-only screens: keep them out of search indexes and AI answers even if a
+// URL leaks. robots.txt also disallows /admin/.
+export const metadata = {
+  title: 'Admin | Merritt Workspace',
+  robots: { index: false, follow: false },
+};
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (

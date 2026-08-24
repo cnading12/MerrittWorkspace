@@ -1,4 +1,8 @@
 import { Metadata } from "next";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+import FaqSchema from "@/components/seo/FaqSchema";
+import { FAQS } from "@/lib/seo/faqs";
+import { SITE_URL } from "@/lib/seo/business";
 
 export const metadata: Metadata = {
   title: "Coworking FAQs | Hours, Pricing & Amenities",
@@ -32,5 +36,18 @@ export default function FaqsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      {/* Every question on the page, in the markup, as FAQPage data. Answer
+          engines quote from this directly — it is already question-shaped. */}
+      <FaqSchema faqs={FAQS} id={`${SITE_URL}/member-resources/faqs#faq`} />
+      <BreadcrumbSchema
+        trail={[
+          { name: "Member resources", path: "/member-resources/faqs" },
+          { name: "FAQs", path: "/member-resources/faqs" },
+        ]}
+      />
+      {children}
+    </>
+  );
 }

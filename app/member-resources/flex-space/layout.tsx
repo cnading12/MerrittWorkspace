@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
 export const metadata: Metadata = {
   title: "Flex Space & Event Venue | Sloan's Lake Denver",
@@ -34,5 +35,15 @@ export default function FlexSpaceLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <BreadcrumbSchema
+        trail={[
+          { name: "Member resources", path: "/member-resources/flex-space" },
+          { name: "Flex space", path: "/member-resources/flex-space" },
+        ]}
+      />
+      {children}
+    </>
+  );
 }

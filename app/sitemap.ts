@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/seo/business';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://merrittworkspace.net';
+  const baseUrl = SITE_URL;
   const currentDate = new Date().toISOString();
 
   return [

@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+import MembershipSchema from "@/components/seo/MembershipSchema";
 
 export const metadata: Metadata = {
   title: "Private Office Rental Denver | From $500/mo | Sloan's Lake",
@@ -33,5 +35,18 @@ export default function PrivateOfficeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <MembershipSchema
+        planIds={["private_office_single", "private_office_double", "private_office_large"]}
+      />
+      <BreadcrumbSchema
+        trail={[
+          { name: "Membership", path: "/membership" },
+          { name: "Private offices", path: "/membership/private-office" },
+        ]}
+      />
+      {children}
+    </>
+  );
 }

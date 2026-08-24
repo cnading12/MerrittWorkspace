@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+import MembershipSchema from "@/components/seo/MembershipSchema";
 
 export const metadata: Metadata = {
   title: "Coworking Memberships | Dedicated Desks & Private Offices",
@@ -33,5 +35,12 @@ export default function MembershipLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      {/* Every plan as a priced Product/Offer. */}
+      <MembershipSchema />
+      <BreadcrumbSchema trail={[{ name: "Membership", path: "/membership" }]} />
+      {children}
+    </>
+  );
 }

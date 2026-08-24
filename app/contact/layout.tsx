@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
 export const metadata: Metadata = {
   title: "Contact & Location | Coworking Space Sloan's Lake Denver",
@@ -33,5 +34,10 @@ export default function ContactLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <BreadcrumbSchema trail={[{ name: "Contact", path: "/contact" }]} />
+      {children}
+    </>
+  );
 }

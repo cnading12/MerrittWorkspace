@@ -1,7 +1,22 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
+import Essentials from '@/components/marketing/Essentials';
+import FaqBlock from '@/components/marketing/FaqBlock';
 import { BLUR } from '@/components/marketing/blur';
+import { SITE_URL } from '@/lib/seo/business';
+
+// The questions someone puts to an assistant before choosing a workspace, in
+// the order they tend to ask them. Answered on the homepage itself so a single
+// fetch of this page settles all of them.
+const HOME_FAQ_IDS = [
+  'how-much-does-it-cost',
+  'twenty-four-seven',
+  'parking',
+  'commitment',
+  'free-trial',
+  'compare-to-chains',
+];
 
 // No client state on this page any more — the hero carousel is gone, so the
 // whole thing renders on the server.
@@ -460,6 +475,10 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <Essentials />
+
+      <FaqBlock ids={HOME_FAQ_IDS} id={`${SITE_URL}/#faq`} />
 
       <Footer />
     </div>
