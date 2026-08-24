@@ -6,12 +6,16 @@ import {
   PEAK_START_MINUTES,
   PEAK_END_MINUTES,
 } from '@/lib/bookings/peak';
+import { BUSINESS_OPEN_MINUTES, BUSINESS_CLOSE_MINUTES } from '@/lib/hours';
 
-// The conference room is bookable around the clock, but only weekdays
-// 8:00 AM – 6:00 PM MT draw on a member's monthly allowance. Everything else
-// is unlimited and free for every tier. These tests pin the boundary, because
-// getting it wrong either bills members for evenings we said were free or
-// gives away peak hours we meter.
+// The conference room is bookable around the clock, but only the building's
+// business hours — weekdays 7:30 AM – 5:30 PM MT — draw on a member's monthly
+// allowance. Everything else is unlimited and free for every tier. These tests
+// pin the boundary, because getting it wrong either bills members for evenings
+// we said were free or gives away peak hours we meter.
+//
+// The window sits on a half hour at each end, so the boundary hours are
+// PRORATED: a 7:00–8:00 AM hour is half metered, not all-or-nothing.
 //
 // 2026-08-17 is a Monday; 2026-08-22 a Saturday; 2026-08-23 a Sunday.
 
@@ -31,40 +35,53 @@ describe('splitPeakHours — the window itself', () => {
     });
   });
 
-  it('prorates a booking straddling the 6 PM edge', () => {
-    // The example from the spec: 5–7 PM spends one hour, gets one free.
+  it('prorates a booking straddling the 5:30 PM edge', () => {
+    // 5–7 PM: only 5:00–5:30 is metered, the remaining 90 minutes are free.
     expect(splitPeakHours('2026-08-17', '17:00', 2)).toEqual({
-      peakHours: 1,
-      offPeakHours: 1,
+      peakHours: 0.5,
+      offPeakHours: 1.5,
     });
   });
 
-  it('prorates a booking straddling the 8 AM edge', () => {
+  it('prorates a booking straddling the 7:30 AM edge', () => {
+    // 7–9 AM: 7:00–7:30 is free, 7:30–9:00 is metered.
     expect(splitPeakHours('2026-08-17', '07:00', 2)).toEqual({
-      peakHours: 1,
-      offPeakHours: 1,
+      peakHours: 1.5,
+      offPeakHours: 0.5,
     });
   });
 
-  it('counts the last hour that ends exactly at 6 PM', () => {
-    expect(splitPeakHours('2026-08-17', '17:00', 1).peakHours).toBe(1);
+  it('meters only the first half of the hour beginning at 5:00 PM', () => {
+    expect(splitPeakHours('2026-08-17', '17:00', 1).peakHours).toBe(0.5);
   });
 
-  it('does not count an hour starting exactly at 6 PM', () => {
+  it('does not meter an hour starting at or after 5:30 PM', () => {
     expect(splitPeakHours('2026-08-17', '18:00', 1).peakHours).toBe(0);
   });
 
-  it('counts the first hour starting exactly at 8 AM', () => {
+  it('meters only the second half of the hour beginning at 7:00 AM', () => {
+    expect(splitPeakHours('2026-08-17', '07:00', 1).peakHours).toBe(0.5);
+  });
+
+  it('meters a whole hour starting at 8:00 AM, safely inside the window', () => {
     expect(splitPeakHours('2026-08-17', '08:00', 1).peakHours).toBe(1);
   });
 
-  it('does not count an hour ending exactly at 8 AM', () => {
-    expect(splitPeakHours('2026-08-17', '07:00', 1).peakHours).toBe(0);
+  it('does not meter an hour ending at or before 7:30 AM', () => {
+    expect(splitPeakHours('2026-08-17', '06:00', 1).peakHours).toBe(0);
   });
 
-  it('keeps the exported bounds in step with the window it enforces', () => {
-    expect(PEAK_START_MINUTES).toBe(8 * 60);
-    expect(PEAK_END_MINUTES).toBe(18 * 60);
+  it('meters a full business day as exactly the window length', () => {
+    // 7 AM – 6 PM covers the whole 7:30–5:30 window and nothing more.
+    expect(splitPeakHours('2026-08-17', '07:00', 11).peakHours).toBe(10);
+  });
+
+  it('keeps the exported bounds in step with the building business hours', () => {
+    expect(PEAK_START_MINUTES).toBe(7 * 60 + 30);
+    expect(PEAK_END_MINUTES).toBe(17 * 60 + 30);
+    // The peak window IS business hours — if one moves, so must the other.
+    expect(PEAK_START_MINUTES).toBe(BUSINESS_OPEN_MINUTES);
+    expect(PEAK_END_MINUTES).toBe(BUSINESS_CLOSE_MINUTES);
   });
 });
 
@@ -95,10 +112,11 @@ describe('splitPeakHours — across midnight', () => {
   });
 
   it('rolls a Sunday-night booking into Monday and meters the Monday hours', () => {
-    // Sunday 11 PM + 10 hours ends 9 AM Monday. Only 8–9 AM Monday is peak.
+    // Sunday 11 PM + 10 hours ends 9 AM Monday. Monday's 7–8 AM hour is half
+    // metered and 8–9 AM fully, so 1.5 hours draw on the allowance.
     expect(splitPeakHours('2026-08-23', '23:00', 10)).toEqual({
-      peakHours: 1,
-      offPeakHours: 9,
+      peakHours: 1.5,
+      offPeakHours: 8.5,
     });
   });
 });
@@ -108,5 +126,10 @@ describe('isFullyOffPeak', () => {
     expect(isFullyOffPeak('2026-08-17', '19:00', 3)).toBe(true);
     expect(isFullyOffPeak('2026-08-22', '10:00', 4)).toBe(true);
     expect(isFullyOffPeak('2026-08-17', '17:00', 2)).toBe(false);
+  });
+
+  it('is false for a booking that only clips the window by half an hour', () => {
+    // 7–8 AM is half metered; "fully off-peak" must not round that away.
+    expect(isFullyOffPeak('2026-08-17', '07:00', 1)).toBe(false);
   });
 });

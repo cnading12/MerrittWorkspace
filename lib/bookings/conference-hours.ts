@@ -8,7 +8,8 @@
 // The per-designation numbers live in the tier_allocations table (see
 // lib/bookings/allocations.ts) so they can be changed without a deploy.
 //
-// Only PEAK hours — weekdays 8:00 AM – 6:00 PM MT — draw on the allotment.
+// Only PEAK hours — weekdays 7:30 AM – 5:30 PM MT, the building's business
+// hours — draw on the allotment.
 // Evenings, nights and weekends are unlimited and free for every tier; the
 // booking routes split a booking with splitPeakHours (lib/bookings/peak.ts)
 // before consulting the allotment, and record off-peak hours with

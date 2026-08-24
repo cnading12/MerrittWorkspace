@@ -25,7 +25,7 @@ export default function FlexSpacePage() {
         objectPosition="62% 50%"
         eyebrow="Member resources &middot; Flex space"
         title={<>A 1905 event space, right next door.</>}
-        lead="A restored hall with the original stained glass, a hardwood floor, a projector and a sound system — free to book with your membership, every weekday until 4:30."
+        lead="A restored hall with the original stained glass, a hardwood floor, a projector and a sound system — free to book with your membership, every weekday until 4:00."
       />
 
       {/* What it is */}
@@ -89,7 +89,7 @@ export default function FlexSpacePage() {
             </div>
             <div>
               <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Hours</dt>
-              <dd className="mt-2 font-display text-3xl font-semibold text-ink">9&ndash;4:30</dd>
+              <dd className="mt-2 font-display text-3xl font-semibold text-ink">8&ndash;4</dd>
               <dd className="mt-2 text-[15px] leading-relaxed text-ink-60">
                 Weekdays, Mountain Time. Book in half-hour steps, same day or up
                 to 60 days out.
@@ -188,12 +188,12 @@ export default function FlexSpacePage() {
         </div>
       </section>
 
-      {/* After 4:30 */}
+      {/* After 4:00 */}
       <section className="mw-section-rule">
         <div className="mw-container">
           <div className="max-w-2xl">
             <p className="mw-eyebrow mb-5">Evenings and weekends</p>
-            <h2 className="mw-h2">After 4:30, the room changes hands.</h2>
+            <h2 className="mw-h2">After 4:00, the room changes hands.</h2>
             <p className="mt-6 mw-body">
               In the evenings and on weekends the space becomes{' '}
               <a

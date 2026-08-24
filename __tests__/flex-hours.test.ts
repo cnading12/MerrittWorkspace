@@ -34,6 +34,12 @@ import {
   FLEX_CLOSE_MINUTES,
 } from '@/lib/bookings/flex-hours';
 import { clearAllocationCache } from '@/lib/bookings/allocations';
+import {
+  FLEX_OPEN_MINUTES as HOURS_FLEX_OPEN,
+  FLEX_CLOSE_MINUTES as HOURS_FLEX_CLOSE,
+  FLEX_OPEN_24H,
+  FLEX_CLOSE_24H,
+} from '@/lib/hours';
 
 const setMembers = (rows: any[]) => {
   resultsByTable['members'] = { data: rows, error: null };
@@ -229,6 +235,16 @@ describe('policy constants', () => {
   it('opens the window at 8:00 AM and closes it at 4:00 PM', () => {
     expect(FLEX_OPEN_MINUTES).toBe(8 * 60);
     expect(FLEX_CLOSE_MINUTES).toBe(16 * 60);
+  });
+
+  // flex-hours.ts re-exports these from lib/hours.ts so the client components
+  // can read the window without pulling in the service-role Supabase client.
+  // If the two ever drift, the booking form offers times the API rejects.
+  it('re-exports the same window lib/hours.ts publishes', () => {
+    expect(FLEX_OPEN_MINUTES).toBe(HOURS_FLEX_OPEN);
+    expect(FLEX_CLOSE_MINUTES).toBe(HOURS_FLEX_CLOSE);
+    expect(FLEX_OPEN_24H).toBe('08:00');
+    expect(FLEX_CLOSE_24H).toBe('16:00');
   });
 
   it('caps a member at two future reservations', () => {

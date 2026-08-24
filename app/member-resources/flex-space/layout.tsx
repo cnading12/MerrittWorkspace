@@ -5,7 +5,7 @@ import { BUSINESS, SITE_URL } from "@/lib/seo/site";
 
 const TITLE = "Flex Space & 1905 Event Venue | Denver";
 const DESCRIPTION =
-  "A restored 1905 hall next door to Merritt Workspace in Sloan's Lake, Denver — original stained glass, hardwood floor, projector and sound system. Free to book with membership, weekdays until 4:30.";
+  "A restored 1905 hall next door to Merritt Workspace in Sloan's Lake, Denver — original stained glass, hardwood floor, projector and sound system. Free to book with membership, weekdays until 4:00.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -63,7 +63,7 @@ export default function FlexSpaceLayout({
             "@id": `${SITE_URL}/member-resources/flex-space#venue`,
             name: "The Merritt Flex Space",
             description:
-              "A restored 1905 hall next to Merritt Workspace in Sloan's Lake, Denver, with the original stained glass, a hardwood floor, a projector and a sound system. Members book it free on weekdays until 4:30pm.",
+              "A restored 1905 hall next to Merritt Workspace in Sloan's Lake, Denver, with the original stained glass, a hardwood floor, a projector and a sound system. Members book it free on weekdays until 4:00pm.",
             url: `${SITE_URL}/member-resources/flex-space`,
             image: [
               `${SITE_URL}/images/flex-space/hall-1.webp`,

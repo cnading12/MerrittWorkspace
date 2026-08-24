@@ -10,6 +10,11 @@
  */
 
 import {
+  ACCESS_CODE_WHEN_NEEDED,
+  BUSINESS_CLOSES_24H,
+  BUSINESS_OPENS_24H,
+} from '../hours';
+import {
   AREAS_SERVED,
   AMENITIES,
   BUSINESS,
@@ -153,14 +158,14 @@ export function organizationNode(): Node {
         dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
         opens: '00:00',
         closes: '23:59',
-        description: '24/7 access for members with an access code',
+        description: `24/7 access for members; a personal access code is needed ${ACCESS_CODE_WHEN_NEEDED}`,
       },
       {
         '@type': 'OpeningHoursSpecification',
         dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-        opens: '08:00',
-        closes: '18:00',
-        description: 'Building unlocked; tours and member services',
+        opens: BUSINESS_OPENS_24H,
+        closes: BUSINESS_CLOSES_24H,
+        description: 'Business hours — building unlocked, staff on site for tours and support',
       },
     ],
     priceRange: PRICE_RANGE,
