@@ -10,6 +10,7 @@ import {
   trialPrefillFrom,
   validateTrialSubmission,
 } from '@/lib/portal/trialApplication';
+import { PLAN_FOR_TRIAL_SEATING, readTrialSeating } from '@/lib/portal/trialApplication';
 import { selectFollowupTargets, isDueFollowup } from '@/lib/portal/trialFollowup';
 import { trialConversionEmail, trialResumeUrl } from '@/lib/portal/trialConversionEmail';
 
@@ -58,7 +59,7 @@ describe('trial submission validation', () => {
     ['last_name', { last_name: '' }, /last name/i],
     ['email', { email: '' }, /email/i],
     ['phone', { phone: '' }, /phone/i],
-    ['seating', { seating: '' }, /dedicated desk or a private office/i],
+    ['seating', { seating: '' }, /where you would like to work/i],
     ['trial_date', { trial_date: '' }, /day you would like to come in/i],
     ['terms', { agrees_to_terms: false }, /terms/i],
   ])('rejects a missing %s', (_label, override, expected) => {
@@ -79,9 +80,13 @@ describe('trial submission validation', () => {
     expect(validateTrialSubmission({ ...valid, trial_date: today }, { today })).toBeNull();
   });
 
+  it.each(['desk', 'office', 'cafe'])('accepts %s as a place to work', (seating) => {
+    expect(validateTrialSubmission({ ...valid, seating }, { today })).toBeNull();
+  });
+
   it('rejects an unrecognised seating value', () => {
     expect(validateTrialSubmission({ ...valid, seating: 'penthouse' }, { today })).toMatch(
-      /dedicated desk or a private office/i
+      /where you would like to work/i
     );
   });
 });
@@ -346,5 +351,54 @@ describe('conversion email', () => {
     });
     expect(text).toContain('your recent visit');
     expect(text).toContain('Hi,');
+  });
+});
+
+describe('café as a place to trial', () => {
+  // A café member works from the 1905 building next door, not the coworking
+  // floor. The seating answer is what carries that all the way to the email.
+  it('maps each seating answer to the tier it would sell', () => {
+    expect(PLAN_FOR_TRIAL_SEATING).toEqual({
+      desk: 'dedicated_desk',
+      office: 'private_office_single',
+      cafe: 'cafe_membership',
+    });
+  });
+
+  it('reads a stored café answer back', () => {
+    expect(readTrialSeating('cafe')).toBe('cafe');
+    expect(readTrialSeating('office')).toBe('office');
+    expect(readTrialSeating('desk')).toBe('desk');
+  });
+
+  // An unrecognised value must land on the desk instructions, which are the
+  // ones that make sense to someone standing in the coworking building.
+  it('falls back to a desk for anything it does not recognise', () => {
+    expect(readTrialSeating(undefined)).toBe('desk');
+    expect(readTrialSeating('penthouse')).toBe('desk');
+    expect(readTrialSeating(null)).toBe('desk');
+  });
+
+  it('carries the café answer into the prefill', () => {
+    expect(
+      trialPrefillFrom({
+        first_name: 'Dana',
+        email: 'dana@example.com',
+        payload: { trial_seating: 'cafe' },
+      }).seating
+    ).toBe('cafe');
+  });
+
+  it('names the café in the conversion email', () => {
+    const { html, text } = trialConversionEmail({
+      firstName: 'Dana',
+      trialDate: '2026-09-14',
+      resumeToken: 'c'.repeat(64),
+      seating: 'cafe',
+    });
+    for (const body of [html, text]) {
+      expect(body).toMatch(/café/i);
+      expect(body).not.toMatch(/dedicated desk/i);
+    }
   });
 });

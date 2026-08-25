@@ -9,6 +9,8 @@
 // Sent by app/api/cron/trial-followup (automatically, the day after the
 // visit) and from the admin applications page (manually, on demand).
 
+import type { TrialSeating } from './trialApplication';
+
 // Public site origin for the link. Falls back to the production domain
 // rather than a relative path, because a relative link in an email is dead.
 export function siteOrigin(): string {
@@ -36,11 +38,16 @@ export function trialConversionEmail(opts: {
   firstName: string;
   trialDate: string | null;
   resumeToken: string;
-  seating: 'desk' | 'office';
+  seating: TrialSeating;
 }): { subject: string; html: string; text: string } {
   const url = trialResumeUrl(opts.resumeToken);
   const dateLabel = formatTrialDate(opts.trialDate);
-  const spaceLabel = opts.seating === 'office' ? 'private office' : 'dedicated desk';
+  const spaceLabel =
+    opts.seating === 'office'
+      ? 'private office'
+      : opts.seating === 'cafe'
+        ? 'café'
+        : 'dedicated desk';
   const greeting = opts.firstName ? `Hi ${opts.firstName},` : 'Hi,';
 
   const subject = 'Your trial day at Merritt Workspace — ready to join?';

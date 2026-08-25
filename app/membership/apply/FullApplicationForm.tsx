@@ -16,7 +16,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle, AlertCircle, Loader2, User, Briefcase, Calendar, Phone, Shield, CreditCard, Home, Dumbbell, Plus, Minus, ArrowLeft } from 'lucide-react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
-import type { TrialPrefill } from '@/lib/portal/trialApplication';
+import { PLAN_FOR_TRIAL_SEATING, type TrialPrefill } from '@/lib/portal/trialApplication';
 
 type HousingReferenceType = '' | 'mortgage' | 'landlord';
 type MembershipReferenceType = '' | 'gym' | 'workspace';
@@ -356,7 +356,7 @@ export default function FullApplicationForm({
   // glance and a scroll rather than a decision they already made once.
   useEffect(() => {
     if (!prefill) return;
-    setQuantity(prefill.seating === 'office' ? 'private_office_single' : 'dedicated_desk', 1);
+    setQuantity(PLAN_FOR_TRIAL_SEATING[prefill.seating] as PlanId, 1);
     // Runs once per prefill; setQuantity is re-created every render and
     // depending on it would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -304,7 +304,8 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
             <div className="bg-bone border border-clay p-6">
               <h2 className="font-display text-xl font-semibold text-ink mb-2">Your visit</h2>
               <p className="text-sm text-ink-60 mb-4">
-                What would you like to try? This decides where you&rsquo;ll sit on the day.
+                Where would you like to work for the day? Whichever you pick, the whole place is
+                open to you &mdash; the kitchen, the printers, the meeting rooms and a look around.
               </p>
               <div className="space-y-3">
                 <label
@@ -340,6 +341,26 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
                     <p className="text-sm text-ink-60">
                       A lockable office to yourself. We&rsquo;ll confirm which office with you
                       beforehand, since it has to be unlocked and set up for your arrival.
+                    </p>
+                  </div>
+                </label>
+
+                <label
+                  className={`flex items-start gap-3 p-3 border-2 cursor-pointer transition ${seating === 'cafe' ? 'border-orange-500 bg-white' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                >
+                  <input
+                    type="radio"
+                    name="trial_seating"
+                    checked={seating === 'cafe'}
+                    onChange={() => setSeating('cafe')}
+                    className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500"
+                  />
+                  <div>
+                    <p className="font-medium text-ink">The caf&eacute;</p>
+                    <p className="text-sm text-ink-60">
+                      Open seating in the caf&eacute; at the front of the restored 1905 building
+                      next door &mdash; tables, natural light, stained glass. No assigned desk. The
+                      workspace itself stays open to you all day for everything else.
                     </p>
                   </div>
                 </label>

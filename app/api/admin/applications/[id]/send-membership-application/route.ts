@@ -15,7 +15,11 @@ import { Resend } from 'resend';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
-import { generateResumeToken, isTrialApplication } from '@/lib/portal/trialApplication';
+import {
+  generateResumeToken,
+  isTrialApplication,
+  readTrialSeating,
+} from '@/lib/portal/trialApplication';
 import { trialConversionEmail } from '@/lib/portal/trialConversionEmail';
 
 export const dynamic = 'force-dynamic';
@@ -77,7 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       firstName: app.first_name || '',
       trialDate: app.trial_date || null,
       resumeToken,
-      seating: app.payload?.trial_seating === 'office' ? 'office' : 'desk',
+      seating: readTrialSeating(app.payload?.trial_seating),
     });
 
     const resend = new Resend(process.env.RESEND_API_KEY);

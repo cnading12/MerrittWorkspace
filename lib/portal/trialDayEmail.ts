@@ -1,6 +1,6 @@
 // The trial-day info email sent to an applicant who asked for a trial day.
 //
-// Three shapes come out of the same template, chosen by what the applicant is
+// Four shapes come out of the same template, chosen by what the applicant is
 // trialing and what seating is actually free on the day they applied:
 //
 //   - Private office trial: they must confirm an office number with member
@@ -10,8 +10,16 @@
 //   - Dedicated desk trial with nothing free (or a private dedicated desk
 //     applicant): their desk sits inside a converted private office, which
 //     member services assigns — so they're pointed at a team member instead.
+//   - Café trial: a different building. Café members work from the front of
+//     the restored 1905 hall next door rather than the coworking floor, so
+//     where they go and where they sit both change. Everything else is
+//     deliberately identical — the workspace stays open to them all day for
+//     the kitchen, the printers, meeting rooms, phone booths and a look
+//     around, which is the whole point of trialling the place.
 //
-// Sent from app/api/membership-application/route.ts.
+// Sent from app/api/membership-application/trial/route.ts (the short trial
+// form) and app/api/membership-application/route.ts (a full application that
+// also asked for a trial day).
 
 // Seating guidance for a trial visitor, resolved at send time.
 //
@@ -29,6 +37,25 @@ interface TrialDeskInfo {
   allDesksTaken?: boolean;
 }
 
+// The café is at the front of the 1905 building — the restored church on the
+// same lawn — and seating there is open: no assigned desk, no numbers, no
+// booking. Which is exactly what a café membership is, so the trial has to
+// show it rather than sitting them at a desk they would not get.
+const CAFE_SEATING_HTML =
+  'Sit wherever is free. The café runs on open seating — table seating, natural light, and the original stained glass still in the windows — so there is no desk number to look for and nothing to book.';
+const CAFE_SEATING_TEXT = `Sit wherever is free. The café runs on open seating — table seating,
+natural light, and the original stained glass still in the windows — so
+there is no desk number to look for and nothing to book.`;
+
+// Said in both the arrival and the seating block for a café trial, because
+// it is the thing a café visitor is most likely to get wrong: they may think
+// the café is all they get. It isn't.
+const CAFE_WORKSPACE_ACCESS_HTML =
+  'The workspace itself is next door and open to you all day — wander over whenever you like for the kitchen, the printers, a meeting room, a phone booth, or just to see the place.';
+const CAFE_WORKSPACE_ACCESS_TEXT = `The workspace itself is next door and open to you all day — wander over
+whenever you like for the kitchen, the printers, a meeting room, a phone
+booth, or just to see the place.`;
+
 const TRIAL_DESK_EQUIPMENT_HTML =
   'Every dedicated desk comes with a <strong>monitor, filing storage, and a power supply</strong> — bring your laptop and you\'re set.';
 // Same sentence in the two shapes the plain-text email needs: as a bullet
@@ -42,6 +69,10 @@ export function generateTrialDayEmailHTML(data: {
   firstName: string;
   trialDate: string;
   isOfficeTrial?: boolean;
+  isCafeTrial?: boolean;
+  // True only when this person also submitted a full membership application.
+  // Short-form trial applicants have not — see the closing paragraph.
+  hasFullApplication?: boolean;
 } & TrialDeskInfo) {
   const trialDateDisplay = data.trialDate
     ? new Date(data.trialDate).toLocaleDateString('en-US', {
@@ -51,17 +82,23 @@ export function generateTrialDayEmailHTML(data: {
 
   const headerTitle = data.isOfficeTrial
     ? 'Your Office Trial Day is Almost Set'
-    : "You're Set for Your Trial Day";
+    : data.isCafeTrial
+      ? "You're Set for Your Café Trial Day"
+      : "You're Set for Your Trial Day";
 
   const headerSubtitle = data.isOfficeTrial
     ? 'One quick step — confirm your office number with us'
-    : data.allDesksTaken
-      ? 'One quick step — confirm which office your desk is in'
-      : 'Everything you need to show up and get to work';
+    : data.isCafeTrial
+      ? 'Everything you need to show up and get to work'
+      : data.allDesksTaken
+        ? 'One quick step — confirm which office your desk is in'
+        : 'Everything you need to show up and get to work';
 
   const introParagraph = data.isOfficeTrial
     ? `Thanks for signing up for an office trial day at Merritt Workspace. We're looking forward to having you in for <strong>${trialDateDisplay}</strong>. Because you're trialing a private office, there's one important step before your visit — see below.`
-    : `Thanks for signing up for a trial day at Merritt Workspace. We're looking forward to having you in for <strong>${trialDateDisplay}</strong>. Everything below is what you need to walk in and get to work.`;
+    : data.isCafeTrial
+      ? `Thanks for signing up for a café trial day at Merritt Workspace. We're looking forward to having you in for <strong>${trialDateDisplay}</strong>. You'll be working from the café in the 1905 building next door rather than the coworking floor — everything below is what you need to walk in and get to work.`
+      : `Thanks for signing up for a trial day at Merritt Workspace. We're looking forward to having you in for <strong>${trialDateDisplay}</strong>. Everything below is what you need to walk in and get to work.`;
 
   const officeConfirmationBlock = data.isOfficeTrial
     ? `
@@ -87,7 +124,17 @@ export function generateTrialDayEmailHTML(data: {
                 <li>Feel free to explore: kitchen, snack shop, meeting rooms, phone booths, and bathrooms are all available for your use.</li>
               </ul>
             </div>`
-    : `
+    : data.isCafeTrial
+      ? `
+            <div class="info-block">
+              <h3>When you arrive</h3>
+              <ul>
+                <li>Park onsite and head for the <strong>1905 building next door</strong> — the restored church on the same lawn. The café is at the front of it.</li>
+                <li>No front desk and nothing to check in for. Walk in and take any free table.</li>
+                <li>${CAFE_WORKSPACE_ACCESS_HTML}</li>
+              </ul>
+            </div>`
+      : `
             <div class="info-block">
               <h3>When you arrive</h3>
               <ul>
@@ -104,7 +151,14 @@ export function generateTrialDayEmailHTML(data: {
   // Desk-trial visitors get told exactly which desks are theirs for the day.
   const seatingBlock = data.isOfficeTrial
     ? ''
-    : data.allDesksTaken
+    : data.isCafeTrial
+      ? `
+            <div class="info-block">
+              <h3>Where you'll sit</h3>
+              <p style="margin: 0 0 10px 0;">${CAFE_SEATING_HTML}</p>
+              <p style="margin: 0;">That open seating is the café membership itself — it is what you would be buying, so this is the real thing rather than a desk you would not get.</p>
+            </div>`
+      : data.allDesksTaken
       ? `
             <div class="info-block" style="background: #fde6d4; border-left-color: #de5f07;">
               <h3 style="color: #8a3a00;">Where you'll sit</h3>
@@ -180,6 +234,7 @@ ${seatingBlock}
 
             <div class="info-block">
               <h3>How to find a phone booth</h3>
+              ${data.isCafeTrial ? `<p style="margin: 0 0 10px 0;">The phone booths are in the workspace building next door, and you're welcome to use them all day.</p>` : ''}
               <p style="margin: 0 0 10px 0;">Our phone booths are the <strong>unmarked doors</strong>. Every office door and every bathroom door is clearly labeled, so if a door has no sign on it, it's a phone booth — go ahead and use it.</p>
               <p style="margin: 0;">Phone booth signs are on order. Until they're up, "no sign on the door" is how you spot one. If you're not sure, text or call us at <strong>(303) 359-8337</strong> and we'll point you to the nearest one.</p>
             </div>
@@ -203,7 +258,7 @@ ${seatingBlock}
             <div class="info-block">
               <h3>What's on us</h3>
               <ul>
-                <li>Coffee, tea, and beer — help yourself in the kitchen</li>
+                <li>Coffee, tea, and beer — help yourself${data.isCafeTrial ? ' in the café, or in the workspace kitchen next door' : ' in the kitchen'}</li>
               </ul>
             </div>
 
@@ -220,7 +275,7 @@ ${seatingBlock}
               <h3>A few house notes</h3>
               <ul>
                 <li>Phone calls and video calls: please use a phone booth (the unmarked doors) or an empty meeting room out of courtesy to other members.</li>
-                <li>Printers are by the kitchen.</li>
+                <li>Printers are by the kitchen${data.isCafeTrial ? ', in the workspace building next door' : ''}.</li>
               </ul>
             </div>
 
@@ -234,7 +289,11 @@ ${seatingBlock}
               <p style="margin: 0;">Text or call Member Services at <strong>(303) 359-8337</strong> or email <a href="mailto:memberservices@merrittworkspace.net">memberservices@merrittworkspace.net</a> and we'll get back to you quickly.</p>
             </div>
 
-            <p style="margin-top: 24px;">Your full membership application is being reviewed in parallel. You'll hear from us within 1–2 business days about next steps regardless of how the trial day goes — no pressure to decide on the spot.</p>
+            <p style="margin-top: 24px;">${
+              data.hasFullApplication
+                ? "Your full membership application is being reviewed in parallel. You'll hear from us within 1–2 business days about next steps regardless of how the trial day goes — no pressure to decide on the spot."
+                : "There's nothing else to fill in before your visit, and nothing to decide on the day. If you'd like to join afterwards we'll send you a membership application with everything you've already given us filled in."
+            }</p>
 
             <p>See you soon!</p>
             <p style="margin: 0;">— The Merritt Workspace team</p>
@@ -254,6 +313,8 @@ export function generateTrialDayEmailText(data: {
   firstName: string;
   trialDate: string;
   isOfficeTrial?: boolean;
+  isCafeTrial?: boolean;
+  hasFullApplication?: boolean;
 } & TrialDeskInfo) {
   const trialDateDisplay = data.trialDate
     ? new Date(data.trialDate).toLocaleDateString()
@@ -261,13 +322,20 @@ export function generateTrialDayEmailText(data: {
 
   const headerLine = data.isOfficeTrial
     ? 'YOUR OFFICE TRIAL DAY AT MERRITT WORKSPACE'
-    : "YOU'RE SET FOR YOUR TRIAL DAY AT MERRITT WORKSPACE";
+    : data.isCafeTrial
+      ? "YOU'RE SET FOR YOUR CAFÉ TRIAL DAY AT MERRITT WORKSPACE"
+      : "YOU'RE SET FOR YOUR TRIAL DAY AT MERRITT WORKSPACE";
 
   const intro = data.isOfficeTrial
     ? `Thanks for signing up for an office trial day at Merritt Workspace. We're
 looking forward to having you in for ${trialDateDisplay}. Because you're
 trialing a private office, there's one important step before your visit.`
-    : `Thanks for signing up for a trial day at Merritt Workspace. We're looking
+    : data.isCafeTrial
+      ? `Thanks for signing up for a café trial day at Merritt Workspace. We're
+looking forward to having you in for ${trialDateDisplay}. You'll be working
+from the café in the 1905 building next door rather than the coworking
+floor — everything below is what you need to walk in and get to work.`
+      : `Thanks for signing up for a trial day at Merritt Workspace. We're looking
 forward to having you in for ${trialDateDisplay}. Everything below is what
 you need to walk in and get to work.`;
 
@@ -294,7 +362,14 @@ everything you need on the day of your trial.
 - Head to your confirmed office — it will be unlocked and equipped for you.
 - Feel free to explore: kitchen, snack shop, meeting rooms, phone booths,
   and bathrooms are all available for your use.`
-    : `WHEN YOU ARRIVE
+    : data.isCafeTrial
+      ? `WHEN YOU ARRIVE
+- Park onsite and head for the 1905 building next door — the restored
+  church on the same lawn. The café is at the front of it.
+- No front desk and nothing to check in for. Walk in and take any free
+  table.
+- ${CAFE_WORKSPACE_ACCESS_TEXT.replace(/\n/g, '\n  ')}`
+      : `WHEN YOU ARRIVE
 - No front desk — just let yourself in through the main entrance during
   building hours (7:30 AM – 5:30 PM).
 - ${
@@ -307,7 +382,15 @@ everything you need on the day of your trial.
 
   const seatingSection = data.isOfficeTrial
     ? ''
-    : data.allDesksTaken
+    : data.isCafeTrial
+      ? `
+WHERE YOU'LL SIT
+${CAFE_SEATING_TEXT}
+
+That open seating is the café membership itself — it is what you would be
+buying, so this is the real thing rather than a desk you would not get.
+`
+      : data.allDesksTaken
       ? `
 WHERE YOU'LL SIT
 Every dedicated desk on our coworking floor is currently spoken for, so
@@ -357,7 +440,13 @@ Parking:      Onsite parking available
 
 ${arrivalSection}
 ${seatingSection}
-HOW TO FIND A PHONE BOOTH
+HOW TO FIND A PHONE BOOTH${
+  data.isCafeTrial
+    ? `
+- The phone booths are in the workspace building next door, and you're
+  welcome to use them all day.`
+    : ''
+}
 - Our phone booths are the unmarked doors. Every office door and every
   bathroom door is clearly labeled, so if a door has no sign on it, it's a
   phone booth — go ahead and use it.
@@ -374,7 +463,9 @@ WHAT TO BRING
 - A water bottle (filtered water on tap)
 
 WHAT'S ON US
-- Coffee, tea, and beer — help yourself in the kitchen
+- Coffee, tea, and beer — help yourself${
+  data.isCafeTrial ? ' in the café, or in the workspace kitchen next door' : ' in the kitchen'
+}
 
 SNACKS & OTHER BEVERAGES (available for purchase)
 - Snacks and other drinks in the kitchen are not included in your trial.
@@ -385,7 +476,7 @@ SNACKS & OTHER BEVERAGES (available for purchase)
 A FEW HOUSE NOTES
 - Phone calls and video calls: please use a phone booth (the unmarked
   doors) or an empty meeting room out of courtesy to other members.
-- Printers are by the kitchen.
+- Printers are by the kitchen${data.isCafeTrial ? ', in the workspace building next door' : ''}.
 
 THINKING ABOUT MEMBERSHIP?
 Members get 24/7 building access with a personal access code to our
@@ -395,9 +486,15 @@ QUESTIONS OR NEED ANYTHING DAY-OF?
 Text or call Member Services at (303) 359-8337 or email
 memberservices@merrittworkspace.net and we'll get back to you quickly.
 
-Your full membership application is being reviewed in parallel. You'll hear
+${
+  data.hasFullApplication
+    ? `Your full membership application is being reviewed in parallel. You'll hear
 from us within 1–2 business days about next steps regardless of how the
-trial day goes — no pressure to decide on the spot.
+trial day goes — no pressure to decide on the spot.`
+    : `There's nothing else to fill in before your visit, and nothing to decide on
+the day. If you'd like to join afterwards we'll send you a membership
+application with everything you've already given us filled in.`
+}
 
 See you soon!
 — The Merritt Workspace team

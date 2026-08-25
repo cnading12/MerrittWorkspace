@@ -3,7 +3,7 @@
 // Split out from the cron route so the selection rules are testable without
 // standing up a request, a database, or Resend.
 
-import { readApplicationKind } from './trialApplication';
+import { readApplicationKind, readTrialSeating, type TrialSeating } from './trialApplication';
 
 export interface TrialFollowupRow {
   id: string;
@@ -23,7 +23,7 @@ export interface TrialFollowupTarget {
   firstName: string;
   trialDate: string | null;
   resumeToken: string;
-  seating: 'desk' | 'office';
+  seating: TrialSeating;
 }
 
 // A trial applicant is due a follow-up when their day has passed, we have not
@@ -56,7 +56,7 @@ export function toFollowupTarget(row: TrialFollowupRow): TrialFollowupTarget | n
     firstName: row.first_name || '',
     trialDate,
     resumeToken: row.resume_token,
-    seating: row.payload?.trial_seating === 'office' ? 'office' : 'desk',
+    seating: readTrialSeating(row.payload?.trial_seating),
   };
 }
 

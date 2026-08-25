@@ -18,6 +18,15 @@ function formatDate(value: string | null | undefined): string {
   });
 }
 
+// What a short-form trial applicant asked to try. Read off membership_type,
+// which the trial route sets from their answer — they selected no plan and
+// owe nothing, so this is an intent, not a designation.
+function trialSeatingLabel(app: MemberApplication): string {
+  if (app.membership_type === 'cafe_membership') return 'Café';
+  if (app.membership_type?.startsWith('private_office')) return 'Private office';
+  return 'Dedicated desk';
+}
+
 function byStartDateAsc(a: MemberApplication, b: MemberApplication) {
   const aDate = a.start_date || '9999-12-31';
   const bDate = b.start_date || '9999-12-31';
@@ -88,11 +97,7 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
                 {shortForm ? 'Wants to try' : 'Preferred Start'}
               </div>
               <div className="text-base font-bold text-gray-900">
-                {shortForm
-                  ? app.membership_type?.startsWith('private_office')
-                    ? 'Private office'
-                    : 'Dedicated desk'
-                  : formatDate(app.start_date)}
+                {shortForm ? trialSeatingLabel(app) : formatDate(app.start_date)}
               </div>
             </div>
           </div>

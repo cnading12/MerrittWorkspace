@@ -84,7 +84,14 @@ function renderApplicationHtml(app: any): string {
       ['Company', app.company_name || '—'],
       ...(shortFormTrial
         ? ([
-            ['Wants to try', payload.trial_seating === 'office' ? 'Private office' : 'Dedicated desk'],
+            [
+              'Wants to try',
+              payload.trial_seating === 'office'
+                ? 'Private office'
+                : payload.trial_seating === 'cafe'
+                  ? 'Café (works from the 1905 building next door)'
+                  : 'Dedicated desk',
+            ],
             ['Trial day date', formatTrialDate(trialDate)],
             ['Photo ID', app.id_document_path ? 'On file' : 'Not attached'],
           ] as [string, string][])

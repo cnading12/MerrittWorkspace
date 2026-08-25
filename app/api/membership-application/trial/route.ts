@@ -29,6 +29,7 @@ import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
 import { generateTrialDayEmailHTML, generateTrialDayEmailText } from '@/lib/portal/trialDayEmail';
 import {
   MAX_ID_FILE_BYTES,
+  PLAN_FOR_TRIAL_SEATING,
   denverToday,
   generateResumeToken,
   isAcceptedIdMimeType,
@@ -96,6 +97,7 @@ export async function POST(request: NextRequest) {
 
     const seating = input.seating as TrialSeating;
     const isOfficeTrial = seating === 'office';
+    const isCafeTrial = seating === 'cafe';
     const resumeToken = generateResumeToken();
 
     const sb = getServiceSupabase();
@@ -112,7 +114,7 @@ export async function POST(request: NextRequest) {
       // Representative designation for the downstream code paths that expect
       // one. A trial applicant picked no plan, so this records what they
       // asked to try, not anything they have agreed to pay for.
-      membership_type: isOfficeTrial ? 'private_office_single' : 'dedicated_desk',
+      membership_type: PLAN_FOR_TRIAL_SEATING[seating],
       start_date: null,
       wants_trial_day: true,
       trial_date: input.trial_date,
@@ -210,7 +212,7 @@ export async function POST(request: NextRequest) {
     // available on no information.
     let availableDesksLabel: string | null = null;
     let allDesksTaken = false;
-    if (!isOfficeTrial) {
+    if (seating === 'desk') {
       try {
         const { listAvailableDesks, formatDeskList } = await import('@/lib/portal/deskAvailability');
         const freeDesks = await listAvailableDesks(sb);
@@ -229,22 +231,31 @@ export async function POST(request: NextRequest) {
         to: input.email,
         subject: isOfficeTrial
           ? 'Your Office Trial Day at Merritt Workspace | Confirm Your Office'
-          : allDesksTaken
-            ? 'Your Trial Day at Merritt Workspace | Confirm Your Desk'
-            : 'Your Trial Day at Merritt Workspace | What to Expect',
+          : isCafeTrial
+            ? 'Your Café Trial Day at Merritt Workspace | What to Expect'
+            : allDesksTaken
+              ? 'Your Trial Day at Merritt Workspace | Confirm Your Desk'
+              : 'Your Trial Day at Merritt Workspace | What to Expect',
         html: generateTrialDayEmailHTML({
           firstName: input.first_name,
           trialDate: input.trial_date,
           isOfficeTrial,
+          isCafeTrial,
           availableDesksLabel,
           allDesksTaken,
+          // This person filled in the short trial form. There is no
+          // membership application of theirs under review, so the email must
+          // not promise a decision on one.
+          hasFullApplication: false,
         }),
         text: generateTrialDayEmailText({
           firstName: input.first_name,
           trialDate: input.trial_date,
           isOfficeTrial,
+          isCafeTrial,
           availableDesksLabel,
           allDesksTaken,
+          hasFullApplication: false,
         }),
         headers: getTransactionalEmailHeaders(),
         tags: [{ name: 'category', value: 'trial_day_info' }],
@@ -259,12 +270,13 @@ export async function POST(request: NextRequest) {
     // One staff notification to both mailboxes. A trial application is a
     // heads-up that someone is coming in, not a decision to make, so it is
     // deliberately short — no "review this application" framing.
-    const staffSubject = `🟧 TRIAL DAY — ${input.first_name} ${input.last_name} (${isOfficeTrial ? 'private office' : 'dedicated desk'}) on ${input.trial_date}`;
+    const seatingLabel = isOfficeTrial ? 'private office' : isCafeTrial ? 'café' : 'dedicated desk';
+    const staffSubject = `🟧 TRIAL DAY — ${input.first_name} ${input.last_name} (${seatingLabel}) on ${input.trial_date}`;
     const staffLines = [
       `${input.first_name} ${input.last_name} is coming in for a trial day.`,
       '',
       `Date: ${input.trial_date}`,
-      `Trying: ${isOfficeTrial ? 'Private office' : 'Dedicated desk'}`,
+      `Trying: ${isOfficeTrial ? 'Private office' : isCafeTrial ? 'Café membership (works from the 1905 building next door)' : 'Dedicated desk'}`,
       `Email: ${input.email}`,
       `Phone: ${input.phone}`,
       ...(input.company_name ? [`Company: ${input.company_name}`] : []),

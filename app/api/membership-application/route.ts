@@ -399,6 +399,14 @@ export async function POST(request: NextRequest) {
         typeof line.plan_id === 'string' && line.plan_id.startsWith('private_office')
       );
 
+      // A café applicant works from the 1905 building next door, not the
+      // coworking floor, so their trial day needs the café instructions. An
+      // application carrying both a café membership and an office takes the
+      // office variant above, which is the one with a step to complete
+      // before the visit.
+      const isCafeTrial =
+        !isOfficeTrial && itemized.lines.some(line => line.plan_id === 'cafe_membership');
+
       // Tell a desk trial visitor exactly which desks they can sit at. Two
       // cases send them to a team member instead of a DD number: the shared
       // floor is fully claimed, or they applied for a private dedicated desk,
@@ -408,7 +416,7 @@ export async function POST(request: NextRequest) {
       // completely empty desk" guidance rather than guessing either way.
       let availableDesksLabel: string | null = null;
       let allDesksTaken = false;
-      if (!isOfficeTrial) {
+      if (!isOfficeTrial && !isCafeTrial) {
         if (itemized.lines.some(line => line.plan_id === 'private_dedicated_desk')) {
           allDesksTaken = true;
         } else {
@@ -432,22 +440,32 @@ export async function POST(request: NextRequest) {
           to: applicationData.email,
           subject: isOfficeTrial
             ? 'Your Office Trial Day at Merritt Workspace | Confirm Your Office'
-            : allDesksTaken
-              ? 'Your Trial Day at Merritt Workspace | Confirm Your Desk'
-              : 'Your Trial Day at Merritt Workspace | What to Expect',
+            : isCafeTrial
+              ? 'Your Café Trial Day at Merritt Workspace | What to Expect'
+              : allDesksTaken
+                ? 'Your Trial Day at Merritt Workspace | Confirm Your Desk'
+                : 'Your Trial Day at Merritt Workspace | What to Expect',
           html: generateTrialDayEmailHTML({
             firstName: applicationData.first_name,
             trialDate: applicationData.trial_date,
             isOfficeTrial,
+            isCafeTrial,
             availableDesksLabel,
             allDesksTaken,
+            // This route only ever fires for a full membership application,
+            // so the closing "we're reviewing it" paragraph is true here.
+            hasFullApplication: true,
           }),
           text: generateTrialDayEmailText({
             firstName: applicationData.first_name,
             trialDate: applicationData.trial_date,
             isOfficeTrial,
+            isCafeTrial,
             availableDesksLabel,
             allDesksTaken,
+            // This route only ever fires for a full membership application,
+            // so the closing "we're reviewing it" paragraph is true here.
+            hasFullApplication: true,
           }),
           headers: getTransactionalEmailHeaders(),
           tags: [{ name: 'category', value: 'trial_day_info' }],

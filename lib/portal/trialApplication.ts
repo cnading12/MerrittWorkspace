@@ -15,11 +15,18 @@
 
 export type ApplicationKind = 'trial' | 'full';
 
-// What a trial visitor wants to sit at. The trial-day email needs this
-// because an office trial has to be coordinated with member services (the
-// office must be unlocked and equipped ahead of time) while a desk trial
-// can be self-serve with a list of free desk numbers.
-export type TrialSeating = 'desk' | 'office';
+// Where a trial visitor will actually work for the day. The trial-day email
+// needs this because the three answers need three different sets of
+// instructions:
+//   desk   — self-serve, with the live list of free DD numbers.
+//   office — coordinated with member services first, because an office has
+//            to be unlocked and equipped ahead of time.
+//   cafe   — a different building. Café members work from the front of the
+//            restored 1905 hall next door, not the coworking floor, so the
+//            arrival and seating guidance is the part that changes; the
+//            workspace itself stays open to them all day for the kitchen,
+//            printing, meeting rooms and everything else.
+export type TrialSeating = 'desk' | 'office' | 'cafe';
 
 export const MAX_ID_FILE_BYTES = 10 * 1024 * 1024;
 
@@ -103,6 +110,22 @@ export function isTrialApplication(source: ApplicationKindSource | null | undefi
   return readApplicationKind(source) === 'trial';
 }
 
+// Narrow a stored seating value. Anything unrecognised — an older row, a
+// tier that no longer exists — reads as a desk, which is the variant whose
+// instructions are safe for someone standing in the coworking building.
+export function readTrialSeating(value: unknown): TrialSeating {
+  if (value === 'office' || value === 'cafe') return value;
+  return 'desk';
+}
+
+// The plan a trial applicant should find preselected when they come back to
+// apply for real.
+export const PLAN_FOR_TRIAL_SEATING: Record<TrialSeating, string> = {
+  desk: 'dedicated_desk',
+  office: 'private_office_single',
+  cafe: 'cafe_membership',
+};
+
 // The fields a trial applicant already gave us, in the shape the full
 // application form wants them. Everything here is prefilled and editable —
 // a trial visitor may well have changed jobs or numbers by the time they
@@ -134,7 +157,7 @@ interface TrialRow {
 
 export function trialPrefillFrom(row: TrialRow): TrialPrefill {
   const payload = (row.payload || {}) as { trial_seating?: unknown; trial_date?: unknown };
-  const seating: TrialSeating = payload.trial_seating === 'office' ? 'office' : 'desk';
+  const seating: TrialSeating = readTrialSeating(payload.trial_seating);
   const trialDate =
     row.trial_date || (typeof payload.trial_date === 'string' ? payload.trial_date : null);
   return {
@@ -179,8 +202,8 @@ export function validateTrialSubmission(
   if (!email) return 'Please enter your email address.';
   if (!EMAIL_RE.test(email)) return 'Please enter a valid email address.';
   if (!String(input.phone || '').trim()) return 'Please enter a phone number.';
-  if (input.seating !== 'desk' && input.seating !== 'office') {
-    return 'Please tell us whether you would like to try a dedicated desk or a private office.';
+  if (input.seating !== 'desk' && input.seating !== 'office' && input.seating !== 'cafe') {
+    return 'Please tell us where you would like to work for the day.';
   }
   const trialDate = String(input.trial_date || '').trim();
   if (!trialDate) return 'Please choose the day you would like to come in.';
