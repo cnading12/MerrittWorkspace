@@ -1,7 +1,8 @@
 import { Metadata } from "next";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
 export const metadata: Metadata = {
-  title: "About Us | Historic 1905 Church Coworking Space Denver",
+  title: "About Us | Sloan's Lake Coworking, Denver",
   description: "Merritt Workspace: A beautifully restored 1905 church transformed into Denver's most distinctive coworking space. Located in Sloan's Lake, 3 min to I-25. Community-focused workspace.",
   keywords: [
     "Sloan's Lake office space",
@@ -23,6 +24,13 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "About Merritt Workspace | Independent Coworking in Denver",
+    description:
+      "A locally owned coworking space in Sloan's Lake, Denver, next to a restored 1905 hall on the same lawn.",
+    images: ["/images/flex-space/exterior.webp"],
+  },
   alternates: {
     canonical: "https://merrittworkspace.net/about",
   },
@@ -33,5 +41,10 @@ export default function AboutLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <BreadcrumbSchema trail={[{ name: "About", path: "/about" }]} />
+      {children}
+    </>
+  );
 }

@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import FlexCalendar from '@/components/portal/FlexCalendar';
+import { FLEX_OPEN_24H, FLEX_CLOSE_24H, FLEX_HOURS_LABEL } from '@/lib/hours';
 
 interface FlexBooking {
   id: string;
@@ -69,7 +70,7 @@ export default function FlexBooking() {
   const [allowedMinutes, setAllowedMinutes] = useState(240);
 
   const [date, setDate] = useState('');
-  const [startTime, setStartTime] = useState('09:00');
+  const [startTime, setStartTime] = useState(FLEX_OPEN_24H);
   const [duration, setDuration] = useState(60);
   const [eventTitle, setEventTitle] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -346,13 +347,16 @@ export default function FlexBooking() {
             <input
               type="time"
               required
-              min="09:00"
-              max="16:00"
+              min={FLEX_OPEN_24H}
+              max={FLEX_CLOSE_24H}
               step={900}
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
               className="mt-1 w-full border border-clay px-3 py-2 text-base"
             />
+            <p className="mt-1 text-xs text-ink-60">
+              Bookable weekdays, {FLEX_HOURS_LABEL} MT.
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-ink-60">

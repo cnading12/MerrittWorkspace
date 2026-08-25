@@ -1,7 +1,7 @@
 // Member-only flex space booking endpoint.
 //
 // Flow:
-//   1. Validate the proposed window (within Mon–Fri 9:00–16:30 MT, future,
+//   1. Validate the proposed window (within Mon–Fri 8:00–16:00 MT, future,
 //      no more than 60 days out, 30 min – 4 hr).
 //   2. Confirm the member is still under their 4-hour weekly cap.
 //   3. Ask Google freebusy whether the wellness or legacy flex calendars are
@@ -20,6 +20,11 @@ import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { checkFreebusy } from '@/lib/calendar/freebusy';
 import { getWeeklyMinutes } from '@/lib/bookings/weekly-hours';
+import {
+  FLEX_OPEN_MINUTES,
+  FLEX_CLOSE_MINUTES,
+  FLEX_HOURS_LABEL,
+} from '@/lib/hours';
 import {
   flexBookingConfirmedEmail,
   flexBookingStaffEmail,
@@ -43,9 +48,10 @@ const MAX_ADVANCE_MS = MAX_ADVANCE_DAYS * 24 * 60 * 60 * 1000;
 // distinct from wellness bookings on the shared calendar (6 = Tangerine).
 const COWORKING_EVENT_COLOR_ID = '6';
 
-// Flex hours: weekdays 9:00 AM – 4:30 PM Mountain Time.
-const FLEX_OPEN_MINUTES = 9 * 60;
-const FLEX_CLOSE_MINUTES = 16 * 60 + 30;
+// Flex hours come from lib/hours.ts (weekdays 8:00 AM – 4:00 PM Mountain
+// Time). They used to be redeclared here as 9:00–16:30, which quietly
+// disagreed with the policy module, the portal calendar, and the published
+// hours — so the window is imported now rather than restated.
 
 // Flex space is a perk of recurring memberships — one-day desk passes don't
 // include it. The portal page shows a friendly notice when it sees this code.
@@ -188,7 +194,7 @@ export async function POST(req: NextRequest) {
       endMt.minutesOfDay > FLEX_CLOSE_MINUTES
     ) {
       return NextResponse.json(
-        { error: 'Flex hours are 9:00 AM – 4:30 PM Mountain Time' },
+        { error: `Flex hours are ${FLEX_HOURS_LABEL} Mountain Time` },
         { status: 400 }
       );
     }

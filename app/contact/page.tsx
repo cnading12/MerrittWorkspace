@@ -6,6 +6,8 @@ import { useState } from 'react';
 import { trackFormSubmission, trackPhoneClick, trackEmailClick } from '@/lib/gtag';
 import PageHero from '@/components/marketing/PageHero';
 import { BLUR } from '@/components/marketing/blur';
+import FaqBlock from '@/components/marketing/FaqBlock';
+import { SITE_URL } from '@/lib/seo/business';
 
 // The two desks people reach us at. Keep these distinct on the page: the
 // manager handles everyone who is not a member yet, member services handles
@@ -147,12 +149,12 @@ export default function ContactPage() {
 
               <dl className="mt-10 space-y-7 border-t border-clay pt-8">
                 <div>
-                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Office hours</dt>
-                  <dd className="mt-1.5 text-[17px] text-ink-60">Monday &ndash; Friday, 9am &ndash; 5pm</dd>
+                  <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Business hours</dt>
+                  <dd className="mt-1.5 text-[17px] text-ink-60">Monday &ndash; Friday, 7:30am &ndash; 5:30pm</dd>
                 </div>
                 <div>
                   <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Member access</dt>
-                  <dd className="mt-1.5 text-[17px] text-ink-60">24/7 by access code</dd>
+                  <dd className="mt-1.5 text-[17px] text-ink-60">24/7 &mdash; access code needed outside business hours and on weekends</dd>
                 </div>
                 <div>
                   <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Parking</dt>
@@ -371,6 +373,16 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
+
+      {/* Visible answers plus the FAQPage markup for them — the two always
+          ship together, so the structured data can never describe content a
+          visitor cannot see. */}
+      <FaqBlock
+        ids={['where', 'parking', 'twenty-four-seven', 'contact']}
+        id={`${SITE_URL}/contact#faq`}
+        eyebrow="Finding us"
+        heading="Where we are, and when you can get in."
+      />
 
       <Footer />
     </main>

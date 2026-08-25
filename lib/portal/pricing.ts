@@ -30,6 +30,11 @@ export interface MembershipPlan {
 export const DEDICATED_DESK_MONTHLY_CENTS = 20000;
 export const PRIVATE_DEDICATED_DESK_MONTHLY_CENTS = 30000;
 
+// Cafe membership: a seat on the cafe side of the flex space rather than a desk
+// of your own. Sold because the coworking floor is essentially full and this is
+// the tier that does not need a desk to exist.
+export const CAFE_MEMBERSHIP_MONTHLY_CENTS = 10000;
+
 export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
   dedicated_desk: {
     designation: 'dedicated_desk',
@@ -41,6 +46,14 @@ export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
     label: 'Private Dedicated Desk',
     monthly_cost_cents: PRIVATE_DEDICATED_DESK_MONTHLY_CENTS,
   },
+  cafe_membership: {
+    designation: 'cafe_membership',
+    label: 'Café Membership',
+    monthly_cost_cents: CAFE_MEMBERSHIP_MONTHLY_CENTS,
+  },
+  // RETIRED — not offered on the application form any more. Kept so existing
+  // pass holders keep resolving to a designation and a price: the portal still
+  // lets them buy repeat passes, and archived records still reference it.
   one_day_dedicated_desk: {
     designation: 'one_day_dedicated_desk',
     label: 'One Day Dedicated Desk',

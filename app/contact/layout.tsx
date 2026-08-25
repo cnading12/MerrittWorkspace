@@ -1,7 +1,8 @@
 import { Metadata } from "next";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
 export const metadata: Metadata = {
-  title: "Contact & Location | Coworking Space Sloan's Lake Denver",
+  title: "Contact & Directions | Sloan's Lake",
   description: "Visit Merritt Workspace at 2246 Irving St, Denver CO 80211. Schedule a free tour of our Sloan's Lake coworking space. Call (720) 357-9499. 3 minutes to I-25, free parking.",
   keywords: [
     "coworking space Sloan's Lake",
@@ -23,6 +24,13 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contact & Location | Merritt Workspace Denver",
+    description:
+      "2246 Irving St, Sloan's Lake, Denver. Book a tour or a free trial day — (720) 357-9499. Free parking.",
+    images: ["/images/exterior/campus.webp"],
+  },
   alternates: {
     canonical: "https://merrittworkspace.net/contact",
   },
@@ -33,5 +41,10 @@ export default function ContactLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <BreadcrumbSchema trail={[{ name: "Contact", path: "/contact" }]} />
+      {children}
+    </>
+  );
 }

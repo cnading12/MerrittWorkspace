@@ -38,6 +38,8 @@ import { listAvailableDesks, formatDeskList } from './deskAvailability';
 // designation, so both emails state it without the reader decoding a label.
 const SPACE_SUMMARY: Record<MemberDesignation, string> = {
   dedicated_desk: '1 dedicated desk in the shared coworking space',
+  cafe_membership:
+    'Café membership — open seating on the café side of the flex space (no assigned desk)',
   one_day_dedicated_desk: '1 dedicated desk for a single day (day pass)',
   private_dedicated_desk:
     '1 dedicated desk in a private, lockable office area (outside the shared coworking floor)',

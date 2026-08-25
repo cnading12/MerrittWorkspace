@@ -12,6 +12,7 @@
 // still lands somewhere sensible:
 //   /membership/apply             → the chooser
 //   /membership/apply?trial=1     → straight to the trial form
+//   /membership/apply?plan=<id>   → straight to the full form, plan preselected
 //   /membership/apply?resume=<t>  → the full form, prefilled from a trial
 //
 // Query params are read off window.location rather than useSearchParams so
@@ -63,7 +64,20 @@ export default function ApplyPage() {
     }
 
     const trial = params.get('trial');
-    if (trial === '1' || trial === 'true') setPath('trial');
+    if (trial === '1' || trial === 'true') {
+      setPath('trial');
+      return;
+    }
+
+    // Arriving from a CTA that already named a plan — the café membership
+    // page's Apply buttons land here as ?plan=cafe_membership. Someone who
+    // has picked a plan has picked the membership path, so skip the chooser
+    // rather than making them answer a question they just answered.
+    //
+    // The preselect itself stays in FullApplicationForm, which reads the same
+    // param off window.location once it mounts; this only decides which form
+    // is shown. Checked last so ?trial=1 wins if both are somehow present.
+    if (params.get('plan')) setPath('full');
   }, []);
 
   // Returning to the chooser clears any resume state: the prefill belongs to

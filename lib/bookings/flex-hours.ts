@@ -36,9 +36,17 @@ export const MAX_BOOKING_MINUTES = 240;
 export const MAX_ACTIVE_FUTURE_BOOKINGS = 2;
 
 // Bookable window: weekdays 8:00 AM – 4:00 PM Mountain Time.
-export const FLEX_OPEN_MINUTES = 8 * 60;
-export const FLEX_CLOSE_MINUTES = 16 * 60;
-export const FLEX_WINDOW_LABEL = 'weekdays 8:00 AM – 4:00 PM';
+//
+// The numbers themselves live in lib/hours.ts, which is a dependency-free leaf
+// the client components can import; this module reaches the service-role
+// Supabase client through its allowance accounting, so it must never be pulled
+// into a browser bundle. Re-exported here so the booking policy still has one
+// entry point.
+export {
+  FLEX_OPEN_MINUTES,
+  FLEX_CLOSE_MINUTES,
+  FLEX_WINDOW_LABEL,
+} from '@/lib/hours';
 
 export interface FlexSummary {
   // Weekly allowance in minutes for this member (or their office).

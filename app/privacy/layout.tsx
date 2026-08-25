@@ -2,23 +2,15 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "Privacy Policy for Merritt Workspace, a coworking space in Sloan's Lake, Denver. How we collect, use, and protect your personal information.",
+  description:
+    "How Merritt Workspace, a coworking space in Sloan's Lake, Denver, collects, uses and protects your personal information.",
   alternates: {
     canonical: "https://merrittworkspace.net/privacy",
   },
-  openGraph: {
-    title: "Privacy Policy | Merritt Workspace Denver",
-    description: "How Merritt Workspace collects, uses, and protects your personal information.",
-    url: "https://merrittworkspace.net/privacy",
-    images: [
-      {
-        url: "/images/exterior/campus.webp",
-        width: 1200,
-        height: 630,
-        alt: "Merritt Workspace coworking space in Sloan's Lake, Denver",
-      },
-    ],
-  },
+  // Boilerplate legal pages carry no ranking intent. Keeping them out of the
+  // index concentrates crawl budget on the pages that sell, while `follow`
+  // still passes their internal links along.
+  robots: { index: false, follow: true },
 };
 
 export default function PrivacyLayout({

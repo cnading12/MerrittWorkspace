@@ -58,26 +58,51 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="md:col-span-3">
-            <h4 className="text-[13px] font-medium uppercase tracking-[0.18em] text-bone/50">
-              Pages
-            </h4>
-            <div className="mt-5 space-y-2.5 text-[15px]">
-              <Link href="/membership" className="block text-bone/75 transition hover:text-bone">
-                Membership
-              </Link>
-              <Link href="/member-resources/meeting-rooms" className="block text-bone/75 transition hover:text-bone">
-                Conference room
-              </Link>
-              <Link href="/member-resources/snackshop" className="block text-bone/75 transition hover:text-bone">
-                Snackshop
-              </Link>
-              <Link href="/about" className="block text-bone/75 transition hover:text-bone">
-                About
-              </Link>
-              <Link href="/contact" className="block text-bone/75 transition hover:text-bone">
-                Contact
-              </Link>
+          {/* Two link columns, not one. The footer is the only place every
+              page links to every other, so it is what spreads authority across
+              the site and how a crawler reaches the pages the nav buries. The
+              old single column reached five of them and left the two
+              highest-intent pages — café membership and private offices — with no
+              site-wide link at all. */}
+          <div className="grid grid-cols-2 gap-8 md:col-span-3">
+            <div>
+              <h4 className="text-[13px] font-medium uppercase tracking-[0.18em] text-bone/50">
+                Workspaces
+              </h4>
+              <div className="mt-5 space-y-2.5 text-[15px]">
+                {[
+                  ['/membership', 'All memberships'],
+                  ['/membership/dedicated-desk', 'Dedicated desks'],
+                  ['/membership/private-office', 'Private offices'],
+                  ['/membership/cafe', 'Café membership'],
+                  ['/member-resources/meeting-rooms', 'Conference room'],
+                  ['/member-resources/flex-space', 'Flex space'],
+                ].map(([href, label]) => (
+                  <Link key={href} href={href} className="block text-bone/75 transition hover:text-bone">
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-[13px] font-medium uppercase tracking-[0.18em] text-bone/50">
+                Merritt
+              </h4>
+              <div className="mt-5 space-y-2.5 text-[15px]">
+                {[
+                  ['/about', 'About'],
+                  ['/contact', 'Contact'],
+                  ['/member-resources/faqs', 'FAQs'],
+                  ['/member-resources/snackshop', 'Snackshop'],
+                  ['/membership/apply', 'Apply'],
+                  ['/portal', 'Member portal'],
+                ].map(([href, label]) => (
+                  <Link key={href} href={href} className="block text-bone/75 transition hover:text-bone">
+                    {label}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>

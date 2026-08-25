@@ -5,12 +5,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { googleCalendarAPI } from '@/lib/google-calendar';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import Stripe from 'stripe';
+import {
+  createConferenceCheckoutSession,
+  ConferenceCheckoutError,
+} from '@/lib/bookings/conferenceCheckout';
+import { validateUpload, UploadValidationError } from '@/lib/portal/uploads';
 
 export const dynamic = 'force-dynamic';
 
-// Same limit the portal enforces on member photo_id uploads
-// (app/api/portal/documents/route.ts).
-const MAX_ID_FILE_BYTES = 10 * 1024 * 1024;
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-08-27.basil',
+});
 
 // Helper type for bookings (no database needed)
 interface SimpleBooking {
@@ -81,6 +87,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // The duration now determines what the guest is charged, so validate it
+    // here rather than trusting whatever the form posted.
+    const durationHours = Number(bookingData.duration_hours);
+    if (!Number.isFinite(durationHours) || durationHours <= 0 || durationHours > 12) {
+      return NextResponse.json(
+        { error: 'Invalid booking duration' },
+        { status: 400 }
+      );
+    }
+    bookingData.duration_hours = durationHours;
+
+    const attendeesCount = Number(bookingData.attendees);
+    if (!Number.isFinite(attendeesCount) || attendeesCount <= 0 || attendeesCount > 100) {
+      return NextResponse.json(
+        { error: 'Invalid attendee count' },
+        { status: 400 }
+      );
+    }
+    bookingData.attendees = attendeesCount;
+
     // Calculate end time
     const endTime = calculateEndTime(bookingData.start_time, bookingData.duration_hours);
 
@@ -133,8 +159,15 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    if (idFile.size > MAX_ID_FILE_BYTES) {
-      return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 });
+    // Same size + MIME allowlist the portal enforces on member uploads.
+    let validatedId;
+    try {
+      validatedId = validateUpload(idFile);
+    } catch (e: any) {
+      if (e instanceof UploadValidationError) {
+        return NextResponse.json({ error: e.message }, { status: 400 });
+      }
+      throw e;
     }
 
     // Generate booking ID
@@ -145,12 +178,11 @@ export async function POST(request: NextRequest) {
     // collide with a member id, so the member self-read storage policies
     // don't expose it — only admins (service role) can view it.
     const sb = getServiceSupabase();
-    const ext = idFile.name.split('.').pop() || 'bin';
-    const idDocumentPath = `guest-bookings/${bookingId}/photo_id-${Date.now()}.${ext}`;
+    const idDocumentPath = `guest-bookings/${bookingId}/photo_id-${Date.now()}.${validatedId.extension}`;
     const idBytes = new Uint8Array(await idFile.arrayBuffer());
     const { error: idUploadErr } = await sb.storage
       .from('member-documents')
-      .upload(idDocumentPath, idBytes, { contentType: idFile.type, upsert: false });
+      .upload(idDocumentPath, idBytes, { contentType: validatedId.contentType, upsert: false });
     if (idUploadErr) {
       console.error('❌ Guest ID upload failed:', idUploadErr);
       return NextResponse.json(
@@ -211,47 +243,28 @@ export async function POST(request: NextRequest) {
     // Create Stripe checkout session with booking data in metadata
     try {
       console.log('💳 Creating Stripe checkout session...');
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-      
-      const checkoutResponse = await fetch(`${baseUrl}/api/create-meeting-checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          booking_id: booking.id,
-          customer_name: booking.customer_name,
-          customer_email: booking.customer_email,
-          customer_phone: booking.customer_phone,
-          company: booking.company,
-          room_name: 'Conference Room',
-          booking_date: booking.booking_date,
-          start_time: booking.start_time,
-          end_time: booking.end_time,
-          duration_hours: booking.duration_hours,
-          attendees: booking.attendees,
-          total_amount: booking.total_amount,
-          purpose: booking.purpose,
-          calendar_event_id: calendarEventId,
-          id_document_path: idDocumentPath
-        })
+
+      // The guest pays for the full reservation. The amount is derived inside
+      // createConferenceCheckoutSession from the published hourly rate — the
+      // client's `total_amount` is deliberately not used.
+      const checkoutData = await createConferenceCheckoutSession(stripe, {
+        bookingId: booking.id,
+        customerName: booking.customer_name,
+        customerEmail: booking.customer_email,
+        customerPhone: booking.customer_phone,
+        company: booking.company,
+        roomName: 'Conference Room',
+        bookingDate: booking.booking_date,
+        startTime: booking.start_time,
+        endTime: booking.end_time,
+        durationHours: booking.duration_hours,
+        attendees: booking.attendees,
+        billedHours: booking.duration_hours,
+        purpose: booking.purpose,
+        calendarEventId,
+        idDocumentPath,
       });
 
-      console.log('Stripe checkout response status:', checkoutResponse.status);
-
-      if (!checkoutResponse.ok) {
-        const errorData = await checkoutResponse.json();
-        console.error('❌ Stripe checkout error response:', errorData);
-        
-        // If calendar event was created, cancel it
-        if (calendarEventId) {
-          console.log('🗑️ Cancelling calendar event due to Stripe error...');
-          await googleCalendarAPI.cancelBookingEvent(calendarEventId);
-        }
-        await removeIdDocument();
-
-        throw new Error(errorData.error || 'Failed to create payment session');
-      }
-
-      const checkoutData = await checkoutResponse.json();
       console.log('✅ Stripe checkout session created:', checkoutData.sessionId);
 
       return NextResponse.json({
@@ -273,22 +286,21 @@ export async function POST(request: NextRequest) {
       }
       await removeIdDocument();
 
+      const isInputError = stripeError instanceof ConferenceCheckoutError;
       return NextResponse.json({
         success: false,
-        error: stripeError instanceof Error ? stripeError.message : 'Payment system unavailable. Please try again or contact support.',
-        details: stripeError instanceof Error ? stripeError.message : 'Unknown error',
+        error: isInputError
+          ? (stripeError as Error).message
+          : 'Payment system unavailable. Please try again or contact support.',
         booking,
         fallback: true
-      }, { status: 500 });
+      }, { status: isInputError ? 400 : 500 });
     }
 
   } catch (error) {
     console.error('❌ Booking creation error:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to create booking. Please try again.',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Failed to create booking. Please try again.' },
       { status: 500 }
     );
   }

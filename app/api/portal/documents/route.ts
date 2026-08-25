@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireMember, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { requiredDocTypesFor, DocType } from '@/lib/portal/types';
+import { validateUpload, UploadValidationError } from '@/lib/portal/uploads';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,18 +26,26 @@ export async function POST(req: NextRequest) {
     if (!ALLOWED_TYPES.includes(docType)) {
       return NextResponse.json({ error: 'Invalid doc_type' }, { status: 400 });
     }
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 });
+    // Size + MIME allowlist. The stored content type and extension come from
+    // the validator, not from the client, so an uploaded file can't be served
+    // back to staff as executable HTML.
+    let validated;
+    try {
+      validated = validateUpload(file);
+    } catch (e: any) {
+      if (e instanceof UploadValidationError) {
+        return NextResponse.json({ error: e.message }, { status: 400 });
+      }
+      throw e;
     }
 
     const sb = getServiceSupabase();
-    const ext = file.name.split('.').pop() || 'bin';
-    const path = `${member.id}/${docType}-${Date.now()}.${ext}`;
+    const path = `${member.id}/${docType}-${Date.now()}.${validated.extension}`;
     const bytes = new Uint8Array(await file.arrayBuffer());
 
     const { error: upErr } = await sb.storage
       .from('member-documents')
-      .upload(path, bytes, { contentType: file.type, upsert: false });
+      .upload(path, bytes, { contentType: validated.contentType, upsert: false });
     if (upErr) {
       return NextResponse.json({ error: upErr.message }, { status: 500 });
     }
