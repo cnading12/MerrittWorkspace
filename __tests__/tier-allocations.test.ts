@@ -217,14 +217,18 @@ describe('the migration seed and the built-in fallbacks agree', () => {
   // silent drift would mean a database outage quietly changes everyone's
   // allowance instead of preserving it.
   it('seeds every fallback designation with the same numbers', async () => {
-    const { readFileSync } = await import('node:fs');
-    const sql = readFileSync(
-      new URL(
-        '../supabase/migrations/20260820_tier_allocations.sql',
-        import.meta.url,
-      ),
-      'utf8',
-    );
+    const { readFileSync, readdirSync } = await import('node:fs');
+    // Read EVERY migration that touches tier_allocations, not just the one
+    // that created the table: a tier added later is seeded in its own
+    // migration, and pinning this to a single file would make the invariant
+    // silently stop covering new tiers the moment one is added.
+    const dir = new URL('../supabase/migrations/', import.meta.url);
+    const sql = readdirSync(dir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
+      .map((f) => readFileSync(new URL(f, dir), 'utf8'))
+      .filter((text) => text.includes('tier_allocations'))
+      .join('\n');
 
     const seeded: Record<string, { flex: number; conference: number }> = {};
     // Seed rows look like: ('dedicated_desk', 4, 4, 'note').

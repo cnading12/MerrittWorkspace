@@ -21,6 +21,7 @@ import { supabase } from '@/lib/supabase';
 const HERO_ROUTES = new Set([
   '/',
   '/about',
+  '/membership/cafe',
   '/membership',
   '/membership/dedicated-desk',
   '/membership/private-office',
@@ -53,6 +54,7 @@ const NAV_GROUPS = [
       { href: '/membership', label: 'All Membership Options', featured: true },
       { href: '/membership/dedicated-desk', label: 'Dedicated Desk' },
       { href: '/membership/private-office', label: 'Private Office' },
+      { href: '/membership/cafe', label: 'Café Membership' },
     ],
   },
 ] as const;

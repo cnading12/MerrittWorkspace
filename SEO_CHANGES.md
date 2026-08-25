@@ -1,98 +1,87 @@
-# SEO Changes — Merritt Workspace
+# SEO — Merritt Workspace
 
-Date: 2026-06-03
-Constraint honored: **no visual changes.** Every edit is in `<head>`/metadata,
-non-rendered config, or a tag/attribute swap with **identical Tailwind classes**.
-No `className` value was modified anywhere (verified via diff).
+Three passes. The first (2026-06-03) fixed broken share images and duplicate
+titles under a strict "no visual changes" constraint. The second built a
+structured-data layer on this branch. The third — `Make the site answerable by
+AI assistants and answer engines`, merged to `main` as PR #173 — built a
+**better** one, and is now the base.
 
-## Summary of what changed
+## Where the structured data lives
 
-### P0 — Fixed active bugs
+`lib/seo/business.ts` is the single source of truth: address, hours, prices,
+plans, policies. Everything machine-readable reads from it —
 
-1. **Broken social-share images (site-wide).** Every Open Graph / Twitter image
-   and three JSON-LD images pointed to `.jpg`/`.png` files that don't exist —
-   only `.webp` versions are in `/public`. Link previews were blank everywhere.
-   Repointed to the existing `.webp` files in:
-   - `app/layout.tsx` (OG + Twitter)
-   - `app/about/layout.tsx`, `app/contact/layout.tsx`,
-     `app/membership/layout.tsx`, `app/membership/dedicated-desk/layout.tsx`,
-     `app/membership/private-office/layout.tsx`
-   - `components/LocalBusinessSchema.tsx` (3 images in the `image` array)
+- `components/LocalBusinessSchema.tsx` — the `CoworkingSpace` node
+- `components/seo/MembershipSchema.tsx` — each plan as a `Product` + `Offer`
+- `components/seo/BreadcrumbSchema.tsx`, `FaqSchema.tsx`, `MeetingRoomSchema.tsx`
+- `app/llms.txt` and `app/llms-full.txt` — for AI answer engines
+- `lib/seo/faqs.ts` → `components/marketing/FaqBlock.tsx`, which ships the
+  visible questions and their `FAQPage` markup together so a page can never
+  have one without the other
 
-2. **Price consistency.** Meta/titles said dedicated desks "from $200/mo" but the
-   JSON-LD schema said `$300` and `priceRange "$300 - $1200/month"`. Per your
-   confirmation that **$200 is correct**, updated `LocalBusinessSchema.tsx`:
-   dedicated-desk offer `price`/`priceSpecification` → `200`, and `priceRange` →
-   `$200 - $1200/month`.
+This branch originally carried a parallel implementation (`lib/seo/site.ts`,
+`lib/seo/schema.ts`, `components/seo/PageSchema.tsx`). Those are **deleted**.
+Main's covers the same ground and more, and two schema layers on one page is
+worse than either alone.
 
-### P1 — Unique metadata for previously-default pages
+## What this branch still adds on top
 
-These routed pages were `"use client"` with no `layout.tsx`, so they inherited the
-homepage title/description (duplicate-title risk). Added server-component
-`layout.tsx` wrappers (each just `return children` — zero DOM impact) with unique
-title, description, canonical, and Open Graph tags:
-   - `app/member-resources/meeting-rooms/layout.tsx` (targets "meeting room
-     rental Denver" / "conference room rental Denver")
-   - `app/member-resources/faqs/layout.tsx`
-   - `app/member-resources/snackshop/layout.tsx`
-   - `app/membership/apply/layout.tsx`
-   - `app/privacy/layout.tsx`
+### Page metadata
 
-### P1 — Broken internal links
+Main's pass focused on the machine-readable surfaces and left the per-page
+`<head>` largely as it was. Fixed here:
 
-`components/Footer.tsx` linked to `/meeting-rooms` and `/snackshop`, which 404.
-Corrected to `/member-resources/meeting-rooms` and `/member-resources/snackshop`
-(href only; link text and classes unchanged).
+- **Titles were being truncated.** The template appended 27 characters, and
+  Google cuts from the end at roughly 60 — so the brand the suffix existed to
+  add was the part being cut. Template shortened to `%s | Merritt Workspace`
+  and all eleven titles rewritten to fit. `/contact` went from 92 to 55.
+- **Only the homepage set a `twitter` block**, so every link shared from
+  anywhere on the site previewed as the homepage. All eleven marketing routes
+  now set their own.
+- **`/privacy` and `/terms` are `noindex, follow`** and dropped from the
+  sitemap — listing a noindexed URL is an error in Search Console.
+- **The sitemap gave every entry `new Date()`**, claiming the whole site
+  changed on every deploy. Real dates now.
 
-### P2 — Crawl coverage & indexing
+### A duplicate-breadcrumb bug
 
-- Added `/member-resources/snackshop` to `app/sitemap.ts`.
-- Added `robots: { index: false, follow: false }` to `app/portal/layout.tsx` so
-  member-portal/auth screens stay out of search results. (Intentionally **not**
-  also disallowed in robots.txt — blocking the crawl would stop Google from ever
-  seeing the `noindex`.) Per your decision, `/membership/apply` remains indexable.
+`app/membership/layout.tsx` rendered `MembershipSchema` and `BreadcrumbSchema`
+at the segment root, so they also landed on `/membership/dedicated-desk` and
+`/membership/private-office` — which render their own. Those pages carried two
+`BreadcrumbList`s disagreeing about which page they described.
 
-### P2 — Heading hierarchy
+The index now sits in a `(overview)` route group, which scopes its schema
+without changing the URL. `__tests__/seo-metadata.test.ts` walks `app/` and
+fails if any other segment-root layout falls into the same trap.
 
-`app/page.tsx`: the hero-carousel caption jumped `h1 → h3`. Promoted to `h2`
-(identical classes → identical rendering) so the outline no longer skips a level.
+### The café membership, and the retired day pass
+
+See `CLAUDE.md`. In SEO terms: `cafe_membership` is in `PLANS`, so it flows
+into the JSON-LD, `/llms.txt` and the FAQ list automatically;
+`/membership/cafe` is a landing page with its own `Product` schema and four
+FAQs; `one_day_dedicated_desk` is gone from every customer-facing surface.
 
 ## Verification
 
-- `npm run build` compiles successfully; type-checking and lint pass. All new
-  routes plus `/robots.txt` and `/sitemap.xml` build. (Note: the build needs the
-  project's normal Stripe/Supabase/etc. env vars to finish "Collecting page
-  data" for the `/api/*` routes — this is pre-existing and unrelated to SEO; it
-  succeeds once env vars are present, as on Vercel.)
-- Diff confirms no `className` value changed. Only DOM mutations: one `h3`→`h2`
-  tag swap (same classes) and two footer `href` values. Appearance is unchanged.
+- `npm test` — 474 passing.
+- `npm run build` — compiles, type-checks, 42 static pages.
+- Served the production build and asserted against real HTML: title lengths,
+  canonicals, robots directives, one `BreadcrumbList` per page, unique
+  `Product` `@id`s, and no day-pass copy anywhere except the FAQ sentence that
+  says we stopped selling them.
 
-## Already in good shape (left as-is)
+`npm run lint` still can't run — the repo's flat `eslint.config.mjs` extends
+`next/typescript`, which `eslint-config-next@14.0.0` doesn't ship. Pre-existing.
 
-- App Router metadata API with `metadataBase`, title template, robots, geo meta.
-- Per-route canonicals; `robots.ts` + `sitemap.ts`; rich `CoworkingSpace` JSON-LD
-  with NAP, geo, hours, amenities, and offer catalog (correctly the most specific
-  business type).
-- `<html lang="en">`, one `<h1>` per page, `next/image` with `fill` + `sizes` +
-  `priority` on the hero (good CLS), AVIF/WebP in `next.config.js`.
-- Fonts are **system Helvetica/Arial** (no web font fetched), so `next/font` is
-  unnecessary — adding it would risk changing glyph rendering, so it was avoided.
+## Still worth doing (needs a human)
 
-## Follow-ups needing a human / visual decision
-
-1. **OG image format.** WebP previews work in most scrapers but a few older ones
-   (and some email clients) prefer JPEG/PNG at 1200×630. If you want maximum
-   compatibility, export dedicated `.jpg`/`.png` OG images and we'll point to
-   those instead.
-2. **Confirm prices end-to-end.** We aligned the schema to $200 for dedicated
-   desks. Please confirm the full current price list (single office $500, 2-desk
-   $700, large team $1200) still matches reality so the structured data stays
-   accurate.
-3. **Phone number.** The business brief listed phone as "[FILL IN]"; the code
-   already uses `+1 (720) 357-9499` consistently. Confirm that's correct.
-4. **`sameAs` social profiles.** The schema only links `merrittwellness.net`. Add
-   real Google Business Profile, Instagram, LinkedIn, Facebook URLs to strengthen
-   entity signals (content addition — needs the actual URLs).
-5. **Content depth.** The FAQ and meeting-room pages are good candidates for
-   `FAQPage` / `Service` structured data and richer copy targeting "meeting room
-   rental Denver" — a content decision rather than a code-only change.
+1. **Google Business Profile is the biggest remaining lever.** For "near me"
+   and map-pack searches the profile outranks the site. Post weekly, keep hours
+   and photos current, ask members for reviews.
+2. **Reviews**, then `aggregateRating`. Inventing ratings is a manual-action
+   risk, so this has to come from real reviews on the profile first.
+3. **Local citations** — get the exact NAP from `lib/seo/business.ts` onto
+   Yelp, Apple Maps, Bing Places and the Denver chamber directories.
+4. **Search Console** — submit the sitemap, then watch the Breadcrumb, FAQ and
+   Merchant listings reports.
+5. **A dedicated OG image per product page.** Several still share `home-og.jpg`.

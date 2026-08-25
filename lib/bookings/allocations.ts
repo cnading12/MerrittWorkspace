@@ -30,6 +30,10 @@ export const FALLBACK_ALLOCATIONS: Record<string, TierAllocation> = {
   // The same product in a private room, sold once every shared desk is
   // claimed. Same allowance as a shared desk.
   private_dedicated_desk: { flexHoursPerWeek: 4, conferenceHoursPerMonth: 4 },
+  // Half a dedicated desk's allowance, which is the deal: half the price, half
+  // the booking credit, no desk. Keep it derived from the desk numbers above
+  // rather than restated, so halving stays true if those change.
+  cafe_membership: { flexHoursPerWeek: 2, conferenceHoursPerMonth: 2 },
   // Single and double are identical by design. Do not differentiate them in
   // logic or in the UI.
   private_office_single: { flexHoursPerWeek: 6, conferenceHoursPerMonth: 14 },

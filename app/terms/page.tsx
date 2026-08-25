@@ -6,9 +6,14 @@ import {
 } from '@/lib/portal/legal';
 
 export const metadata = {
-  title: 'Terms & Conditions | Merritt Workspace',
+  title: 'Terms & Conditions',
   description:
     'The official Merritt Workspace Terms & Conditions that apply to every membership.',
+  alternates: { canonical: 'https://merrittworkspace.net/terms' },
+  // Legal boilerplate has no ranking intent, and letting it compete for crawl
+  // budget with the pages that sell only dilutes the site. `follow` still
+  // passes its internal links along.
+  robots: { index: false, follow: true },
 };
 
 export default function TermsOfServicePage() {

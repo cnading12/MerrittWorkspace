@@ -7,13 +7,22 @@ import Link from 'next/link';
 
 type HousingReferenceType = '' | 'mortgage' | 'landlord';
 type MembershipReferenceType = '' | 'gym' | 'workspace';
-type PlanId = 'dedicated_desk' | 'private_dedicated_desk' | 'one_day_dedicated_desk' | 'private_office_single' | 'private_office_double' | 'private_office_large';
+type PlanId = 'dedicated_desk' | 'private_dedicated_desk' | 'cafe_membership' | 'private_office_single' | 'private_office_double' | 'private_office_large';
 
 // Live dedicated-desk availability from /api/desk-availability. The shared
 // coworking floor holds a fixed number of desks; once every one is spoken for
 // we stop selling floor-plan desks and offer a private dedicated desk — a desk
 // in a lockable office we've converted into a dedicated-desk area — instead.
 interface DeskAvailability {
+  capacity: number;
+  taken: number | null;
+  remaining: number | null;
+  isFull: boolean;
+}
+
+// Same shape, different resource. The cafe tier is capped at 15 places and has
+// no dearer tier to fall through to, so "full" here means closed, not swapped.
+interface CafeAvailability {
   capacity: number;
   taken: number | null;
   remaining: number | null;
@@ -90,6 +99,12 @@ interface PlanDef {
   // Hidden entirely until then — we don't advertise the private tier while we
   // still have floor desks to sell.
   onlyWhenDesksFull?: boolean;
+  // Capped tier with no fallback: when the places are gone it is shown as
+  // closed rather than swapped for something dearer. See CAFE_MEMBER_LIMIT.
+  capacityLimited?: boolean;
+  // Badged as new on the form and the marketing pages. Drop the flag once the
+  // tier stops being news rather than leaving it on forever.
+  isNew?: boolean;
 }
 
 // Prices here must match lib/portal/pricing.ts and the PLAN_CATALOG in
@@ -113,6 +128,7 @@ const membershipPlans: PlanDef[] = [
     category: 'Private Area',
     recurrence: 'monthly',
     onlyWhenDesksFull: true,
+    isNew: true,
     features: [
       'Private, lockable office area — outside the shared community space',
       'Your own dedicated desk within that area',
@@ -125,13 +141,25 @@ const membershipPlans: PlanDef[] = [
     ]
   },
   {
-    id: 'one_day_dedicated_desk',
-    name: 'One Day Dedicated Desk',
-    price: 30,
-    description: 'Single-day dedicated desk pass. A one-time $30 charge — no recurring subscription.',
-    category: 'Day Pass',
-    recurrence: 'one_time',
-    features: ['One-time $30 charge', 'Full day of access', '1 hour of conference room time', 'High-speed WiFi', 'Kitchen access', 'Printing access']
+    id: 'cafe_membership',
+    name: 'Café Membership',
+    price: 100,
+    description: 'Work from the café side of the flex space next door. No assigned desk — every amenity, at half the price of a desk.',
+    category: 'Open Seating',
+    recurrence: 'monthly',
+    capacityLimited: true,
+    isNew: true,
+    features: [
+      'Open seating on the café side of the 1905 flex space',
+      'No assigned desk',
+      'Coffee, tea and beer included',
+      'High-speed WiFi',
+      'Printing access',
+      'Free on-site parking',
+      '2 conference room hours/month',
+      '2 flex space hours/week',
+      'Limited to 15 members',
+    ]
   },
   {
     id: 'private_office_single',
@@ -204,6 +232,7 @@ export default function MembershipApplicationPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deskAvailability, setDeskAvailability] = useState<DeskAvailability | null>(null);
+  const [cafeAvailability, setCafeAvailability] = useState<CafeAvailability | null>(null);
 
   // How full the dedicated-desk floor is. Best-effort: a failed or in-flight
   // check leaves this null, which shows the standard plans.
@@ -216,6 +245,14 @@ export default function MembershipApplicationPage() {
       })
       .catch(() => {
         /* leave availability unknown — the standard plans stay on offer */
+      });
+    fetch('/api/cafe-availability')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d && !d.unavailable) setCafeAvailability(d as CafeAvailability);
+      })
+      .catch(() => {
+        /* leave availability unknown — the cafe tier stays on offer */
       });
     return () => {
       cancelled = true;
@@ -298,6 +335,24 @@ export default function MembershipApplicationPage() {
     });
   };
 
+  // Arriving from a CTA that already named a plan — the café membership
+  // page's "Apply" button, for instance — lands here with ?plan=<id>. Pre-select it
+  // so the visitor is not dropped into a six-option picker having already
+  // chosen. Same window.location read as the ?trial=1 handler above, and for
+  // the same reason: useSearchParams would force a Suspense boundary and cost
+  // this page its static render.
+  const [planPreselected, setPlanPreselected] = useState(false);
+  useEffect(() => {
+    if (planPreselected) return;
+    const requested = new URLSearchParams(window.location.search).get('plan');
+    if (requested && membershipPlans.some(plan => plan.id === requested)) {
+      setQuantity(requested as PlanId, 1);
+      setPlanPreselected(true);
+    }
+    // Runs once on mount; `planPreselected` guards a re-entry if it ever does not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const adjustQuantity = (planId: PlanId, delta: number) =>
     setQuantity(planId, getQuantity(planId) + delta);
 
@@ -306,6 +361,7 @@ export default function MembershipApplicationPage() {
   // takes its place. Stays null while loading or if the check fails, which
   // keeps the normal offering on screen and the private tier hidden.
   const desksFull = deskAvailability?.isFull === true;
+  const cafeFull = cafeAvailability?.isFull === true;
   const visiblePlans = useMemo(
     () => membershipPlans.filter((p) => !p.onlyWhenDesksFull || desksFull),
     [desksFull]
@@ -315,10 +371,11 @@ export default function MembershipApplicationPage() {
   // application, take it back off — they can't be sold one.
   useEffect(() => {
     if (desksFull && getQuantity('dedicated_desk') > 0) setQuantity('dedicated_desk', 0);
+    if (cafeFull && getQuantity('cafe_membership') > 0) setQuantity('cafe_membership', 0);
     // setQuantity/getQuantity are re-created every render; depending on them
     // would loop. The only input that matters here is `desksFull`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [desksFull]);
+  }, [desksFull, cafeFull]);
 
   const totals = useMemo(() => {
     let monthlyCents = 0;
@@ -547,7 +604,9 @@ export default function MembershipApplicationPage() {
                   // The floor-plan desk stays visible when we're full so the
                   // $200 → $300 difference is explained rather than silently
                   // swapped, but it can't be added to an application.
-                  const soldOut = plan.id === 'dedicated_desk' && desksFull;
+                  const soldOut =
+                    (plan.id === 'dedicated_desk' && desksFull) ||
+                    (plan.id === 'cafe_membership' && cafeFull);
                   return (
                     <div
                       key={plan.id}
@@ -569,6 +628,11 @@ export default function MembershipApplicationPage() {
                           {plan.onlyWhenDesksFull && (
                             <span className="ml-2 text-xs bg-orange-100 px-2 py-1 rounded text-orange-800 font-medium">
                               Private &amp; lockable
+                            </span>
+                          )}
+                          {plan.isNew && (
+                            <span className="ml-2 text-xs bg-accent px-2 py-1 rounded text-white font-medium">
+                              New
                             </span>
                           )}
                         </div>
@@ -597,10 +661,21 @@ export default function MembershipApplicationPage() {
 
                       {soldOut ? (
                         <div className="pt-3 border-t border-clay text-sm text-ink-60">
-                          <span className="font-semibold text-ink">Fully occupied.</span>{' '}
-                          Every desk on the shared floor is spoken for, so this plan
-                          can&apos;t be selected right now. Choose the Private Dedicated Desk
-                          instead to join as a dedicated desk member today.
+                          {plan.id === 'cafe_membership' ? (
+                            <>
+                              <span className="font-semibold text-ink">All 15 places taken.</span>{' '}
+                              Cafe membership is capped so a seat is always free when you
+                              arrive. Get in touch and we&apos;ll let you know the moment
+                              one opens up.
+                            </>
+                          ) : (
+                            <>
+                              <span className="font-semibold text-ink">Fully occupied.</span>{' '}
+                              Every desk on the shared floor is spoken for, so this plan
+                              can&apos;t be selected right now. Choose the Private Dedicated Desk
+                              instead to join as a dedicated desk member today.
+                            </>
+                          )}
                         </div>
                       ) : (
                       <div className="flex items-center justify-between pt-3 border-t border-clay">

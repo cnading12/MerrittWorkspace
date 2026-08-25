@@ -10,6 +10,17 @@ export type MemberStatus =
 
 export type MemberDesignation =
   | 'dedicated_desk'
+  // Cafe-side seating in the 1905 building next door: no desk of their own and
+  // no claim on the coworking floor, but the full run of the amenities and half
+  // a dedicated desk's booking allowance. Capped at CAFE_MEMBER_LIMIT (15) —
+  // see lib/portal/cafeAvailability.ts — because the cafe has a finite number
+  // of seats and the whole point is that one is free when a member turns up.
+  | 'cafe_membership'
+  // RETIRED — no longer sold. The application form and the marketing pages no
+  // longer offer it, but the designation, the day_passes table and the
+  // repeat-purchase route in the portal all stay so existing pass holders and
+  // historical billing records keep working. Do not reuse this value for
+  // anything new, and do not delete it: members rows still carry it.
   | 'one_day_dedicated_desk'
   // A dedicated desk inside a private, lockable office that has been
   // converted into a dedicated-desk area, rather than a desk on the shared
@@ -266,6 +277,7 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
 
 export const DESIGNATION_LABELS: Record<MemberDesignation, string> = {
   dedicated_desk: 'Dedicated Desk',
+  cafe_membership: 'Café Membership',
   one_day_dedicated_desk: 'One Day Dedicated Desk',
   private_dedicated_desk: 'Private Dedicated Desk',
   private_office_single: 'Private Office — Single',

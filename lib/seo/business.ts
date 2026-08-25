@@ -29,12 +29,13 @@ export const BUSINESS = {
   /** One paragraph. This is the sentence an assistant is most likely to quote. */
   summary:
     'Merritt Workspace is an independent coworking space at 2246 Irving Street in the ' +
-    "Sloan's Lake neighborhood of Denver, Colorado. It offers dedicated desks from $200 a " +
-    'month and private lockable offices from $500 a month, all month-to-month with no ' +
-    'long-term lease. Members get 24/7 keypad access, free on-site parking, enterprise ' +
-    'WiFi, five soundproof phone booths, a conference room, a full kitchen with free ' +
+    "Sloan's Lake neighborhood of Denver, Colorado. It offers cafe memberships from $100 a " +
+    'month, dedicated desks from $200 and private lockable offices from $500, all ' +
+    'month-to-month with no long-term lease. Members get free on-site parking, enterprise ' +
+    'WiFi, printing, a conference room, a full kitchen with free ' +
     'coffee, tea and beer, and booking credit in a restored 1905 event hall on the same ' +
-    'lawn. It is three minutes from I-25 and a short walk from Sloan’s Lake Park.',
+    'lawn; desk and office members also get 24/7 keypad access and five soundproof phone ' +
+    'booths. It is three minutes from I-25 and a short walk from Sloan’s Lake Park.',
 
   address: {
     street: '2246 Irving Street',
@@ -116,13 +117,13 @@ export interface Plan {
   name: string;
   /** Price in whole US dollars. */
   price: number;
-  /** 'month' for recurring memberships, 'day' for the day pass. */
+  /** 'month' for recurring memberships. 'day' is retained for the retired day pass. */
   unit: 'month' | 'day';
   capacity: string;
   privacy: string;
   url: string;
   summary: string;
-  /** Hours of conference room credit per calendar month; null for the day pass. */
+  /** Hours of conference room credit per calendar month; null when not included. */
   meetingCreditPerMonth: number | null;
   /** Hours of flex-space credit per week; null when not included. */
   flexCreditPerWeek: number | null;
@@ -132,6 +133,25 @@ export interface Plan {
 }
 
 export const PLANS: Plan[] = [
+  {
+    id: 'cafe_membership',
+    name: 'Café Membership',
+    price: 100,
+    unit: 'month',
+    capacity: '1 person',
+    privacy: 'Open seating in the café, no assigned desk',
+    url: `${SITE_URL}/membership/cafe`,
+    summary:
+      'Open seating on the café side of the restored 1905 hall next door rather than a ' +
+      'desk of your own. Every amenity a desk member has — free coffee, tea and beer, ' +
+      'WiFi, printing and free parking — at half the price and half the booking credit. ' +
+      'Limited to 15 members.',
+    meetingCreditPerMonth: 2,
+    flexCreditPerWeek: 2,
+    businessAddress: false,
+    dogsAllowed: false,
+    bestFor: 'Anyone in a few days a week who works from a laptop',
+  },
   {
     id: 'dedicated_desk',
     name: 'Dedicated Desk',
@@ -165,23 +185,6 @@ export const PLANS: Plan[] = [
     businessAddress: false,
     dogsAllowed: false,
     bestFor: 'Members who want a dedicated desk with real privacy',
-  },
-  {
-    id: 'one_day_dedicated_desk',
-    name: 'Day Pass',
-    price: 30,
-    unit: 'day',
-    capacity: '1 person',
-    privacy: 'Shared coworking floor',
-    url: `${SITE_URL}/membership/apply`,
-    summary:
-      'A single day at a dedicated desk, including one hour of conference room time, ' +
-      'WiFi, printing and the kitchen. Flex space is not included with day passes.',
-    meetingCreditPerMonth: null,
-    flexCreditPerWeek: null,
-    businessAddress: false,
-    dogsAllowed: false,
-    bestFor: 'Travellers and drop-ins',
   },
   {
     id: 'private_office_single',
@@ -273,7 +276,7 @@ export const POLICIES = {
     "mail. With proper notice you are not billed for your final month — the last month's fee " +
     'paid at sign-up covers it. Without a full 30 days’ notice that fee is forfeited.',
   keys: 'All keys and access devices must be returned by your last day. Items not returned within 48 hours are subject to a $250 fee each.',
-  pets: 'Dogs are welcome in private offices and must stay in the office. Pets are not permitted on the shared coworking floor.',
+  pets: 'Dogs are welcome in private offices and must stay in the office. Pets are not permitted on the shared coworking floor or in the café.',
   noise: 'Calls belong in the phone booths, the flex space or outside. Private office members close the door for calls.',
   payment: 'Credit and debit card, billed monthly.',
 } as const;
@@ -285,4 +288,4 @@ export function priceLine(plan: Plan): string {
     : `${plan.name}: $${plan.price} per month`;
 }
 
-export const PRICE_RANGE = '$200 - $1200/month';
+export const PRICE_RANGE = '$100 - $1200/month';

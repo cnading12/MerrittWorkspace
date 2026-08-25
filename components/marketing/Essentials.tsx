@@ -18,7 +18,7 @@ import { BUSINESS_HOURS_FULL } from '@/lib/hours';
 
 const desk = PLANS.find(p => p.id === 'dedicated_desk')!;
 const office = PLANS.find(p => p.id === 'private_office_single')!;
-const dayPass = PLANS.find(p => p.id === 'one_day_dedicated_desk')!;
+const cafe = PLANS.find(p => p.id === 'cafe_membership')!;
 
 const FACTS: { term: string; value: React.ReactNode }[] = [
   { term: 'Address', value: BUSINESS.address.full },
@@ -26,9 +26,9 @@ const FACTS: { term: string; value: React.ReactNode }[] = [
   { term: 'Member access', value: '24 hours a day, 7 days a week, with a personal keypad code' },
   { term: 'Business hours', value: `${BUSINESS_HOURS_FULL} — walk in, no code needed` },
   { term: 'Parking', value: 'Free, on site and on the street. No permit, no daily charge.' },
+  { term: 'Café membership', value: `$${cafe.price} a month, open seating in the café` },
   { term: 'Dedicated desks', value: `From $${desk.price} a month` },
   { term: 'Private offices', value: `From $${office.price} a month, for one to eight people` },
-  { term: 'Day pass', value: `$${dayPass.price} for the day` },
   {
     term: 'Conference room',
     value: (

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
 export const metadata: Metadata = {
-  title: "Flex Space & Event Venue | Sloan's Lake Denver",
+  title: "Flex Space & 1905 Event Venue | Denver",
   description:
     "A restored 1905 hall next door to Merritt Workspace in Sloan's Lake, Denver. Original stained glass, hardwood floor, projector and sound system — free to book with membership, weekdays until 4:00.",
   keywords: [
@@ -24,6 +24,13 @@ export const metadata: Metadata = {
         alt: "The restored 1905 flex space hall at Merritt Workspace in Sloan's Lake, Denver",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Flex Space & Historic Event Venue | Merritt Workspace Denver",
+    description:
+      "A restored 1905 hall with stained glass, projector and sound system, free to book with membership in Sloan's Lake, Denver.",
+    images: ["/images/flex-space/hall-1.webp"],
   },
   alternates: {
     canonical: "https://merrittworkspace.net/member-resources/flex-space",

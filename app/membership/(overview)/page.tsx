@@ -49,7 +49,8 @@ const membershipPlans = [
     image: '/images/offices/single-alt.webp',
     blurDataURL: 'data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAACQAQCdASoKAA0ABUB8JZQC7ABpDmAAj/vsp3SQ/qO4OdwA',
     color: 'burnt-orange',
-    badge: 'Private & Lockable',
+    badge: 'New',
+    isNew: true,
     features: [
       'Private, lockable office area, outside the shared community space',
       'Your own dedicated desk within that area',
@@ -67,29 +68,30 @@ const membershipPlans = [
     link: '/membership/dedicated-desk'
   },
   {
-    id: 'one_day_dedicated_desk',
-    name: 'One Day Dedicated Desk',
-    price: 30,
-    description: 'A single day at a dedicated desk. Perfect for trying us out or a one-off workday.',
+    id: 'cafe_membership',
+    name: 'Café Membership',
+    price: 100,
+    description: 'Open seating on the café side of the 1905 flex space next door. Every amenity a desk member has, without the desk.',
     capacity: '1 person',
-    privacy: 'Shared Space',
-    image: '/images/og/home-og.jpg',
+    privacy: 'Open Seating',
+    image: '/images/flex-space/cafe.webp',
     blurDataURL: 'data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAACwAQCdASoKAA0ABUB8JZACdADYt8AAAOD9JmNTjrhhjajRJ8jDWLTrgAA=',
     color: 'burnt-orange',
-    badge: 'Day Pass',
+    badge: 'New',
+    isNew: true,
     features: [
-      'One-time $30 charge',
-      'Full day of access',
-      '1 hour of conference room time',
+      'Open seating in the café — no assigned desk',
+      'Coffee, tea and beer included',
       'High-speed WiFi',
-      'Full kitchen with coffee, tea and beer',
       'Printing access',
-      'Phone booths on availability',
-      'Flex space not included with day passes'
+      'Free on-site parking',
+      '2 hours conference room credits/month',
+      '2 hours flex space credits/week',
+      'Limited to 15 members',
     ],
-    ideal_for: 'Travelers, drop-ins, and anyone wanting to try the space',
+    ideal_for: 'Anyone in a few days a week who works from a laptop',
     category: 'shared',
-    link: '/membership/apply'
+    link: '/membership/cafe'
   },
   {
     id: 'private_office_single',
@@ -268,20 +270,27 @@ function AvailabilityNote({ count, singular, plural, fullText }: {
 
 // Comparison rows. `true` renders the included mark, `false` an em dash,
 // anything else prints as-is.
+// Café membership leads the table because it is now the cheapest way in, and
+// because the row that sells it is the one directly under the price: it gets
+// the same amenities as a desk and differs only in the desk and the credit.
 const COMPARE_ROWS: { label: string; values: (string | boolean)[] }[] = [
-  { label: 'Monthly price', values: ['$200', '$500', '$700', '$1,200'] },
-  { label: 'Capacity', values: ['1 person', '1 person', '2 people', '4–8 people'] },
-  { label: 'Privacy', values: ['Shared space', 'Private office', 'Private office', 'Private office'] },
-  { label: '24/7 access', values: [true, true, true, true] },
-  { label: 'Conference room credit', values: ['4 hrs/mo', '14 hrs/mo', '14 hrs/mo', '20 hrs/mo'] },
-  { label: 'Flex space credit', values: ['4 hrs/wk', '6 hrs/wk', '6 hrs/wk', '8 hrs/wk'] },
-  { label: 'Business address', values: [false, true, true, true] },
-  { label: 'Phone booths', values: ['5, shared', '5, shared', '5, shared', '5, shared'] },
-  { label: 'Dogs allowed', values: [false, true, true, true] },
-  { label: 'Lockable storage', values: [true, true, true, true] },
+  { label: 'Monthly price', values: ['$100', '$200', '$500', '$700', '$1,200'] },
+  { label: 'Capacity', values: ['1 person', '1 person', '1 person', '2 people', '4–8 people'] },
+  { label: 'Privacy', values: ['Café, open seating', 'Shared space', 'Private office', 'Private office', 'Private office'] },
+  { label: 'Your own desk', values: [false, true, true, true, true] },
+  { label: '24/7 access', values: [false, true, true, true, true] },
+  { label: 'Conference room credit', values: ['2 hrs/mo', '4 hrs/mo', '14 hrs/mo', '14 hrs/mo', '20 hrs/mo'] },
+  { label: 'Flex space credit', values: ['2 hrs/wk', '4 hrs/wk', '6 hrs/wk', '6 hrs/wk', '8 hrs/wk'] },
+  { label: 'Coffee, tea and beer', values: [true, true, true, true, true] },
+  { label: 'Printing', values: [true, true, true, true, true] },
+  { label: 'Free parking', values: [true, true, true, true, true] },
+  { label: 'Business address', values: [false, false, true, true, true] },
+  { label: 'Phone booths', values: ['5, shared', '5, shared', '5, shared', '5, shared', '5, shared'] },
+  { label: 'Dogs allowed', values: [false, false, true, true, true] },
+  { label: 'Lockable storage', values: [false, true, true, true, true] },
 ];
 
-const COMPARE_COLS = ['Dedicated desk', 'Single office', '2-desk office', 'Large office'];
+const COMPARE_COLS = ['Café membership', 'Dedicated desk', 'Single office', '2-desk office', 'Large office'];
 
 function CompareCell({ value }: { value: string | boolean }) {
   if (value === true) return <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" aria-label="Included" />;
@@ -318,9 +327,12 @@ export default function MembershipPage() {
     // has always shown — so the private alternative reads as an explanation
     // rather than an unannounced price rise.
     const soldOut = plan.id === 'dedicated_desk' && desksFull;
-    const perDay = plan.id === 'one_day_dedicated_desk';
-    // Shown on the two recurring desk products only. A day pass isn't a seat,
-    // and offices carry their own count on the section header instead.
+    // The cafe tier has no desks to count, so the seats-left note below is
+    // suppressed for it — its cap is stated in the feature list and enforced
+    // on the application form, where it can be live without going stale here.
+    const isNew = 'isNew' in plan && plan.isNew === true;
+    // Shown on the two desk products only. A cafe membership isn't a seat on
+    // the floor, and offices carry their own count on the section header.
     const seatsLeft =
       plan.id === 'dedicated_desk' ? desks?.remaining
       : plan.id === PRIVATE_DESK_PLAN_ID ? desks?.private_desk?.remaining
@@ -328,13 +340,18 @@ export default function MembershipPage() {
 
     return (
       <div key={plan.id} className="flex flex-col border-t border-clay pt-8">
-        <h3 className="mw-h3">{plan.name}</h3>
+        <div className="flex items-baseline gap-3">
+          <h3 className="mw-h3">{plan.name}</h3>
+          {isNew && (
+            <span className="bg-accent px-2 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-white">
+              New
+            </span>
+          )}
+        </div>
 
         <p className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
           ${plan.price}
-          <span className="text-base font-normal text-ink-60">
-            {perDay ? ' one-time / day' : ' /mo'}
-          </span>
+          <span className="text-base font-normal text-ink-60"> /mo</span>
         </p>
 
         <p className="mt-4 text-[16px] leading-relaxed text-ink-60">{plan.description}</p>
@@ -351,7 +368,7 @@ export default function MembershipPage() {
           {plan.capacity} &middot; {plan.privacy}
         </p>
 
-        {!soldOut && (
+        {!soldOut && plan.id !== 'cafe_membership' && (
           <AvailabilityNote
             count={seatsLeft}
             singular="desk"

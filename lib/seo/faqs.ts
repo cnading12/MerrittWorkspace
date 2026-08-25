@@ -47,6 +47,39 @@ export const FAQ_CATEGORIES: { id: FaqCategory | 'all'; name: string }[] = [
 ];
 
 export const FAQS: Faq[] = [
+  // ── The cafe tier ────────────────────────────────────────────────────────
+  {
+    id: 'cafe-what',
+    category: 'pricing',
+    audience: 'prospect',
+    question: 'What is a cafe membership?',
+    answer:
+      'A cafe membership is $100 a month to work from the cafe side of the restored 1905 hall next to Merritt Workspace in Sloan\u2019s Lake, Denver. You get open seating rather than a desk of your own \u2014 sit wherever is free \u2014 plus the amenities a desk member has.\n\nIt is capped at 15 members so there is always somewhere to sit.',
+  },
+  {
+    id: 'cafe-included',
+    category: 'pricing',
+    audience: 'prospect',
+    question: 'What is included with a cafe membership?',
+    answer:
+      'For $100 a month:\n\n- Open seating on the cafe side of the 1905 flex space\n- Free coffee, tea and beer\n- Enterprise WiFi\n- Printing\n- Free on-site parking\n- 2 hours of conference room credit a month\n- 2 hours of flex space booking credit a week\n\nIt does not include an assigned desk, a personal 24/7 access code, lockable storage or a business address. Those come with a dedicated desk or a private office.',
+  },
+  {
+    id: 'cafe-vs-desk',
+    category: 'pricing',
+    audience: 'prospect',
+    question: 'Should I get a cafe membership or a dedicated desk?',
+    answer:
+      'A dedicated desk is $200 a month and gives you the same desk every day on the coworking floor, a numbered locker, 24/7 keypad access, and double the booking credit \u2014 4 conference room hours a month and 4 flex hours a week.\n\nA cafe membership is $100, gives you open seating in the cafe instead of an assigned desk, and includes half those hours.\n\nIf you are in most days or want somewhere to leave a monitor, take the desk. If you are in a few days a week with a laptop, the cafe membership is the better deal.',
+  },
+  {
+    id: 'cafe-limit',
+    category: 'pricing',
+    audience: 'prospect',
+    question: 'Is there a limit on cafe memberships?',
+    answer:
+      'Yes \u2014 15 members, deliberately. The cafe has a finite number of seats and the point of the membership is that one is free when you arrive, so we would rather close the tier than oversell it.\n\nWhen all 15 places are taken the application form says so. Get in touch and we will let you know when one opens up.',
+  },
   // ── What someone asks before they are a member ──────────────────────────
   {
     id: 'what-is-merritt-workspace',
@@ -62,15 +95,15 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'How much does a coworking membership cost?',
     answer:
-      'Prices are month-to-month with no long-term lease:\n\n- Dedicated desk on the shared floor: $200 per month\n- Private dedicated desk in a lockable area: $300 per month\n- Single private office (1 person): $500 per month\n- 2-desk private office (2 people): $700 per month\n- Large team private office (4 to 8 people): $1,200 per month\n- Day pass at a dedicated desk: $30 for the day\n\nEvery membership includes 24/7 access, WiFi, free parking, the phone booths, the kitchen with free coffee, tea and beer, mail handling, conference room credit and weekly flex space credit. There is no separate amenity fee or service charge on top.\n\nAt sign-up you pay your first month (prorated) plus your last month up front.',
+      'Prices are month-to-month with no long-term lease:\n\n- Cafe membership, open seating in the cafe: $100 per month\n- Dedicated desk on the shared floor: $200 per month\n- Private dedicated desk in a lockable area: $300 per month\n- Single private office (1 person): $500 per month\n- 2-desk private office (2 people): $700 per month\n- Large team private office (4 to 8 people): $1,200 per month\n\nEvery membership includes WiFi, free parking, the kitchen with free coffee, tea and beer, printing, conference room credit and weekly flex space credit. Desk and office memberships add 24/7 keypad access, the phone booths, mail handling and lockable storage. There is no separate amenity fee or service charge on top.\n\nAt sign-up you pay your first month (prorated) plus your last month up front.',
   },
   {
     id: 'day-pass',
     category: 'pricing',
     audience: 'prospect',
-    question: 'Do you offer day passes or drop-in coworking?',
+    question: 'What is the cheapest way to join?',
     answer:
-      'Yes. A day pass is $30 and gives you a full day at a dedicated desk, one hour of conference room time, WiFi, printing, the kitchen and phone booths as available. Flex space credit is not included with day passes.\n\nIf you are considering membership, ask for a free trial day instead — it is a full working day in the space at no charge, and every prospective member is offered one.',
+      'A cafe membership, at $100 a month. It is open seating on the cafe side of the restored 1905 hall next door rather than a desk of your own, and it includes free coffee, tea and beer, WiFi, printing, free parking, 2 hours of conference room credit a month and 2 hours of flex space credit a week — half a dedicated desk allowance, at half a dedicated desk price. It is capped at 15 members so there is always somewhere to sit.\n\nWe no longer sell day passes. If you want to try the space first, ask for a free trial day: a full working day here at no charge, offered to every prospective member.',
   },
   {
     id: 'free-trial',
@@ -102,7 +135,7 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'Can non-members rent the conference room?',
     answer:
-      'Yes. The conference room is bookable by anyone at $25 per hour, with a one-hour minimum and a four-hour maximum per session. It seats eight and has a 75-inch screen, conference calling and fast WiFi, and parking is free.\n\nMembers book against the hours their membership already includes: 4 hours a month with a dedicated desk, 14 hours with a single or 2-desk office, and 20 hours with a large team office. Time beyond the included hours is billed at the same $25 per hour.\n\nBook at merrittworkspace.net/member-resources/meeting-rooms.',
+      'Yes. The conference room is bookable by anyone at $25 per hour, with a one-hour minimum and a four-hour maximum per session. It seats eight and has a 75-inch screen, conference calling and fast WiFi, and parking is free.\n\nMembers book against the hours their membership already includes: 2 hours a month with a cafe membership, 4 with a dedicated desk, 14 with a single or 2-desk office, and 20 with a large team office. Time beyond the included hours is billed at the same $25 per hour.\n\nBook at merrittworkspace.net/member-resources/meeting-rooms.',
   },
   {
     id: 'business-address',
@@ -204,7 +237,7 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'What is the flex space, and can members use it?',
     answer:
-      `The flex space is a restored 1905 hall on the same lawn as the workspace, with the original stained glass, a hardwood floor, a projector and a sound system, seating about a hundred. In front of it is a cafe area with permanent seating that members use all day.\n\nEvery membership includes weekly booking credit in the hall — 4 hours a week with a dedicated desk, 6 with a single or 2-desk office, 8 with a large team office — free to book ${FLEX_WINDOW_LABEL}. Members run workshops, all-hands meetings and client sessions in it.\n\nIn the evenings and at weekends the hall operates as Merritt Wellness, with yoga and fitness classes. Workspace members book it at a discount for evening events and take classes at a member rate.`,
+      `The flex space is a restored 1905 hall on the same lawn as the workspace, with the original stained glass, a hardwood floor, a projector and a sound system, seating about a hundred. In front of it is a cafe area with permanent seating that members use all day.\n\nEvery membership includes weekly booking credit in the hall — 2 hours a week with a cafe membership, 4 with a dedicated desk, 6 with a single or 2-desk office, 8 with a large team office — free to book ${FLEX_WINDOW_LABEL}. Members run workshops, all-hands meetings and client sessions in it.\n\nIn the evenings and at weekends the hall operates as Merritt Wellness, with yoga and fitness classes. Workspace members book it at a discount for evening events and take classes at a member rate.`,
   },
   {
     id: 'coffee-kitchen',
