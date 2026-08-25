@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
-const TITLE = "Apply for Membership | Merritt Denver";
+const TITLE = "Apply for Membership | Denver Coworking";
 const DESCRIPTION =
   "Apply for a desk, a private office or a free trial day at Merritt Workspace in Sloan's Lake, Denver. Short application, no long lease, 24/7 access and free parking. 3 min to I-25.";
 
