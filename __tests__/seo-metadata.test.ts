@@ -180,6 +180,7 @@ describe('the retired day pass', () => {
     'app/membership/(overview)/layout.tsx',
     'app/membership/(overview)/page.tsx',
     'app/membership/apply/page.tsx',
+    'app/membership/apply/FullApplicationForm.tsx',
     'app/membership/cafe/layout.tsx',
     'app/membership/dedicated-desk/layout.tsx',
     'app/sitemap.ts',

@@ -103,3 +103,78 @@ describe('trial-day email — finding a phone booth', () => {
     }
   });
 });
+
+describe('trial-day email — the café variant', () => {
+  const cafe = render({ ...base, isCafeTrial: true });
+
+  // A café trial is the same day out with one thing changed: which building
+  // you work from. Everything else has to survive, because "come see the
+  // place" is the entire product.
+  it('sends them to the 1905 building next door, not the coworking floor', () => {
+    for (const body of [cafe.html, cafe.text]) {
+      expect(body).toMatch(/1905 building next door/i);
+      expect(body).toMatch(/caf[eé] is at the front/i);
+    }
+  });
+
+  it('tells them the workspace is still theirs all day', () => {
+    for (const body of [cafe.html, cafe.text]) {
+      expect(body).toMatch(/workspace itself is next door and open to you all day/i);
+      expect(body).toMatch(/kitchen/i);
+      expect(body).toMatch(/printers/i);
+      expect(body).toMatch(/meeting room/i);
+      expect(body).toMatch(/phone boot/i);
+    }
+  });
+
+  it('describes open seating rather than a desk they would not get', () => {
+    for (const body of [cafe.html, cafe.text]) {
+      expect(body).toMatch(/Where you'll sit/i);
+      expect(body).toMatch(/sit wherever is free/i);
+      expect(body).toMatch(/open seating/i);
+      // No desk numbers, and none of the assigned-desk equipment copy.
+      expect(body).not.toMatch(/DD1/);
+      expect(body).not.toMatch(/monitor, filing storage/i);
+    }
+  });
+
+  it('keeps the practical details every trial visitor needs', () => {
+    for (const body of [cafe.html, cafe.text]) {
+      expect(body).toContain('merrittcowork');
+      expect(body).toContain('Merritt23X');
+      expect(body).toContain('2246 Irving Street');
+      expect(body).toMatch(/coffee, tea,? and beer/i);
+      expect(body).toMatch(/snack ?shop/i);
+      expect(body).toMatch(/\(303\) 359-8337/);
+    }
+  });
+
+  it('does not use the office-trial confirmation step', () => {
+    for (const body of [cafe.html, cafe.text]) {
+      expect(body).not.toMatch(/confirm your office/i);
+    }
+  });
+});
+
+describe('trial-day email — what happens next', () => {
+  // The short trial form collects contact details and a photo ID. Promising
+  // those people a decision on a membership application they never submitted
+  // is the kind of thing that has them waiting on an email that never comes.
+  it('promises no review to someone who only booked a trial day', () => {
+    const { html, text } = render({ ...base, hasFullApplication: false });
+    for (const body of [html, text]) {
+      expect(body).not.toMatch(/being reviewed in parallel/i);
+      expect(body).not.toMatch(/1–2 business days/i);
+      expect(body).toMatch(/nothing else to fill in before your visit/i);
+      expect(body).toMatch(/already given us filled in/i);
+    }
+  });
+
+  it('still says so when they did submit a full application', () => {
+    const { html, text } = render({ ...base, hasFullApplication: true });
+    for (const body of [html, text]) {
+      expect(body).toMatch(/being reviewed in parallel/i);
+      expect(body).toMatch(/1–2 business days/i);
+    }
+  });
+});

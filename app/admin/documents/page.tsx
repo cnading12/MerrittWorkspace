@@ -56,6 +56,13 @@ interface Application {
   decided_at: string | null;
   view_url: string;
   member: MemberRef | null;
+  // 'trial' rows are short-form trial-day applications; they attach a photo
+  // ID at submission time, where a full application collects one later in
+  // the portal. Absent on rows predating the trial/membership split.
+  application_kind?: 'trial' | 'full' | null;
+  trial_date?: string | null;
+  id_document_path?: string | null;
+  id_view_url?: string | null;
 }
 
 interface GuestBookingId {
@@ -443,8 +450,14 @@ function ApplicationCard({
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-orange-100 text-orange-800 uppercase tracking-wide">
-              Application
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium uppercase tracking-wide ${
+                application.application_kind === 'trial'
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-orange-100 text-orange-800'
+              }`}
+            >
+              {application.application_kind === 'trial' ? 'Trial day' : 'Application'}
             </span>
             <span className="font-medium text-gray-900">{typeLabel}</span>
             <span
@@ -469,6 +482,7 @@ function ApplicationCard({
           <div className="text-xs text-gray-500 mt-1">
             Submitted {new Date(application.created_at).toLocaleString()}
             {application.company_name && ` · ${application.company_name}`}
+            {application.trial_date && ` · Trial ${application.trial_date}`}
             {application.start_date && ` · Start ${application.start_date}`}
           </div>
         </div>
@@ -479,6 +493,16 @@ function ApplicationCard({
           >
             View application
           </button>
+          {application.id_view_url && (
+            <a
+              href={application.id_view_url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm border border-gray-900 text-gray-900 rounded px-3 py-1.5 text-center hover:bg-gray-100"
+            >
+              View photo ID
+            </a>
+          )}
         </div>
       </div>
     </div>

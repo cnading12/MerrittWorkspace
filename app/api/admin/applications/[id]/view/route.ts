@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { readTrialFlag, readTrialDate } from '@/lib/portal/trial';
+import { isTrialApplication } from '@/lib/portal/trialApplication';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,18 +70,39 @@ function renderApplicationHtml(app: any): string {
     sections.push(trialBanner(trialDate));
   }
 
+  // A short-form trial application has no professional details, references,
+  // emergency contact or plan — by design. Rendering those sections would be
+  // eight "Not provided." blocks implying the applicant skipped something,
+  // when in fact we never asked. So the trial view stops after the summary.
+  const shortFormTrial = isTrialApplication(app);
+
   sections.push(
     tableSection('Application summary', [
       ['Applicant', applicantName || '—'],
       ['Email', app.email || '—'],
       ['Phone', app.phone || '—'],
       ['Company', app.company_name || '—'],
-      ['Membership type', membershipTypeLabel],
-      ['Trial day requested', wantsTrial ? 'Yes' : 'No'],
-      ...(wantsTrial
-        ? [['Trial day date', formatTrialDate(trialDate)] as [string, string]]
-        : []),
-      ['Preferred start date', app.start_date || '—'],
+      ...(shortFormTrial
+        ? ([
+            [
+              'Wants to try',
+              payload.trial_seating === 'office'
+                ? 'Private office'
+                : payload.trial_seating === 'cafe'
+                  ? 'Café (works from the 1905 building next door)'
+                  : 'Dedicated desk',
+            ],
+            ['Trial day date', formatTrialDate(trialDate)],
+            ['Photo ID', app.id_document_path ? 'On file' : 'Not attached'],
+          ] as [string, string][])
+        : ([
+            ['Membership type', membershipTypeLabel],
+            ['Trial day requested', wantsTrial ? 'Yes' : 'No'],
+            ...(wantsTrial
+              ? [['Trial day date', formatTrialDate(trialDate)] as [string, string]]
+              : []),
+            ['Preferred start date', app.start_date || '—'],
+          ] as [string, string][])),
       ['Status', (app.status || 'pending').toUpperCase()],
       ['Submitted', submittedAt],
       ...(decidedAt ? [['Decided', decidedAt] as [string, string]] : []),
@@ -89,6 +111,16 @@ function renderApplicationHtml(app: any): string {
         : []),
     ])
   );
+
+  if (shortFormTrial) {
+    sections.push(
+      emptySection(
+        'Trial day application',
+        'This is a trial day application, not a membership application. Contact details and a photo ID are all we ask for — there is nothing to approve. If they decide to join, send them the membership application from the applications page; it arrives prefilled with everything above.'
+      )
+    );
+    return renderDocument(app, applicantName, submittedDate, sections);
+  }
 
   sections.push(
     tableSection('Professional information', [
@@ -190,11 +222,23 @@ function renderApplicationHtml(app: any): string {
     ])
   );
 
+  return renderDocument(app, applicantName, submittedDate, sections);
+}
+
+// The printable shell around whichever sections were assembled above.
+// Extracted so the trial-day view can return early with its own short
+// section list rather than falling through the membership-only ones.
+function renderDocument(
+  app: any,
+  applicantName: string,
+  submittedDate: string,
+  sections: string[]
+): string {
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Membership Application — ${escapeHtml(applicantName || app.email || '')}</title>
+<title>${app.application_kind === 'trial' ? 'Trial Day Application' : 'Membership Application'} — ${escapeHtml(applicantName || app.email || '')}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
   :root { color-scheme: light; }
@@ -341,7 +385,7 @@ function renderApplicationHtml(app: any): string {
 </div>
 <div class="page">
   <h1>
-    Membership Application
+    ${app.application_kind === 'trial' ? 'Trial Day Application' : 'Membership Application'}
     <span class="status-badge ${escapeHtml(app.status || 'pending')}">${escapeHtml(
       (app.status || 'pending').toUpperCase()
     )}</span>

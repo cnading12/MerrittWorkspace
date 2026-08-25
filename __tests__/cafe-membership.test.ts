@@ -55,7 +55,7 @@ describe('the cafe tier is priced and provisioned as half a desk', () => {
     expect(read('app/api/membership-application/route.ts')).toContain(
       `cafe_membership:         { label: 'Café Membership',            price_cents: ${CAFE_MEMBERSHIP_MONTHLY_CENTS}`,
     );
-    expect(read('app/membership/apply/page.tsx')).toContain(`price: ${dollars},`);
+    expect(read('app/membership/apply/FullApplicationForm.tsx')).toContain(`price: ${dollars},`);
   });
 });
 
@@ -113,14 +113,14 @@ describe('cafe capacity', () => {
 
 describe('the tier is actually reachable', () => {
   it('is offered on the application form and the comparison page', () => {
-    expect(read('app/membership/apply/page.tsx')).toContain("id: 'cafe_membership'");
+    expect(read('app/membership/apply/FullApplicationForm.tsx')).toContain("id: 'cafe_membership'");
     expect(read('app/membership/(overview)/page.tsx')).toContain("id: 'cafe_membership'");
   });
 
   it('is gated on the form when the places are gone', () => {
     // A capped tier that keeps taking selections after it fills is how you end
     // up with a sixteenth member who was told yes.
-    const form = read('app/membership/apply/page.tsx');
+    const form = read('app/membership/apply/FullApplicationForm.tsx');
     expect(form).toContain('/api/cafe-availability');
     expect(form).toContain('cafeFull');
   });

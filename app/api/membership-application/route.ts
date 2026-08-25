@@ -238,22 +238,67 @@ export async function POST(request: NextRequest) {
       };
 
       // First attempt: include the new dedicated trial columns.
-      let { error } = await sb.from('member_applications').insert({
-        ...baseRow,
-        wants_trial_day: wantsTrial,
-        trial_date: trialDate,
-      });
+      let { data: insertedRow, error } = await sb
+        .from('member_applications')
+        .insert({
+          ...baseRow,
+          wants_trial_day: wantsTrial,
+          trial_date: trialDate,
+          application_kind: 'full',
+        })
+        .select('id')
+        .single();
 
       // If the trial columns don't exist yet (migration not applied), retry
       // without them — the trial info is still preserved in `payload`.
-      if (error && /column .* does not exist|wants_trial_day|trial_date/i.test(error.message || '')) {
+      if (error && /column .* does not exist|wants_trial_day|trial_date|application_kind/i.test(error.message || '')) {
         console.warn('⚠️ Trial-day columns missing; persisting trial info to payload only. Apply migration 20260428_trial_day_applicants.sql to enable column-level filtering.');
-        const retry = await sb.from('member_applications').insert(baseRow);
+        const retry = await sb.from('member_applications').insert(baseRow).select('id').single();
+        insertedRow = retry.data;
         error = retry.error;
       }
 
       if (error) {
         console.error('❌ Failed to persist application to member_applications:', error);
+      }
+
+      // Arrived from the post-trial "finish your application" link. Close the
+      // loop on the trial row: mark it converted so the follow-up cron stops
+      // chasing them, and carry their photo ID across so the portal does not
+      // ask for a document they already handed over.
+      //
+      // All best effort. A full application that saved is a full application
+      // whether or not we managed to tie it back to a trial from weeks ago.
+      const resumeToken = typeof applicationData.resume_token === 'string'
+        ? applicationData.resume_token.trim()
+        : '';
+      if (resumeToken && insertedRow?.id) {
+        try {
+          const { data: trialRow, error: trialLookupError } = await sb
+            .from('member_applications')
+            .select('id, id_document_path')
+            .eq('resume_token', resumeToken)
+            .maybeSingle();
+          if (trialLookupError) {
+            console.error('⚠️ Could not look up trial row for resume token:', trialLookupError);
+          } else if (trialRow) {
+            const { error: linkError } = await sb
+              .from('member_applications')
+              .update({ converted_to_application_id: insertedRow.id })
+              .eq('id', trialRow.id);
+            if (linkError) console.error('⚠️ Could not link trial application to full application:', linkError);
+
+            if (trialRow.id_document_path) {
+              const { error: carryError } = await sb
+                .from('member_applications')
+                .update({ id_document_path: trialRow.id_document_path })
+                .eq('id', insertedRow.id);
+              if (carryError) console.error('⚠️ Could not carry trial photo ID forward:', carryError);
+            }
+          }
+        } catch (linkErr) {
+          console.error('⚠️ Unexpected error linking trial application:', linkErr);
+        }
       }
     } catch (e) {
       console.error('❌ Unexpected error persisting application:', e);
@@ -354,6 +399,14 @@ export async function POST(request: NextRequest) {
         typeof line.plan_id === 'string' && line.plan_id.startsWith('private_office')
       );
 
+      // A café applicant works from the 1905 building next door, not the
+      // coworking floor, so their trial day needs the café instructions. An
+      // application carrying both a café membership and an office takes the
+      // office variant above, which is the one with a step to complete
+      // before the visit.
+      const isCafeTrial =
+        !isOfficeTrial && itemized.lines.some(line => line.plan_id === 'cafe_membership');
+
       // Tell a desk trial visitor exactly which desks they can sit at. Two
       // cases send them to a team member instead of a DD number: the shared
       // floor is fully claimed, or they applied for a private dedicated desk,
@@ -363,7 +416,7 @@ export async function POST(request: NextRequest) {
       // completely empty desk" guidance rather than guessing either way.
       let availableDesksLabel: string | null = null;
       let allDesksTaken = false;
-      if (!isOfficeTrial) {
+      if (!isOfficeTrial && !isCafeTrial) {
         if (itemized.lines.some(line => line.plan_id === 'private_dedicated_desk')) {
           allDesksTaken = true;
         } else {
@@ -387,22 +440,32 @@ export async function POST(request: NextRequest) {
           to: applicationData.email,
           subject: isOfficeTrial
             ? 'Your Office Trial Day at Merritt Workspace | Confirm Your Office'
-            : allDesksTaken
-              ? 'Your Trial Day at Merritt Workspace | Confirm Your Desk'
-              : 'Your Trial Day at Merritt Workspace | What to Expect',
+            : isCafeTrial
+              ? 'Your Café Trial Day at Merritt Workspace | What to Expect'
+              : allDesksTaken
+                ? 'Your Trial Day at Merritt Workspace | Confirm Your Desk'
+                : 'Your Trial Day at Merritt Workspace | What to Expect',
           html: generateTrialDayEmailHTML({
             firstName: applicationData.first_name,
             trialDate: applicationData.trial_date,
             isOfficeTrial,
+            isCafeTrial,
             availableDesksLabel,
             allDesksTaken,
+            // This route only ever fires for a full membership application,
+            // so the closing "we're reviewing it" paragraph is true here.
+            hasFullApplication: true,
           }),
           text: generateTrialDayEmailText({
             firstName: applicationData.first_name,
             trialDate: applicationData.trial_date,
             isOfficeTrial,
+            isCafeTrial,
             availableDesksLabel,
             allDesksTaken,
+            // This route only ever fires for a full membership application,
+            // so the closing "we're reviewing it" paragraph is true here.
+            hasFullApplication: true,
           }),
           headers: getTransactionalEmailHeaders(),
           tags: [{ name: 'category', value: 'trial_day_info' }],
