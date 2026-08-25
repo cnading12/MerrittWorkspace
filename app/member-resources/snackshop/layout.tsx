@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import PageSchema from "@/components/seo/PageSchema";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
 const TITLE = "Merritt Snackshop | Snacks & Drinks";
 const DESCRIPTION =
@@ -41,11 +41,7 @@ export default function SnackshopLayout({
 }) {
   return (
     <>
-      <PageSchema
-        path="/member-resources/snackshop"
-        name="Snackshop"
-        description={DESCRIPTION}
-      />
+      <BreadcrumbSchema trail={[{ name: "Snackshop", path: "/member-resources/snackshop" }]} />
       {children}
     </>
   );

@@ -1,162 +1,87 @@
 # SEO — Merritt Workspace
 
-Two passes so far. The first (2026-06-03) fixed bugs under a strict
-"no visual changes" constraint. The second (2026-08-24) rebuilt the structured
-data, fixed the titles, and added the day pass page.
+Three passes. The first (2026-06-03) fixed broken share images and duplicate
+titles under a strict "no visual changes" constraint. The second built a
+structured-data layer on this branch. The third — `Make the site answerable by
+AI assistants and answer engines`, merged to `main` as PR #173 — built a
+**better** one, and is now the base.
 
----
+## Where the structured data lives
 
-## Pass 2 — 2026-08-24
+`lib/seo/business.ts` is the single source of truth: address, hours, prices,
+plans, policies. Everything machine-readable reads from it —
 
-### The shape of the problem
+- `components/LocalBusinessSchema.tsx` — the `CoworkingSpace` node
+- `components/seo/MembershipSchema.tsx` — each plan as a `Product` + `Offer`
+- `components/seo/BreadcrumbSchema.tsx`, `FaqSchema.tsx`, `MeetingRoomSchema.tsx`
+- `app/llms.txt` and `app/llms-full.txt` — for AI answer engines
+- `lib/seo/faqs.ts` → `components/marketing/FaqBlock.tsx`, which ships the
+  visible questions and their `FAQPage` markup together so a page can never
+  have one without the other
 
-The site already had good metadata hygiene: canonicals everywhere, a sitemap, a
-robots file, and a `CoworkingSpace` JSON-LD block with full NAP. What it did not
-have was a reason for Google to show anything richer than a blue link, or a page
-aimed at the highest-intent local searches. This pass targets both.
+This branch originally carried a parallel implementation (`lib/seo/site.ts`,
+`lib/seo/schema.ts`, `components/seo/PageSchema.tsx`). Those are **deleted**.
+Main's covers the same ground and more, and two schema layers on one page is
+worse than either alone.
 
-### 1. Structured data, rebuilt as one linked graph
+## What this branch still adds on top
 
-Was: a single hand-written `CoworkingSpace` blob on every page, with the
-business re-described from scratch and nothing else marked up at all.
+### Page metadata
 
-Now: `lib/seo/schema.ts` builds one `@graph` per page in which every node has a
-stable `@id` and references the others. The business is declared once, in the
-root layout, and each page adds only what it specifically describes.
+Main's pass focused on the machine-readable surfaces and left the per-page
+`<head>` largely as it was. Fixed here:
 
-| Page | Nodes it now carries |
-|---|---|
-| every page | `CoworkingSpace`, `WebSite` |
-| `/membership/cafe` | `WebPage`, `BreadcrumbList`, `Service` ($100/mo), `FAQPage` |
-| `/member-resources/faqs` | `WebPage`, `BreadcrumbList`, `FAQPage` (13 Q&As) |
-| `/membership` | `WebPage`, `BreadcrumbList`, `OfferCatalog` (all 7 offers) |
-| `/membership/dedicated-desk` | `WebPage`, `BreadcrumbList`, `Service` ($200 + $300) |
-| `/membership/private-office` | `WebPage`, `BreadcrumbList`, `Service` ($500/$700/$1200) |
-| `/member-resources/meeting-rooms` | `WebPage`, `BreadcrumbList`, `Service` ($25/hr) |
-| `/member-resources/flex-space` | `WebPage`, `BreadcrumbList`, `EventVenue` |
-| `/contact` | `WebPage`, `BreadcrumbList`, `ContactPage` + `ContactPoint` |
+- **Titles were being truncated.** The template appended 27 characters, and
+  Google cuts from the end at roughly 60 — so the brand the suffix existed to
+  add was the part being cut. Template shortened to `%s | Merritt Workspace`
+  and all eleven titles rewritten to fit. `/contact` went from 92 to 55.
+- **Only the homepage set a `twitter` block**, so every link shared from
+  anywhere on the site previewed as the homepage. All eleven marketing routes
+  now set their own.
+- **`/privacy` and `/terms` are `noindex, follow`** and dropped from the
+  sitemap — listing a noindexed URL is an error in Search Console.
+- **The sitemap gave every entry `new Date()`**, claiming the whole site
+  changed on every deploy. Real dates now.
 
-What this buys, concretely: **FAQ rich results** (the FAQ page had 13 good
-answers and zero markup), **breadcrumb trails** in place of raw URLs, **price
-and offer data** on every product page, and the flex space registered as a
-venue in its own right rather than as one of our amenities.
+### A duplicate-breadcrumb bug
 
-Also added to the business node: a `GeoCircle` service radius, nine named
-neighbourhoods, the café membership and private dedicated desk (both previously
-missing from the catalog), the conference room as a sellable offer, and a
-`logo` as a proper `ImageObject`.
+`app/membership/layout.tsx` rendered `MembershipSchema` and `BreadcrumbSchema`
+at the segment root, so they also landed on `/membership/dedicated-desk` and
+`/membership/private-office` — which render their own. Those pages carried two
+`BreadcrumbList`s disagreeing about which page they described.
 
-### 2. Titles now fit in the search result
+The index now sits in a `(overview)` route group, which scopes its schema
+without changing the URL. `__tests__/seo-metadata.test.ts` walks `app/` and
+fails if any other segment-root layout falls into the same trap.
 
-Every child page's title ran past what Google displays, because the template
-appended a 27-character suffix. Google truncates at roughly 60 characters and
-cuts from the end — so the brand, the thing the suffix existed to add, was the
-part being cut.
+### The café membership, and the retired day pass
 
-Shortened the template to `%s | Merritt Workspace` and rewrote all eleven page
-titles to land at 55–61 characters with it attached. `/contact` went from 92
-characters to 55. A test now fails if any title exceeds the budget.
+See `CLAUDE.md`. In SEO terms: `cafe_membership` is in `PLANS`, so it flows
+into the JSON-LD, `/llms.txt` and the FAQ list automatically;
+`/membership/cafe` is a landing page with its own `Product` schema and four
+FAQs; `one_day_dedicated_desk` is gone from every customer-facing surface.
 
-### 3. A page for the café membership
+## Verification
 
-*(This section originally described a `/day-pass` landing page. Day passes were
-retired before this branch merged — the coworking floor is effectively sold out,
-and a day pass hands over a desk for a day. The page was replaced by the tier
-that took its place; see "Café membership" below.)*
-
-`/membership/cafe` is a real landing page for the $100/month café tier: why it
-exists, what the price includes, the fifteen-place cap, and four FAQs (rendered
-on the page *and* marked up, as Google requires). It links into the application
-with `?plan=cafe_membership`, and the apply form pre-selects a plan from that
-parameter rather than dropping arrivals into a six-option picker.
-
-It targets the searches the day-pass page was aimed at — people who want in
-cheaply and soon — but for a product we can actually deliver: "affordable
-coworking Denver", "cafe coworking Denver", "part time coworking Denver".
-
-### 4. Crawl and indexing
-
-- **Sitemap:** `lastModified` was `new Date()` on every entry, which claimed all
-  thirteen pages changed on every deploy. Crawlers discount a sitemap that does
-  that. Now real dates. Added `/membership/cafe`; dropped the two noindexed legal pages
-  (listing a noindexed URL is an error in Search Console).
-- **robots.txt:** stopped disallowing `/_next/`. It holds the CSS and JS, and a
-  renderer that cannot fetch them judges the layout on an unstyled page.
-- **noindex** added to `/privacy`, `/terms` and `/admin` (`follow` kept, so
-  their links still pass). Deliberately *not* also blocked in robots.txt — a
-  blocked crawl means the directive is never read.
-- **Titles:** `/terms` was rendering `Terms & Conditions | Merritt Workspace |
-  Merritt Workspace Denver`; it was setting the suffix the template also adds.
-
-### 5. Social cards
-
-Only the homepage defined a `twitter` block, so every other page inherited it —
-every link shared from anywhere on the site previewed as the homepage. All
-eleven marketing routes now set their own.
-
-### 6. Internal linking
-
-The footer is the only place every page links to every other, which makes it
-the site's main authority-distribution surface. It reached five pages, leaving
-day passes and private offices — the two highest-intent pages — with no
-site-wide link. Now two columns covering twelve. Day Pass added to the nav.
-
-### 7. One source of truth
-
-`lib/seo/site.ts` holds the NAP, coordinates, prices and profile URLs that were
-previously retyped across five files and had already drifted once (the schema
-said $300 for a desk while every page said $200).
-
-`__tests__/seo-schema.test.ts` (55 tests) binds it down: every advertised price
-is checked against `lib/portal/pricing.ts` and the conference rate against the
-booking page's own constant, so structured data cannot silently disagree with
-what we charge.
-
-### 8. Corrected stale facts
-
-Found while writing the FAQ markup, and fixed because Google cross-checks
-marked-up answers against the page:
-
-- The FAQ page advertised **"two FREE hours"** of conference room time and
-  **$30/hour** overage. The enforced tiers are 4 hrs (dedicated desk) and 14–20
-  hrs (private office), billed at **$25**/hour.
-- The pet policy referred to a **"Mobile Desk"** plan that no longer exists.
-
-### Verification
-
-- `npm test` — 447 passing, including 73 SEO tests and 16 for the café tier.
+- `npm test` — 474 passing.
 - `npm run build` — compiles, type-checks, 42 static pages.
-- Served the production build and asserted against the real HTML: every page's
-  title length, canonical, robots directive and JSON-LD graph; no duplicate
-  nodes; every marked-up FAQ answer present in the rendered text.
-
-A bug this caught: the `/membership` layout wrapped its nested routes, so
-`/membership/dedicated-desk` was emitting two `WebPage` nodes and two
-`BreadcrumbList`s that disagreed about which page they described. The index now
-sits in a `(overview)` route group, which scopes its schema without changing the
-URL.
+- Served the production build and asserted against real HTML: title lengths,
+  canonicals, robots directives, one `BreadcrumbList` per page, unique
+  `Product` `@id`s, and no day-pass copy anywhere except the FAQ sentence that
+  says we stopped selling them.
 
 `npm run lint` still can't run — the repo's flat `eslint.config.mjs` extends
 `next/typescript`, which `eslint-config-next@14.0.0` doesn't ship. Pre-existing.
 
----
-
 ## Still worth doing (needs a human)
 
-1. **Google Business Profile is the single biggest remaining lever.** For "near
-   me" and map-pack searches the profile outranks the site. Post weekly, keep
-   hours and photos current, and ask members for reviews.
-2. **Reviews.** `aggregateRating` markup would earn star ratings in results, but
-   inventing ratings is a manual action risk — this has to come from real
-   reviews on the profile first.
-3. **Local citations.** Get the exact NAP in `lib/seo/site.ts` onto Yelp,
-   Apple Maps, Bing Places and the Denver chamber directories. Consistency is
-   what these are worth; a wrong suite number on one of them costs more than
-   the listing gains.
-4. **Search Console.** Submit the sitemap, then watch the Breadcrumb, FAQ and
-   Merchant listings reports — all three are newly populated and will report
-   any node Google rejects.
-5. **A dedicated OG image per product page.** They currently share `home-og.jpg`.
-6. **Content depth.** A short piece on working from Sloan's Lake — parking, the
-   lake loop, coffee nearby — would earn the neighbourhood terms honestly. So
-   would a comparison page against the downtown chains.
+1. **Google Business Profile is the biggest remaining lever.** For "near me"
+   and map-pack searches the profile outranks the site. Post weekly, keep hours
+   and photos current, ask members for reviews.
+2. **Reviews**, then `aggregateRating`. Inventing ratings is a manual-action
+   risk, so this has to come from real reviews on the profile first.
+3. **Local citations** — get the exact NAP from `lib/seo/business.ts` onto
+   Yelp, Apple Maps, Bing Places and the Denver chamber directories.
+4. **Search Console** — submit the sitemap, then watch the Breadcrumb, FAQ and
+   Merchant listings reports.
+5. **A dedicated OG image per product page.** Several still share `home-og.jpg`.

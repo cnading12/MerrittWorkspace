@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
 import { generateTrialDayEmailHTML, generateTrialDayEmailText } from '@/lib/portal/trialDayEmail';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,8 +96,24 @@ function formatUsdCents(cents: number): string {
   return `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
+// Public form: every submission emails staff, so throttle per IP to keep a
+// script from flooding the manager's inbox. Generous enough that a real
+// applicant retrying a failed submit is never affected.
+const APPLICATION_RATE_LIMIT = { windowMs: 60 * 60 * 1000, max: 5 };
+
 export async function POST(request: NextRequest) {
   try {
+    const limit = checkRateLimit(
+      `membership-application:${getClientIp(request)}`,
+      APPLICATION_RATE_LIMIT
+    );
+    if (limit.limited) {
+      return NextResponse.json(
+        { error: 'Too many applications submitted. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } }
+      );
+    }
+
     const applicationData = await request.json();
 
     console.log('📝 Processing membership application:', {

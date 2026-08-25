@@ -12,6 +12,7 @@
 // Set CRON_SECRET in the Vercel env — Vercel Cron sends it as
 // `Authorization: Bearer <CRON_SECRET>` and we reject anything else.
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'node:crypto';
 import { Resend } from 'resend';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import {
@@ -33,6 +34,19 @@ import {
 export const dynamic = 'force-dynamic';
 
 const DENVER_TZ = 'America/Denver';
+
+// Constant-time comparison of the incoming bearer token against CRON_SECRET.
+// A plain `!==` on secrets leaks their content through response timing; the
+// window is small over a network, but the fix is one line.
+function bearerMatches(header: string, secret: string): boolean {
+  const prefix = 'Bearer ';
+  if (!header.startsWith(prefix)) return false;
+  const provided = Buffer.from(header.slice(prefix.length));
+  const expected = Buffer.from(secret);
+  if (provided.length !== expected.length) return false;
+  return timingSafeEqual(provided, expected);
+}
+
 
 const formatDenverDate = (iso: string | null): string =>
   iso
@@ -56,7 +70,7 @@ export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (secret) {
     const auth = req.headers.get('authorization') || '';
-    if (auth !== `Bearer ${secret}`) {
+    if (!bearerMatches(auth, secret)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
   } else {

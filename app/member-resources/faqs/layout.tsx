@@ -1,26 +1,21 @@
 import { Metadata } from "next";
-import PageSchema from "@/components/seo/PageSchema";
-import { faqPageNode } from "@/lib/seo/schema";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+import FaqSchema from "@/components/seo/FaqSchema";
 import { FAQS } from "@/lib/seo/faqs";
-
-const TITLE = "Coworking FAQs | Denver Coworking Space";
-const DESCRIPTION =
-  "Answers about Merritt Workspace in Sloan's Lake, Denver: 24/7 access codes, free parking, conference room booking and rates, phone booths, dog policy, WiFi, and how to cancel a membership.";
+import { SITE_URL } from "@/lib/seo/business";
 
 export const metadata: Metadata = {
-  title: TITLE,
-  description: DESCRIPTION,
+  title: "Coworking FAQs | Denver Coworking Space",
+  description: "Answers to common questions about Merritt Workspace: membership pricing, 24/7 access, parking, conference room, amenities, and touring our Sloan's Lake, Denver coworking space.",
   keywords: [
     "coworking space Sloan's Lake",
     "Denver coworking FAQ",
     "coworking membership Denver",
-    "coworking parking Denver",
-    "coworking near I-25 Denver",
+    "coworking near I-25 Denver"
   ],
   openGraph: {
     title: "Coworking FAQs | Merritt Workspace Denver",
-    description:
-      "Access codes, free parking, conference room rates, phone booths, dog policy and cancellation — answered for our Sloan's Lake, Denver coworking space.",
+    description: "Membership pricing, 24/7 access, parking, conference room, and amenities at our Sloan's Lake, Denver coworking space.",
     url: "https://merrittworkspace.net/member-resources/faqs",
     images: [
       {
@@ -50,11 +45,14 @@ export default function FaqsLayout({
 }) {
   return (
     <>
-      <PageSchema
-        path="/member-resources/faqs"
-        name="FAQs"
-        description={DESCRIPTION}
-        nodes={[faqPageNode("/member-resources/faqs", FAQS)]}
+      {/* Every question on the page, in the markup, as FAQPage data. Answer
+          engines quote from this directly — it is already question-shaped. */}
+      <FaqSchema faqs={FAQS} id={`${SITE_URL}/member-resources/faqs#faq`} />
+      <BreadcrumbSchema
+        trail={[
+          { name: "Member resources", path: "/member-resources/faqs" },
+          { name: "FAQs", path: "/member-resources/faqs" },
+        ]}
       />
       {children}
     </>

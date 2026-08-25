@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import PageSchema from "@/components/seo/PageSchema";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
 const TITLE = "Apply for Membership | Merritt Denver";
 const DESCRIPTION =
@@ -47,12 +47,10 @@ export default function ApplyLayout({
 }) {
   return (
     <>
-      <PageSchema
-        path="/membership/apply"
-        name="Apply"
-        description={DESCRIPTION}
-        ancestors={[{ name: "Membership", path: "/membership" }]}
-      />
+      <BreadcrumbSchema trail={[
+          { name: "Membership", path: "/membership" },
+          { name: "Apply", path: "/membership/apply" },
+        ]} />
       {children}
     </>
   );

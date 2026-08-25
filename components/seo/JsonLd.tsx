@@ -1,17 +1,15 @@
 /**
- * Emits one linked-data graph as a <script type="application/ld+json">.
+ * One place to emit a JSON-LD block.
  *
- * Rendered from a server component so the JSON is in the HTML Google's first
- * pass reads, rather than something it only finds after executing JavaScript.
+ * `<` is escaped rather than serialized literally: a stray `</script` inside any
+ * string value would otherwise close the tag early and dump the rest of the
+ * graph into the page as text.
  */
-export default function JsonLd({ data }: { data: Record<string, unknown> }) {
+export default function JsonLd({ schema }: { schema: Record<string, unknown> | Record<string, unknown>[] }) {
   return (
     <script
       type="application/ld+json"
-      // The payload is built by our own code from lib/seo, never from user
-      // input, and JSON.stringify escapes the quoting that would break out of
-      // the script element.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }}
     />
   );
 }

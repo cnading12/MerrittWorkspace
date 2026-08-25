@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import LocalBusinessSchema from "@/components/LocalBusinessSchema";
 import { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
-import { BUSINESS, SITE_URL } from "@/lib/seo/site";
+import { BUSINESS, SITE_URL } from "@/lib/seo/business";
 
 // Self-hosted through next/font so there is no external request and no FOUT.
 const display = Fraunces({
@@ -109,8 +109,8 @@ export const metadata: Metadata = {
   other: {
     "geo.region": "US-CO",
     "geo.placename": "Denver",
-    "geo.position": `${BUSINESS.latitude};${BUSINESS.longitude}`,
-    ICBM: `${BUSINESS.latitude}, ${BUSINESS.longitude}`,
+    "geo.position": `${BUSINESS.geo.latitude};${BUSINESS.geo.longitude}`,
+    ICBM: `${BUSINESS.geo.latitude}, ${BUSINESS.geo.longitude}`,
   },
 };
 

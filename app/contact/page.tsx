@@ -6,6 +6,8 @@ import { useState } from 'react';
 import { trackFormSubmission, trackPhoneClick, trackEmailClick } from '@/lib/gtag';
 import PageHero from '@/components/marketing/PageHero';
 import { BLUR } from '@/components/marketing/blur';
+import FaqBlock from '@/components/marketing/FaqBlock';
+import { SITE_URL } from '@/lib/seo/business';
 
 // The two desks people reach us at. Keep these distinct on the page: the
 // manager handles everyone who is not a member yet, member services handles
@@ -371,6 +373,16 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
+
+      {/* Visible answers plus the FAQPage markup for them — the two always
+          ship together, so the structured data can never describe content a
+          visitor cannot see. */}
+      <FaqBlock
+        ids={['where', 'parking', 'twenty-four-seven', 'contact']}
+        id={`${SITE_URL}/contact#faq`}
+        eyebrow="Finding us"
+        heading="Where we are, and when you can get in."
+      />
 
       <Footer />
     </main>

@@ -1,7 +1,6 @@
 import { Metadata } from "next";
-import PageSchema from "@/components/seo/PageSchema";
-import { faqPageNode, serviceNode } from "@/lib/seo/schema";
-import { CAFE_FAQS } from "@/lib/seo/faqs";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+import MembershipSchema from "@/components/seo/MembershipSchema";
 
 const TITLE = "Café Membership $100/mo | Denver Coworking";
 const DESCRIPTION =
@@ -51,21 +50,11 @@ export default function CafeMembershipLayout({
 }) {
   return (
     <>
-      <PageSchema
-        path="/membership/cafe"
-        name="Café Membership"
-        description={DESCRIPTION}
-        ancestors={[{ name: "Membership", path: "/membership" }]}
-        nodes={[
-          serviceNode({
-            path: "/membership/cafe",
-            name: "Café Membership",
-            description:
-              "Open seating on the café side of a restored 1905 hall in Sloan's Lake, Denver. No assigned desk, but free coffee, tea and beer, high-speed WiFi, printing, free on-site parking, 2 hours of monthly conference room credit and 2 hours of weekly flex space credit. Limited to 15 members.",
-            offerNames: ["Café Membership"],
-            image: "/images/flex-space/cafe.webp",
-          }),
-          faqPageNode("/membership/cafe", CAFE_FAQS),
+      <MembershipSchema planIds={["cafe_membership"]} />
+      <BreadcrumbSchema
+        trail={[
+          { name: "Membership", path: "/membership" },
+          { name: "Café membership", path: "/membership/cafe" },
         ]}
       />
       {children}

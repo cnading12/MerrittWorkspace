@@ -2,12 +2,10 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import AdminNav from './AdminNav';
 
+// Staff-only screens: keep them out of search indexes and AI answers even if a
+// URL leaks. robots.txt also disallows /admin/.
 export const metadata = {
   title: 'Admin | Merritt Workspace',
-  // Staff screens. Noindexed rather than robots.txt-disallowed for the same
-  // reason as the member portal: a blocked crawl means Google never reads the
-  // noindex, so a URL it discovers from a link can still surface as a bare
-  // result.
   robots: { index: false, follow: false },
 };
 

@@ -1,39 +1,33 @@
 import { Metadata } from "next";
-import PageSchema from "@/components/seo/PageSchema";
-import { serviceNode } from "@/lib/seo/schema";
-
-const TITLE = "Private Office Rental Denver | $500/mo";
-const DESCRIPTION =
-  "Private lockable offices for 1-8 people in Sloan's Lake, Denver, from $500/month. Professional business address, 24/7 access, up to 20hrs monthly conference room credit, free parking, dog-friendly. 3 min to I-25.";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+import MembershipSchema from "@/components/seo/MembershipSchema";
 
 export const metadata: Metadata = {
-  title: TITLE,
-  description: DESCRIPTION,
+  title: "Private Office Rental Denver | $500/mo",
+  description: "Private lockable offices in Sloan's Lake, Denver from $500/mo. 1-8 person offices with professional business address, 24/7 access, conference room credits. 3 min to I-25. Tour today!",
   keywords: [
     "private office rental Denver",
     "office space Sloan's Lake",
     "small office rental Denver",
-    "team office space Denver",
-    "office space for rent Denver 80211",
-    "coworking near I-25 Denver",
+    "team office Denver",
+    "coworking near I-25 Denver"
   ],
   openGraph: {
-    title: TITLE,
-    description:
-      "Lockable private offices for 1-8 people from $500/month. Business address, 24/7 access, conference room credits, free parking. Sloan's Lake, Denver.",
+    title: "Private Office Rental Denver | From $500/mo | Sloan's Lake",
+    description: "Lockable private offices for 1-8 people. Business address, 24/7 access, conference room. Historic 1905 building in Denver's Sloan's Lake neighborhood.",
     url: "https://merrittworkspace.net/membership/private-office",
     images: [
       {
         url: "/images/offices/single-alt.webp",
         width: 1200,
         height: 630,
-        alt: "A private lockable office at Merritt Workspace in Sloan's Lake, Denver",
+        alt: "Private office space at Merritt Workspace in Sloan's Lake, Denver",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: TITLE,
+    title: "Private Office Rental Denver | Merritt Workspace",
     description:
       "Lockable private offices for 1-8 people from $500/month in Sloan's Lake, Denver. Business address, 24/7 access, free parking.",
     images: ["/images/offices/single-alt.webp"],
@@ -50,24 +44,13 @@ export default function PrivateOfficeLayout({
 }) {
   return (
     <>
-      <PageSchema
-        path="/membership/private-office"
-        name="Private Office"
-        description={DESCRIPTION}
-        ancestors={[{ name: "Membership", path: "/membership" }]}
-        nodes={[
-          serviceNode({
-            path: "/membership/private-office",
-            name: "Private Office Rental",
-            description:
-              "A private, lockable office for one to eight people in Sloan's Lake, Denver, with a professional business address, 24/7 access, conference room and flex space credits, free on-site parking and mail handling.",
-            offerNames: [
-              "Single Private Office",
-              "2-Desk Private Office",
-              "Large Team Office (4-8 Desks)",
-            ],
-            image: "/images/offices/single-alt.webp",
-          }),
+      <MembershipSchema
+        planIds={["private_office_single", "private_office_double", "private_office_large"]}
+      />
+      <BreadcrumbSchema
+        trail={[
+          { name: "Membership", path: "/membership" },
+          { name: "Private offices", path: "/membership/private-office" },
         ]}
       />
       {children}

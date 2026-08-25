@@ -1,27 +1,21 @@
 import { Metadata } from "next";
-import PageSchema from "@/components/seo/PageSchema";
-import { OFFERS, ORGANIZATION_ID } from "@/lib/seo/schema";
-import { SITE_URL } from "@/lib/seo/site";
-
-const TITLE = "Coworking Memberships & Pricing | Denver";
-const DESCRIPTION =
-  "Compare every workspace at Merritt Workspace in Sloan's Lake, Denver: café memberships from $100/mo, dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, free parking, no long lease. 3 min to I-25.";
+import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
+import MembershipSchema from "@/components/seo/MembershipSchema";
 
 export const metadata: Metadata = {
-  title: TITLE,
-  description: DESCRIPTION,
+  title: "Coworking Memberships & Pricing | Denver",
+  description: "Compare every workspace at Merritt Workspace in Sloan's Lake, Denver: café memberships from $100/mo, dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, free parking, no long lease.",
   keywords: [
-    "coworking membership Denver",
-    "coworking prices Denver",
+    "affordable coworking Denver",
     "dedicated desk Denver",
     "private office rental Denver",
-    "affordable coworking Denver",
+    "coworking membership Denver",
     "Sloan's Lake office space",
+    "coworking near I-25 Denver"
   ],
   openGraph: {
-    title: "Coworking Memberships & Pricing | Merritt Workspace Denver",
-    description:
-      "Café memberships from $100/mo, dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, free parking, 3 min to I-25 in Sloan's Lake, Denver.",
+    title: "Coworking Memberships | Merritt Workspace Denver",
+    description: "Café memberships from $100/mo, dedicated desks from $200/mo, private offices from $500/mo. 24/7 access, 3 min to I-25 in Sloan's Lake, Denver.",
     url: "https://merrittworkspace.net/membership",
     images: [
       {
@@ -49,11 +43,11 @@ export const metadata: Metadata = {
  * app/membership/layout.tsx.
  *
  * A layout at the segment root wraps every nested route too, so the schema
- * below was being emitted on /membership/dedicated-desk and
- * /membership/private-office alongside their own — leaving those pages
- * carrying two WebPage nodes and two BreadcrumbLists that disagreed about
- * which page they described. The route group scopes this to the index while
- * leaving the URL as /membership.
+ * below was also being emitted on /membership/dedicated-desk and
+ * /membership/private-office — which render their own BreadcrumbSchema, leaving
+ * those pages carrying two BreadcrumbLists that disagreed about which page they
+ * described, plus a duplicate MembershipSchema. The route group scopes this to
+ * the index while leaving the URL as /membership.
  */
 export default function MembershipOverviewLayout({
   children,
@@ -62,23 +56,9 @@ export default function MembershipOverviewLayout({
 }) {
   return (
     <>
-      <PageSchema
-        path="/membership"
-        name="Membership"
-        description={DESCRIPTION}
-        nodes={[
-          // This page's job is the comparison table, so it publishes the whole
-          // catalog as an ItemList — the shape Google reads when it wants to
-          // show a price range for a query like "coworking prices Denver".
-          {
-            "@type": "OfferCatalog",
-            "@id": `${SITE_URL}/membership#catalog`,
-            name: "Merritt Workspace Memberships",
-            provider: { "@id": ORGANIZATION_ID },
-            itemListElement: OFFERS,
-          },
-        ]}
-      />
+      {/* Every plan as a priced Product/Offer. */}
+      <MembershipSchema />
+      <BreadcrumbSchema trail={[{ name: "Membership", path: "/membership" }]} />
       {children}
     </>
   );
