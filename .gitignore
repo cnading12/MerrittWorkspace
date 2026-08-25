@@ -40,3 +40,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# SSH keys / credentials — never commit these
+id_rsa
+id_ed25519
+*.ppk
+*_rsa
+*_ed25519
+eval*ssh-agent*

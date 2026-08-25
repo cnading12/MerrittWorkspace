@@ -25,6 +25,7 @@ import {
 } from '@/lib/bookings/conference-hours';
 import { recordConferenceBooking } from '@/lib/bookings/conference-orders';
 import { ensureStripeCustomer, findDefaultCard } from '@/lib/stripe/savedCard';
+import { createConferenceCheckoutSession } from '@/lib/bookings/conferenceCheckout';
 
 export const dynamic = 'force-dynamic';
 
@@ -369,41 +370,38 @@ export async function POST(req: NextRequest) {
     }
 
     // ---- Hosted Checkout fallback (no card on file, or auth required) ----
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const checkoutRes = await fetch(`${baseUrl}/api/create-meeting-checkout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        booking_id: bookingRef,
-        customer_name: customerName,
-        customer_email: customerEmail,
-        customer_phone: member.phone || '',
+    // Only the overage is charged; `split` is computed server-side from the
+    // member's remaining included allotment, and the checkout helper re-derives
+    // the amount from the published hourly rate.
+    let checkoutData;
+    try {
+      checkoutData = await createConferenceCheckoutSession(stripe, {
+        bookingId: bookingRef,
+        customerName,
+        customerEmail,
+        customerPhone: member.phone || '',
         company: member.company_name || '',
-        room_name: 'Conference Room',
-        booking_date: bookingDate,
-        start_time: startTime,
-        end_time: endTime,
-        duration_hours: durationHours,
+        roomName: 'Conference Room',
+        bookingDate,
+        startTime,
+        endTime,
+        durationHours,
         attendees: attendees ?? 1,
-        total_amount: split.billedCents / 100,
+        billedHours: split.billedHours,
         purpose,
-        calendar_event_id: calendarEventId,
-        member_id: member.id,
-        included_hours: split.includedHours,
-        billed_hours: split.billedHours,
-      }),
-    });
-
-    if (!checkoutRes.ok) {
+        calendarEventId,
+        memberId: member.id,
+        includedHours: split.includedHours,
+      });
+    } catch (checkoutErr) {
       await googleCalendarAPI.cancelBookingEvent(calendarEventId);
-      const errData = await checkoutRes.json().catch(() => ({}));
+      console.error('member booking: checkout session creation failed:', checkoutErr);
       return NextResponse.json(
-        { error: errData.error || 'Failed to start checkout for the overage charge.' },
+        { error: 'Failed to start checkout for the overage charge.' },
         { status: 500 },
       );
     }
 
-    const checkoutData = await checkoutRes.json();
     return NextResponse.json({
       success: true,
       requires_checkout: true,

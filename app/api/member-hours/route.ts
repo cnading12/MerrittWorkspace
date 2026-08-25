@@ -1,84 +1,62 @@
 // app/api/member-hours/route.ts
+//
+// Returns the signed-in member's conference-hour allotment.
+//
+// This route used to take an arbitrary `email` in the request body and answer
+// for whoever that email belonged to, with no authentication at all. That let
+// anyone probe an address and learn whether it held an active membership —
+// plus the member's internal id, tier and status — so it doubled as a
+// membership-list oracle. The email is now ignored entirely: the member is
+// resolved from the portal session, so a caller can only ever read their own
+// hours.
+//
+// The allotment itself comes from getMemberHoursSummary, the same helper the
+// booking routes use, rather than the stale `monthly_meeting_hours` column
+// this route used to read — so office pooling, day passes and admin overrides
+// are all reflected correctly.
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { requireMember, PortalError } from '@/lib/portal/auth';
+import { getMemberHoursSummary } from '@/lib/bookings/conference-hours';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const member = await requireMember(request);
 
-    if (!email) {
+    if (member.status !== 'active') {
       return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      );
-    }
-
-    // Get current date for monthly calculations
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1;
-    const currentYear = now.getFullYear();
-
-    // First, check if the email belongs to a member
-    const { data: member, error: memberError } = await supabase
-      .from('members')
-      .select('id, email, membership_type, monthly_meeting_hours, status')
-      .eq('email', email.toLowerCase())
-      .eq('status', 'active')
-      .single();
-
-    if (memberError || !member) {
-      return NextResponse.json(
-        { error: 'No active membership found for this email address' },
+        { error: 'No active membership found for this account' },
         { status: 404 }
       );
     }
 
-    // Get member's used hours for the current month
-    const { data: usedHours, error: usedHoursError } = await supabase
-      .from('bookings')
-      .select('duration_hours')
-      .eq('customer_email', email.toLowerCase())
-      .eq('is_member_booking', true)
-      .neq('status', 'cancelled')
-      .gte('booking_date', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
-      .lt('booking_date', `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`);
-
-    if (usedHoursError) {
-      console.error('Error fetching used hours:', usedHoursError);
-      return NextResponse.json(
-        { error: 'Failed to fetch member hours data' },
-        { status: 500 }
-      );
-    }
-
-    // Calculate total used hours
-    const totalUsedHours = usedHours?.reduce((sum, booking) => sum + booking.duration_hours, 0) || 0;
-
-    // Calculate remaining hours
-    const remainingHours = Math.max(0, member.monthly_meeting_hours - totalUsedHours);
-
-    const memberHours = {
-      total_hours: member.monthly_meeting_hours,
-      used_hours: totalUsedHours,
-      remaining_hours: remainingHours,
-      membership_type: member.membership_type
-    };
+    const summary = await getMemberHoursSummary({
+      id: member.id,
+      designation: member.designation,
+      office_number: member.office_number,
+      conference_hours_override: member.conference_hours_override,
+    });
 
     return NextResponse.json({
-      memberHours,
+      memberHours: {
+        total_hours: summary.included,
+        used_hours: summary.used,
+        remaining_hours: summary.remaining,
+        membership_type: member.designation,
+      },
       member: {
         id: member.id,
         email: member.email,
-        membership_type: member.membership_type,
-        status: member.status
-      }
+        membership_type: member.designation,
+        status: member.status,
+      },
     });
-
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof PortalError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error('Member hours API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
