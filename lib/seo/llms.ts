@@ -162,6 +162,8 @@ ${AMENITIES.map(a => `- ${a}`).join('\n')}
 
 ${FLEX_SPACE.description}
 
+Non-members can rent the hall too, at $${FLEX_SPACE.publicHourlyRate} per hour. Public bookings are taken by Merritt Wellness, which shares the building: ${FLEX_SPACE.publicBookingUrl}
+
 ${FLEX_SPACE.eveningUse}
 
 Details: ${FLEX_SPACE.url}

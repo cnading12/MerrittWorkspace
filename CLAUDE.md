@@ -84,6 +84,50 @@ against 4, and 2 flex hours a week against 4. Half the price, half the credit.
 If the desk numbers change, change these with them — `__tests__/cafe-membership.test.ts`
 asserts the halving rather than the literals.
 
+## The flex space availability endpoint is public on purpose
+
+`app/api/flex-bookings/availability` takes **optional** auth. It is the only
+portal-adjacent endpoint that does, and that is deliberate — do not "fix" it by
+putting `requireMember` back.
+
+The calendar it feeds lives on `/member-resources/flex-space`, which is a
+marketing page. The two people most likely to ask "is the hall free on
+Thursday" are a prospect deciding whether the room is worth joining for, and
+someone weighing an event booking; both used to find a sign-in wall where the
+calendar should have been. The response is time ranges and nothing else — no
+name, email, member id or event title — so there is nothing behind that wall to
+protect. A valid token changes exactly one thing: the caller's own bookings come
+back flagged `is_self` so the grid can colour them. A bad or missing token is
+the normal case, not an error.
+
+Anonymous callers are rate limited per IP (`lib/rateLimit.ts`); signed-in
+members are exempt, being already identified.
+
+Related: `components/portal/FlexCalendar.tsx` must build each day column from
+`FLEX_OPEN_MINUTES`/`FLEX_CLOSE_MINUTES`, never from literal hours. It once used
+9:00–4:30 while the grid it drew into ran 8:00–4:00, which silently dropped
+every booking in the first hour of the day and misplaced the rest.
+`__tests__/flex-calendar-window.test.ts` holds that line.
+
+## The membership comparison table only shows differences
+
+`/membership` splits its side-by-side into two things:
+
+- `COMPARE_ROWS` — facts that actually differ between tiers.
+- `EVERY_TIER` — facts every membership shares, printed once under the table.
+
+A row whose five cells all say the same thing compares nothing; it costs a line
+of scroll and a line of attention to tell the reader something the note already
+told them. So when a row becomes uniform across all five columns, move it down;
+when a note item stops being universal, move it back up.
+`__tests__/membership-compare.test.ts` fails the build either way.
+
+Lockable storage lives in the note because café members get a locker too. That
+is recent — the FAQ answers and `lib/seo/business.ts` were updated with it, so
+check those together if it ever changes back. Monitors, by contrast, are a
+**desk-tier** amenity: dedicated desks and private dedicated desks only, not
+offices and not café.
+
 ## Day passes are retired, not deleted
 
 `one_day_dedicated_desk` is no longer sold. Nothing a prospective member can

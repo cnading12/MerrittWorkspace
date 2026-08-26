@@ -3,8 +3,9 @@ import Link from 'next/link';
 import Footer from '@/components/Footer';
 import PageHero from '@/components/marketing/PageHero';
 import { BLUR } from '@/components/marketing/blur';
-import FaqBlock from '@/components/marketing/FaqBlock';
-import { PLANS, SITE_URL } from '@/lib/seo/business';
+import DeskCountLine from '@/components/marketing/DeskCountLine';
+import MoreQuestions from '@/components/marketing/MoreQuestions';
+import { PLANS } from '@/lib/seo/business';
 import { CAFE_MEMBER_LIMIT } from '@/lib/portal/cafeAvailability';
 
 // Prices come from the same table the structured data and /llms.txt quote,
@@ -13,17 +14,25 @@ import { CAFE_MEMBER_LIMIT } from '@/lib/portal/cafeAvailability';
 const CAFE = PLANS.find(p => p.id === 'cafe_membership')!;
 const DESK = PLANS.find(p => p.id === 'dedicated_desk')!;
 
-// The tier that does not need a desk to exist, which is the point: the
-// coworking floor is effectively sold out, and this is what we can still sell.
-// Server-rendered — the live seat count deliberately is NOT fetched here. A
-// number that says "3 places left" ages badly in a static page and reads as a
-// pressure tactic; the application form is where the real capacity gate lives.
+// The café tier, described on its own terms.
+//
+// This page used to open by explaining that the coworking floor was sold out,
+// which made a café membership read as the consolation prize — and hard-coded
+// a claim about desk availability that went stale the first time a desk opened
+// up. The pitch now says what the room is for, and <DeskCountLine> reads the
+// live desk count from /api/desk-availability so the one factual claim about
+// desks is fetched rather than written down.
+//
+// The café's OWN cap (15 places) is still stated in words rather than
+// counted down: the application form is where that gate really lives, and a
+// live "3 places left" on a marketing page reads as a pressure tactic.
 
 const INCLUDED = [
   ['Open seating in the café', 'The café side of the 1905 building next door — table seating, natural light, the original stained glass still in the windows. Sit wherever is free.'],
   ['Coffee, tea and beer', 'Free and always on, same as every other membership. The Snackshop covers everything else.'],
   ['Fast fibre WiFi', 'The same connection the desk members use, with a backup line behind it. Built for a day of video calls.'],
   ['Printing', 'Included, and nobody will ask you what it is for.'],
+  ['Lockable storage', 'A locker of your own, so the laptop charger and the good headphones do not commute with you every day.'],
   ['Free parking, right outside', 'The lot in front of the building, or the street on 23rd and Irving. No meters, no garage, no app.'],
   ['2 hours of conference room credit a month', 'The eight-person room with the 75-inch display, for when a call needs a door and a whiteboard.'],
   ['2 hours of flex space credit a week', 'Book the hall itself — the projector, the sound system, the whole room — not just a seat in the cafe.'],
@@ -38,73 +47,81 @@ export default function CafeMembershipPage() {
         blurDataURL={BLUR['flex-space/cafe']}
         eyebrow="New · Café membership"
         title={<>A seat in the cafe, ${CAFE.price} a month.</>}
-        lead="Every amenity a desk member has, in the 1905 building next door, for half the price. No assigned desk — and no waiting list for one."
+        lead="Open seating in the 1905 building next door, with the coffee, the WiFi, the parking and a locker of your own. For the weeks that don't need the same desk every day."
       />
 
-      {/* The honest pitch: this exists because the floor is full. */}
+      {/* Who it suits — a different room, not a cheaper version of the desk. */}
       <section className="mw-section">
         <div className="mw-container">
-          <div className="grid gap-12 md:grid-cols-12 md:gap-16">
-            <div className="md:col-span-5">
-              <p className="mw-eyebrow mb-5">Why it exists</p>
-              <h2 className="mw-h2">Our desks are spoken for. The café isn&rsquo;t.</h2>
+          <div className="grid items-start gap-10 md:grid-cols-12 md:gap-14">
+            <div className="md:col-span-5 md:pr-6">
+              <p className="mw-eyebrow mb-5">Who it suits</p>
+              <h2 className="mw-h2">A different room, for a different week.</h2>
             </div>
             <div className="md:col-span-7">
               <p className="mw-body">
-                The twenty-five desks on the coworking floor are effectively
-                sold out, and a desk that isn&rsquo;t there can&rsquo;t be sold
-                honestly. The café next door is a different room with a
-                different constraint: it has seats, it has the same coffee and
-                the same WiFi, and it was already open to members all day.
+                A dedicated desk and a café membership are not a better and a
+                worse version of the same thing. They fit different working
+                weeks. The desk is for people who are in most days and want the
+                same surface, the same monitor and the same drawer waiting for
+                them every morning.
               </p>
               <p className="mt-5 mw-body">
-                So this is that room, sold properly. You get open seating rather
-                than a desk with your name on it, half a desk member&rsquo;s
-                booking credit, and everything else unchanged &mdash; for
-                ${CAFE.price} instead of ${DESK.price}.
-                If what you actually want is the desk, say so and we&rsquo;ll
-                put you on the list for the next one.
+                The café membership is for the other pattern: a few days a
+                week, a laptop, and no particular attachment to which chair.
+                You get open seating in the room next door instead of a desk
+                with your name on it, half a desk member&rsquo;s booking
+                credit, and the same coffee, WiFi, printing, parking and
+                locker &mdash; ${CAFE.price} a month rather than
+                ${DESK.price}.
               </p>
+              <DeskCountLine className="mt-6" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* What $100 buys, itemised. */}
+      {/* What $100 buys, itemised.
+
+          This was a 5/7 split with the intro and the CTA buttons in the narrow
+          left column and all eight items stacked single-file down the right.
+          The list ran roughly three times the height of the column beside it,
+          so the buttons sat marooned at the top of a tall empty gutter.
+
+          Full-width intro, then the items in a two-up grid underneath: the
+          list is half as tall, nothing is left hanging beside it, and the CTA
+          sits under the thing it is asking you to buy. */}
       <section className="mw-section-alt">
         <div className="mw-container">
-          <div className="grid gap-12 md:grid-cols-12 md:gap-16">
-            <div className="md:col-span-5">
-              <p className="mw-eyebrow mb-5">What&rsquo;s included</p>
-              <h2 className="mw-h2">Everything except the desk.</h2>
-              <p className="mt-6 mw-body">
-                ${CAFE.price} a month, billed monthly. The booking
-                credit is exactly half what a dedicated desk gets, which is the
-                whole deal: half the price, half the credit, same building, same
-                everything else.
-              </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Link href="/membership/apply?plan=cafe_membership" className="mw-btn-primary">
-                  Apply for a café membership
-                </Link>
-                <a href="tel:+17203579499" className="mw-btn-ghost">
-                  (720) 357-9499
-                </a>
-              </div>
-            </div>
+          <div className="max-w-2xl">
+            <p className="mw-eyebrow mb-5">What&rsquo;s included</p>
+            <h2 className="mw-h2">Everything except the desk.</h2>
+            <p className="mt-6 mw-body">
+              ${CAFE.price} a month, billed monthly. The booking credit is
+              exactly half what a dedicated desk gets, which is the whole deal:
+              half the price, half the credit, same building, same everything
+              else.
+            </p>
+          </div>
 
-            <div className="md:col-span-7">
-              <dl>
-                {INCLUDED.map(([term, detail]) => (
-                  <div key={term} className="border-t border-clay py-6 first:border-t-0 first:pt-0">
-                    <dt className="font-display text-[1.35rem] font-semibold tracking-tightest text-ink">
-                      {term}
-                    </dt>
-                    <dd className="mt-2 mw-body">{detail}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
+          <dl className="mt-12 grid gap-x-12 gap-y-0 border-t border-clay sm:grid-cols-2 md:mt-16">
+            {INCLUDED.map(([term, detail]) => (
+              <div key={term} className="border-b border-clay py-6">
+                <dt className="font-display text-[1.35rem] font-semibold tracking-tightest text-ink">
+                  {term}
+                </dt>
+                <dd className="mt-2 mw-body">{detail}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+            <Link href="/membership/apply?plan=cafe_membership" className="mw-btn-primary">
+              Apply for a café membership
+            </Link>
+            <a href="tel:+17203579499" className="mw-btn-ghost">
+              (720) 357-9499
+            </a>
           </div>
         </div>
       </section>
@@ -151,11 +168,9 @@ export default function CafeMembershipPage() {
         </div>
       </section>
 
-      <FaqBlock
-        ids={["cafe-what", "cafe-included", "cafe-vs-desk", "cafe-limit"]}
-        id={`${SITE_URL}/membership/cafe#faq`}
-        eyebrow="Before you apply"
-        heading="Café membership questions."
+      <MoreQuestions
+        lead="Still deciding between the café and a desk?"
+        hash="cafe-vs-desk"
         tone="alt"
       />
 

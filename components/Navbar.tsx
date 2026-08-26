@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
-import { X, ChevronDown, Phone, User, LogOut, LayoutDashboard, CalendarClock } from 'lucide-react';
+import { X, ChevronDown, Phone, User, LogOut, LayoutDashboard } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { trackPhoneClick } from '@/lib/gtag';
 import { supabase } from '@/lib/supabase';
@@ -52,9 +52,9 @@ const NAV_GROUPS = [
     width: 'w-52',
     items: [
       { href: '/membership', label: 'All Membership Options', featured: true },
+      { href: '/membership/cafe', label: 'Café Membership' },
       { href: '/membership/dedicated-desk', label: 'Dedicated Desk' },
       { href: '/membership/private-office', label: 'Private Office' },
-      { href: '/membership/cafe', label: 'Café Membership' },
     ],
   },
 ] as const;
@@ -281,10 +281,6 @@ export default function Navbar() {
                         <LayoutDashboard className="w-4 h-4" />
                         Dashboard
                       </Link>
-                      <Link href="/member-resources/flex-space" className={`flex items-center gap-2 ${itemClass}`} onClick={closeAllMenus}>
-                        <CalendarClock className="w-4 h-4" />
-                        Flex Space
-                      </Link>
                       <button
                         onClick={handleSignOut}
                         className={`flex items-center gap-2 w-full text-left ${itemClass}`}
@@ -445,15 +441,6 @@ export default function Navbar() {
                         className="flex items-center gap-3 py-[7px] font-display text-[22px] leading-snug text-ink/80 active:text-ink"
                       >
                         Dashboard
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/member-resources/flex-space"
-                        onClick={closeAllMenus}
-                        className="flex items-center gap-3 py-[7px] font-display text-[22px] leading-snug text-ink/80 active:text-ink"
-                      >
-                        Flex Space
                       </Link>
                     </li>
                     <li>

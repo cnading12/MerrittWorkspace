@@ -96,13 +96,25 @@ from ever reading the `noindex` it already carries.
 - Every membership as a `Product` with a priced `Offer` at its own URL.
 - The conference room as a bookable `Service` — the one thing here a
   non-member can buy, and the answer to "meeting room rental Denver".
-- `FAQPage` markup on the homepage, membership, dedicated desk, private
-  office, contact, meeting room and FAQ pages — each paired with a **visible**
-  block of the same questions and answers. The two ship as one component
-  (`components/marketing/FaqBlock.tsx`) on purpose: FAQ structured data is only
-  legitimate when the page really shows what it claims, and binding them
-  together makes it impossible to end up with markup describing content a
-  visitor cannot see.
+- `FAQPage` markup on the FAQ page and the contact page, each paired with a
+  **visible** block of the same questions and answers. The two ship as one
+  component (`components/marketing/FaqBlock.tsx`) on purpose: FAQ structured
+  data is only legitimate when the page really shows what it claims, and
+  binding them together makes it impossible to end up with markup describing
+  content a visitor cannot see.
+
+  The markup used to ride along on the homepage and on every membership and
+  member-resource page too. Those blocks came off: their questions restated
+  the sections directly above them — the price, the commitment, the trial day —
+  so anyone who read the page read it twice, and the conference room page ended
+  by telling the reader to visit the conference room page. Those pages now
+  close with `components/marketing/MoreQuestions.tsx`, a single line linking
+  into `/member-resources/faqs`, which renders every entry in
+  `lib/seo/faqs.ts` and carries the `FAQPage` markup for the whole set. Nothing
+  was lost from the answer set — only the second copy of it.
+
+  If you are tempted to put a FAQ block back on a product page, the test is
+  whether it answers something the page above it does not.
 - `BreadcrumbList` on every marketing page.
 - Neighbourhoods we actually serve (Highlands, West Colfax, Berkeley,
   Edgewater, Lakewood) added to `areaServed`.

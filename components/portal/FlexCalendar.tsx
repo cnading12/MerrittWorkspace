@@ -5,6 +5,12 @@
 // from /api/flex-bookings/availability so members can see what's already
 // reserved before booking. Booking submission is unchanged — this is a
 // purely visual aid.
+//
+// `authToken` is OPTIONAL. The page around this is public, and "is the hall
+// free on Thursday" is a question a prospective member or an event enquirer
+// has every right to ask without an account — the endpoint returns time ranges
+// and nothing else. A token only changes which blocks come back flagged
+// `is_self`, so signing in adds "that one is yours", not the calendar itself.
 import { useEffect, useMemo, useState } from 'react';
 // The grid must span exactly the bookable window, so it reads the same
 // constants the booking endpoint validates against rather than its own copy.
@@ -134,8 +140,13 @@ function buildWeek(anchor: Date): DayCol[] {
   const cols: DayCol[] = [];
   for (let i = 0; i < 5; i++) {
     const { y, m, d } = addDays(monday.y, monday.m, monday.d, i);
-    const startMs = mtInstant(y, m, d, 9, 0).getTime();
-    const endMs = mtInstant(y, m, d, 16, 30).getTime();
+    // Must match the window the grid itself is drawn for (OPEN_MINUTES ..
+    // CLOSE_MINUTES). DayColumn positions every busy block by interpolating
+    // between these two instants and the grid's pixel height, so a column
+    // window that differs from the grid window both drops bookings outside it
+    // and misplaces the ones inside it.
+    const startMs = mtInstant(y, m, d, Math.floor(OPEN_MINUTES / 60), OPEN_MINUTES % 60).getTime();
+    const endMs = mtInstant(y, m, d, Math.floor(CLOSE_MINUTES / 60), CLOSE_MINUTES % 60).getTime();
     cols.push({
       weekdayShort: dayLabels[i],
       monthDay: `${m}/${d}`,
@@ -195,7 +206,7 @@ export default function FlexCalendar({
   const rangeEndIso = week[week.length - 1]?.isoDate;
 
   useEffect(() => {
-    if (!authToken || week.length === 0) return;
+    if (week.length === 0) return;
     const controller = new AbortController();
     (async () => {
       setLoading(true);
@@ -209,7 +220,7 @@ export default function FlexCalendar({
             start
           )}&end=${encodeURIComponent(end)}`,
           {
-            headers: { Authorization: `Bearer ${authToken}` },
+            headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
             signal: controller.signal,
           }
         );
@@ -334,7 +345,7 @@ export default function FlexCalendar({
       </div>
 
       <div className="mt-4 flex items-center gap-4 text-xs text-ink-60 flex-wrap">
-        <Legend className="bg-orange-200 border-orange-400" label="Your booking" />
+        {authToken && <Legend className="bg-orange-200 border-orange-400" label="Your booking" />}
         <Legend className="bg-gray-300 border-gray-400" label="Booked" />
         <Legend className="bg-bone border-clay" label="Available" />
         {loading && <span className="text-ink-60">Loading…</span>}

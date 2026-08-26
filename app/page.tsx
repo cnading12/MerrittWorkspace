@@ -2,21 +2,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
 import Essentials from '@/components/marketing/Essentials';
-import FaqBlock from '@/components/marketing/FaqBlock';
 import { BLUR } from '@/components/marketing/blur';
-import { SITE_URL } from '@/lib/seo/business';
 
-// The questions someone puts to an assistant before choosing a workspace, in
-// the order they tend to ask them. Answered on the homepage itself so a single
-// fetch of this page settles all of them.
-const HOME_FAQ_IDS = [
-  'how-much-does-it-cost',
-  'twenty-four-seven',
-  'parking',
-  'commitment',
-  'free-trial',
-  'compare-to-chains',
-];
+// The homepage used to close with <Essentials> AND a six-question FaqBlock.
+// The two answered the same things — cost, access, parking, commitment, the
+// trial day — one as a fact table and one as prose, so a visitor who had
+// already scrolled a long page read the same answers twice.
+//
+// Essentials is the one that stayed: it is denser, it carries facts the
+// questions never did (address, business hours, the phone number), and it
+// already links out to the full FAQ page. The complete question set, and the
+// FAQPage structured data for it, lives on /member-resources/faqs.
 
 // No client state on this page any more — the hero carousel is gone, so the
 // whole thing renders on the server.
@@ -121,9 +117,10 @@ export default function HomePage() {
                 Not a hot desk you fight for at nine in the morning. The same
                 desk every day, in a room with twenty-five of them. Your own
                 access code gets you in around the clock, and the membership
-                comes with a numbered locker, four hours of conference room credit
-                a month, five soundproof phone booths for when a call needs a
-                door, and coffee, tea and beer on the house.
+                comes with an external monitor at the desk, a numbered locker,
+                four hours of conference room credit a month, five soundproof
+                phone booths for when a call needs a door, and coffee, tea and
+                beer on the house.
               </p>
               <p className="mt-5 text-[17px] leading-relaxed text-ink-60 md:text-lg">
                 It also comes with the building next door. The café is open to
@@ -477,8 +474,6 @@ export default function HomePage() {
       </section>
 
       <Essentials />
-
-      <FaqBlock ids={HOME_FAQ_IDS} id={`${SITE_URL}/#faq`} />
 
       <Footer />
     </div>

@@ -136,8 +136,13 @@ export const FLEX_WINDOW_LABEL = 'weekdays 8:00 AM – 4:00 PM';
 /** Just the times: "8:00 AM – 4:00 PM". */
 export const FLEX_HOURS_LABEL = '8:00 AM – 4:00 PM';
 
-/** Short form for tight UI, e.g. a stat tile: "8–4". */
-export const FLEX_HOURS_SHORT = '8–4';
+/**
+ * Short form for tight UI, e.g. a stat tile: "8am–4pm".
+ *
+ * Deliberately NOT "8–4": a bare pair of numbers reads as ambiguous on a stat
+ * tile, where there is no surrounding sentence to say which end is morning.
+ */
+export const FLEX_HOURS_SHORT = '8am–4pm';
 
 /** `<input type="time">` bounds for a flex start/end picker. */
 export const FLEX_OPEN_24H = '08:00';

@@ -5,8 +5,7 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import PageHero from '@/components/marketing/PageHero';
 import { BLUR } from '@/components/marketing/blur';
-import FaqBlock from '@/components/marketing/FaqBlock';
-import { SITE_URL } from '@/lib/seo/business';
+import MoreQuestions from '@/components/marketing/MoreQuestions';
 
 const membershipPlans = [
   {
@@ -23,6 +22,7 @@ const membershipPlans = [
     features: [
       '24/7 building access',
       'Your own dedicated desk with storage',
+      'An external monitor at your desk',
       'High-speed WiFi',
       'Access to 5 private phone booths',
       'Full kitchen with coffee, tea and beer',
@@ -54,6 +54,7 @@ const membershipPlans = [
     features: [
       'Private, lockable office area, outside the shared community space',
       'Your own dedicated desk within that area',
+      'An external monitor at your desk',
       '24/7 building access',
       'High-speed WiFi',
       '4 hours conference room credits/month',
@@ -71,7 +72,7 @@ const membershipPlans = [
     id: 'cafe_membership',
     name: 'Café Membership',
     price: 100,
-    description: 'Open seating on the café side of the 1905 flex space next door. Every amenity a desk member has, without the desk.',
+    description: 'Open seating on the café side of the 1905 flex space next door, for the weeks that do not need the same desk every day.',
     capacity: '1 person',
     privacy: 'Open Seating',
     image: '/images/flex-space/cafe.webp',
@@ -85,6 +86,7 @@ const membershipPlans = [
       'High-speed WiFi',
       'Printing access',
       'Free on-site parking',
+      'Lockable storage of your own',
       '2 hours conference room credits/month',
       '2 hours flex space credits/week',
       'Limited to 15 members',
@@ -270,24 +272,39 @@ function AvailabilityNote({ count, singular, plural, fullText }: {
 
 // Comparison rows. `true` renders the included mark, `false` an em dash,
 // anything else prints as-is.
-// Café membership leads the table because it is now the cheapest way in, and
+//
+// Café membership leads the table because it is the cheapest way in, and
 // because the row that sells it is the one directly under the price: it gets
 // the same amenities as a desk and differs only in the desk and the credit.
+//
+// A row whose five cells all say the same thing compares nothing — it is five
+// identical marks costing a line of vertical space and a line of the reader's
+// attention. Those live in EVERY_TIER below and are printed once, under the
+// table. Keep this invariant when editing: if a row here ever becomes uniform
+// across all five columns, move it down; if an EVERY_TIER item ever stops
+// being universal, move it back up. `__tests__/membership-compare.test.ts`
+// fails the build either way.
 const COMPARE_ROWS: { label: string; values: (string | boolean)[] }[] = [
   { label: 'Monthly price', values: ['$100', '$200', '$500', '$700', '$1,200'] },
   { label: 'Capacity', values: ['1 person', '1 person', '1 person', '2 people', '4–8 people'] },
   { label: 'Privacy', values: ['Café, open seating', 'Shared space', 'Private office', 'Private office', 'Private office'] },
   { label: 'Your own desk', values: [false, true, true, true, true] },
+  { label: 'Monitor at your desk', values: [false, true, false, false, false] },
   { label: '24/7 access', values: [false, true, true, true, true] },
   { label: 'Conference room credit', values: ['2 hrs/mo', '4 hrs/mo', '14 hrs/mo', '14 hrs/mo', '20 hrs/mo'] },
   { label: 'Flex space credit', values: ['2 hrs/wk', '4 hrs/wk', '6 hrs/wk', '6 hrs/wk', '8 hrs/wk'] },
-  { label: 'Coffee, tea and beer', values: [true, true, true, true, true] },
-  { label: 'Printing', values: [true, true, true, true, true] },
-  { label: 'Free parking', values: [true, true, true, true, true] },
   { label: 'Business address', values: [false, false, true, true, true] },
-  { label: 'Phone booths', values: ['5, shared', '5, shared', '5, shared', '5, shared', '5, shared'] },
   { label: 'Dogs allowed', values: [false, false, true, true, true] },
-  { label: 'Lockable storage', values: [false, true, true, true, true] },
+];
+
+// What every membership includes, whatever you pay. Stated once under the
+// table rather than as five rows of identical marks inside it.
+const EVERY_TIER = [
+  'Free coffee, tea and beer',
+  'Printing',
+  'Free on-site and street parking',
+  'Lockable storage of your own',
+  'Five shared soundproof phone booths',
 ];
 
 const COMPARE_COLS = ['Café membership', 'Dedicated desk', 'Single office', '2-desk office', 'Large office'];
@@ -438,7 +455,7 @@ export default function MembershipPage() {
         <div className="mw-container">
           <div className="max-w-2xl">
             <p className="mw-eyebrow mb-5">Private offices</p>
-            <h2 className="mw-h2">Fourteen lockable rooms, one to eight people.</h2>
+            <h2 className="mw-h2">Fourteen private offices, one to eight people.</h2>
             <p className="mt-6 mw-body">
               A room of your own with a door that locks and a business address,
               billed month to month like everything else.
@@ -493,6 +510,24 @@ export default function MembershipPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="mt-10 border-t border-clay pt-8">
+            <p className="text-[13px] uppercase tracking-[0.14em] text-ink-60">
+              Every membership, whatever you pay
+            </p>
+            <ul className="mt-4 flex flex-wrap gap-x-8 gap-y-2">
+              {EVERY_TIER.map(item => (
+                <li key={item} className="text-[16px] leading-relaxed text-ink">
+                  <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 text-[15px] leading-relaxed text-ink-60">
+              Month to month, with no lease, no signing fee and no amenity or
+              service charge on top of the monthly rate.
+            </p>
           </div>
         </div>
       </section>
@@ -562,14 +597,9 @@ export default function MembershipPage() {
         </div>
       </section>
 
-      {/* Visible answers plus the FAQPage markup for them — the two always
-          ship together, so the structured data can never describe content a
-          visitor cannot see. */}
-      <FaqBlock
-        ids={['how-much-does-it-cost', 'commitment', 'day-pass', 'free-trial', 'how-to-join', 'business-address']}
-        id={`${SITE_URL}/membership#faq`}
-        eyebrow="Before you apply"
-        heading="What the price covers, and what you are committing to."
+      <MoreQuestions
+        lead="Still weighing it up?"
+        hash="how-much-does-it-cost"
       />
 
       <Footer />

@@ -62,7 +62,7 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'What is included with a cafe membership?',
     answer:
-      'For $100 a month:\n\n- Open seating on the cafe side of the 1905 flex space\n- Free coffee, tea and beer\n- Enterprise WiFi\n- Printing\n- Free on-site parking\n- 2 hours of conference room credit a month\n- 2 hours of flex space booking credit a week\n\nIt does not include an assigned desk, a personal 24/7 access code, lockable storage or a business address. Those come with a dedicated desk or a private office.',
+      'For $100 a month:\n\n- Open seating on the cafe side of the 1905 flex space\n- Free coffee, tea and beer\n- Enterprise WiFi\n- Printing\n- Free on-site parking\n- Lockable storage of your own\n- 2 hours of conference room credit a month\n- 2 hours of flex space booking credit a week\n\nIt does not include an assigned desk, an external monitor, a personal 24/7 access code or a business address. Those come with a dedicated desk or a private office.',
   },
   {
     id: 'cafe-vs-desk',
@@ -70,7 +70,7 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'Should I get a cafe membership or a dedicated desk?',
     answer:
-      'A dedicated desk is $200 a month and gives you the same desk every day on the coworking floor, a numbered locker, 24/7 keypad access, and double the booking credit \u2014 4 conference room hours a month and 4 flex hours a week.\n\nA cafe membership is $100, gives you open seating in the cafe instead of an assigned desk, and includes half those hours.\n\nIf you are in most days or want somewhere to leave a monitor, take the desk. If you are in a few days a week with a laptop, the cafe membership is the better deal.',
+      'They are different rooms for different working patterns, not a better and a worse option.\n\nA dedicated desk is $200 a month: the same desk every day on the coworking floor, with an external monitor at it, a numbered locker, 24/7 keypad access, and double the booking credit \u2014 4 conference room hours a month and 4 flex hours a week.\n\nA cafe membership is $100: open seating in the cafe next door instead of an assigned desk, with the same coffee, WiFi, printing, parking and lockable storage, and half the booking credit.\n\nIf you are here most days, or you want a second screen and somewhere to leave your things set up, take the desk. If you are in a few days a week with a laptop and would rather sit somewhere different each time, the cafe membership fits better.',
   },
   {
     id: 'cafe-limit',
@@ -103,7 +103,7 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'What is the cheapest way to join?',
     answer:
-      'A cafe membership, at $100 a month. It is open seating on the cafe side of the restored 1905 hall next door rather than a desk of your own, and it includes free coffee, tea and beer, WiFi, printing, free parking, 2 hours of conference room credit a month and 2 hours of flex space credit a week — half a dedicated desk allowance, at half a dedicated desk price. It is capped at 15 members so there is always somewhere to sit.\n\nWe no longer sell day passes. If you want to try the space first, ask for a free trial day: a full working day here at no charge, offered to every prospective member.',
+      'A cafe membership, at $100 a month. It is open seating on the cafe side of the restored 1905 hall next door rather than a desk of your own, and it includes free coffee, tea and beer, WiFi, printing, free parking, lockable storage, 2 hours of conference room credit a month and 2 hours of flex space credit a week — half a dedicated desk allowance, at half a dedicated desk price. It is capped at 15 members so there is always somewhere to sit.\n\nWe no longer sell day passes. If you want to try the space first, ask for a free trial day: a full working day here at no charge, offered to every prospective member.',
   },
   {
     id: 'free-trial',
@@ -237,7 +237,7 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'What is the flex space, and can members use it?',
     answer:
-      `The flex space is a restored 1905 hall on the same lawn as the workspace, with the original stained glass, a hardwood floor, a projector and a sound system, seating about a hundred. In front of it is a cafe area with permanent seating that members use all day.\n\nEvery membership includes weekly booking credit in the hall — 2 hours a week with a cafe membership, 4 with a dedicated desk, 6 with a single or 2-desk office, 8 with a large team office — free to book ${FLEX_WINDOW_LABEL}. Members run workshops, all-hands meetings and client sessions in it.\n\nIn the evenings and at weekends the hall operates as Merritt Wellness, with yoga and fitness classes. Workspace members book it at a discount for evening events and take classes at a member rate.`,
+      `The flex space is a restored 1905 hall on the same lawn as the workspace, with the original stained glass, a hardwood floor, a projector and a sound system, seating about a hundred. In front of it is a cafe area with permanent seating that members use all day.\n\nEvery membership includes weekly booking credit in the hall — 2 hours a week with a cafe membership, 4 with a dedicated desk, 6 with a single or 2-desk office, 8 with a large team office — free to book ${FLEX_WINDOW_LABEL}. Members run workshops, all-hands meetings and client sessions in it.\n\nBooking the hall does not close the cafe: the cafe seating at the front stays open to members through the working day, whatever is happening in the hall behind it.\n\nNon-members can rent the hall as well, at $95 an hour. Public bookings are handled by Merritt Wellness, which shares the building, at merrittwellness.net/book.\n\nIn the evenings and at weekends the hall operates as Merritt Wellness, with yoga and fitness classes. Workspace members book it at a discount for evening events and take classes at a member rate.`,
   },
   {
     id: 'coffee-kitchen',

@@ -32,10 +32,11 @@ export const BUSINESS = {
     "Sloan's Lake neighborhood of Denver, Colorado. It offers cafe memberships from $100 a " +
     'month, dedicated desks from $200 and private lockable offices from $500, all ' +
     'month-to-month with no long-term lease. Members get free on-site parking, enterprise ' +
-    'WiFi, printing, a conference room, a full kitchen with free ' +
+    'WiFi, printing, lockable storage, a conference room, a full kitchen with free ' +
     'coffee, tea and beer, and booking credit in a restored 1905 event hall on the same ' +
     'lawn; desk and office members also get 24/7 keypad access and five soundproof phone ' +
-    'booths. It is three minutes from I-25 and a short walk from Sloan’s Lake Park.',
+    'booths, and every dedicated desk comes with an external monitor. It is three ' +
+    'minutes from I-25 and a short walk from Sloan’s Lake Park.',
 
   address: {
     street: '2246 Irving Street',
@@ -105,7 +106,8 @@ export const AMENITIES = [
   'On-site snackshop billable to your member account',
   'Mail and package handling',
   'Professional business address (private offices)',
-  'Numbered lockable storage',
+  'Numbered lockable storage with every membership',
+  'An external monitor at every dedicated desk',
   'Printing',
   'Dog-friendly private offices',
   'Monitored building with security cameras in common areas',
@@ -144,8 +146,8 @@ export const PLANS: Plan[] = [
     summary:
       'Open seating on the café side of the restored 1905 hall next door rather than a ' +
       'desk of your own. Every amenity a desk member has — free coffee, tea and beer, ' +
-      'WiFi, printing and free parking — at half the price and half the booking credit. ' +
-      'Limited to 15 members.',
+      'WiFi, printing, free parking and lockable storage — at half the price and half ' +
+      'the booking credit. Limited to 15 members.',
     meetingCreditPerMonth: 2,
     flexCreditPerWeek: 2,
     businessAddress: false,
@@ -161,8 +163,8 @@ export const PLANS: Plan[] = [
     privacy: 'Shared coworking floor',
     url: `${SITE_URL}/membership/dedicated-desk`,
     summary:
-      'The same desk every day on the shared coworking floor, with a numbered locker, ' +
-      '24/7 access, enterprise WiFi and free coffee, tea and beer.',
+      'The same desk every day on the shared coworking floor, with an external monitor, ' +
+      'a numbered locker, 24/7 access, enterprise WiFi and free coffee, tea and beer.',
     meetingCreditPerMonth: 4,
     flexCreditPerWeek: 4,
     businessAddress: false,
@@ -179,7 +181,7 @@ export const PLANS: Plan[] = [
     url: `${SITE_URL}/membership/dedicated-desk`,
     summary:
       'A dedicated desk inside a private, lockable office area rather than on the open ' +
-      'floor. Same amenities as the dedicated desk, plus a door.',
+      'floor. Same amenities as the dedicated desk — the monitor included — plus a door.',
     meetingCreditPerMonth: 4,
     flexCreditPerWeek: 4,
     businessAddress: false,
@@ -259,6 +261,15 @@ export const FLEX_SPACE = {
     'floor, a projector and a sound system, seating about a hundred. Free for members to ' +
     `book against their weekly credit, ${FLEX_WINDOW_LABEL}.`,
   bookableWindow: FLEX_WINDOW_LABEL,
+  /**
+   * The hall is rentable by the public, not members-only. Bookings from
+   * non-members are taken by Merritt Wellness, which shares the building and
+   * keeps the calendar for it — so the rate is published here but the booking
+   * itself is not ours to take. Members never pay this: their weekly credit is
+   * free, and time past it bills at the member rate in lib/bookings/flex-hours.
+   */
+  publicHourlyRate: 95,
+  publicBookingUrl: 'https://www.merrittwellness.net/book',
   eveningUse:
     'In the evenings and at weekends the hall operates as Merritt Wellness, running yoga, ' +
     'fitness and wellness classes. Workspace members book it at a discount for evening ' +
@@ -280,6 +291,19 @@ export const POLICIES = {
   noise: 'Calls belong in the phone booths, the flex space or outside. Private office members close the door for calls.',
   payment: 'Credit and debit card, billed monthly.',
 } as const;
+
+/**
+ * How long the building has been standing, in whole years.
+ *
+ * Computed rather than written down. The About page used to say "a hundred and
+ * nineteen years" in prose, which was already two years stale when someone
+ * checked it against the 1905 on the same page — a spelled-out number is a
+ * number nobody remembers to update. Anything quoting the building's age
+ * should call this.
+ */
+export function buildingAgeYears(now: Date = new Date()): number {
+  return now.getUTCFullYear() - Number(BUSINESS.buildingYear);
+}
 
 /** Every membership price as a single sentence — the form an assistant quotes. */
 export function priceLine(plan: Plan): string {

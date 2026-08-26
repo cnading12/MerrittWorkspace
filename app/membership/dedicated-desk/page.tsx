@@ -3,14 +3,13 @@
 import { useEffect, useState } from 'react';
 import Footer from "@/components/Footer";
 import Link from 'next/link';
-import Image from 'next/image';
 import PageHero from '@/components/marketing/PageHero';
 import { BLUR } from '@/components/marketing/blur';
-import FaqBlock from '@/components/marketing/FaqBlock';
-import { SITE_URL } from '@/lib/seo/business';
+import MoreQuestions from '@/components/marketing/MoreQuestions';
 
 const WHATS_INCLUDED = [
   'Your own dedicated desk with storage',
+  'An external monitor at the desk, set up and ready to plug into',
   '24/7 access code entry to a monitored building',
   'Enterprise WiFi throughout the building',
   'Four hours of conference room credit each month',
@@ -36,6 +35,10 @@ export default function DedicatedDeskPage() {
       description: 'Lockable desk drawers and personal storage options'
     },
     {
+      title: 'A Monitor at Your Desk',
+      description: 'An external monitor is already at the desk — bring a laptop and a cable, not a second screen'
+    },
+    {
       title: 'Full Kitchen',
       description: 'Coffee, tea, beer, microwave, refrigerator, and prep space'
     },
@@ -58,25 +61,6 @@ export default function DedicatedDeskPage() {
     {
       title: 'FREE Trial Day',
       description: 'Try the space for a full day, on the house, before you commit to a membership'
-    }
-  ];
-
-  const eventSpaceFeatures = [
-    {
-      title: 'Flex Space Coffee Lounge',
-      description: 'Café seating and a beautiful space to recharge in our flex space next door'
-    },
-    {
-      title: 'Free Workshops & Meetings',
-      description: 'Host team meetings, client presentations, and networking events at no cost'
-    },
-    {
-      title: 'Projector & Sound System',
-      description: 'Professional AV equipment ready for your presentations'
-    },
-    {
-      title: 'Recreation & Breaks',
-      description: 'Ping pong, flexible seating, and space to recharge'
     }
   ];
 
@@ -251,45 +235,6 @@ export default function DedicatedDeskPage() {
         </div>
       </section>
 
-      {/* The flex space */}
-      <section className="relative">
-        <div className="relative h-[70svh] min-h-[500px] w-full overflow-hidden md:h-[80svh] md:max-h-[820px]">
-          <Image
-            src="/images/flex-space/rose-window-group.webp"
-            alt="Members gathered under the rose window in the restored 1905 flex space at Merritt Workspace"
-            fill
-            quality={88}
-            placeholder="blur"
-            blurDataURL={BLUR['flex-space/rose-window-group']}
-            sizes="100vw"
-            className="object-cover"
-          />
-          <div className="absolute inset-0 scrim-bottom" aria-hidden="true" />
-          <div className="absolute inset-0 flex items-end">
-            <div className="mw-container pb-14 md:pb-24">
-              <div className="max-w-3xl">
-                <p className="mw-eyebrow-light mb-5">Included with every desk</p>
-                <h2 className="font-display text-[2.25rem] font-semibold leading-[1] tracking-tightest text-bone sm:text-5xl lg:text-[4rem]">
-                  The 1905 event space next door, free until 4:00.
-                </h2>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="border-t border-clay bg-bone py-16 md:py-24">
-          <div className="mw-container">
-            <div className="grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
-              {eventSpaceFeatures.map((feature) => (
-                <div key={feature.title} className="border-t border-clay pt-6">
-                  <h3 className="font-display text-xl font-semibold text-ink">{feature.title}</h3>
-                  <p className="mt-3 text-[15px] leading-relaxed text-ink-60">{feature.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Ideal for */}
       <section className="mw-section-alt">
         <div className="mw-container">
@@ -346,14 +291,9 @@ export default function DedicatedDeskPage() {
         </div>
       </section>
 
-      {/* Visible answers plus the FAQPage markup for them — the two always
-          ship together, so the structured data can never describe content a
-          visitor cannot see. */}
-      <FaqBlock
-        ids={['how-much-does-it-cost', 'day-pass', 'free-trial', 'twenty-four-seven']}
-        id={`${SITE_URL}/membership/dedicated-desk#faq`}
-        eyebrow="About the desks"
-        heading="What a desk costs, and how to try one."
+      <MoreQuestions
+        lead="Anything else about the desks?"
+        hash="how-much-does-it-cost"
       />
 
       <Footer />

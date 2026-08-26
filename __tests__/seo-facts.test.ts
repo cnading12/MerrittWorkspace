@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import robots from '@/app/robots';
 import { buildLlmsFullTxt, buildLlmsTxt } from '@/lib/seo/llms';
-import { BUSINESS, MEETING_ROOM, PLANS, SITE_URL } from '@/lib/seo/business';
+import { BUSINESS, FLEX_SPACE, MEETING_ROOM, PLANS, SITE_URL } from '@/lib/seo/business';
 import { FAQS } from '@/lib/seo/faqs';
 import { ACCESS_CODE_WHEN_NEEDED, BUSINESS_HOURS_FULL } from '@/lib/hours';
 
@@ -87,6 +87,11 @@ describe('/llms-full.txt', () => {
     expect(txt.toLowerCase()).toContain('open to non-members: yes');
   });
 
+  it('states the flex hall rate for non-members, and where they book it', () => {
+    expect(txt).toContain(`$${FLEX_SPACE.publicHourlyRate} per hour`);
+    expect(txt).toContain(FLEX_SPACE.publicBookingUrl);
+  });
+
   it('keeps 24/7 member access and the unlocked-door window apart', () => {
     expect(txt).toContain(BUSINESS.hours.memberAccess);
     expect(txt).toContain(BUSINESS.hours.business);
@@ -104,6 +109,7 @@ describe('fact consistency', () => {
   it('never quotes a membership price the plan table does not have', () => {
     const known = new Set(PLANS.map(p => `$${p.price}`));
     known.add(`$${MEETING_ROOM.hourlyRate}`); // hourly room rate
+    known.add(`$${FLEX_SPACE.publicHourlyRate}`); // flex hall, rented by a non-member
     known.add('$250'); // unreturned key fee, from the terms
     known.add('$1,200'); // large office, written with a separator in prose
 
