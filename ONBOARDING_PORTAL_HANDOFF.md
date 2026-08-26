@@ -100,6 +100,46 @@ Resend emails still go out unchanged.
 6. **Supabase Auth** → enable Email provider, set Site URL to your domain,
    add `/portal` to redirect allowlist.
 
+## Locked out of the admin panel
+
+Nothing in the app writes to `admin_users` — rows go in by hand, per step 3
+above. So the ordinary way to be locked out is a password that Supabase Auth
+accepts on an account that has no `admin_users` row. The sign-in page now says
+which of these happened instead of re-rendering a blank form, but the fix is
+still SQL.
+
+Run this in the Supabase SQL editor to see the accounts and who is an admin:
+
+```sql
+select u.id, u.email, u.last_sign_in_at, (a.user_id is not null) as is_admin
+from auth.users u
+left join public.admin_users a on a.user_id = u.id
+order by u.created_at desc;
+```
+
+What the sign-in page tells you, and what it means:
+
+| Message | Cause | Fix |
+| --- | --- | --- |
+| Supabase's own error ("Invalid login credentials") | wrong password, or no such user | reset the password in Supabase → Authentication → Users |
+| "Signed in as `<email>`, which is not an admin account." | valid password, no `admin_users` row for that `user_id` | insert the row (below), or sign out and use the account that has one |
+| "Could not verify admin access: …" | the database could not be reached | check whether the Supabase project is paused and restore it from the dashboard |
+| "The server could not run the check at all…" (HTTP 500) | `SUPABASE_SERVICE_ROLE_KEY` missing or wrong in Vercel | re-add the env var and redeploy |
+
+To grant admin to an existing account, keyed by email so there is no uuid to
+copy by hand:
+
+```sql
+insert into public.admin_users (user_id, email, role)
+select id, email, 'superadmin' from auth.users where email = 'you@example.com'
+on conflict (user_id) do nothing;
+```
+
+The `user_id` is a foreign key onto `auth.users(id)` with `on delete cascade`,
+so deleting and recreating an auth user — which a "delete the user and re-invite
+them" cleanup does — silently removes their admin row too. Re-run the insert
+after any such change.
+
 ## What's NOT done yet (next session pickup)
 
 1. **Member detail page** `app/admin/members/[id]/page.tsx` — view full app
