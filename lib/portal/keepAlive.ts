@@ -24,8 +24,11 @@ export const KEEP_ALIVE_JOB = 'supabase-keep-alive';
 // never going away, and is small enough that an exact count is trivial.
 export const KEEP_ALIVE_TABLE = 'members';
 
-// Best-effort audit trail (supabase/migrations/20260817_cron_runs.sql).
-export const CRON_RUNS_TABLE = 'cron_runs';
+// Best-effort audit trail (supabase/migrations/20260817_cron_runs.sql). These
+// live in lib/portal/cronRuns.ts now that the monthly dues summary writes its
+// receipt the same way; re-exported here so this module stays the one import
+// the keep-alive route needs.
+export { CRON_RUNS_TABLE, recordCronRun, utcDayKey } from './cronRuns';
 
 export type KeepAlivePingResult = { table: string; count: number | null };
 
@@ -45,40 +48,4 @@ export async function pingDatabase(
     );
   }
   return { table: KEEP_ALIVE_TABLE, count: count ?? null };
-}
-
-/**
- * Record that the job ran, so we can prove after the fact that the keep-alive
- * was actually firing.
- *
- * BEST EFFORT BY DESIGN: never throws and never changes the job's verdict. The
- * `cron_runs` table may not exist yet (migrations are applied by hand), and a
- * healthy database must not look down because an audit insert failed. Returns
- * whether the row landed, purely so the response can say so.
- */
-export async function recordCronRun(
-  sb: SupabaseClient<any, any, any>,
-  entry: { job: string; ok: boolean; detail?: string | null }
-): Promise<boolean> {
-  try {
-    const { error } = await sb.from(CRON_RUNS_TABLE).insert({
-      job: entry.job,
-      ok: entry.ok,
-      detail: entry.detail ?? null,
-    });
-    if (error) throw new Error(error.message);
-    return true;
-  } catch (e) {
-    console.warn(`Keep-alive audit row for "${entry.job}" not recorded:`, e);
-    return false;
-  }
-}
-
-/**
- * UTC calendar day (YYYY-MM-DD) used to scope the failure alert's idempotency
- * key: a same-day retry dedupes, but a multi-day outage alerts once per day
- * instead of going quiet after the first message.
- */
-export function utcDayKey(now: Date = new Date()): string {
-  return now.toISOString().slice(0, 10);
 }

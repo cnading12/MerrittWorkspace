@@ -52,6 +52,77 @@ export type DuesSummary = {
   totalCollectedCents: number;
 };
 
+export const DENVER_TZ = 'America/Denver';
+
+export type ReportMonth = {
+  year: number;
+  month: number; // 1-12
+  label: string; // e.g. "August 2026"
+  // Half-open [startIso, endIso) window over payment_history.created_at.
+  startIso: string;
+  endIso: string;
+};
+
+/**
+ * Which month the report covers.
+ *
+ * By default that is the current calendar month in Denver — the job runs on
+ * the 7th, so the 1st-of-month dues charges it reports are already in. Pass
+ * `month` as YYYY-MM to re-run a past month (a missed or lost send).
+ *
+ * Both bounds are UTC midnight on the 1st, which is the evening of the last
+ * day of the prior month in Denver. That is a safe boundary because dues
+ * invoices only fire on the 1st, and — because both ends use the same
+ * convention — consecutive months tile exactly, with no gap and no overlap.
+ */
+export function resolveReportMonth(opts: {
+  now?: Date;
+  month?: string | null;
+} = {}): ReportMonth {
+  let year: number;
+  let month: number;
+
+  const requested = opts.month?.trim();
+  if (requested) {
+    const m = /^(\d{4})-(\d{2})$/.exec(requested);
+    if (!m) {
+      throw new Error(
+        `Invalid month "${requested}" — expected YYYY-MM (e.g. 2026-08)`
+      );
+    }
+    year = Number(m[1]);
+    month = Number(m[2]);
+    if (month < 1 || month > 12) {
+      throw new Error(`Invalid month "${requested}" — month must be 01-12`);
+    }
+  } else {
+    const denverToday = new Intl.DateTimeFormat('en-CA', {
+      timeZone: DENVER_TZ,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(opts.now ?? new Date()); // YYYY-MM-DD
+    [year, month] = denverToday.split('-').map(Number);
+  }
+
+  const start = new Date(Date.UTC(year, month - 1, 1));
+  const end = new Date(Date.UTC(year, month, 1));
+  // Midday avoids the label itself landing in the prior month once shifted
+  // into Denver.
+  const label = new Date(Date.UTC(year, month - 1, 1, 12)).toLocaleDateString(
+    'en-US',
+    { month: 'long', year: 'numeric', timeZone: DENVER_TZ }
+  );
+
+  return {
+    year,
+    month,
+    label,
+    startIso: start.toISOString(),
+    endIso: end.toISOString(),
+  };
+}
+
 export function formatUsd(cents: number): string {
   return (cents / 100).toLocaleString('en-US', {
     minimumFractionDigits: 2,

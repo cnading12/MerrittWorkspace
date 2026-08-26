@@ -1482,3 +1482,59 @@ export function supabaseKeepAliveFailureEmail(opts: {
     ].join('\n'),
   };
 }
+
+// ------------------------------------------------------------------
+// Monthly dues summary — failure alert.
+//
+// The summary itself is the only signal that the job ran, so when the job
+// throws, nothing arrives and nothing says why. Staff notice weeks later,
+// if at all (this is exactly how the August 2026 report went missing).
+// This alert makes a failed run as visible as a successful one.
+// ------------------------------------------------------------------
+
+export function monthlyDuesSummaryFailureEmail(opts: {
+  monthLabel: string;
+  errorMessage: string;
+  ranAtLabel: string;
+}) {
+  const safeError = escapeHtml(opts.errorMessage);
+  const safeMonth = escapeHtml(opts.monthLabel);
+  return {
+    subject: `🚨 Monthly Dues Summary FAILED — ${opts.monthLabel}`,
+    html: shell({
+      title: 'Monthly Dues Summary Failed',
+      tagline: `The ${opts.monthLabel} dues report could not be generated`,
+      body: `
+        <p>The monthly dues summary for <strong>${safeMonth}</strong> failed at
+        ${escapeHtml(opts.ranAtLabel)}, so <strong>no report was sent</strong>.</p>
+        <div class="highlight">
+          <p style="margin:0;"><strong>Error:</strong> ${safeError}</p>
+        </div>
+        <div class="info-card">
+          <p style="margin:0 0 6px;"><strong>What to do:</strong></p>
+          <p style="margin:0 0 6px;">1. Check this month's charges directly in Stripe — failed dues still need chasing whether or not the report ran.</p>
+          <p style="margin:0 0 6px;">2. Read the Vercel logs for <code>/api/cron/monthly-dues-summary</code> for the full error.</p>
+          <p style="margin:0;">3. Once the cause is fixed, re-run the report for this month by calling the same route with <code>?month=YYYY-MM</code>.</p>
+        </div>
+        <p>This alert is sent at most once per UTC day per report month, so it
+        will repeat tomorrow if the problem is still there.</p>
+      `,
+    }),
+    text: [
+      `The monthly dues summary for ${opts.monthLabel} failed at ${opts.ranAtLabel},`,
+      'so no report was sent.',
+      '',
+      `Error: ${opts.errorMessage}`,
+      '',
+      'WHAT TO DO',
+      "1. Check this month's charges directly in Stripe — failed dues still need",
+      '   chasing whether or not the report ran.',
+      '2. Read the Vercel logs for /api/cron/monthly-dues-summary for the full error.',
+      '3. Once the cause is fixed, re-run the report for this month by calling the',
+      '   same route with ?month=YYYY-MM.',
+      '',
+      'This alert is sent at most once per UTC day per report month, so it will',
+      'repeat tomorrow if the problem is still there.',
+    ].join('\n'),
+  };
+}

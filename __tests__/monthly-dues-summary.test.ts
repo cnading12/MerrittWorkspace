@@ -2,10 +2,14 @@ import { describe, it, expect } from 'vitest';
 import {
   buildDuesSummary,
   formatUsd,
+  resolveReportMonth,
   type DuesMemberRow,
   type DuesPaymentRow,
 } from '@/lib/portal/duesSummary';
-import { monthlyDuesSummaryEmail } from '@/lib/portal/emails';
+import {
+  monthlyDuesSummaryEmail,
+  monthlyDuesSummaryFailureEmail,
+} from '@/lib/portal/emails';
 
 // These tests guard the staff-facing monthly dues report
 // (app/api/cron/monthly-dues-summary): every charge must land in exactly
@@ -172,5 +176,76 @@ describe('formatUsd', () => {
     expect(formatUsd(50000)).toBe('500.00');
     expect(formatUsd(123456789)).toBe('1,234,567.89');
     expect(formatUsd(0)).toBe('0.00');
+  });
+});
+
+// The report month is what makes a missed send recoverable: the cron run on
+// the 7th reports the month it lands in, and `?month=YYYY-MM` re-runs one
+// whose report never arrived.
+describe('resolveReportMonth', () => {
+  it('reports the current Denver month when none is asked for', () => {
+    // 2026-08-07 16:00 UTC — when Vercel Cron fires the job.
+    const m = resolveReportMonth({ now: new Date('2026-08-07T16:00:00Z') });
+    expect(m.year).toBe(2026);
+    expect(m.month).toBe(8);
+    expect(m.label).toBe('August 2026');
+  });
+
+  it('uses the Denver date, not the UTC one, to pick the month', () => {
+    // 2026-09-01 02:00 UTC is still 2026-08-31 20:00 in Denver, so a run
+    // that late belongs to August.
+    const m = resolveReportMonth({ now: new Date('2026-09-01T02:00:00Z') });
+    expect(m.label).toBe('August 2026');
+  });
+
+  it('re-runs an explicit past month', () => {
+    const m = resolveReportMonth({
+      now: new Date('2026-08-26T18:00:00Z'),
+      month: '2026-08',
+    });
+    expect(m.label).toBe('August 2026');
+    expect(m.startIso).toBe('2026-08-01T00:00:00.000Z');
+    expect(m.endIso).toBe('2026-09-01T00:00:00.000Z');
+  });
+
+  it('rolls the end bound into the next year for December', () => {
+    const m = resolveReportMonth({ month: '2026-12' });
+    expect(m.label).toBe('December 2026');
+    expect(m.startIso).toBe('2026-12-01T00:00:00.000Z');
+    expect(m.endIso).toBe('2027-01-01T00:00:00.000Z');
+  });
+
+  it('tiles consecutive months with no gap and no overlap', () => {
+    // A charge can never fall in both months, or in neither.
+    const july = resolveReportMonth({ month: '2026-07' });
+    const august = resolveReportMonth({ month: '2026-08' });
+    expect(july.endIso).toBe(august.startIso);
+  });
+
+  it('rejects a malformed month instead of guessing', () => {
+    expect(() => resolveReportMonth({ month: 'August' })).toThrow(/YYYY-MM/);
+    expect(() => resolveReportMonth({ month: '2026-8' })).toThrow(/YYYY-MM/);
+    expect(() => resolveReportMonth({ month: '2026-13' })).toThrow(/01-12/);
+  });
+});
+
+// A failed run used to look exactly like a month nobody read their mail.
+describe('monthlyDuesSummaryFailureEmail', () => {
+  const email = monthlyDuesSummaryFailureEmail({
+    monthLabel: 'August 2026',
+    errorMessage: 'Resend error: domain not verified',
+    ranAtLabel: 'August 7, 2026, 10:00 AM MDT',
+  });
+
+  it('names the month and flags the failure in the subject', () => {
+    expect(email.subject).toContain('FAILED');
+    expect(email.subject).toContain('August 2026');
+  });
+
+  it('carries the underlying error and the way to re-run it', () => {
+    for (const body of [email.html, email.text]) {
+      expect(body).toContain('domain not verified');
+      expect(body).toContain('?month=YYYY-MM');
+    }
   });
 });

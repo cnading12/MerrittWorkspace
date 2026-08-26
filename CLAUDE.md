@@ -66,6 +66,41 @@ This is only necessary because the project is on the Supabase Free plan. Paid
 projects are never auto-paused — if the project is ever upgraded to Pro, this
 job becomes optional and can be retired deliberately (not "cleaned up").
 
+## The monthly dues summary must leave a trace
+
+`app/api/cron/monthly-dues-summary` runs on the **7th** — dues charge on the
+1st, and the extra six days let ACH settle so the report shows outcomes rather
+than a screen of "processing". It goes to `STAFF_NOTIFICATION_EMAILS`
+(member services + manager) and **never** to a member.
+
+Its subject line is the report:
+
+- clean month — `Monthly Dues Summary — August 2026: 12 paid, $6,300.00 collected`
+- anything wrong — `⚠️ Monthly Dues Summary — August 2026: 1 failed, 2 missing, 9 paid`
+
+The email itself used to be the only evidence the job existed, which meant a
+run that threw was indistinguishable from a quiet month — nothing arrives
+either way, and Vercel's cron dashboard has long since rolled over by the time
+anyone asks. So a run now leaves a receipt whether it succeeds or fails:
+
+- a `cron_runs` row under the job name `monthly-dues-summary`, and
+- on failure, a staff alert naming the error, deduped per UTC day per month.
+
+Both are best effort and neither is the verdict — a failed audit insert must
+never make a delivered report look undelivered, and a failed alert must not
+change how the run reports itself. The Resend send is what decides.
+
+`?month=YYYY-MM` re-runs a past month, which is how a lost report gets sent
+after the fact. It is the reason `payment_history` is queried with **both**
+bounds: start and end are each UTC midnight on the 1st, so consecutive months
+tile exactly and a charge can never land in two reports or in none.
+`resolveReportMonth` owns that arithmetic and
+`__tests__/monthly-dues-summary.test.ts` holds the tiling.
+
+Backfills read `members` as it is **today**, so a member who cancelled since
+the report month shows up under their current status, not the one they had
+then. Fine for reconciling a missed send; not a historical record.
+
 ## Café membership — the cap lives in code
 
 `cafe_membership` ($100/mo, `lib/portal/pricing.ts`) is open seating on the café
