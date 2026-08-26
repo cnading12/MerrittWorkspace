@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Footer from '@/components/Footer';
 import PageHero from '@/components/marketing/PageHero';
 import { BLUR } from '@/components/marketing/blur';
+import { buildingAgeYears } from '@/lib/seo/business';
 
 export default function AboutPage() {
   return (
@@ -20,15 +21,30 @@ export default function AboutPage() {
         lead="For over a century this was the heart of Sloan's Lake. It still is. The people in it just work for themselves now."
       />
 
-      {/* The story — long-form, one column, a lot of air. */}
+      {/* The story — heading left, prose right.
+
+          The two columns used to be 4 and 7 with the second starting at 6,
+          which left a whole empty column down the middle of the section and a
+          short heading stranded at the top of a long block of text. 5 and 7,
+          adjacent, closes the gap; `items-start` keeps the heading beside the
+          first paragraph instead of centred against the whole column. */}
       <section className="mw-section">
         <div className="mw-container">
-          <div className="grid gap-12 md:grid-cols-12 md:gap-16">
-            <div className="md:col-span-4">
+          <div className="grid items-start gap-10 md:grid-cols-12 md:gap-14">
+            <div className="md:col-span-5 md:pr-6">
               <p className="mw-eyebrow mb-5">Our story</p>
               <h2 className="mw-h2">Where history meets the working day.</h2>
+              {/* The line that used to be a pull quote hanging off the bottom
+                  of the prose column. Set here as a standfirst instead: it
+                  still carries the weight, it no longer interrupts the story
+                  it was quoting, and it fills the column the heading would
+                  otherwise leave empty for the length of three paragraphs. */}
+              <p className="mt-8 text-[19px] leading-relaxed text-ink md:mt-10 md:text-xl">
+                We are not the biggest or the flashiest workspace in Denver. We
+                are the one in a neighborhood, in a building that mattered to it.
+              </p>
             </div>
-            <div className="md:col-span-7 md:col-start-6">
+            <div className="md:col-span-7">
               <div className="space-y-6">
                 <p className="mw-body">
                   When Merritt Church closed after serving Sloan&rsquo;s Lake for
@@ -41,9 +57,9 @@ export default function AboutPage() {
                   He restored the sanctuary and the adjacent structure into
                   Merritt Workspace, keeping the soaring ceilings, the original
                   wood floors, the stained glass and the acoustics that make the
-                  room what it is. The burnt orange concrete floors that run
-                  through the workspace side are original too, and they are the
-                  reason the whole place reads warm.
+                  room what it is. The burnt orange concrete floors on the
+                  workspace side went in during that restoration, poured to pick
+                  up the warmth of the brick rather than fight it.
                 </p>
                 <p className="mw-body">
                   The former sanctuary is now the flex space and the café: member
@@ -52,14 +68,6 @@ export default function AboutPage() {
                   solo freelancers to teams of eight.
                 </p>
               </div>
-
-              <figure className="mt-14 border-l-2 border-accent pl-6 md:mt-16 md:pl-8">
-                <blockquote className="font-display text-2xl font-semibold leading-snug tracking-tight text-ink md:text-[2rem]">
-                  We are not the biggest or the flashiest workspace in Denver.
-                  We are the one in a neighborhood, in a building that mattered
-                  to it.
-                </blockquote>
-              </figure>
             </div>
           </div>
         </div>
@@ -87,7 +95,7 @@ export default function AboutPage() {
               <p className="mt-4 mw-body">
                 We are the only business on a residential block. Members know
                 each other, and the neighborhood knows us. That is not a
-                marketing line. It is a consequence of where the building sits.
+                marketing line. It is a result of where the building sits.
               </p>
             </div>
             <div>
@@ -177,7 +185,7 @@ export default function AboutPage() {
               We honor what this building was by making it a place where real
               community happens, where the work gets done, the connections are
               worth having, and you belong somewhere. That has been the job here
-              for a hundred and nineteen years.
+              for {buildingAgeYears()} years.
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
               <Link href="/membership" className="mw-btn bg-accent text-white hover:bg-accent-deep">

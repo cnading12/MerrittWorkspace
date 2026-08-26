@@ -9,12 +9,19 @@
 // Because the page around it is public, this component handles the signed-out
 // case itself — it renders a sign-in prompt rather than redirecting, so a
 // prospect reading about the room isn't bounced to a login screen.
+//
+// The CALENDAR is shown either way. Signed out it used to be hidden behind the
+// prompt, which meant the single question this page most needs to answer — is
+// the room free when I want it — could only be asked by someone who already
+// had an account. It is now above the prompt, for everyone; the availability
+// endpoint returns time ranges and nothing identifying.
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import FlexCalendar from '@/components/portal/FlexCalendar';
 import { FLEX_OPEN_24H, FLEX_CLOSE_24H, FLEX_HOURS_LABEL } from '@/lib/hours';
+import { FLEX_SPACE } from '@/lib/seo/business';
 
 interface FlexBooking {
   id: string;
@@ -210,45 +217,53 @@ export default function FlexBooking() {
     return <p className="text-ink-60">Loading&hellip;</p>;
   }
 
-  // Signed out: the room is described in full above this point, so all that's
-  // missing is a way in. Two audiences land here — members who aren't signed
-  // in, and non-members who just want to rent the hall. The second group used
-  // to hit a dead end; they now get pointed at Merritt Wellness, which handles
-  // public bookings of the same building outside member hours.
+  // Signed out: the calendar first, because "is it free on Thursday" is the
+  // question, then the two ways in. Two audiences land here — members who
+  // aren't signed in, and non-members who want to rent the hall. The second
+  // group used to hit a dead end; they get the rate and the booking link for
+  // Merritt Wellness, which shares the building and takes public bookings.
   if (!token) {
     return (
-      <div className="border border-clay bg-bone p-6 md:p-8">
-        <h3 className="mw-h3">Members book here.</h3>
-        <p className="mt-4 mw-body">
-          Sign in to see the calendar, check your remaining hours for the week,
-          and reserve the room. Flex space is included with every recurring
-          membership.
-        </p>
-        <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-          <Link href="/portal/login" className="mw-btn-primary">
-            Member sign in
-          </Link>
-          <Link href="/membership" className="mw-btn-ghost">
-            See membership options
-          </Link>
-        </div>
+      <div className="space-y-6">
+        <FlexCalendar authToken={null} />
 
-        <div className="mt-8 border-t border-clay pt-6">
-          <h4 className="font-display text-lg font-semibold text-ink">
-            Not a member?
-          </h4>
-          <p className="mt-3 mw-body">
-            You can still book the hall. Evening, weekend and public bookings
-            run through Merritt Wellness, which shares the building.
+        <div className="border border-clay bg-bone p-6 md:p-8">
+          <h3 className="mw-h3">Members book here.</h3>
+          <p className="mt-4 mw-body">
+            Sign in to check your remaining hours for the week and reserve the
+            room against them. Flex space credit is included with every
+            recurring membership.
           </p>
-          <a
-            href="https://www.merrittwellness.net/booking"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-5 inline-block border-b border-accent pb-1 text-[15px] font-medium text-accent-deep transition hover:border-accent-deep"
-          >
-            Book as a non-member at Merritt Wellness
-          </a>
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <Link href="/portal/login" className="mw-btn-primary">
+              Member sign in
+            </Link>
+            <Link href="/membership" className="mw-btn-ghost">
+              See membership options
+            </Link>
+          </div>
+
+          <div className="mt-8 border-t border-clay pt-6">
+            <h4 className="font-display text-lg font-semibold text-ink">
+              Not a member?
+            </h4>
+            <p className="mt-3 mw-body">
+              You can still rent the hall, at{' '}
+              <strong className="font-semibold text-ink">
+                ${FLEX_SPACE.publicHourlyRate} an hour
+              </strong>
+              . Public, evening and weekend bookings run through Merritt
+              Wellness, which shares the building and keeps the calendar above.
+            </p>
+            <a
+              href={FLEX_SPACE.publicBookingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-block border-b border-accent pb-1 text-[15px] font-medium text-accent-deep transition hover:border-accent-deep"
+            >
+              Book at ${FLEX_SPACE.publicHourlyRate}/hour with Merritt Wellness
+            </a>
+          </div>
         </div>
       </div>
     );

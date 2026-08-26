@@ -1,24 +1,80 @@
 // Read-only availability endpoint that powers the visual calendar on the
-// flex space page. Returns the busy windows in a date range so members can
-// see when the space is already reserved before submitting a booking.
+// flex space page. Returns the busy windows in a date range so anyone can see
+// when the space is already reserved before submitting a booking.
 //
-// Privacy: only time ranges (and an `is_self` flag for the caller's own
-// bookings) are returned — no member names or emails.
+// PUBLIC, deliberately. The calendar lives on /member-resources/flex-space,
+// which is a marketing page: the two people most likely to ask "is the hall
+// free on Thursday" are a prospective member deciding whether the room is
+// worth joining for, and someone weighing an event booking. Both used to see
+// a sign-in wall where the calendar should have been. Requiring an account to
+// look at whether a room is busy protected nothing.
+//
+// Privacy: only time ranges are returned — never a name, an email, a member id
+// or an event title. Authentication is OPTIONAL and changes exactly one thing:
+// with a valid member token, that member's own bookings come back flagged
+// `is_self` so the calendar can colour them differently. A bad or absent token
+// is not an error; it just means nothing is flagged.
+//
+// Anonymous callers are rate limited per IP. The handler runs two Supabase
+// reads and a Google freebusy lookup, so it is worth more than a static asset
+// to serve; a signed-in member is exempt, since they are already identified.
 //
 // This endpoint does NOT change booking logic. Source of truth for booking
 // validation is still the POST /api/flex-bookings handler.
 import { NextRequest, NextResponse } from 'next/server';
-import { requireMember, PortalError } from '@/lib/portal/auth';
+import { getUserFromRequest, PortalError } from '@/lib/portal/auth';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { checkFreebusy } from '@/lib/calendar/freebusy';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 const MAX_RANGE_DAYS = 31;
 
+// Generous: the calendar fires one request per week the visitor pages through,
+// so a person browsing a couple of months ahead stays well inside it.
+const ANON_RATE_LIMIT = { windowMs: 60_000, max: 30 };
+
+/**
+ * The member id whose bookings should be marked `is_self`, or null.
+ *
+ * Never throws. An expired, malformed or missing token is the normal case for
+ * a public visitor, not a failure — it simply means no booking belongs to the
+ * caller.
+ */
+async function optionalMemberId(req: NextRequest): Promise<string | null> {
+  if (!req.headers.get('authorization')) return null;
+  try {
+    const user = await getUserFromRequest(req);
+    if (!user) return null;
+    const sb = getServiceSupabase();
+    const { data } = await sb
+      .from('members')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    return (data?.id as string | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
-    const member = await requireMember(req);
+    const memberId = await optionalMemberId(req);
+
+    if (!memberId) {
+      const { limited, retryAfterSeconds } = checkRateLimit(
+        `flex-availability:${getClientIp(req)}`,
+        ANON_RATE_LIMIT,
+      );
+      if (limited) {
+        return NextResponse.json(
+          { error: 'Too many requests. Please try again shortly.' },
+          { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } },
+        );
+      }
+    }
 
     const { searchParams } = new URL(req.url);
     const startParam = searchParams.get('start');
@@ -57,7 +113,7 @@ export async function GET(req: NextRequest) {
     const flexRows = (rows || []).map((r: any) => ({
       start_time: r.start_time as string,
       end_time: r.end_time as string,
-      is_self: r.member_id === member.id,
+      is_self: memberId !== null && r.member_id === memberId,
       source: 'flex' as const,
     }));
 

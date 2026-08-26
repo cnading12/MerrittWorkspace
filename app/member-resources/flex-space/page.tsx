@@ -4,6 +4,8 @@ import Footer from '@/components/Footer';
 import PageHero from '@/components/marketing/PageHero';
 import { BLUR } from '@/components/marketing/blur';
 import FlexBooking from '@/components/flex/FlexBooking';
+import { FLEX_SPACE } from '@/lib/seo/business';
+import { FLEX_HOURS_SHORT } from '@/lib/hours';
 
 // The flex space, described in full and bookable in the same place.
 //
@@ -34,21 +36,26 @@ export default function FlexSpacePage() {
           <div className="grid gap-12 md:grid-cols-12 md:gap-16">
             <div className="md:col-span-5">
               <p className="mw-eyebrow mb-5">The room</p>
-              <h2 className="mw-h2">Not a meeting room. A whole building.</h2>
+              <h2 className="mw-h2">Not a meeting room. A hall of your own.</h2>
               <p className="mt-6 mw-body">
-                The building next door is a restored 1905 church, and members
-                get the run of it during the working day. The hall seats a
-                hundred comfortably in rows, or clears completely for a
-                workshop, a class or a launch. The stained glass is original,
-                the floor is the original hardwood, and there is a projector, a
-                drop-down screen and a sound system already in the room.
+                The building next door is a restored 1905 church, and the hall
+                at the back of it is what you book. It seats a hundred
+                comfortably in rows, or clears completely for a workshop, a
+                class or a launch. The stained glass is original, the floor is
+                the original hardwood, and there is a projector, a drop-down
+                screen and a sound system already in the room.
+              </p>
+              <p className="mt-5 mw-body">
+                Booking it does not close the building. The café at the front
+                is a separate room and stays open to every member through the
+                working day, whether the hall behind it is holding an all-hands
+                or standing empty. Nobody loses their afternoon coffee spot
+                because somebody else booked the hall.
               </p>
               <p className="mt-5 mw-body">
                 Run an all-hands in it. Teach something. Bring a client
-                somewhere that isn&rsquo;t a coffee shop. Or take your laptop to
-                the café at the front when you just want a different room to
-                work in for an afternoon. There is a ping-pong table in the hall
-                too, out whenever the chairs are pushed back.
+                somewhere that isn&rsquo;t a coffee shop. There is a ping-pong
+                table in the hall too, out whenever the chairs are pushed back.
               </p>
             </div>
 
@@ -89,7 +96,7 @@ export default function FlexSpacePage() {
             </div>
             <div>
               <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Hours</dt>
-              <dd className="mt-2 font-display text-3xl font-semibold text-ink">8&ndash;4</dd>
+              <dd className="mt-2 font-display text-3xl font-semibold text-ink">{FLEX_HOURS_SHORT}</dd>
               <dd className="mt-2 text-[15px] leading-relaxed text-ink-60">
                 Weekdays, Mountain Time. Book in half-hour steps, same day or up
                 to 60 days out.
@@ -99,8 +106,9 @@ export default function FlexSpacePage() {
               <dt className="text-[13px] uppercase tracking-[0.14em] text-ink-60">Beyond that</dt>
               <dd className="mt-2 font-display text-3xl font-semibold text-ink">$75<span className="text-base font-normal text-ink-60"> /hr</span></dd>
               <dd className="mt-2 text-[15px] leading-relaxed text-ink-60">
-                Once your weekly hours are used. Evening and weekend events are
-                quoted separately, at a member rate.
+                The member rate, once your weekly hours are used. Non-members
+                rent the hall at ${FLEX_SPACE.publicHourlyRate}/hr. Evening and
+                weekend events are quoted separately.
               </dd>
             </div>
             <div>
@@ -145,7 +153,8 @@ export default function FlexSpacePage() {
                 through the working day with table seating, natural light and
                 the stained glass still in the windows. You don&rsquo;t book it
                 and it doesn&rsquo;t touch your weekly hours — walk over and sit
-                down.
+                down. It stays open when the hall behind it is booked, so a
+                flex space reservation never costs anyone else a seat.
               </p>
               <p className="mt-5 mw-body">
                 Most members end up using their desk for heads-down work and the
@@ -214,6 +223,23 @@ export default function FlexSpacePage() {
               or{' '}
               <Link href="/contact" className="mw-inline-link">send us a note</Link>.
             </p>
+            <p className="mt-5 mw-body">
+              <strong className="font-semibold text-ink">
+                You do not need a membership to use this room.
+              </strong>{' '}
+              Non-members rent the hall at ${FLEX_SPACE.publicHourlyRate} an
+              hour. Those bookings go through Merritt Wellness, which shares the
+              building and keeps the same calendar the availability grid above
+              is reading, so what you see there is what is actually free.
+            </p>
+            <a
+              href={FLEX_SPACE.publicBookingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mw-link mt-6"
+            >
+              Book the hall as a non-member
+            </a>
           </div>
         </div>
       </section>

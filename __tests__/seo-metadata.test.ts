@@ -164,10 +164,25 @@ describe('the café tier is quoted consistently', () => {
     }
   });
 
-  it('renders those FAQs on its page through the block that ships the markup', () => {
+  it('sends the page on to where those FAQs are rendered', () => {
+    // The café page used to close with a four-question FaqBlock of its own.
+    // It came off with the FAQ blocks on the other membership pages: the
+    // answers restated the sections above them, and a visitor who had read
+    // the page read it twice.
+    //
+    // The invariant that matters is unchanged — visible questions and FAQPage
+    // markup still ship together, on /member-resources/faqs, which renders
+    // every entry in lib/seo/faqs.ts. What the product page owes the reader is
+    // a route to them, so that is what is asserted.
     const page = read('app/membership/cafe/page.tsx');
-    expect(page).toContain('FaqBlock');
-    expect(page).toContain('cafe-what');
+    expect(page).toContain('MoreQuestions');
+    expect(page).toContain('cafe-vs-desk');
+
+    // /member-resources/faqs is where the FAQPage markup for the whole set
+    // lives, over every entry in FAQS — including the café ones.
+    const faqLayout = read('app/member-resources/faqs/layout.tsx');
+    expect(faqLayout).toContain('FaqSchema');
+    expect(faqLayout).toContain('faqs={FAQS}');
   });
 });
 
