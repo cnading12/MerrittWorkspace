@@ -219,7 +219,7 @@ export default function FlexSpacePage() {
             </p>
             <p className="mt-5 mw-body">
               For an evening or weekend booking, call or text{' '}
-              <a href="tel:7203579499" className="mw-inline-link">(720) 357-9499</a>{' '}
+              <a href="tel:3033598337" className="mw-inline-link">(303) 359-8337</a>{' '}
               or{' '}
               <Link href="/contact" className="mw-inline-link">send us a note</Link>.
             </p>

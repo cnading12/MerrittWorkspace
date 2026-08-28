@@ -1147,15 +1147,18 @@ export const PORTAL_FROM =
   'Merritt Workspace Member Services <memberservices@merrittworkspace.net>';
 
 // Sender used specifically for onboarding (approval + first-time sign-in
-// link). Uses a distinct, descriptive name mirroring the application
-// confirmation email, which reliably lands in the inbox.
+// link). Sends from member services, the desk that handles the replies these
+// emails prompt, and keeps the distinct "Membership" display name that
+// reliably lands in the inbox rather than reusing PORTAL_FROM.
 export const PORTAL_ONBOARDING_FROM =
-  'Merritt Workspace Membership <manager@merrittworkspace.net>';
+  'Merritt Workspace Membership <memberservices@merrittworkspace.net>';
 
 // Monitored mailbox applicants/members can reply to. Including an explicit
 // Reply-To header improves deliverability and gives recipients a clear
-// path to respond.
-export const PORTAL_REPLY_TO = 'manager@merrittworkspace.net';
+// path to respond. Member services is the desk that answers fastest, so
+// replies land there even on sends that go out under the manager's From
+// address — a Reply-To that differs from the From is normal and expected.
+export const PORTAL_REPLY_TO = 'memberservices@merrittworkspace.net';
 
 // Mailbox used for `List-Unsubscribe`. Receivers prefer a monitored
 // member-services address over a no-reply pattern.

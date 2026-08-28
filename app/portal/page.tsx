@@ -3138,34 +3138,8 @@ function OnboardingTab({
         </p>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {/* Manager */}
-          <div className="border border-clay p-4 bg-orange-50">
-            <h4 className="font-semibold text-ink">Manager</h4>
-            <p className="text-xs text-ink-60 mt-1">
-              Best for: new member onboarding, tours, membership-level changes, and
-              high-level workspace matters.
-            </p>
-            <ul className="mt-3 text-sm text-ink-60 space-y-1">
-              <li>
-                <span className="font-medium">Phone:</span>{' '}
-                <a href="tel:+17203579499" className="text-orange-700 hover:underline">
-                  (720) 357-9499
-                </a>
-              </li>
-              <li>
-                <span className="font-medium">Email:</span>{' '}
-                <a
-                  href="mailto:manager@merrittworkspace.net"
-                  className="text-orange-700 hover:underline break-all"
-                >
-                  manager@merrittworkspace.net
-                </a>
-              </li>
-            </ul>
-          </div>
-
           {/* Member Services */}
-          <div className="border border-clay p-4 bg-linen">
+          <div className="border border-clay p-4 bg-orange-50">
             <h4 className="font-semibold text-ink">Member Services</h4>
             <p className="text-xs text-ink-60 mt-1">
               Best for: day-to-day member support, building access code setup, cubbies,
@@ -3186,6 +3160,32 @@ function OnboardingTab({
                   className="text-orange-700 hover:underline break-all"
                 >
                   memberservices@merrittworkspace.net
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Manager */}
+          <div className="border border-clay p-4 bg-linen">
+            <h4 className="font-semibold text-ink">Manager</h4>
+            <p className="text-xs text-ink-60 mt-1">
+              Best for: new member onboarding, tours, membership-level changes, and
+              high-level workspace matters.
+            </p>
+            <ul className="mt-3 text-sm text-ink-60 space-y-1">
+              <li>
+                <span className="font-medium">Phone:</span>{' '}
+                <a href="tel:+17203579499" className="text-orange-700 hover:underline">
+                  (720) 357-9499
+                </a>
+              </li>
+              <li>
+                <span className="font-medium">Email:</span>{' '}
+                <a
+                  href="mailto:manager@merrittworkspace.net"
+                  className="text-orange-700 hover:underline break-all"
+                >
+                  manager@merrittworkspace.net
                 </a>
               </li>
             </ul>

@@ -68,6 +68,13 @@ const formatBookingDate = (
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
+// Inbound enquiries — new applications and contact-form submissions — go to
+// both desks so neither is blind to someone waiting on a reply. Operational
+// copies (orders, booking confirmations) stay member-services-only: that is
+// the desk that acts on them, and cc'ing the manager on every snackshop
+// order would bury the mail that does need them.
+const STAFF_EMAILS = [MEMBER_SERVICES_EMAIL, MANAGER_EMAIL];
+
 // Production site URL. Emails require absolute asset URLs — relative paths
 // (e.g. "/images/...") won't resolve inside a mail client. We reference the
 // logo as a PNG rather than the navbar's WebP because several email clients
@@ -399,14 +406,15 @@ Thank you for choosing Merritt Workspace!
 
               <p>We'll be in touch soon to move forward with your membership. Thank you for choosing Merritt Workspace!</p>
               
-              <a href="mailto:manager@merrittworkspace.net" class="button">Questions? Contact Us</a>
+              <a href="mailto:memberservices@merrittworkspace.net" class="button">Questions? Contact Us</a>
             </div>
 
             <div class="footer">
               <p><strong>Merritt Workspace</strong></p>
               <p>Where Work Meets Community</p>
               <p>2246 Irving Street, Denver, CO 80211</p>
-              <p>Email: manager@merrittworkspace.net | Phone: (720) 357-9499</p>
+              <p>Email: memberservices@merrittworkspace.net | Phone: (303) 359-8337</p>
+              <p>Manager: manager@merrittworkspace.net | (720) 357-9499</p>
             </div>
           </div>
         </body>
@@ -442,7 +450,8 @@ Our Amenities:
 
 We'll be in touch soon to move forward with your membership.
 
-Questions? Contact us at manager@merrittworkspace.net or (720) 357-9499
+Questions? Contact us at memberservices@merrittworkspace.net or (303) 359-8337
+Prefer the manager? manager@merrittworkspace.net or (720) 357-9499
 
 Welcome to the community!
 
@@ -567,7 +576,7 @@ export async function sendMembershipApplicationEmail(data: {
         // Send to applicant
         const applicantEmail = await resend.emails.send({
             from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
-            replyTo: MANAGER_EMAIL,
+            replyTo: MEMBER_SERVICES_EMAIL,
             to: data.to,
             subject: template.subject,
             html: template.html,
@@ -578,10 +587,10 @@ export async function sendMembershipApplicationEmail(data: {
 
         await delay(1000);
 
-        // Send notification to manager
+        // Send notification to both staff desks
         const managerEmail = await resend.emails.send({
             from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
-            to: MANAGER_EMAIL,
+            to: STAFF_EMAILS,
             subject: `🆕 New Membership Application - ${data.applicantName} (${data.membershipType})`,
             html: `
         <div style="background: #f0f0f0; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
@@ -614,46 +623,8 @@ export async function sendMembershipApplicationEmail(data: {
             text: `NEW MEMBERSHIP APPLICATION\n\nApplicant: ${data.applicantName}\nEmail: ${data.email}\nMembership Type: ${data.membershipType}\nApplication ID: ${data.applicationId}\nSubmitted: ${formatDenverDateTime()}\n\nNext Steps:\n1. Review the application\n2. Contact ${data.applicantName} to schedule a tour\n3. Arrange their free trial day\n4. Process membership approval\n\nACTION REQUIRED: Please follow up within 1-2 business days.\n\nA copy of the welcome email was also sent to the applicant.`,
         });
 
-        await delay(1000);
-
-        // Send notification to member services
-        const memberServicesEmail = await resend.emails.send({
-            from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
-            to: MEMBER_SERVICES_EMAIL,
-            subject: `🆕 New Membership Application - ${data.applicantName} (${data.membershipType})`,
-            html: `
-        <div style="background: #f0f0f0; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
-          <h3 style="margin-top: 0;">New Membership Application Received</h3>
-        </div>
-
-        <div style="background: #fff8e1; padding: 15px; border-radius: 5px; border-left: 4px solid #ed7611;">
-          <h4>Application Details:</h4>
-          <p><strong>Name:</strong> ${data.applicantName}</p>
-          <p><strong>Email:</strong> ${data.email}</p>
-          <p><strong>Membership Type:</strong> ${data.membershipType}</p>
-          <p><strong>Application ID:</strong> ${data.applicationId}</p>
-          <p><strong>Submitted:</strong> ${formatDenverDateTime()}</p>
-        </div>
-
-        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-          <h4>Next Steps:</h4>
-          <ol>
-            <li>Review the application in your dashboard</li>
-            <li>Contact ${data.applicantName} to schedule a tour</li>
-            <li>Arrange their free trial day</li>
-            <li>Process membership approval</li>
-          </ol>
-          <p><strong>Action Required:</strong> Please follow up within 1-2 business days as promised.</p>
-        </div>
-
-        <hr style="margin: 20px 0;">
-        <p style="color: #666; font-size: 14px;"><em>A copy of the welcome email was also sent to the applicant.</em></p>
-      `,
-            text: `NEW MEMBERSHIP APPLICATION\n\nApplicant: ${data.applicantName}\nEmail: ${data.email}\nMembership Type: ${data.membershipType}\nApplication ID: ${data.applicationId}\nSubmitted: ${formatDenverDateTime()}\n\nNext Steps:\n1. Review the application\n2. Contact ${data.applicantName} to schedule a tour\n3. Arrange their free trial day\n4. Process membership approval\n\nACTION REQUIRED: Please follow up within 1-2 business days.\n\nA copy of the welcome email was also sent to the applicant.`,
-        });
-
-        console.log('Membership application email sent to applicant, manager, and member services:', { applicantEmail, managerEmail, memberServicesEmail });
-        return { applicantEmail, managerEmail, memberServicesEmail };
+        console.log('Membership application email sent to applicant and both staff desks:', { applicantEmail, managerEmail });
+        return { applicantEmail, managerEmail };
     } catch (error) {
         console.error('Failed to send membership application email:', error);
         throw error;

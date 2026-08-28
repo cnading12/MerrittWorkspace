@@ -54,9 +54,9 @@ export const BUSINESS = {
   neighborhood: "Sloan's Lake",
   crossStreets: '23rd and Irving',
 
-  telephone: '+1-720-357-9499',
-  telephoneDisplay: '(720) 357-9499',
-  telephoneHref: 'tel:+17203579499',
+  telephone: '+1-303-359-8337',
+  telephoneDisplay: '(303) 359-8337',
+  telephoneHref: 'tel:+13033598337',
   email: 'memberservices@merrittworkspace.net',
 
   mapUrl: 'https://www.google.com/maps?cid=10105178442159244045',

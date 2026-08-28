@@ -3,7 +3,7 @@ import BreadcrumbSchema from "@/components/seo/BreadcrumbSchema";
 
 export const metadata: Metadata = {
   title: "Contact & Directions | Sloan's Lake",
-  description: "Visit Merritt Workspace at 2246 Irving St, Denver CO 80211. Schedule a free tour of our Sloan's Lake coworking space. Call (720) 357-9499. 3 minutes to I-25, free parking.",
+  description: "Visit Merritt Workspace at 2246 Irving St, Denver CO 80211. Schedule a free tour of our Sloan's Lake coworking space. Call (303) 359-8337. 3 minutes to I-25, free parking.",
   keywords: [
     "coworking space Sloan's Lake",
     "office space 80211",
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Contact & Location | Merritt Workspace Denver",
-    description: "2246 Irving St, Sloan's Lake, Denver. Schedule a free tour and trial day. Call (720) 357-9499. 3 min to I-25, free parking available.",
+    description: "2246 Irving St, Sloan's Lake, Denver. Schedule a free tour and trial day. Call (303) 359-8337. 3 min to I-25, free parking available.",
     url: "https://merrittworkspace.net/contact",
     images: [
       {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Contact & Location | Merritt Workspace Denver",
     description:
-      "2246 Irving St, Sloan's Lake, Denver. Book a tour or a free trial day — (720) 357-9499. Free parking.",
+      "2246 Irving St, Sloan's Lake, Denver. Book a tour or a free trial day — (303) 359-8337. Free parking.",
     images: ["/images/exterior/campus.webp"],
   },
   alternates: {

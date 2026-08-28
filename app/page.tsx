@@ -75,10 +75,10 @@ export default function HomePage() {
                 Book a free trial day
               </Link>
               <a
-                href="tel:7203579499"
+                href="tel:3033598337"
                 className="inline-flex items-center justify-center border border-bone/40 px-7 py-4 text-[15px] font-medium text-bone transition hover:border-bone hover:bg-bone hover:text-ink"
               >
-                (720) 357-9499
+                (303) 359-8337
               </a>
             </div>
           </div>
@@ -436,8 +436,8 @@ export default function HomePage() {
                 <p className="mt-5 text-[15px] text-ink-60">
                   A full day in the space before you commit to anything. Call or
                   text{' '}
-                  <a href="tel:7203579499" className="border-b border-clay pb-0.5 text-ink transition hover:border-ink">
-                    (720) 357-9499
+                  <a href="tel:3033598337" className="border-b border-clay pb-0.5 text-ink transition hover:border-ink">
+                    (303) 359-8337
                   </a>
                   .
                 </p>

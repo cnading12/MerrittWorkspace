@@ -137,10 +137,10 @@ export default function FAQPage() {
                 Email member services
               </a>
               <a
-                href="tel:720-357-9499"
+                href="tel:303-359-8337"
                 className="mw-btn border border-bone/40 text-bone hover:bg-bone hover:text-ink"
               >
-                Call (720) 357-9499
+                Call (303) 359-8337
               </a>
             </div>
             <p className="mt-8 text-[15px] text-bone/60">

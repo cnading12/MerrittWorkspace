@@ -119,8 +119,8 @@ export default function CafeMembershipPage() {
             <Link href="/membership/apply?plan=cafe_membership" className="mw-btn-primary">
               Apply for a café membership
             </Link>
-            <a href="tel:+17203579499" className="mw-btn-ghost">
-              (720) 357-9499
+            <a href="tel:+13033598337" className="mw-btn-ghost">
+              (303) 359-8337
             </a>
           </div>
         </div>

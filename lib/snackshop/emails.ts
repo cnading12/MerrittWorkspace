@@ -179,7 +179,7 @@ Merritt Workspace Team
   // Avoid Resend's 2 req/sec rate limit on the free plan.
   await delay(1000);
 
-  // Member services notification
+  // Send member services notification
   try {
     await resend.emails.send({
       from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',

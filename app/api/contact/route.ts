@@ -21,6 +21,10 @@ const resend = {
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
+// Every contact-form submission goes to both desks. Member services leads the
+// list and answers fastest; the manager is copied so nothing is invisible.
+const STAFF_EMAILS = [MEMBER_SERVICES_EMAIL, MANAGER_EMAIL];
+
 const INQUIRY_LABELS: Record<string, string> = {
     general: 'General Information',
     trial_day: 'Book a Free Trial Day',
@@ -168,7 +172,7 @@ export async function POST(request: NextRequest) {
         if (!process.env.RESEND_API_KEY) {
             console.error('RESEND_API_KEY not configured');
             return NextResponse.json(
-                { error: 'Email system not configured. Please call us at (720) 357-9499.' },
+                { error: 'Email system not configured. Please call us at (303) 359-8337.' },
                 { status: 500 }
             );
         }
@@ -252,47 +256,27 @@ ${message}
 
 Reply directly to this email to respond to ${name}.`;
 
-        // Helper to avoid Resend rate limit (2 req/sec on free plan)
-        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-        // Send to manager
-        let managerSent = false;
+        // One send addressed to both desks rather than two identical sends:
+        // it halves the calls against Resend's rate limit (2 req/sec on the
+        // free plan) and removes the case where one desk gets a submission
+        // the other never sees.
+        let staffNotified = false;
         try {
             await resend.emails.send({
                 from: 'Merritt Workspace <manager@merrittworkspace.net>',
                 replyTo: email,
-                to: MANAGER_EMAIL,
+                to: STAFF_EMAILS,
                 subject: `New Contact Form: ${inquiryLabel} - ${name}`,
                 html: notificationHtml,
                 text: notificationText,
             });
-            managerSent = true;
-            console.log('Contact form email sent to manager');
+            staffNotified = true;
+            console.log('Contact form email sent to member services and manager');
         } catch (error) {
-            console.error('Failed to send contact form email to manager:', error);
+            console.error('Failed to send contact form email to staff:', error);
         }
 
-        // Wait to avoid Resend rate limit
-        await delay(1000);
-
-        // Send to member services
-        let memberServicesSent = false;
-        try {
-            await resend.emails.send({
-                from: 'Merritt Workspace <manager@merrittworkspace.net>',
-                replyTo: email,
-                to: MEMBER_SERVICES_EMAIL,
-                subject: `New Contact Form: ${inquiryLabel} - ${name}`,
-                html: notificationHtml,
-                text: notificationText,
-            });
-            memberServicesSent = true;
-            console.log('Contact form email sent to member services');
-        } catch (error) {
-            console.error('Failed to send contact form email to member services:', error);
-        }
-
-        if (managerSent || memberServicesSent) {
+        if (staffNotified) {
             return NextResponse.json({
                 success: true,
                 message: 'Your message has been sent. We will get back to you within 24 hours.',
@@ -300,7 +284,7 @@ Reply directly to this email to respond to ${name}.`;
         }
 
         return NextResponse.json(
-            { error: 'Failed to send your message. Please call us at (720) 357-9499.' },
+            { error: 'Failed to send your message. Please call us at (303) 359-8337.' },
             { status: 500 }
         );
     } catch (error) {

@@ -175,7 +175,7 @@ export default function DedicatedDeskPage() {
               </div>
               <p className="mt-6 text-[15px] text-ink-60">
                 Or call and text{' '}
-                <a href="tel:7203579499" className="mw-inline-link">(720) 357-9499</a>.
+                <a href="tel:3033598337" className="mw-inline-link">(303) 359-8337</a>.
               </p>
 
               {!desksFull && (

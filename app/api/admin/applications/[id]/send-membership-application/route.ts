@@ -24,7 +24,9 @@ import { trialConversionEmail } from '@/lib/portal/trialConversionEmail';
 
 export const dynamic = 'force-dynamic';
 
-const MANAGER_EMAIL = 'manager@merrittworkspace.net';
+// Onboarding mail goes out under member services, matching the contact
+// details in the body of the email itself.
+const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -86,8 +88,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
-      replyTo: MANAGER_EMAIL,
+      from: 'Merritt Workspace Membership <memberservices@merrittworkspace.net>',
+      replyTo: MEMBER_SERVICES_EMAIL,
       to: app.email,
       subject,
       html,
