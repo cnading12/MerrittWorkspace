@@ -49,7 +49,9 @@ import { trialConversionEmail } from '@/lib/portal/trialConversionEmail';
 export const dynamic = 'force-dynamic';
 
 const JOB = 'trial-followup';
-const MANAGER_EMAIL = 'manager@merrittworkspace.net';
+// Onboarding mail goes out under member services, matching the contact
+// details in the body of the email itself.
+const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
 // How far back to look. A trial from six months ago does not want a "how was
 // it?" email, and the window keeps the query bounded.
@@ -129,8 +131,8 @@ export async function GET(req: NextRequest) {
 
       try {
         await resend.emails.send({
-          from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
-          replyTo: MANAGER_EMAIL,
+          from: 'Merritt Workspace Membership <memberservices@merrittworkspace.net>',
+          replyTo: MEMBER_SERVICES_EMAIL,
           to: target.email,
           subject,
           html,

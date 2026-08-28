@@ -20,7 +20,12 @@ function getResend(): Resend {
 }
 const resend = { emails: { send: (params: Parameters<Resend['emails']['send']>[0]) => getResend().emails.send(params) } };
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET_SNACKSHOP!;
+const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
+
+// Staff notifications go to both desks. Member services leads the list and
+// answers fastest; the manager is copied so nothing is invisible to them.
+const STAFF_EMAILS = [MEMBER_SERVICES_EMAIL, MANAGER_EMAIL];
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -376,11 +381,11 @@ Merritt Workspace Team
   // Wait to avoid Resend rate limit
   await delay(1000);
 
-  // Send member services notification
+  // Notify both staff desks
   try {
     await resend.emails.send({
       from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
-      to: MEMBER_SERVICES_EMAIL,
+      to: STAFF_EMAILS,
       subject: `💳 Paid Order Complete - $${total.toFixed(2)} - ${order_id}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

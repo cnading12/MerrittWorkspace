@@ -22,7 +22,12 @@ const resend = {
   },
 };
 
+const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
+
+// Staff notifications go to both desks. Member services leads the list and
+// answers fastest; the manager is copied so nothing is invisible to them.
+const STAFF_EMAILS = [MEMBER_SERVICES_EMAIL, MANAGER_EMAIL];
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export interface SnackOrderEmailDetails {
@@ -179,11 +184,11 @@ Merritt Workspace Team
   // Avoid Resend's 2 req/sec rate limit on the free plan.
   await delay(1000);
 
-  // Member services notification
+  // Notify both staff desks
   try {
     await resend.emails.send({
       from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
-      to: MEMBER_SERVICES_EMAIL,
+      to: STAFF_EMAILS,
       subject: `💳 Paid Order Complete - $${total.toFixed(2)} - ${order_id}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

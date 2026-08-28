@@ -1147,10 +1147,11 @@ export const PORTAL_FROM =
   'Merritt Workspace Member Services <memberservices@merrittworkspace.net>';
 
 // Sender used specifically for onboarding (approval + first-time sign-in
-// link). Uses a distinct, descriptive name mirroring the application
-// confirmation email, which reliably lands in the inbox.
+// link). Sends from member services, the desk that handles the replies these
+// emails prompt, and keeps the distinct "Membership" display name that
+// reliably lands in the inbox rather than reusing PORTAL_FROM.
 export const PORTAL_ONBOARDING_FROM =
-  'Merritt Workspace Membership <manager@merrittworkspace.net>';
+  'Merritt Workspace Membership <memberservices@merrittworkspace.net>';
 
 // Monitored mailbox applicants/members can reply to. Including an explicit
 // Reply-To header improves deliverability and gives recipients a clear

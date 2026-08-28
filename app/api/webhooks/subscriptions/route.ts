@@ -20,6 +20,10 @@ export const dynamic = 'force-dynamic';
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
+// Staff notifications go to both desks. Member services leads the list and
+// answers fastest; the manager is copied so nothing is invisible to them.
+const STAFF_EMAILS = [MEMBER_SERVICES_EMAIL, MANAGER_EMAIL];
+
 let resendClient: Resend | null = null;
 function getResend(): Resend | null {
   if (!process.env.RESEND_API_KEY) return null;
@@ -423,7 +427,7 @@ export async function POST(req: NextRequest) {
                 try {
                   await resend.emails.send({
                     from: PORTAL_FROM,
-                    to: MANAGER_EMAIL,
+                    to: STAFF_EMAILS,
                     replyTo: PORTAL_REPLY_TO,
                     subject:
                       'Subscription creation failed for new member',

@@ -26,6 +26,11 @@ const resend = {
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
+// Staff notifications go to both desks. Member services leads the list and is
+// the desk that answers fastest; the manager is copied on everything so
+// nothing is invisible to them.
+const STAFF_EMAILS = [MEMBER_SERVICES_EMAIL, MANAGER_EMAIL];
+
 // Plan catalog used to label & price the items in `selected_plans`. Kept in
 // lockstep with app/membership/apply/page.tsx and lib/portal/pricing.ts.
 const PLAN_CATALOG: Record<string, { label: string; price_cents: number; recurrence: 'monthly' | 'one_time' }> = {
@@ -354,7 +359,7 @@ export async function POST(request: NextRequest) {
       
       const applicantEmail = await resend.emails.send({
         from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
-        replyTo: MANAGER_EMAIL,
+        replyTo: MEMBER_SERVICES_EMAIL,
         to: applicationData.email,
         subject: 'Membership Application Received | Merritt Workspace',
         html: generateApplicantEmailHTML({
@@ -436,7 +441,7 @@ export async function POST(request: NextRequest) {
         console.log(`📧 Sending trial-day info email (${isOfficeTrial ? 'office' : 'dedicated desk'} variant)...`);
         const trialEmail = await resend.emails.send({
           from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
-          replyTo: MANAGER_EMAIL,
+          replyTo: MEMBER_SERVICES_EMAIL,
           to: applicationData.email,
           subject: isOfficeTrial
             ? 'Your Office Trial Day at Merritt Workspace | Confirm Your Office'
@@ -479,14 +484,17 @@ export async function POST(request: NextRequest) {
       await delay(1000);
     }
 
-    // Send notification to manager with full application details
+    // Send notification to both staff inboxes with full application details.
+    // One send addressed to both, rather than two identical sends: it halves
+    // the calls against Resend's rate limit and makes it impossible for the
+    // two desks to end up with different copies of the same application.
     try {
-      console.log('📧 Sending manager notification email...');
-      
+      console.log('📧 Sending staff notification email...');
+
       const subjectPrefix = applicationData.wants_trial_day ? '🟧 TRIAL DAY' : '🆕';
-      const managerEmail = await resend.emails.send({
+      const staffEmail = await resend.emails.send({
         from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
-        to: MANAGER_EMAIL,
+        to: STAFF_EMAILS,
         subject: `${subjectPrefix} New Membership Application - ${applicationData.first_name} ${applicationData.last_name} (${membershipTypeDisplay})`,
         html: generateManagerEmailHTML({
           applicationData,
@@ -503,42 +511,11 @@ export async function POST(request: NextRequest) {
       });
 
       emailResults.manager_sent = true;
-      console.log('✅ Manager email sent:', managerEmail.data?.id);
-    } catch (error: any) {
-      console.error('❌ Manager email failed:', error);
-      emailResults.manager_error = error.message;
-    }
-
-    // Wait to avoid Resend rate limit
-    await delay(1000);
-
-    // Send notification to member services with full application details
-    try {
-      console.log('📧 Sending member services notification email...');
-
-      const memberServicesSubjectPrefix = applicationData.wants_trial_day ? '🟧 TRIAL DAY' : '🆕';
-      const memberServicesEmail = await resend.emails.send({
-        from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
-        to: MEMBER_SERVICES_EMAIL,
-        subject: `${memberServicesSubjectPrefix} New Membership Application - ${applicationData.first_name} ${applicationData.last_name} (${membershipTypeDisplay})`,
-        html: generateManagerEmailHTML({
-          applicationData,
-          membershipTypeDisplay,
-          applicationId,
-          submittedAt
-        }),
-        text: generateManagerEmailText({
-          applicationData,
-          membershipTypeDisplay,
-          applicationId,
-          submittedAt
-        })
-      });
-
       emailResults.member_services_sent = true;
-      console.log('✅ Member services email sent:', memberServicesEmail.data?.id);
+      console.log('✅ Staff email sent:', staffEmail.data?.id);
     } catch (error: any) {
-      console.error('❌ Member services email failed:', error);
+      console.error('❌ Staff email failed:', error);
+      emailResults.manager_error = error.message;
       emailResults.member_services_error = error.message;
     }
 
