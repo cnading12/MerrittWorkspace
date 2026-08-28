@@ -2,8 +2,17 @@
 
 Next.js 14 (App Router) + Supabase + Stripe + Resend, deployed on Vercel.
 
+- `npm run verify` — the full gate: typecheck, then tests, then a production
+  build. Run this before any deploy. `TESTING.md` explains what it does and
+  does not cover, and carries the manual smoke-test process for the flows no
+  test touches (payments, webhooks, bookings, email).
 - `npm test` — Vitest suite in `__tests__/`
-- `npm run lint` — ESLint (`eslint-config-next`)
+- `npm run typecheck` — `tsc --noEmit`
+- `npm run lint` — ESLint (`eslint-config-next`) via flat config. Advisory
+  only: ~490 pre-existing findings, mostly `no-explicit-any`. Not `next lint`,
+  which cannot read this repo's `eslint.config.mjs` and prompts interactively.
+- `npm run build:check` — production build with placeholder secrets, so it
+  works without a `.env.local`
 - Database migrations live in `supabase/migrations/` and are applied by hand
   in the Supabase SQL editor.
 - Scheduled jobs are Vercel Cron entries in `vercel.json`, implemented under
