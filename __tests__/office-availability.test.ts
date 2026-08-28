@@ -5,6 +5,14 @@ import {
   type OfficeAvailabilityMember,
 } from '@/lib/portal/officeAvailability';
 import { OFFICE_SPACES } from '@/lib/portal/seating';
+import {
+  OFFICE_SIZE_BY_NUMBER,
+  OFFICE_SIZES,
+  PLAN_FOR_OFFICE_SIZE,
+  officeSizeOf,
+  summarizeOfficeSizes,
+} from '@/lib/portal/officeSizes';
+import { MEMBERSHIP_PLANS } from '@/lib/portal/pricing';
 
 // Guards the numbers the public membership pages print for private offices.
 // The rule worth protecting: a room is unavailable if ANYONE is in it, whoever
@@ -214,5 +222,74 @@ describe('getOfficeAvailability', () => {
     const a = await getOfficeAvailability(sb);
     expect(a.occupiedOffices).toEqual(['101']);
     expect(a.availableOffices).not.toContain('101');
+  });
+});
+
+
+// Per-size availability. "Is an office free?" is not the question a prospect
+// is asking — someone who needs a room for one and someone who needs a room
+// for six are drawing from pools of two and eight, and the trial form now
+// offers those pools separately.
+describe('office sizes', () => {
+  it('records a size for every office in the building', () => {
+    const missing = OFFICE_SPACES.filter((o) => !OFFICE_SIZE_BY_NUMBER[o]);
+    expect(missing).toEqual([]);
+  });
+
+  it('does not size a room that does not exist', () => {
+    const extra = Object.keys(OFFICE_SIZE_BY_NUMBER).filter((o) => !OFFICE_SPACES.includes(o));
+    expect(extra).toEqual([]);
+  });
+
+  // The split the floor actually has: 106 and 108 are single-desk rooms.
+  it('splits the floor two / five / eight', () => {
+    const bySize = summarizeOfficeSizes(OFFICE_SPACES)!;
+    expect(bySize.single.capacity).toBe(2);
+    expect(bySize.double.capacity).toBe(5);
+    expect(bySize.large.capacity).toBe(8);
+    expect(bySize.single.capacity + bySize.double.capacity + bySize.large.capacity).toBe(
+      OFFICE_SPACES.length
+    );
+  });
+
+  it('counts only the rooms of that size that are free', () => {
+    // Both single-desk rooms occupied, everything else empty.
+    const free = OFFICE_SPACES.filter((o) => o !== '106' && o !== '108');
+    const bySize = summarizeOfficeSizes(free)!;
+    expect(bySize.single).toEqual({ capacity: 2, remaining: 0, isFull: true });
+    expect(bySize.double.remaining).toBe(5);
+    expect(bySize.large.remaining).toBe(8);
+  });
+
+  it('rides along with the building-wide availability', () => {
+    const a = summarizeOfficeAvailability({
+      members: [member('m1', { office_number: '106' })],
+      manualOfficeNumbers: ['103'],
+    });
+    expect(a.bySize).not.toBeNull();
+    expect(a.bySize!.single.remaining).toBe(1);
+    expect(a.bySize!.large.remaining).toBe(7);
+    expect(a.bySize!.double.remaining).toBe(5);
+  });
+
+  // An unrecorded floor plan must read as "we don't know", never as three
+  // zeroes — a page that prints "0 single offices free" when it simply has no
+  // map is telling a prospect the building is full.
+  it('reports nothing rather than zero when no sizes are recorded', () => {
+    expect(summarizeOfficeSizes(OFFICE_SPACES, {})).toBeNull();
+  });
+
+  it('matches numbers however they were typed', () => {
+    expect(officeSizeOf(' 106 ')).toBe('single');
+    expect(officeSizeOf('113')).toBeNull();
+    expect(officeSizeOf(null)).toBeNull();
+  });
+
+  // Each size is a real sellable plan — the trial form offers these three by
+  // name, and a size with no plan behind it could not be applied for.
+  it('names a plan that exists for every size', () => {
+    for (const size of OFFICE_SIZES) {
+      expect(MEMBERSHIP_PLANS[PLAN_FOR_OFFICE_SIZE[size]]).toBeTruthy();
+    }
   });
 });

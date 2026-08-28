@@ -24,6 +24,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { OFFICE_SPACES, canonicalizeSpaceNumber } from './seating';
+import { summarizeOfficeSizes, type OfficeSizeAvailability } from './officeSizes';
 
 // The minimal member shape the math needs. Kept structural (rather than
 // importing the full Member type) so it can be unit-tested in isolation.
@@ -44,6 +45,11 @@ export interface OfficeAvailability {
   takenCount: number;
   remainingCount: number;
   isFull: boolean;
+  // The same free/total split, per office size — what a prospect choosing
+  // between a single-desk room and a team room actually wants to know. Null
+  // when the floor plan has no sizes recorded yet (lib/portal/officeSizes.ts),
+  // which callers must report as "we don't know" rather than as zero.
+  bySize: OfficeSizeAvailability | null;
 }
 
 // Same rule the desk module and the admin seating chart use: archived members
@@ -95,6 +101,7 @@ export function summarizeOfficeAvailability(input: {
     takenCount: occupiedOffices.length,
     remainingCount: availableOffices.length,
     isFull: availableOffices.length === 0,
+    bySize: summarizeOfficeSizes(availableOffices),
   };
 }
 

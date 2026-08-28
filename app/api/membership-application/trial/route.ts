@@ -25,16 +25,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
+import { MEMBERSHIP_PLANS } from '@/lib/portal/pricing';
 import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
 import { generateTrialDayEmailHTML, generateTrialDayEmailText } from '@/lib/portal/trialDayEmail';
 import {
   MAX_ID_FILE_BYTES,
   MAX_ID_FILE_LABEL,
-  PLAN_FOR_TRIAL_SEATING,
   denverToday,
   generateResumeToken,
   isAcceptedIdMimeType,
   trialIdDocumentPath,
+  trialPlanFor,
   validateTrialSubmission,
   type TrialSeating,
 } from '@/lib/portal/trialApplication';
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
       phone: str(form.get('phone')),
       company_name: str(form.get('company_name')),
       seating: str(form.get('seating')),
+      trial_plan: str(form.get('trial_plan')),
       trial_date: str(form.get('trial_date')),
       agrees_to_terms: str(form.get('agrees_to_terms')) === 'true',
     };
@@ -100,6 +102,10 @@ export async function POST(request: NextRequest) {
     }
 
     const seating = input.seating as TrialSeating;
+    // The specific thing they asked to try: which office size, or a floor
+    // desk vs a private one. Re-derived here rather than trusted from the
+    // form, so a row can never carry a plan from another seating.
+    const trialPlan = trialPlanFor(seating, input.trial_plan);
     const isOfficeTrial = seating === 'office';
     const isCafeTrial = seating === 'cafe';
     const resumeToken = generateResumeToken();
@@ -116,15 +122,17 @@ export async function POST(request: NextRequest) {
       phone: input.phone,
       company_name: input.company_name || null,
       // Representative designation for the downstream code paths that expect
-      // one. A trial applicant picked no plan, so this records what they
-      // asked to try, not anything they have agreed to pay for.
-      membership_type: PLAN_FOR_TRIAL_SEATING[seating],
+      // one. This records what they asked to TRY — the office size or the
+      // kind of desk they chose on the form — not anything they have agreed
+      // to pay for.
+      membership_type: trialPlan,
       start_date: null,
       wants_trial_day: true,
       trial_date: input.trial_date,
       payload: {
         application_kind: 'trial',
         trial_seating: seating,
+        trial_plan: trialPlan,
         trial_date: input.trial_date,
         wants_trial_day: true,
         marketing_consent: marketingConsent,
@@ -274,20 +282,28 @@ export async function POST(request: NextRequest) {
     // One staff notification to both mailboxes. A trial application is a
     // heads-up that someone is coming in, not a decision to make, so it is
     // deliberately short — no "review this application" framing.
-    const seatingLabel = isOfficeTrial ? 'private office' : isCafeTrial ? 'café' : 'dedicated desk';
-    const staffSubject = `🟧 TRIAL DAY — ${input.first_name} ${input.last_name} (${seatingLabel}) on ${input.trial_date}`;
+    // Name the exact thing, not the category: an office trial means staff
+    // have to unlock a specific room, and which room depends on whether the
+    // person asked for a single, a double or a team office.
+    const planLabel =
+      MEMBERSHIP_PLANS[trialPlan]?.label ||
+      (isOfficeTrial ? 'Private office' : isCafeTrial ? 'Café membership' : 'Dedicated desk');
+    const staffSubject = `🟧 TRIAL DAY — ${input.first_name} ${input.last_name} (${planLabel}) on ${input.trial_date}`;
     const staffLines = [
       `${input.first_name} ${input.last_name} is coming in for a trial day.`,
       '',
       `Date: ${input.trial_date}`,
-      `Trying: ${isOfficeTrial ? 'Private office' : isCafeTrial ? 'Café membership (works from the 1905 building next door)' : 'Dedicated desk'}`,
+      `Trying: ${planLabel}${isCafeTrial ? ' (works from the 1905 building next door)' : ''}`,
       `Email: ${input.email}`,
       `Phone: ${input.phone}`,
       ...(input.company_name ? [`Company: ${input.company_name}`] : []),
       '',
       'Photo ID is attached to the application and viewable on the admin Documents page.',
       ...(isOfficeTrial
-        ? ['', 'ACTION: office trials need an office number confirmed with them before the day.']
+        ? [
+            '',
+            `ACTION: office trials need an office number confirmed with them before the day — they asked for ${planLabel.toLowerCase()}.`,
+          ]
         : []),
       '',
       `Application: ${applicationId}`,

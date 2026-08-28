@@ -29,6 +29,7 @@ describe('trial submission validation', () => {
     email: 'dana@example.com',
     phone: '303-555-0100',
     seating: 'desk',
+    trial_plan: 'dedicated_desk',
     trial_date: '2026-09-14',
     agrees_to_terms: true,
   };
@@ -51,6 +52,7 @@ describe('trial submission validation', () => {
       email: 'dana@example.com',
       phone: '303-555-0100',
       seating: 'office',
+      trial_plan: 'private_office_single',
       trial_date: '2026-09-14',
       agrees_to_terms: true,
     };
@@ -83,8 +85,52 @@ describe('trial submission validation', () => {
     expect(validateTrialSubmission({ ...valid, trial_date: today }, { today })).toBeNull();
   });
 
-  it.each(['desk', 'office', 'cafe'])('accepts %s as a place to work', (seating) => {
-    expect(validateTrialSubmission({ ...valid, seating }, { today })).toBeNull();
+  it.each([
+    ['desk', 'dedicated_desk'],
+    ['desk', 'private_dedicated_desk'],
+    ['office', 'private_office_single'],
+    ['office', 'private_office_double'],
+    ['office', 'private_office_large'],
+    ['cafe', 'cafe_membership'],
+  ])('accepts %s as a place to work, trying %s', (seating, trial_plan) => {
+    expect(validateTrialSubmission({ ...valid, seating, trial_plan }, { today })).toBeNull();
+  });
+
+  // The café is one thing, so it is the one seating that never asks a second
+  // question — a submission with no plan against it is complete.
+  it('does not ask the café to pick a size', () => {
+    expect(
+      validateTrialSubmission({ ...valid, seating: 'cafe', trial_plan: '' }, { today })
+    ).toBeNull();
+  });
+
+  it('asks an office applicant which size', () => {
+    expect(
+      validateTrialSubmission({ ...valid, seating: 'office', trial_plan: '' }, { today })
+    ).toMatch(/which size of office/i);
+  });
+
+  it('asks a desk applicant which kind', () => {
+    expect(
+      validateTrialSubmission({ ...valid, seating: 'desk', trial_plan: '' }, { today })
+    ).toMatch(/which kind of dedicated desk/i);
+  });
+
+  // Seating and plan disagreeing means the form got out of step with itself.
+  // Filing the visit under the wrong room is worse than asking again.
+  it('rejects a plan from another seating', () => {
+    expect(
+      validateTrialSubmission(
+        { ...valid, seating: 'office', trial_plan: 'dedicated_desk' },
+        { today }
+      )
+    ).toMatch(/office sizes listed/i);
+    expect(
+      validateTrialSubmission(
+        { ...valid, seating: 'cafe', trial_plan: 'private_office_large' },
+        { today }
+      )
+    ).toMatch(/where you would like to work/i);
   });
 
   it('rejects an unrecognised seating value', () => {
@@ -237,7 +283,7 @@ describe('prefill carried into the full application', () => {
     company_name: 'Reyes Design',
     trial_date: '2026-09-14',
     id_document_path: 'trial-applications/abc/photo_id-1.png',
-    payload: { trial_seating: 'office' },
+    payload: { trial_seating: 'office', trial_plan: 'private_office_double' },
   };
 
   it('carries every field the trial form collected', () => {
@@ -248,9 +294,25 @@ describe('prefill carried into the full application', () => {
       phone: '303-555-0100',
       company_name: 'Reyes Design',
       seating: 'office',
+      plan: 'private_office_double',
       trial_date: '2026-09-14',
       has_id_document: true,
     });
+  });
+
+  // Trial rows written before the form asked which office size fall back to
+  // the seating's default plan rather than coming back empty — the full
+  // application still opens with something sensible selected.
+  it('falls back to the seating default when no plan was recorded', () => {
+    const legacy = { ...row, payload: { trial_seating: 'office' } };
+    expect(trialPrefillFrom(legacy).plan).toBe('private_office_single');
+  });
+
+  // A plan that does not belong to the recorded seating is a mismatch we
+  // never write, so reading one back means the row was edited by hand.
+  it('ignores a plan that does not match the seating', () => {
+    const mismatched = { ...row, payload: { trial_seating: 'cafe', trial_plan: 'private_office_large' } };
+    expect(trialPrefillFrom(mismatched).plan).toBe('cafe_membership');
   });
 
   // The path itself is a storage location behind a bearer token; the form

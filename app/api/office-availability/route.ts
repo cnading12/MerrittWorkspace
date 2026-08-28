@@ -23,6 +23,10 @@ export async function GET() {
       taken: availability.takenCount,
       remaining: availability.remainingCount,
       isFull: availability.isFull,
+      // Per-size counts, or null when the floor plan has no sizes recorded —
+      // see lib/portal/officeSizes.ts. Null means "say nothing about sizes",
+      // never "none free".
+      by_size: availability.bySize,
     });
   } catch (e: any) {
     // Never break a marketing page over this. `unavailable` tells the client to
@@ -36,6 +40,7 @@ export async function GET() {
       remaining: null,
       isFull: false,
       unavailable: true,
+      by_size: null,
     });
   }
 }

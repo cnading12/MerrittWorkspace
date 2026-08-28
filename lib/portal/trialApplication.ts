@@ -133,12 +133,58 @@ export function readTrialSeating(value: unknown): TrialSeating {
 }
 
 // The plan a trial applicant should find preselected when they come back to
-// apply for real.
+// apply for real, when all we know is which seating they tried. A trial that
+// recorded a specific plan (see TRIAL_PLANS_BY_SEATING) beats this.
 export const PLAN_FOR_TRIAL_SEATING: Record<TrialSeating, string> = {
   desk: 'dedicated_desk',
   office: 'private_office_single',
   cafe: 'cafe_membership',
 };
+
+// The plans behind each seating choice — the second question the trial form
+// asks once someone has said where they want to work.
+//
+// "A private office" is three different rooms at three different prices, and
+// "a dedicated desk" is two: one on the shared floor, one inside a converted
+// office. A trial day is a preview of a specific thing, and staff have to put
+// the person in an actual room on the day, so the form asks which. The café
+// is the one seating with a single answer, so it never asks.
+//
+// Order matters — it is the order the options are offered in, cheapest first.
+export const TRIAL_PLANS_BY_SEATING: Record<TrialSeating, readonly string[]> = {
+  desk: ['dedicated_desk', 'private_dedicated_desk'],
+  office: ['private_office_single', 'private_office_double', 'private_office_large'],
+  cafe: ['cafe_membership'],
+};
+
+/** Does this seating choice need a second question? */
+export function trialSeatingNeedsPlan(seating: TrialSeating): boolean {
+  return TRIAL_PLANS_BY_SEATING[seating].length > 1;
+}
+
+/**
+ * The plan a trial submission records, given what the person picked.
+ *
+ * Falls back to the seating's default rather than throwing: a plan that does
+ * not belong to the chosen seating is a validation problem
+ * (validateTrialSubmission catches it and says so), and this function's job
+ * is only to make sure a row is never written with a plan from the wrong
+ * seating.
+ */
+export function trialPlanFor(seating: TrialSeating, plan: string | null | undefined): string {
+  const allowed = TRIAL_PLANS_BY_SEATING[seating];
+  if (plan && allowed.includes(plan)) return plan;
+  return allowed.length === 1 ? allowed[0] : PLAN_FOR_TRIAL_SEATING[seating];
+}
+
+/** Which seating a plan id belongs to, or null if it is not a trialable plan. */
+export function seatingForTrialPlan(plan: string | null | undefined): TrialSeating | null {
+  if (!plan) return null;
+  for (const seating of ['desk', 'office', 'cafe'] as const) {
+    if (TRIAL_PLANS_BY_SEATING[seating].includes(plan)) return seating;
+  }
+  return null;
+}
 
 // The fields a trial applicant already gave us, in the shape the full
 // application form wants them. Everything here is prefilled and editable —
@@ -152,6 +198,10 @@ export interface TrialPrefill {
   company_name: string;
   // Seating they trialed, used to preselect a plan on the full form.
   seating: TrialSeating;
+  // The specific plan they tried — which office size, or which kind of desk.
+  // Older trial rows recorded only the seating, so this falls back to that
+  // seating's default rather than being null.
+  plan: string;
   trial_date: string | null;
   // True when a photo ID is already on file from the trial, so the full
   // form can say "already on file" instead of asking for it again.
@@ -170,8 +220,16 @@ interface TrialRow {
 }
 
 export function trialPrefillFrom(row: TrialRow): TrialPrefill {
-  const payload = (row.payload || {}) as { trial_seating?: unknown; trial_date?: unknown };
+  const payload = (row.payload || {}) as {
+    trial_seating?: unknown;
+    trial_plan?: unknown;
+    trial_date?: unknown;
+  };
   const seating: TrialSeating = readTrialSeating(payload.trial_seating);
+  const plan = trialPlanFor(
+    seating,
+    typeof payload.trial_plan === 'string' ? payload.trial_plan : null
+  );
   const trialDate =
     row.trial_date || (typeof payload.trial_date === 'string' ? payload.trial_date : null);
   return {
@@ -181,6 +239,7 @@ export function trialPrefillFrom(row: TrialRow): TrialPrefill {
     phone: row.phone || '',
     company_name: row.company_name || '',
     seating,
+    plan,
     trial_date: trialDate,
     has_id_document: !!row.id_document_path,
   };
@@ -200,6 +259,10 @@ export interface TrialSubmissionInput {
   phone?: string | null;
   company_name?: string | null;
   seating?: string | null;
+  // Which plan within that seating — an office size, or a floor desk vs a
+  // private one. Only asked for (and only required on) the seatings that
+  // offer more than one.
+  trial_plan?: string | null;
   trial_date?: string | null;
   agrees_to_terms?: boolean | null;
 }
@@ -217,6 +280,24 @@ export function validateTrialSubmission(
   if (!EMAIL_RE.test(email)) return 'Please enter a valid email address.';
   if (!String(input.phone || '').trim()) return 'Please enter a phone number.';
   if (input.seating !== 'desk' && input.seating !== 'office' && input.seating !== 'cafe') {
+    return 'Please tell us where you would like to work for the day.';
+  }
+  const seating: TrialSeating = input.seating;
+  const plan = String(input.trial_plan || '').trim();
+  if (trialSeatingNeedsPlan(seating)) {
+    if (!plan) {
+      return seating === 'office'
+        ? 'Please choose which size of office you would like to try.'
+        : 'Please choose which kind of dedicated desk you would like to try.';
+    }
+    if (!TRIAL_PLANS_BY_SEATING[seating].includes(plan)) {
+      return seating === 'office'
+        ? 'Please choose one of the office sizes listed.'
+        : 'Please choose one of the desk options listed.';
+    }
+  } else if (plan && !TRIAL_PLANS_BY_SEATING[seating].includes(plan)) {
+    // Seating and plan disagreeing means the form got out of step with
+    // itself; refusing beats silently filing the visit under the wrong thing.
     return 'Please tell us where you would like to work for the day.';
   }
   const trialDate = String(input.trial_date || '').trim();
