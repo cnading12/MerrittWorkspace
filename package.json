@@ -8,9 +8,10 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .next",
     "test": "vitest run",
     "build:check": "bash scripts/build-check.sh",
-    "verify": "npm run typecheck && npm test && npm run build:check"
+    "verify": "npm run clean && npm run typecheck && npm test && npm run build:check"
   },
   "dependencies": {
     "@stripe/stripe-js": "^7.9.0",
