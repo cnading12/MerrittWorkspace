@@ -278,7 +278,9 @@ export const FLEX_SPACE = {
 
 export const POLICIES = {
   term: 'Month-to-month. No long-term lease is required.',
-  trial: 'Every prospective member is offered a free full trial day before committing.',
+  trial:
+    'Every prospective member is offered a free full trial day before committing. Trial ' +
+    'days run Monday through Friday, when the building is staffed.',
   tours: 'Tours are available on request but are not required to join.',
   deposit:
     "At sign-up you pay your first month (prorated) and your last month's membership fee up front.",

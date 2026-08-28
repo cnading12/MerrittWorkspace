@@ -111,7 +111,7 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'Can I try the space before joining, or take a tour?',
     answer:
-      'Yes to both, and neither is required. Every prospective member is offered a free trial day: a full day at a desk with the coffee, the kitchen and the flex space included, at no cost and with no commitment. Plenty of members join on the strength of a trial day alone.\n\nTours are available whenever you ask. Book either by applying online at merrittworkspace.net/membership/apply, calling (303) 359-8337, or emailing memberservices@merrittworkspace.net.',
+      'Yes to both, and neither is required. Every prospective member is offered a free trial day: a full day at a desk with the coffee, the kitchen and the flex space included, at no cost and with no commitment. Trial days run Monday through Friday, when the building is staffed to let you in and show you around. Plenty of members join on the strength of a trial day alone.\n\nTours are available whenever you ask. Book either by applying online at merrittworkspace.net/membership/apply, calling (303) 359-8337, or emailing memberservices@merrittworkspace.net.',
   },
   {
     id: 'how-to-join',
