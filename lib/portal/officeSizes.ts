@@ -22,7 +22,7 @@
 // entirely, per-size availability reports as unknown and every caller falls
 // back to the plain "N offices free" line it printed before.
 
-import { OFFICE_SPACES, canonicalizeSpaceNumber } from './seating';
+import { PUBLIC_OFFICE_SPACES, canonicalizeSpaceNumber } from './seating';
 
 export type OfficeSize = 'single' | 'double' | 'large';
 
@@ -46,10 +46,15 @@ export const OFFICE_SIZE_FOR_PLAN: Record<string, OfficeSize> = {
 // OFFICE_SPACES appears here; an office left out would count toward the
 // building total and toward no size bucket.
 //
-// Two single-desk rooms, five doubles, and eight team rooms — which is why
-// "is an office free?" was never a useful answer on its own: the answer for
-// a solo professional and the answer for a team of six come from pools of
-// two and eight.
+// Every office is listed, including 120 in the wellness building next door.
+// The counts below are built from PUBLIC_OFFICE_SPACES, which leaves 120 out,
+// so a room nobody can be offered is sized here for the record without ever
+// being counted as available to a prospect.
+//
+// On the workspace floor that leaves two single-desk rooms, five doubles and
+// seven team rooms — which is why "is an office free?" was never a useful
+// answer on its own: a solo professional and a team of six are drawing on
+// pools of two and seven.
 export const OFFICE_SIZE_BY_NUMBER: Record<string, OfficeSize> = {
   '106': 'single',
   '108': 'single',
@@ -92,7 +97,9 @@ export interface OfficeSizeCount {
 export type OfficeSizeAvailability = Record<OfficeSize, OfficeSizeCount>;
 
 /**
- * Split an availability list by office size.
+ * Split an availability list by office size, over the offices the public is
+ * actually offered (PUBLIC_OFFICE_SPACES — the wellness building's office is
+ * charted but never advertised).
  *
  * Returns null when no office has a size recorded — the caller must then say
  * nothing about per-size availability rather than print three zeroes, which
@@ -118,7 +125,7 @@ export function summarizeOfficeSizes(
     large: empty(),
   };
 
-  for (const office of OFFICE_SPACES) {
+  for (const office of PUBLIC_OFFICE_SPACES) {
     const size = sizeMap[office];
     if (!size) continue;
     bySize[size].capacity += 1;

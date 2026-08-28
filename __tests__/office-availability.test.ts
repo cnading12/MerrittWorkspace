@@ -4,7 +4,7 @@ import {
   getOfficeAvailability,
   type OfficeAvailabilityMember,
 } from '@/lib/portal/officeAvailability';
-import { OFFICE_SPACES } from '@/lib/portal/seating';
+import { OFFICE_SPACES, PUBLIC_OFFICE_SPACES } from '@/lib/portal/seating';
 import {
   OFFICE_SIZE_BY_NUMBER,
   OFFICE_SIZES,
@@ -241,42 +241,43 @@ describe('office sizes', () => {
     expect(extra).toEqual([]);
   });
 
-  // The split the floor actually has: 106 and 108 are single-desk rooms.
-  it('splits the floor two / five / eight', () => {
-    const bySize = summarizeOfficeSizes(OFFICE_SPACES)!;
+  // The split the workspace floor actually has: 106 and 108 are single-desk
+  // rooms, and the wellness building's office is not counted at all.
+  it('splits the floor two / five / seven', () => {
+    const bySize = summarizeOfficeSizes(PUBLIC_OFFICE_SPACES)!;
     expect(bySize.single.capacity).toBe(2);
     expect(bySize.double.capacity).toBe(5);
-    expect(bySize.large.capacity).toBe(8);
+    expect(bySize.large.capacity).toBe(7);
     expect(bySize.single.capacity + bySize.double.capacity + bySize.large.capacity).toBe(
-      OFFICE_SPACES.length
+      PUBLIC_OFFICE_SPACES.length
     );
   });
 
   it('counts only the rooms of that size that are free', () => {
     // Both single-desk rooms occupied, everything else empty.
-    const free = OFFICE_SPACES.filter((o) => o !== '106' && o !== '108');
+    const free = PUBLIC_OFFICE_SPACES.filter((o) => o !== '106' && o !== '108');
     const bySize = summarizeOfficeSizes(free)!;
     expect(bySize.single).toEqual({ capacity: 2, remaining: 0, isFull: true });
     expect(bySize.double.remaining).toBe(5);
-    expect(bySize.large.remaining).toBe(8);
+    expect(bySize.large.remaining).toBe(7);
   });
 
-  it('rides along with the building-wide availability', () => {
+  it('rides along with the public availability', () => {
     const a = summarizeOfficeAvailability({
       members: [member('m1', { office_number: '106' })],
       manualOfficeNumbers: ['103'],
     });
-    expect(a.bySize).not.toBeNull();
-    expect(a.bySize!.single.remaining).toBe(1);
-    expect(a.bySize!.large.remaining).toBe(7);
-    expect(a.bySize!.double.remaining).toBe(5);
+    expect(a.public.bySize).not.toBeNull();
+    expect(a.public.bySize!.single.remaining).toBe(1);
+    expect(a.public.bySize!.large.remaining).toBe(6);
+    expect(a.public.bySize!.double.remaining).toBe(5);
   });
 
   // An unrecorded floor plan must read as "we don't know", never as three
   // zeroes — a page that prints "0 single offices free" when it simply has no
   // map is telling a prospect the building is full.
   it('reports nothing rather than zero when no sizes are recorded', () => {
-    expect(summarizeOfficeSizes(OFFICE_SPACES, {})).toBeNull();
+    expect(summarizeOfficeSizes(PUBLIC_OFFICE_SPACES, {})).toBeNull();
   });
 
   it('matches numbers however they were typed', () => {
@@ -291,5 +292,51 @@ describe('office sizes', () => {
     for (const size of OFFICE_SIZES) {
       expect(MEMBERSHIP_PLANS[PLAN_FOR_OFFICE_SIZE[size]]).toBeTruthy();
     }
+  });
+});
+
+
+// Office 120 is in the restored 1905 wellness building next door, not in the
+// workspace. Staff chart it because someone is in it; a prospect must never
+// be counted a room they cannot be offered. The membership page's "fourteen
+// private offices" is the same number from the other direction.
+describe('the wellness building office', () => {
+  it('is charted for staff but never advertised', () => {
+    expect(OFFICE_SPACES).toContain('120');
+    expect(PUBLIC_OFFICE_SPACES).not.toContain('120');
+    expect(PUBLIC_OFFICE_SPACES.length).toBe(OFFICE_SPACES.length - 1);
+    expect(PUBLIC_OFFICE_SPACES.length).toBe(14);
+  });
+
+  it('is left out of every number the public sees', () => {
+    const a = summarizeOfficeAvailability({ members: [], manualOfficeNumbers: [] });
+    expect(a.capacity).toBe(OFFICE_SPACES.length);
+    expect(a.remainingCount).toBe(OFFICE_SPACES.length);
+    expect(a.public.capacity).toBe(14);
+    expect(a.public.remainingCount).toBe(14);
+  });
+
+  it('does not make the public side look fuller when it is occupied', () => {
+    const a = summarizeOfficeAvailability({
+      members: [member('m1', { office_number: '120' })],
+      manualOfficeNumbers: [],
+    });
+    // Staff see the room taken; the public count is untouched by it.
+    expect(a.takenCount).toBe(1);
+    expect(a.public.takenCount).toBe(0);
+    expect(a.public.remainingCount).toBe(14);
+    expect(a.public.bySize!.large.capacity).toBe(7);
+    expect(a.public.bySize!.large.remaining).toBe(7);
+  });
+
+  // The trial form refuses a size with nothing free, so the count that drives
+  // that decision has to be the public one.
+  it('reports a size as full only when its workspace rooms are all taken', () => {
+    const a = summarizeOfficeAvailability({
+      members: [member('m1', { office_number: '106' }), member('m2', { office_number: '108' })],
+      manualOfficeNumbers: [],
+    });
+    expect(a.public.bySize!.single).toEqual({ capacity: 2, remaining: 0, isFull: true });
+    expect(a.public.isFull).toBe(false);
   });
 });

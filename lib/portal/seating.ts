@@ -101,6 +101,22 @@ export const OFFICE_SPACES: string[] = [
   '120',
 ];
 
+// Offices that are NOT part of what we advertise or sell to the public.
+//
+// 120 sits in the restored 1905 wellness building next door, not in the
+// workspace. Staff still chart it — someone is in it, and the seating chart
+// has to show that — but it is not a room a prospect can be offered, so it
+// must not appear in any count a member of the public sees. The marketing
+// copy already says "fourteen private offices" for exactly this reason.
+export const NON_PUBLIC_OFFICE_SPACES: string[] = ['120'];
+
+// The offices the public side of the site counts: everything on the workspace
+// floor. Availability endpoints, the membership pages and the trial form all
+// work from this list; the admin seating chart works from OFFICE_SPACES.
+export const PUBLIC_OFFICE_SPACES: string[] = OFFICE_SPACES.filter(
+  (o) => !NON_PUBLIC_OFFICE_SPACES.includes(o)
+);
+
 // Canonical form used for matching a desk/office number across sources so that
 // "dd4", "DD4", and " DD4 " all collide, and office numbers ignore surrounding
 // whitespace. Desks use the DD# normalizer; everything else is trimmed and

@@ -228,7 +228,23 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
     if (!count || count.capacity === 0) return null;
     return count.remaining > 0
       ? `${count.remaining} of ${count.capacity} free`
-      : 'None free right now';
+      : 'Fully occupied right now';
+  };
+
+  // An office trial needs an actual empty room: staff unlock a specific office
+  // for the day, and if every room of that size is occupied there is nothing
+  // to unlock. So a sold-out office size cannot be chosen — the API refuses it
+  // too, on numbers read at submit rather than at page load.
+  //
+  // Only offices. A desk trial when the floor is full is a supported state:
+  // the trial-day email already handles it by having someone meet the visitor
+  // rather than sending them to a desk number.
+  const soldOut = (planId: string): boolean => {
+    const size = OFFICE_SIZE_FOR_PLAN[planId];
+    const count = size ? officeAvailability?.by_size?.[size] : null;
+    // Unknown availability never disables an option — a failed fetch must not
+    // stop someone booking a trial day.
+    return Boolean(count && count.capacity > 0 && count.remaining === 0);
   };
 
   // The fallback line for offices while no floor plan sizes are recorded: the
@@ -241,6 +257,14 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
         ? `${officeAvailability.remaining} of ${officeAvailability.capacity} private offices are free right now.`
         : 'Every private office is occupied right now — a trial day is still worth booking, and we will show you what is coming free.'
       : null;
+
+  // Availability lands after the first paint, so an option can go sold-out
+  // under a selection that was legal when it was made. Drop it rather than
+  // letting the submit fail on the server.
+  useEffect(() => {
+    if (trialPlan && soldOut(trialPlan)) setTrialPlan('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [officeAvailability, trialPlan]);
 
   const chooseSeating = (next: TrialSeating) => {
     setSeating(next);
@@ -643,30 +667,55 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
                     >
                       {planOptions.map((option) => {
                         const free = availabilityFor(option.id);
+                        const unavailable = soldOut(option.id);
                         const selected = trialPlan === option.id;
                         return (
                           <label
                             key={option.id}
-                            className={`flex h-full cursor-pointer flex-col border-2 p-3 transition ${selected ? 'border-orange-500 bg-white' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                            className={`flex h-full flex-col border-2 p-3 transition ${
+                              unavailable
+                                ? 'cursor-not-allowed border-gray-200 bg-gray-50 opacity-70'
+                                : selected
+                                  ? 'cursor-pointer border-orange-500 bg-white'
+                                  : 'cursor-pointer border-gray-200 bg-white hover:border-gray-300'
+                            }`}
                           >
                             <div className="flex items-start gap-2">
                               <input
                                 type="radio"
                                 name="trial_plan"
                                 checked={selected}
+                                disabled={unavailable}
                                 onChange={() => {
                                   setTrialPlan(option.id);
                                   setError(null);
                                 }}
-                                className="mt-1 h-4 w-4 flex-shrink-0 text-orange-600 focus:ring-orange-500"
+                                className="mt-1 h-4 w-4 flex-shrink-0 text-orange-600 focus:ring-orange-500 disabled:cursor-not-allowed"
                               />
-                              <span className="font-medium text-ink">{option.name}</span>
+                              <span className={`font-medium ${unavailable ? 'text-ink-60' : 'text-ink'}`}>
+                                {option.name}
+                              </span>
                             </div>
                             <p className="mt-1.5 text-sm text-ink-60">{option.detail}</p>
                             {free && (
-                              <span className="mt-2 inline-flex w-fit items-center bg-linen px-2 py-0.5 text-xs font-medium text-ink-60">
+                              <span
+                                className={`mt-2 inline-flex w-fit items-center px-2 py-0.5 text-xs font-medium ${unavailable ? 'bg-gray-200 text-ink-60' : 'bg-linen text-ink-60'}`}
+                              >
                                 {free}
                               </span>
+                            )}
+                            {unavailable && (
+                              <p className="mt-1.5 text-xs text-ink-60">
+                                Nothing to show you for a day until one frees up.{' '}
+                                <Link
+                                  href="/contact"
+                                  target="_blank"
+                                  className="font-medium text-orange-600 underline-offset-2 hover:underline"
+                                >
+                                  Ask about the waitlist
+                                </Link>
+                                .
+                              </p>
                             )}
                             {option.href !== GROUP_LINK[seating]?.href && (
                               <Link

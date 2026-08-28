@@ -26,6 +26,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { MEMBERSHIP_PLANS } from '@/lib/portal/pricing';
+import { getOfficeAvailability } from '@/lib/portal/officeAvailability';
+import { OFFICE_SIZE_FOR_PLAN } from '@/lib/portal/officeSizes';
 import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
 import { generateTrialDayEmailHTML, generateTrialDayEmailText } from '@/lib/portal/trialDayEmail';
 import {
@@ -111,6 +113,34 @@ export async function POST(request: NextRequest) {
     const resumeToken = generateResumeToken();
 
     const sb = getServiceSupabase();
+
+    // An office trial needs a room to unlock. If every office of the size
+    // they asked for is occupied there is nothing to show them for a day, so
+    // the booking is refused here as well as greyed out on the form — the
+    // form's numbers were read when the page loaded and the last free room
+    // may have gone since.
+    //
+    // Fails open: an availability read that throws must not stop someone
+    // booking a trial day. Staff can move a visit; a form that rejects a
+    // legitimate applicant because the database hiccupped loses them.
+    if (isOfficeTrial) {
+      const size = OFFICE_SIZE_FOR_PLAN[trialPlan];
+      try {
+        const { public: pub } = await getOfficeAvailability(sb);
+        const count = size && pub.bySize ? pub.bySize[size] : null;
+        if (count && count.capacity > 0 && count.remaining === 0) {
+          return NextResponse.json(
+            {
+              error:
+                'Every office of that size is occupied right now, so there is no room to show you for the day. Please pick another size, or contact us about the waitlist.',
+            },
+            { status: 409 }
+          );
+        }
+      } catch (e) {
+        console.error('Could not check office availability for a trial booking', e);
+      }
+    }
 
     // Insert first so the storage path can be keyed on the row id. If the
     // upload then fails we delete the row again rather than leave a trial
