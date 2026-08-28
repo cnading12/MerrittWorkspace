@@ -28,7 +28,21 @@ export type ApplicationKind = 'trial' | 'full';
 //            printing, meeting rooms and everything else.
 export type TrialSeating = 'desk' | 'office' | 'cafe';
 
-export const MAX_ID_FILE_BYTES = 10 * 1024 * 1024;
+// The largest photo ID we will take, in bytes.
+//
+// This is not a storage limit — it is the request-body limit. The form posts
+// the file as multipart to a serverless function, and the platform rejects a
+// body over 4.5MB before our route ever runs, so a 10MB ceiling here only
+// ever meant a phone photo failed further downstream with nothing useful to
+// say about it. 4MB leaves room for the rest of the multipart body.
+//
+// It costs applicants nothing, because the form re-encodes an oversized
+// photo in the browser first (lib/portal/idUpload.ts). In practice only a
+// large scanned PDF, which nothing can shrink client-side, reaches it.
+export const MAX_ID_FILE_BYTES = 4 * 1024 * 1024;
+
+/** The same number in the words the form and the API both use. */
+export const MAX_ID_FILE_LABEL = '4MB';
 
 // Mirrors the accept attribute on the upload input. Kept permissive on the
 // image side — people photograph their licence with whatever phone they have
@@ -211,6 +225,9 @@ export function validateTrialSubmission(
   // Compared as ISO date strings, which sort lexicographically — no timezone
   // maths, and no risk of a Date parse shifting someone's chosen day.
   if (trialDate < opts.today) return 'Please choose a trial day that has not already passed.';
+  if (!isWeekdayIsoDate(trialDate)) {
+    return 'Trial days run Monday through Friday. Please choose a weekday.';
+  }
   if (!input.agrees_to_terms) return 'Please agree to the terms and conditions.';
   return null;
 }
@@ -225,4 +242,34 @@ export function denverToday(now: Date): string {
     month: '2-digit',
     day: '2-digit',
   }).format(now);
+}
+
+// Trial days are weekdays only.
+//
+// A trial visit is staffed: someone is here to let a trial applicant in, show
+// them the floor, and — for an office or the café — have the room open and
+// ready. That only happens Monday through Friday, when the building is
+// unlocked without an access code. A member with a code can work Sunday
+// afternoon; someone who is not a member yet has nobody to let them in.
+//
+// The day is parsed as UTC rather than local: 'YYYY-MM-DD' through the Date
+// constructor is UTC midnight, and reading the weekday back in UTC keeps the
+// two ends together. Doing it in local time would move the day by one for
+// anyone west of Greenwich and quietly reject Mondays.
+export function isWeekdayIsoDate(date: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const day = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return day >= 1 && day <= 5;
+}
+
+// The first weekday on or after `date`, for the date picker's `min`. Someone
+// filling the form on a Saturday should find Monday offered, not a day the
+// validator will refuse.
+export function nextWeekdayIsoDate(date: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+  const d = new Date(`${date}T00:00:00Z`);
+  while (d.getUTCDay() === 0 || d.getUTCDay() === 6) {
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return d.toISOString().split('T')[0];
 }

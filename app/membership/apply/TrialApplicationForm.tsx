@@ -19,10 +19,15 @@ import { AlertCircle, ArrowLeft, CheckCircle, Loader2, Upload, X } from 'lucide-
 import Footer from '@/components/Footer';
 import {
   MAX_ID_FILE_BYTES,
+  MAX_ID_FILE_LABEL,
   isAcceptedIdMimeType,
+  isWeekdayIsoDate,
+  nextWeekdayIsoDate,
   validateTrialSubmission,
   type TrialSeating,
 } from '@/lib/portal/trialApplication';
+import { prepareIdUpload } from '@/lib/portal/idUpload';
+import { BUSINESS_HOURS_FULL } from '@/lib/hours';
 
 interface TrialApplicationFormProps {
   onChangePath?: () => void;
@@ -40,6 +45,7 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [idFile, setIdFile] = useState<File | null>(null);
 
+  const [preparingFile, setPreparingFile] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -54,21 +60,45 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
     return local.toISOString().split('T')[0];
   }, []);
 
-  const handleFileChange = (file: File | null) => {
+  // Trial days are weekdays only, so the picker opens on the next one rather
+  // than on a Saturday the validator would refuse.
+  const earliestTrialDate = useMemo(() => nextWeekdayIsoDate(todayIso), [todayIso]);
+
+  // Type first, then shrink, then size — in that order on purpose. A phone
+  // photo arrives at 5–12MB and is re-encoded here (lib/portal/idUpload.ts)
+  // rather than bounced: the file only has to be legible to a person reading
+  // a name off a licence, and the request body it travels in has a hard
+  // ceiling well under what a modern camera produces. Only what the browser
+  // cannot shrink — a large PDF, an image it will not decode — can still
+  // fail the size check, and then the message says what to do about it.
+  const handleFileChange = async (file: File | null) => {
     setError(null);
     if (!file) {
       setIdFile(null);
-      return;
-    }
-    if (file.size > MAX_ID_FILE_BYTES) {
-      setError('That file is too large (max 10MB). Try a photo taken at a lower resolution.');
       return;
     }
     if (!isAcceptedIdMimeType(file.type)) {
       setError('Please attach an image or a PDF of your ID.');
       return;
     }
-    setIdFile(file);
+
+    setPreparingFile(true);
+    try {
+      const prepared = await prepareIdUpload(file);
+      if (prepared.size > MAX_ID_FILE_BYTES) {
+        setError(
+          prepared.type === 'application/pdf'
+            ? `That PDF is larger than ${MAX_ID_FILE_LABEL}. Please attach a photo of your ID instead, or a smaller scan.`
+            : `We could not get that file under ${MAX_ID_FILE_LABEL}. Try a photo taken at a lower resolution.`
+        );
+        return;
+      }
+      setIdFile(prepared);
+    } catch {
+      setError('We could not read that file. Please try another photo of your ID.');
+    } finally {
+      setPreparingFile(false);
+    }
   };
 
   const clearFile = () => {
@@ -375,12 +405,23 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
                   type="date"
                   required
                   value={trialDate}
-                  min={todayIso}
-                  onChange={(e) => setTrialDate(e.target.value)}
+                  min={earliestTrialDate}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setTrialDate(value);
+                    // Say so as they pick, not after they have filled in the
+                    // rest of the form and pressed submit. A date input has
+                    // no way to grey out weekends.
+                    setError(
+                      value && !isWeekdayIsoDate(value)
+                        ? 'Trial days run Monday through Friday. Please choose a weekday.'
+                        : null
+                    );
+                  }}
                   className="w-full max-w-xs p-3 border border-clay focus:ring-2 focus:ring-orange-500"
                 />
                 <p className="text-xs text-ink-60 mt-2">
-                  The building is open 8:00 AM &ndash; 6:00 PM, Monday through Friday.
+                  Trial days run Monday through Friday. The building is open {BUSINESS_HOURS_FULL}.
                 </p>
               </div>
             </div>
@@ -411,14 +452,22 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
               ) : (
                 <label className="flex cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed border-clay bg-linen p-8 text-center transition hover:border-orange-400">
                   <Upload className="h-6 w-6 text-ink-60" />
-                  <span className="text-sm font-medium text-ink">Choose a file or take a photo</span>
-                  <span className="text-xs text-ink-60">JPG, PNG or PDF, up to 10MB</span>
+                  <span className="text-sm font-medium text-ink">
+                    {preparingFile ? 'Preparing your photo…' : 'Choose a file or take a photo'}
+                  </span>
+                  <span className="text-xs text-ink-60">
+                    JPG, PNG or PDF. Large photos are resized for you; a PDF must be under{' '}
+                    {MAX_ID_FILE_LABEL}.
+                  </span>
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*,.pdf"
                     className="hidden"
-                    onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+                    disabled={preparingFile}
+                    onChange={(e) => {
+                      void handleFileChange(e.target.files?.[0] ?? null);
+                    }}
                   />
                 </label>
               )}
@@ -457,7 +506,7 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={submitting || !agreesToTerms || !idFile}
+                disabled={submitting || preparingFile || !agreesToTerms || !idFile}
                 className="w-full bg-orange-600 py-4 px-6 text-lg font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting ? (

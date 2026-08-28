@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
+  MAX_ID_FILE_BYTES,
   denverToday,
   fileNameExtension,
   generateResumeToken,
   isAcceptedIdMimeType,
   isTrialApplication,
+  isWeekdayIsoDate,
+  nextWeekdayIsoDate,
   readApplicationKind,
   trialIdDocumentPath,
   trialPrefillFrom,
@@ -89,6 +92,50 @@ describe('trial submission validation', () => {
       /where you would like to work/i
     );
   });
+
+  // A trial visit is staffed — someone lets the visitor in and, for an
+  // office or the café, has the room ready. That is a weekday thing.
+  it.each([
+    ['Saturday', '2026-09-12'],
+    ['Sunday', '2026-09-13'],
+  ])('rejects a %s', (_label, trial_date) => {
+    expect(validateTrialSubmission({ ...valid, trial_date }, { today })).toMatch(
+      /Monday through Friday/i
+    );
+  });
+
+  it.each([
+    ['Monday', '2026-09-14'],
+    ['Friday', '2026-09-18'],
+  ])('accepts a %s', (_label, trial_date) => {
+    expect(validateTrialSubmission({ ...valid, trial_date }, { today })).toBeNull();
+  });
+
+  // Order matters: a weekend that has also passed should read as passed,
+  // which is the thing the person can see for themselves.
+  it('still reports a past date as past, weekend or not', () => {
+    expect(validateTrialSubmission({ ...valid, trial_date: '2026-08-29' }, { today })).toMatch(
+      /already passed/i
+    );
+  });
+});
+
+describe('weekday helpers', () => {
+  // Parsed as UTC at both ends. Local parsing would shift the day west of
+  // Greenwich and start rejecting Mondays.
+  it('reads the weekday off an ISO date', () => {
+    expect(isWeekdayIsoDate('2026-09-14')).toBe(true); // Monday
+    expect(isWeekdayIsoDate('2026-09-18')).toBe(true); // Friday
+    expect(isWeekdayIsoDate('2026-09-19')).toBe(false); // Saturday
+    expect(isWeekdayIsoDate('2026-09-20')).toBe(false); // Sunday
+    expect(isWeekdayIsoDate('not-a-date')).toBe(false);
+  });
+
+  it('moves the picker floor forward off a weekend', () => {
+    expect(nextWeekdayIsoDate('2026-09-19')).toBe('2026-09-21'); // Sat -> Mon
+    expect(nextWeekdayIsoDate('2026-09-20')).toBe('2026-09-21'); // Sun -> Mon
+    expect(nextWeekdayIsoDate('2026-09-18')).toBe('2026-09-18'); // Friday stands
+  });
 });
 
 describe('denverToday', () => {
@@ -115,6 +162,13 @@ describe('photo ID handling', () => {
     expect(isAcceptedIdMimeType('text/html')).toBe(false);
     expect(isAcceptedIdMimeType('')).toBe(false);
     expect(isAcceptedIdMimeType(null)).toBe(false);
+  });
+
+  // The ceiling is a request-body limit, not a storage one: a multipart POST
+  // over ~4.5MB is rejected by the platform before the route runs, so an ID
+  // that passes this check has to fit inside that with room to spare.
+  it('keeps the size ceiling under the request-body limit', () => {
+    expect(MAX_ID_FILE_BYTES).toBeLessThan(4.5 * 1024 * 1024);
   });
 
   it('derives a safe extension', () => {

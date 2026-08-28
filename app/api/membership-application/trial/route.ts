@@ -29,6 +29,7 @@ import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
 import { generateTrialDayEmailHTML, generateTrialDayEmailText } from '@/lib/portal/trialDayEmail';
 import {
   MAX_ID_FILE_BYTES,
+  MAX_ID_FILE_LABEL,
   PLAN_FOR_TRIAL_SEATING,
   denverToday,
   generateResumeToken,
@@ -86,7 +87,10 @@ export async function POST(request: NextRequest) {
       );
     }
     if (idFile.size > MAX_ID_FILE_BYTES) {
-      return NextResponse.json({ error: 'That file is too large (max 10MB).' }, { status: 400 });
+      return NextResponse.json(
+        { error: `That file is too large (max ${MAX_ID_FILE_LABEL}).` },
+        { status: 400 }
+      );
     }
     if (!isAcceptedIdMimeType(idFile.type)) {
       return NextResponse.json(
