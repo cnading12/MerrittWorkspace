@@ -50,13 +50,13 @@ export default function CafeMembershipPage() {
         lead="Open seating in the 1905 building next door, with the coffee, the WiFi, the parking and a locker of your own. For the weeks that don't need the same desk every day."
       />
 
-      {/* Who it suits — a different room, not a cheaper version of the desk. */}
+      {/* Who it suits — the room on its own terms, not a cheaper version of the desk. */}
       <section className="mw-section">
         <div className="mw-container">
           <div className="grid items-start gap-10 md:grid-cols-12 md:gap-14">
             <div className="md:col-span-5 md:pr-6">
               <p className="mw-eyebrow mb-5">Who it suits</p>
-              <h2 className="mw-h2">A different room, for a different week.</h2>
+              <h2 className="mw-h2">Stained glass, natural light, and a seat wherever you like.</h2>
             </div>
             <div className="md:col-span-7">
               <p className="mw-body">
