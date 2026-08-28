@@ -192,7 +192,7 @@ export default function PrivacyPolicyPage() {
               </a>
             </p>
             <p>
-              <a href="tel:720-357-9499">(720) 357-9499</a>
+              <a href="tel:303-359-8337">(303) 359-8337</a>
             </p>
           </div>
 

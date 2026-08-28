@@ -111,7 +111,7 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'Can I try the space before joining, or take a tour?',
     answer:
-      'Yes to both, and neither is required. Every prospective member is offered a free trial day: a full day at a desk with the coffee, the kitchen and the flex space included, at no cost and with no commitment. Plenty of members join on the strength of a trial day alone.\n\nTours are available whenever you ask. Book either by applying online at merrittworkspace.net/membership/apply, calling (720) 357-9499, or emailing memberservices@merrittworkspace.net.',
+      'Yes to both, and neither is required. Every prospective member is offered a free trial day: a full day at a desk with the coffee, the kitchen and the flex space included, at no cost and with no commitment. Plenty of members join on the strength of a trial day alone.\n\nTours are available whenever you ask. Book either by applying online at merrittworkspace.net/membership/apply, calling (303) 359-8337, or emailing memberservices@merrittworkspace.net.',
   },
   {
     id: 'how-to-join',
@@ -297,7 +297,7 @@ export const FAQS: Faq[] = [
     audience: 'prospect',
     question: 'How do I get in touch?',
     answer:
-      `Email memberservices@merrittworkspace.net or call or text (720) 357-9499. Business hours are ${BUSINESS_HOURS_FULL}, and emails are typically answered within four hours on a business day.\n\nYou can also visit in person at 2246 Irving Street, Denver, CO 80211.`,
+      `Email memberservices@merrittworkspace.net or call or text (303) 359-8337. Business hours are ${BUSINESS_HOURS_FULL}, and emails are typically answered within four hours on a business day.\n\nYou can also visit in person at 2246 Irving Street, Denver, CO 80211.`,
   },
 ];
 

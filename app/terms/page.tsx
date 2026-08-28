@@ -55,8 +55,8 @@ export default function TermsOfServicePage() {
                 </a>
               </p>
               <p>
-                <a href="tel:720-357-9499" className="mw-inline-link">
-                  (720) 357-9499
+                <a href="tel:303-359-8337" className="mw-inline-link">
+                  (303) 359-8337
                 </a>
               </p>
             </div>

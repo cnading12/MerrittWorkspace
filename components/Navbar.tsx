@@ -246,12 +246,12 @@ export default function Navbar() {
 
               {/* Phone Number */}
               <a
-                href="tel:7203579499"
+                href="tel:3033598337"
                 onClick={trackPhoneClick}
                 className={`flex items-center gap-1 whitespace-nowrap transition ${linkColor}`}
               >
                 <Phone className="w-4 h-4" />
-                <span className="hidden xl:inline">(720) 357-9499</span>
+                <span className="hidden xl:inline">(303) 359-8337</span>
               </a>
 
               {/* Auth-aware actions */}
@@ -478,12 +478,12 @@ export default function Navbar() {
                 </Link>
               )}
               <a
-                href="tel:7203579499"
+                href="tel:3033598337"
                 onClick={trackPhoneClick}
                 className="mt-3 flex min-h-[44px] items-center justify-center gap-2 text-[15px] text-ink-60"
               >
                 <Phone className="w-4 h-4" />
-                Call or text (720) 357-9499
+                Call or text (303) 359-8337
               </a>
             </div>
           </div>

@@ -399,14 +399,14 @@ Thank you for choosing Merritt Workspace!
 
               <p>We'll be in touch soon to move forward with your membership. Thank you for choosing Merritt Workspace!</p>
               
-              <a href="mailto:manager@merrittworkspace.net" class="button">Questions? Contact Us</a>
+              <a href="mailto:memberservices@merrittworkspace.net" class="button">Questions? Contact Us</a>
             </div>
 
             <div class="footer">
               <p><strong>Merritt Workspace</strong></p>
               <p>Where Work Meets Community</p>
               <p>2246 Irving Street, Denver, CO 80211</p>
-              <p>Email: manager@merrittworkspace.net | Phone: (720) 357-9499</p>
+              <p>Email: memberservices@merrittworkspace.net | Phone: (303) 359-8337</p>
             </div>
           </div>
         </body>
@@ -442,7 +442,7 @@ Our Amenities:
 
 We'll be in touch soon to move forward with your membership.
 
-Questions? Contact us at manager@merrittworkspace.net or (720) 357-9499
+Questions? Contact us at memberservices@merrittworkspace.net or (303) 359-8337
 
 Welcome to the community!
 

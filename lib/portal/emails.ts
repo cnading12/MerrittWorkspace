@@ -1154,8 +1154,10 @@ export const PORTAL_ONBOARDING_FROM =
 
 // Monitored mailbox applicants/members can reply to. Including an explicit
 // Reply-To header improves deliverability and gives recipients a clear
-// path to respond.
-export const PORTAL_REPLY_TO = 'manager@merrittworkspace.net';
+// path to respond. Member services is the desk that answers fastest, so
+// replies land there even on sends that go out under the manager's From
+// address — a Reply-To that differs from the From is normal and expected.
+export const PORTAL_REPLY_TO = 'memberservices@merrittworkspace.net';
 
 // Mailbox used for `List-Unsubscribe`. Receivers prefer a monitored
 // member-services address over a no-reply pattern.

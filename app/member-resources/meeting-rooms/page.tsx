@@ -449,7 +449,7 @@ You will be redirected to secure payment in a moment.`);
           setError(`Booking created but payment system is currently unavailable. 
 
 Booking ID: ${data.booking.id}
-Please contact us to complete payment: (720) 357-9499
+Please contact us to complete payment: (303) 359-8337
 
 Your time slot is temporarily reserved.`);
           return;

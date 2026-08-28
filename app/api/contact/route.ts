@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
         if (!process.env.RESEND_API_KEY) {
             console.error('RESEND_API_KEY not configured');
             return NextResponse.json(
-                { error: 'Email system not configured. Please call us at (720) 357-9499.' },
+                { error: 'Email system not configured. Please call us at (303) 359-8337.' },
                 { status: 500 }
             );
         }
@@ -300,7 +300,7 @@ Reply directly to this email to respond to ${name}.`;
         }
 
         return NextResponse.json(
-            { error: 'Failed to send your message. Please call us at (720) 357-9499.' },
+            { error: 'Failed to send your message. Please call us at (303) 359-8337.' },
             { status: 500 }
         );
     } catch (error) {

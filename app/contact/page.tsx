@@ -9,23 +9,23 @@ import { BLUR } from '@/components/marketing/blur';
 import FaqBlock from '@/components/marketing/FaqBlock';
 import { SITE_URL } from '@/lib/seo/business';
 
-// The two desks people reach us at. Keep these distinct on the page: the
-// manager handles everyone who is not a member yet, member services handles
-// everyone who is.
+// The two desks people reach us at. Keep these distinct on the page: member
+// services handles everyone, member or not, and is listed first because it is
+// the number we answer fastest; the manager's line is the second stop.
 const CONTACT_DESKS = [
   {
-    title: 'New members & tours',
-    who: "Not a member yet? Book a free trial day, schedule a tour, or ask about pricing, plans and availability. This is the manager's line.",
-    phone: '(720) 357-9499',
-    phoneHref: '7203579499',
-    email: 'manager@merrittworkspace.net',
-  },
-  {
     title: 'Member services',
-    who: 'Already a member? Day-to-day support \u2014 access codes, billing, conference room bookings, the snack shop, anything in the building.',
+    who: 'The fastest way to reach us, whether you are a member or not \u2014 trial days, tours, pricing and availability, plus day-to-day support: access codes, billing, conference room bookings, the snack shop, anything in the building.',
     phone: '(303) 359-8337',
     phoneHref: '3033598337',
     email: 'memberservices@merrittworkspace.net',
+  },
+  {
+    title: 'Manager',
+    who: "The manager's line, for membership-level changes and bigger-picture workspace matters. Member services can also start any of these.",
+    phone: '(720) 357-9499',
+    phoneHref: '7203579499',
+    email: 'manager@merrittworkspace.net',
   },
 ];
 
@@ -78,7 +78,7 @@ export default function ContactPage() {
       trackFormSubmission();
       setSubmitted(true);
     } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again or call us at (720) 357-9499.');
+      setError(err.message || 'Something went wrong. Please try again or call us at (303) 359-8337.');
     } finally {
       setSubmitting(false);
     }
@@ -199,7 +199,7 @@ export default function ContactPage() {
                   <p className="mt-4 mw-body">
                     Thanks for reaching out. We&rsquo;ll come back to you within
                     24 hours. If it&rsquo;s urgent, call or text{' '}
-                    <a href="tel:7203579499" className="mw-inline-link">(720) 357-9499</a>.
+                    <a href="tel:3033598337" className="mw-inline-link">(303) 359-8337</a>.
                   </p>
                   <button
                     onClick={() => {

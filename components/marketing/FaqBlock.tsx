@@ -66,8 +66,8 @@ export default function FaqBlock({
             Every question we get asked
           </Link>
           , or call{' '}
-          <a href="tel:+17203579499" className="border-b border-clay pb-0.5 text-ink transition hover:border-ink">
-            (720) 357-9499
+          <a href="tel:+13033598337" className="border-b border-clay pb-0.5 text-ink transition hover:border-ink">
+            (303) 359-8337
           </a>
           .
         </p>

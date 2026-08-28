@@ -39,11 +39,11 @@ export default function Footer() {
             <div className="mt-6 space-y-2 text-[15px]">
               <p>
                 <a
-                  href="tel:+17203579499"
+                  href="tel:+13033598337"
                   onClick={trackPhoneClick}
                   className="border-b border-bone/25 pb-0.5 transition hover:border-bone"
                 >
-                  (720) 357-9499
+                  (303) 359-8337
                 </a>
               </p>
               <p>
