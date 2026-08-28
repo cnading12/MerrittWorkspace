@@ -673,6 +673,7 @@ function generateApplicantEmailHTML(data: {
             <p>Where Work Meets Community</p>
             <p>2246 Irving Street, Denver, CO 80211</p>
             <p>Email: memberservices@merrittworkspace.net | Phone: (303) 359-8337</p>
+            <p>Manager: manager@merrittworkspace.net | (720) 357-9499</p>
           </div>
         </div>
       </body>
@@ -719,6 +720,7 @@ Our Amenities:
 We'll be in touch soon to move forward with your membership.
 
 Questions? Contact us at memberservices@merrittworkspace.net or (303) 359-8337
+Prefer the manager? manager@merrittworkspace.net or (720) 357-9499
 
 Welcome to the community!
 
