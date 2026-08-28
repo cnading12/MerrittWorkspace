@@ -6,8 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "vitest run"
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build:check": "bash scripts/build-check.sh",
+    "verify": "npm run typecheck && npm test && npm run build:check"
   },
   "dependencies": {
     "@stripe/stripe-js": "^7.9.0",

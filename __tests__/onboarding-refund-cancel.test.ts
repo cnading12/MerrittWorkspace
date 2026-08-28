@@ -299,7 +299,7 @@ vi.mock('stripe', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 function makeAuthReq(url = 'http://localhost/api/test', method = 'POST', body?: any) {
-  const init: RequestInit = {
+  const init: NonNullable<ConstructorParameters<typeof NextRequest>[1]> = {
     method,
     headers: { authorization: 'Bearer test-token' },
   };
