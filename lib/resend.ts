@@ -68,9 +68,11 @@ const formatBookingDate = (
 const MANAGER_EMAIL = 'manager@merrittworkspace.net';
 const MEMBER_SERVICES_EMAIL = 'memberservices@merrittworkspace.net';
 
-// Staff notifications and copies go to both desks. Member services leads the
-// list and answers fastest; the manager is copied on everything so nothing
-// that reaches one desk is invisible to the other.
+// Inbound enquiries — new applications and contact-form submissions — go to
+// both desks so neither is blind to someone waiting on a reply. Operational
+// copies (orders, booking confirmations) stay member-services-only: that is
+// the desk that acts on them, and cc'ing the manager on every snackshop
+// order would bury the mail that does need them.
 const STAFF_EMAILS = [MEMBER_SERVICES_EMAIL, MANAGER_EMAIL];
 
 // Production site URL. Emails require absolute asset URLs — relative paths
@@ -491,7 +493,7 @@ export async function sendOrderConfirmationEmail(data: {
         // Send copy to member services
         const memberServicesEmail = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
-            to: STAFF_EMAILS,
+            to: MEMBER_SERVICES_EMAIL,
             subject: `[COPY] ${template.subject}`,
             html: `
         <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
@@ -538,7 +540,7 @@ export async function sendBookingConfirmationEmail(data: {
         // Send copy to member services
         const memberServicesEmail = await resend.emails.send({
             from: 'Merritt Workspace Meetings <memberservices@merrittworkspace.net>',
-            to: STAFF_EMAILS,
+            to: MEMBER_SERVICES_EMAIL,
             subject: `[COPY] ${template.subject}`,
             html: `
         <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
@@ -666,7 +668,7 @@ export async function sendOrderStatusUpdate(data: {
         // Send copy to member services
         const memberServicesEmail = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
-            to: STAFF_EMAILS,
+            to: MEMBER_SERVICES_EMAIL,
             subject: `[COPY] Order Update - ${data.orderNumber}`,
             html: `
         <div style="background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
@@ -699,7 +701,7 @@ export async function sendNewOrderNotification(order: Order, items: OrderItem[])
         // Send to member services
         const memberServicesResult = await resend.emails.send({
             from: 'Merritt Workspace Snackshop <memberservices@merrittworkspace.net>',
-            to: STAFF_EMAILS,
+            to: MEMBER_SERVICES_EMAIL,
             subject: `🛒 New Snackshop Order - ${order.order_number}`,
             html: `
         <div style="background: #fff8e1; padding: 15px; margin-bottom: 20px; border-radius: 5px; border-left: 4px solid #ed7611;">
@@ -1043,7 +1045,7 @@ export async function sendMemberBookingConfirmationEmail(data: {
         // Send notification to member services
         const memberServicesEmail = await resend.emails.send({
             from: 'Merritt Workspace Meetings <memberservices@merrittworkspace.net>',
-            to: STAFF_EMAILS,
+            to: MEMBER_SERVICES_EMAIL,
             subject: managerTemplate.subject,
             html: managerTemplate.html,
             text: managerTemplate.text,
