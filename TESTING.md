@@ -20,6 +20,7 @@ Runs, in this order, stopping at the first failure:
 
 | Step | Command | What it catches |
 | --- | --- | --- |
+| Clean | `npm run clean` | Stale `.next` output typechecked as if current — see below |
 | Typecheck | `npm run typecheck` | Renamed fields, changed function signatures, drifted types across the ~69 API routes |
 | Unit tests | `npm test` | Business-rule regressions — 550 tests over `lib/` |
 | Production build | `npm run build:check` | Anything that compiles locally but dies in Vercel's build |
@@ -42,6 +43,18 @@ supplies placeholder values for the module-scope clients — nothing real,
 nothing dialled, no network calls — and only fills in variables you have not
 already set, so running it with a real `.env.local` loaded still checks your
 real configuration.
+
+### If typecheck fails inside `.next/`
+
+Errors in `.next/types/**` — "Cannot find module '../../app/membership/page.js'",
+or a route handler whose `params` should be a `Promise` — are stale build
+output, not your code. `tsconfig.json` includes `.next/types/**/*.ts`, so a
+`.next` left over from an older commit (or an older Next version) gets
+typechecked as if it were current.
+
+`npm run verify` deletes `.next` first, so this cannot happen through the
+gate. If you hit it running `npm run typecheck` on its own, run `npm run
+clean` and try again.
 
 ### Lint is advisory, not a gate
 
