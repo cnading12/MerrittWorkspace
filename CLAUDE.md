@@ -130,6 +130,17 @@ explain a status costs one click to dismiss; hiding on it costs the visit.
 ladder for a database behind on a migration — the mirror image of the insert
 ladder in the trial route, and it shares that route's `isMissingColumnError`.
 
+Dismiss (and Approve/Decline) verify their own write:
+`app/api/admin/applications/[id]` selects the row back after updating it and
+returns a real error when the update fails or matches nothing. It used to
+discard the result and answer `{ ok: true }` regardless, and the page took
+that at its word and dropped the card — so a dismiss that never reached the
+database looked identical to one that did, until the row came back on the
+next load. The page now re-reads the queue after every decision instead of
+editing its local copy. Dismissed trial rows can be restored from the panel
+(`action: 'restore'`): dismissing a visit is one click away from viewing it,
+and this screen exists to stop visits going missing.
+
 The endpoint also returns `diagnostics`, which the page prints under the
 queue: how many trial rows exist, how many are already handled, and which
 rung of the ladder answered. An empty queue has three different meanings and
