@@ -250,6 +250,11 @@ export default function AdminApplicationsPage() {
   const [token, setToken] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [decidingId, setDecidingId] = useState<string | null>(null);
+  // Why the last decision did not go through, shown on the page rather than
+  // in an alert(). Browsers suppress alerts in some contexts (and always
+  // after a few in a row), which turns a reported failure into a button that
+  // appears to do nothing at all — the worst possible symptom to debug.
+  const [decisionError, setDecisionError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('trial');
   const [showHandled, setShowHandled] = useState(false);
 
@@ -351,9 +356,10 @@ export default function AdminApplicationsPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        alert(data.error || 'Failed to send the membership application');
+        setDecisionError(data.error || 'Failed to send the membership application.');
         return;
       }
+      setDecisionError(null);
       alert(`Membership application sent to ${data.sent_to}.`);
     } finally {
       setSendingId(null);
@@ -370,6 +376,7 @@ export default function AdminApplicationsPage() {
   async function decide(id: string, action: Decision) {
     if (!token || decidingId) return;
     setDecidingId(id);
+    setDecisionError(null);
     try {
       const res = await fetch(`/api/admin/applications/${id}`, {
         method: 'POST',
@@ -379,9 +386,19 @@ export default function AdminApplicationsPage() {
         },
         body: JSON.stringify({ action }),
       });
-      const data = await res.json().catch(() => ({}));
+      const raw = await res.text();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        // A non-JSON body means something upstream of the route answered —
+        // a platform error page, a redirect to sign-in. Show it rather than
+        // discarding it, truncated so a whole HTML page cannot fill the
+        // screen.
+        data = { error: `The server did not return JSON (HTTP ${res.status}): ${raw.slice(0, 200)}` };
+      }
       if (!res.ok) {
-        alert(
+        setDecisionError(
           data.error ||
             `That did not save (HTTP ${res.status}). The application has been left as it was.`
         );
@@ -391,6 +408,12 @@ export default function AdminApplicationsPage() {
         return;
       }
       await load(token, showHandled);
+    } catch (e: any) {
+      // A throw here is the network, not the route: fetch rejecting, or the
+      // reload after it failing. Silence would look like a dead button.
+      setDecisionError(
+        `The request never completed: ${e?.message || 'unknown error'}. Nothing was changed.`
+      );
     } finally {
       setDecidingId(null);
     }
@@ -419,6 +442,27 @@ export default function AdminApplicationsPage() {
         <div className="rounded border-2 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800">
           <div className="font-semibold">The queue did not load.</div>
           <div className="mt-1">{error}</div>
+        </div>
+      )}
+
+      {decisionError && (
+        <div className="rounded border-2 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="font-semibold">That did not save.</div>
+              <div className="mt-1">{decisionError}</div>
+              <div className="mt-1 text-red-700">
+                The application is unchanged and still in the queue below.
+              </div>
+            </div>
+            <button
+              onClick={() => setDecisionError(null)}
+              className="text-red-700 hover:text-red-900 font-semibold"
+              aria-label="Dismiss this message"
+            >
+              ×
+            </button>
+          </div>
         </div>
       )}
 
