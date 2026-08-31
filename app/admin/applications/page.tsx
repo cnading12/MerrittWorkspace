@@ -66,6 +66,28 @@ interface SelfTestResult {
   steps?: SelfTestStep[];
 }
 
+interface TraceResult {
+  email?: string;
+  error?: string;
+  summary?: string;
+  applications?: Array<{
+    id: string;
+    created_at: string | null;
+    status: string | null;
+    kind: string;
+    dismissed_marker: boolean;
+    where: string;
+  }>;
+  members?: Array<{
+    id: string;
+    created_at: string | null;
+    status: string | null;
+    designation: string | null;
+    archived: boolean;
+    where: string;
+  }>;
+}
+
 function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
   // start_date / trial_date are stored as DATE; format as a calendar day in
@@ -342,6 +364,9 @@ export default function AdminApplicationsPage() {
   const [showHandled, setShowHandled] = useState(false);
   const [selfTest, setSelfTest] = useState<SelfTestResult | null>(null);
   const [selfTesting, setSelfTesting] = useState(false);
+  const [traceEmail, setTraceEmail] = useState('');
+  const [traceResult, setTraceResult] = useState<TraceResult | null>(null);
+  const [tracing, setTracing] = useState(false);
 
   const load = useCallback(
     async (accessToken: string, includeHandled: boolean) => {
@@ -403,6 +428,35 @@ export default function AdminApplicationsPage() {
     if (!token) return;
     setLoading(true);
     await load(token, includeHandled);
+  }
+
+  // Everything the database holds for one email, and where each piece is on
+  // the admin screens. Four near-identical test cards, a member hidden in
+  // the archived view, an application hidden as approved — from the UI
+  // these all read as "the buttons do nothing", and this answers each one
+  // by name instead of sending anyone to the SQL editor.
+  async function runTrace() {
+    const email = traceEmail.trim();
+    if (!token || tracing || !email) return;
+    setTracing(true);
+    setTraceResult(null);
+    try {
+      const params = new URLSearchParams({ email, t: String(Date.now()) });
+      const res = await fetch(`/api/admin/lookup?${params}`, {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTraceResult({ error: data.error || `The trace failed (HTTP ${res.status}).` });
+        return;
+      }
+      setTraceResult(data);
+    } catch (e: any) {
+      setTraceResult({ error: `The trace request never completed: ${e?.message || 'unknown error'}` });
+    } finally {
+      setTracing(false);
+    }
   }
 
   // One click proves the whole pipeline from inside the deployed
@@ -634,6 +688,65 @@ export default function AdminApplicationsPage() {
           <div className="mt-1">{error}</div>
         </div>
       )}
+
+      <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="text-sm text-gray-700 font-medium" htmlFor="trace-email">
+            Trace an email:
+          </label>
+          <input
+            id="trace-email"
+            type="email"
+            value={traceEmail}
+            onChange={(e) => setTraceEmail(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') runTrace();
+            }}
+            placeholder="person@example.com"
+            className="border rounded px-3 py-1.5 text-sm min-w-[240px]"
+          />
+          <button
+            onClick={runTrace}
+            disabled={tracing || !traceEmail.trim()}
+            className="text-sm border border-gray-400 rounded px-3 py-1.5 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Shows every application row and member row for this email, and exactly which screen shows each one — or why it is hidden."
+          >
+            {tracing ? 'Tracing…' : 'Trace'}
+          </button>
+          <span className="text-xs text-gray-500">
+            Shows everything the database holds for one email and where each piece is.
+          </span>
+        </div>
+        {traceResult && (
+          <div className="mt-3 text-sm space-y-2">
+            {traceResult.error ? (
+              <div className="text-red-700">{traceResult.error}</div>
+            ) : (
+              <>
+                <div className="font-medium text-gray-800">{traceResult.summary}</div>
+                {(traceResult.applications || []).map((a) => (
+                  <div key={a.id} className="border-l-2 border-gray-300 pl-3">
+                    <span className="font-semibold">
+                      {a.kind === 'trial' ? 'Trial application' : 'Membership application'}
+                    </span>{' '}
+                    submitted {a.created_at ? new Date(a.created_at).toLocaleString() : '(no date)'} ·
+                    status {a.status === null ? 'NULL' : JSON.stringify(a.status)}
+                    {a.dismissed_marker ? ' · dismissed' : ''} → {a.where}
+                  </div>
+                ))}
+                {(traceResult.members || []).map((m) => (
+                  <div key={m.id} className="border-l-2 border-blue-300 pl-3">
+                    <span className="font-semibold">Member record</span> created{' '}
+                    {m.created_at ? new Date(m.created_at).toLocaleString() : '(no date)'} · status{' '}
+                    {m.status === null ? 'NULL' : JSON.stringify(m.status)}
+                    {m.archived ? ' · ARCHIVED' : ''} → {m.where}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {decisionNote && !decisionError && (
         <div className="rounded border border-green-500 bg-green-50 px-4 py-3 text-sm text-green-900">
