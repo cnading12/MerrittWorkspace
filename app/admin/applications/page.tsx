@@ -893,6 +893,15 @@ function DiagnosticsPanel({ diagnostics }: { diagnostics: Diagnostics }) {
         {' · '}loaded {new Date().toLocaleTimeString()} — click for details
       </summary>
       <div className="mt-2 space-y-1.5">
+        {/* Said before anything else, because this block has twice been read
+            as "nothing new exists" while the new rows sat one tab over as
+            live cards. The debug list is about rows the tabs are NOT
+            showing; this line is about the ones they are. */}
+        <div className="font-semibold text-gray-600">
+          The tabs above are currently showing {diagnostics.trialShown} trial day card(s) and{' '}
+          {diagnostics.standardShown} membership application card(s). A row marked with a tab name
+          below is one of those live cards, not a missing application.
+        </div>
         {(diagnostics.supabaseHost || diagnostics.newestRowCreatedAt !== undefined) && (
           <div>
             {diagnostics.supabaseHost && (
@@ -918,7 +927,7 @@ function DiagnosticsPanel({ diagnostics }: { diagnostics: Diagnostics }) {
               Rows in the database, newest first
               {diagnostics.windowSize !== undefined &&
                 diagnostics.recentRows.length < diagnostics.windowSize &&
-                ` (showing ${diagnostics.recentRows.length} of ${diagnostics.windowSize}; every hidden row is listed first)`}
+                ` (showing ${diagnostics.recentRows.length} of ${diagnostics.windowSize} — every card the tabs are showing is listed; only the oldest hidden rows are trimmed)`}
               :
             </div>
             <ul className="mt-1 space-y-0.5 font-mono">

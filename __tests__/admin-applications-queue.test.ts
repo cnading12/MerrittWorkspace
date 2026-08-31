@@ -427,8 +427,45 @@ describe('the diagnostics list never drops the row being asked about', () => {
     expect(body.diagnostics.hiddenRowsFound).toBe(1);
   });
 
+  // The mirror image of the "Buried" case above, and the way this block
+  // misled for real on a live queue: 39 old approved rows ate every one of
+  // the 25 hidden-first slots, the day's PENDING submissions were truncated
+  // out of the list, and the panel told an admin their test applications
+  // were never saved while the cards sat one tab over. A row the tabs are
+  // showing must always be listed — truncation may only trim hidden rows.
+  it('always lists every row the tabs are showing, however many hidden rows exist', async () => {
+    const handled = Array.from({ length: 39 }, (_, i) =>
+      fullRow({
+        status: 'approved',
+        created_at: `2026-0${(i % 6) + 1}-${String((i % 27) + 1).padStart(2, '0')}T00:00:00Z`,
+      })
+    );
+    const todays = [
+      fullRow({ status: 'pending', first_name: 'Today', created_at: '2026-08-31T21:20:17Z' }),
+      fullRow({ status: 'pending', first_name: 'AlsoToday', created_at: '2026-08-31T20:00:00Z' }),
+    ];
+    db.rows = [...handled, ...todays];
+
+    const { body } = await queue();
+    const ids = body.diagnostics.recentRows.map((r: any) => r.id);
+    for (const row of todays) expect(ids).toContain(row.id);
+    // And they say which tab they are on, so the list cannot read as "lost".
+    const byId = Object.fromEntries(
+      body.diagnostics.recentRows.map((r: any) => [r.id, r.shown_in])
+    );
+    expect(byId[todays[0].id]).toBe('Membership applications tab');
+  });
+
   it('reports the cap and the window size so the panel can say it is truncated', async () => {
-    db.rows = Array.from({ length: 40 }, () => fullRow({ status: 'pending' }));
+    // 40 hidden rows: only the newest 25 are listed and the counts say so.
+    // (Shown rows are never truncated, so the cap is exercised with hidden
+    // ones.)
+    db.rows = Array.from({ length: 40 }, (_, i) =>
+      fullRow({
+        status: 'approved',
+        created_at: `2026-07-${String((i % 28) + 1).padStart(2, '0')}T0${i % 10}:00:00Z`,
+      })
+    );
     const { body } = await queue();
     expect(body.diagnostics.windowSize).toBe(40);
     expect(body.diagnostics.recentRowLimit).toBe(25);
