@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { MemberApplication } from '@/lib/portal/types';
 import { readTrialDate } from '@/lib/portal/trial';
-import { isTrialApplication, trialPhotoIdMissing } from '@/lib/portal/trialApplication';
+import {
+  isTrialApplication,
+  readConvertedApplicationId,
+  readTrialOrigin,
+  trialPhotoIdMissing,
+} from '@/lib/portal/trialApplication';
 
 // Two tabs, not one list with a band on top.
 //
@@ -78,6 +83,12 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
   // door instead — but staff have to know that before the person arrives.
   const idMissing = trialPhotoIdMissing(app);
   const handled = app.status === 'approved' || app.status === 'declined';
+  // They have already come back and filled in the full application. Without
+  // this the card looks exactly as it did the day they visited — still
+  // offering "Send membership application" — while the application they
+  // actually submitted sits one tab over. That is how a submitted
+  // application reads as a lost one.
+  const converted = !!readConvertedApplicationId(app);
   return (
     <div className={`bg-orange-50 border-2 border-orange-500 border-l-8 rounded-lg p-4 shadow-sm ${handled ? 'opacity-60' : ''}`}>
       <div className="flex items-start justify-between gap-4">
@@ -89,6 +100,11 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
             {handled && (
               <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-gray-200 text-gray-700">
                 {app.status === 'declined' ? 'DISMISSED' : 'APPROVED'}
+              </span>
+            )}
+            {converted && (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-green-600 text-white">
+                APPLIED FOR MEMBERSHIP
               </span>
             )}
             <span className="text-xs text-orange-800">
@@ -132,6 +148,14 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
             </div>
           )}
 
+          {converted && (
+            <div className="mt-3 rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900">
+              <span className="font-semibold">They have completed a membership application.</span>{' '}
+              It is waiting for a decision under <strong>Membership applications</strong> — there is
+              nothing left to do on this card.
+            </div>
+          )}
+
           <div className="text-xs text-gray-500 mt-2">
             Submitted {new Date(app.created_at).toLocaleString()}
           </div>
@@ -144,14 +168,19 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
             View application
           </button>
           {shortForm ? (
-            <button
-              onClick={() => onSendApplication(app.id)}
-              disabled={sending || busy}
-              className="bg-orange-600 text-white px-3 py-1.5 rounded text-sm hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Emails them a membership application prefilled with what they gave us for the trial day"
-            >
-              {sending ? 'Sending…' : 'Send membership application'}
-            </button>
+            // Not offered once they have converted: the API refuses it
+            // anyway, and a button that invites staff to chase someone who
+            // has already applied is the confusion itself.
+            !converted && (
+              <button
+                onClick={() => onSendApplication(app.id)}
+                disabled={sending || busy}
+                className="bg-orange-600 text-white px-3 py-1.5 rounded text-sm hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Emails them a membership application prefilled with what they gave us for the trial day"
+              >
+                {sending ? 'Sending…' : 'Send membership application'}
+              </button>
+            )
           ) : (
             <button
               onClick={() => onDecide(app.id, 'approve')}
@@ -187,6 +216,10 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
 }
 
 function StandardCard({ app, onDecide, onView, busy }: CardProps) {
+  // The other half of the trial card's badge: this application grew out of a
+  // trial day, and saying so here is what stops staff hunting for it in the
+  // trial tab, where it deliberately is not.
+  const trialOrigin = readTrialOrigin(app);
   return (
     <div className="bg-white border rounded p-4">
       <div className="flex items-start justify-between gap-4">
@@ -194,6 +227,12 @@ function StandardCard({ app, onDecide, onView, busy }: CardProps) {
           <div className="font-semibold text-gray-900">
             {app.first_name} {app.last_name}
           </div>
+          {trialOrigin && (
+            <div className="mt-1 inline-flex items-center gap-1.5 rounded bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-800">
+              Came in from a trial day
+              {trialOrigin.trial_date ? ` on ${formatDate(trialOrigin.trial_date)}` : ''}
+            </div>
+          )}
           <div className="text-sm text-gray-600">{app.email} · {app.phone}</div>
           <div className="text-sm text-gray-600">
             {app.company_name && `${app.company_name} · `}

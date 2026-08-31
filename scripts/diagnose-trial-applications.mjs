@@ -16,7 +16,11 @@
 //      falls back), but it does explain a missing resume link or photo ID.
 //   2. What each admin queue returns, verbatim — the same two selects the
 //      admin page makes, so "nothing shows up" gets a yes or no answer here.
-//      The trial read is not filtered on status, matching the panel.
+//      The trial read is not filtered on status, matching the panel. Both
+//      tabs are listed by name, and trial visitors who have since completed
+//      a full application are called out with the tab their application is
+//      actually in — the commonest reason a submitted application reads as
+//      a lost one.
 //   3. Every trial application from the last 60 days, with what became of it.
 //   4. A storage round trip under trial-applications/, which is the one step
 //      that used to delete a saved application when it failed.
@@ -164,17 +168,65 @@ if (trialRows.length === 0) {
 }
 
 // Approval tab: pending membership applications only.
+//
+// Listed by name, not just counted. "I finished my application and it is not
+// in the panel" is answered by reading this list, and a count of 3 does not
+// answer it.
 const { data: pending, error: pendingErr } = await sb
   .from('member_applications')
   .select('*')
   .eq('status', 'pending')
   .order('created_at', { ascending: false });
 
+let standard = [];
 if (pendingErr) {
   bad(`the membership applications query FAILS: ${pendingErr.message}`);
 } else {
-  const standard = pending.filter((r) => !isTrial(r));
+  standard = pending.filter((r) => !isTrial(r));
   console.log(`  Membership applications tab: ${standard.length} awaiting a decision`);
+  for (const r of standard) {
+    const origin = r.payload?.converted_from_trial;
+    console.log(
+      `    • ${r.first_name} ${r.last_name} <${r.email}> — ${r.membership_type || '?'}` +
+        ` — start ${r.start_date || '?'} — submitted ${new Date(r.created_at).toLocaleString()}` +
+        (origin ? ` — came from a trial day on ${origin.trial_date || '?'}` : '')
+    );
+  }
+}
+
+// ── 2b. trial visitors who came back to join ──────────────────────────────
+//
+// The path that reads as "my application vanished": someone does a trial
+// day, gets the follow-up link, completes the full application — and staff,
+// looking at the Trial days tab where they last saw that person, see the
+// same card they always saw. The application is in the OTHER tab. This says
+// which trial rows converted and where each one went.
+{
+  const converted = trialRows.filter((r) => r.converted_to_application_id);
+  console.log(`\n  Trial visitors who have completed a membership application: ${converted.length}`);
+  for (const r of converted) {
+    const full = standard.find((s) => s.id === r.converted_to_application_id);
+    console.log(
+      `    • ${r.first_name} ${r.last_name} <${r.email}> — trial ${r.trial_date || r.payload?.trial_date || '?'}` +
+        ` → application ${r.converted_to_application_id}` +
+        (full
+          ? ' — showing under Membership applications'
+          : ' — NOT in the pending list (already decided, or the row is gone)')
+    );
+  }
+  // A trial row whose person applied but which was never linked cannot be
+  // found by id, so match on email instead. This is what a half-failed
+  // conversion looks like from the outside.
+  const unlinked = trialRows.filter(
+    (r) => !r.converted_to_application_id && standard.some((s) => s.email === r.email)
+  );
+  for (const r of unlinked) {
+    warn(
+      `${r.first_name} ${r.last_name} <${r.email}> has a pending membership application but their\n` +
+        '     trial row was never marked converted — the trial card will still offer\n' +
+        '     "Send membership application".'
+    );
+  }
 }
 
 // ── 3. every trial row of the last 60 days ────────────────────────────────
