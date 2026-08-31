@@ -34,6 +34,9 @@ import { OFFICE_SIZE_FOR_PLAN } from '@/lib/portal/officeSizes';
 import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
 import { generateTrialDayEmailHTML, generateTrialDayEmailText } from '@/lib/portal/trialDayEmail';
 import { UploadValidationError, validateUpload } from '@/lib/portal/uploads';
+// The same "this database does not have that column yet" predicate the admin
+// read path uses to walk the mirror image of the insert ladder below.
+import { isMissingColumnError } from '@/lib/portal/applicationQueue';
 import {
   MAX_ID_FILE_BYTES,
   MAX_ID_FILE_LABEL,
@@ -463,18 +466,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// Is this PostgREST/Postgres error "this database does not have that column
-// yet"? Two shapes to cover: PostgREST refusing an unknown key against its
-// schema cache (PGRST204), and Postgres itself reporting an undefined column
-// (42703).
-function isMissingColumnError(error: { message?: string; code?: string } | null): boolean {
-  if (!error) return false;
-  if (error.code === 'PGRST204' || error.code === '42703') return true;
-  return /column .* does not exist|could not find the .* column|schema cache/i.test(
-    error.message || ''
-  );
 }
 
 function escapeHtml(value: string): string {

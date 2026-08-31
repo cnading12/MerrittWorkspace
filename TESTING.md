@@ -163,8 +163,14 @@ end. Each arrow is a place it has broken before.
      duplicate application.
 2. **Trial variant.** `/membership/apply?trial=1` → the short form. Confirm
    the trial-day email arrives and `wants_trial_day` / `trial_date` land on
-   the row.
-3. **Approve.** `/admin/applications` → open it → approve.
+   the row, then check `/admin/applications` → **Trial days** tab: the visit
+   is there, sorted by the day they are coming in. It must appear whatever
+   happened to the photo ID, and it must never show up under **Membership
+   applications**. The line under the queue reports how many trial rows the
+   database holds — if it says more than the tab shows, the rest are
+   dismissed and "Show dismissed" will bring them back.
+3. **Approve.** `/admin/applications` → **Membership applications** tab →
+   open it → approve.
    - Designation and `monthly_cost_cents` populate automatically from
      `pricing.ts`. Check the number.
    - Invitation email arrives at the applicant's address.
@@ -322,8 +328,9 @@ npm run diagnose:trial -- --write   # also inserts a probe row, then deletes it
 Needs `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in
 `.env.local` (or exported) — the service key, so it sees what the API routes
 see. It walks the whole path a trial-day submission takes: which columns
-`member_applications` actually has (that is your migration state), what the
-admin queue query returns right now, every trial application of the last 60
+`member_applications` actually has (that is your migration state), what each
+of the two admin queues returns right now — the trial read is not filtered on
+status, exactly as the panel does it — every trial application of the last 60
 days and whether its photo ID stored, and a real upload into the
 `trial-applications/` prefix.
 

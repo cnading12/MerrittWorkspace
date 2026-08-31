@@ -14,8 +14,9 @@
 //   1. Which columns member_applications actually has → which migrations are
 //      applied. A missing one no longer loses the application (the route
 //      falls back), but it does explain a missing resume link or photo ID.
-//   2. What the admin queue query returns, verbatim — the same select the
+//   2. What each admin queue returns, verbatim — the same two selects the
 //      admin page makes, so "nothing shows up" gets a yes or no answer here.
+//      The trial read is not filtered on status, matching the panel.
 //   3. Every trial application from the last 60 days, with what became of it.
 //   4. A storage round trip under trial-applications/, which is the one step
 //      that used to delete a saved application when it failed.
@@ -99,8 +100,70 @@ if (missing.size) {
   ok('every trial-day column is present');
 }
 
-// ── 2. the admin queue, exactly as the admin page asks for it ─────────────
-heading(2, 'Admin queue — what /admin/applications would show right now');
+// ── 2. the two admin queues, exactly as /admin/applications asks for them ─
+//
+// Since the queue was split these are two different reads, and the trial one
+// is deliberately NOT filtered on status — see lib/portal/applicationQueue.ts.
+// Running both here is the point: "the trial tab is empty" and "the approval
+// tab is empty" now have separate answers.
+heading(2, 'Admin queues — what /admin/applications would show right now');
+
+const HANDLED = new Set(['approved', 'declined']);
+const isTrial = (r) =>
+  r.application_kind === 'trial' ||
+  r.payload?.application_kind === 'trial' ||
+  r.wants_trial_day === true ||
+  r.payload?.wants_trial_day === true;
+
+// Trial tab: every trial row, no status filter.
+let trialRows = [];
+let trialVia = 'application_kind or wants_trial_day';
+{
+  let res = await sb
+    .from('member_applications')
+    .select('*')
+    .or('application_kind.eq.trial,wants_trial_day.eq.true')
+    .order('created_at', { ascending: false });
+  if (res.error) {
+    trialVia = 'wants_trial_day';
+    res = await sb
+      .from('member_applications')
+      .select('*')
+      .eq('wants_trial_day', true)
+      .order('created_at', { ascending: false });
+  }
+  if (res.error) {
+    trialVia = 'payload scan';
+    res = await sb
+      .from('member_applications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(500);
+  }
+  if (res.error) {
+    bad(`the trial queue query FAILS: ${res.error.message}`);
+  } else {
+    trialRows = (res.data || []).filter(isTrial);
+  }
+}
+
+const openTrials = trialRows.filter((r) => !HANDLED.has(String(r.status || '').toLowerCase()));
+console.log(`  Trial days tab (read via ${trialVia}): ${openTrials.length} showing, ${trialRows.length} trial row(s) in total`);
+for (const r of openTrials) {
+  console.log(
+    `    • ${r.first_name} ${r.last_name} <${r.email}> — trial ${r.trial_date || r.payload?.trial_date || '?'}` +
+      ` — ${r.membership_type || '?'} — status ${JSON.stringify(r.status)} — submitted ${new Date(r.created_at).toLocaleString()}`
+  );
+}
+if (trialRows.length === 0) {
+  ok('no trial applications exist at all (nothing is stuck)');
+} else if (openTrials.length === 0) {
+  warn('every trial application has been dismissed or approved — none are showing');
+} else {
+  ok(`${openTrials.length} trial day(s) are visible to staff`);
+}
+
+// Approval tab: pending membership applications only.
 const { data: pending, error: pendingErr } = await sb
   .from('member_applications')
   .select('*')
@@ -108,19 +171,10 @@ const { data: pending, error: pendingErr } = await sb
   .order('created_at', { ascending: false });
 
 if (pendingErr) {
-  bad(`the admin applications query FAILS: ${pendingErr.message}`);
+  bad(`the membership applications query FAILS: ${pendingErr.message}`);
 } else {
-  const isTrial = (r) =>
-    r.wants_trial_day === true || r.payload?.wants_trial_day === true;
-  const trial = pending.filter(isTrial);
-  console.log(`  ${pending.length} pending application(s): ${trial.length} trial day, ${pending.length - trial.length} standard`);
-  for (const r of trial) {
-    console.log(
-      `    • ${r.first_name} ${r.last_name} <${r.email}> — trial ${r.trial_date || r.payload?.trial_date || '?'}` +
-        ` — ${r.membership_type || '?'} — submitted ${new Date(r.created_at).toLocaleString()}`
-    );
-  }
-  if (trial.length === 0) ok('no trial applications are waiting (nothing is stuck)');
+  const standard = pending.filter((r) => !isTrial(r));
+  console.log(`  Membership applications tab: ${standard.length} awaiting a decision`);
 }
 
 // ── 3. every trial row of the last 60 days ────────────────────────────────

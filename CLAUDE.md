@@ -104,6 +104,40 @@ Supabase that rejects unknown columns the way PostgREST does.
 `npm run diagnose:trial` (see `TESTING.md`) checks the same path against the
 live database.
 
+## The admin queue is two queues
+
+`/admin/applications` has two tabs, and they are two different reads
+(`app/api/admin/applications/route.ts`, split by
+`lib/portal/applicationQueue.ts`):
+
+- **Trial days** — visits to expect. Selected on being a trial row at all
+  (`application_kind = 'trial'`, or `wants_trial_day` for legacy rows from
+  the old combined form), **never on `status`**. Rows whose status is
+  explicitly `approved` or `declined` are dropped afterwards, in JS.
+- **Membership applications** — decisions to make. Selected on
+  `status = 'pending'`, which is what awaiting a decision means.
+
+Do not "simplify" this back into one query. A trial day is a person who has
+told us they are coming to the building on a named day; the panel is the only
+place staff see that, and there is no retry and no second copy. A membership
+application that is briefly invisible gets approved a day later. A visit that
+is briefly invisible is someone standing in reception that nobody expected.
+
+So the trial read refuses to trust `status` to mean what we think it means: a
+row with a null, empty or unrecognised status still shows. Being unable to
+explain a status costs one click to dismiss; hiding on it costs the visit.
+`__tests__/admin-applications-queue.test.ts` holds that, along with the read
+ladder for a database behind on a migration — the mirror image of the insert
+ladder in the trial route, and it shares that route's `isMissingColumnError`.
+
+The endpoint also returns `diagnostics`, which the page prints under the
+queue: how many trial rows exist, how many are already handled, and which
+rung of the ladder answered. An empty queue has three different meanings and
+staff cannot tell them apart from the word "none". For the same reason the
+page only bounces to the sign-in screen on 401/403 — any other failure is
+shown as an error, because a failing query that looks like a logout is how a
+broken queue stays broken quietly.
+
 ## Café membership — the cap lives in code
 
 `cafe_membership` ($100/mo, `lib/portal/pricing.ts`) is open seating on the café
