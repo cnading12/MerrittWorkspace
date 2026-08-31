@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { MemberApplication } from '@/lib/portal/types';
 import { readTrialFlag, readTrialDate } from '@/lib/portal/trial';
-import { isTrialApplication } from '@/lib/portal/trialApplication';
+import { isTrialApplication, trialPhotoIdMissing } from '@/lib/portal/trialApplication';
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
@@ -60,6 +60,9 @@ interface TrialCardProps extends CardProps {
 }
 
 function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sending }: TrialCardProps) {
+  // The visit still stands when the ID did not save — it is checked at the
+  // door instead — but staff have to know that before the person arrives.
+  const idMissing = trialPhotoIdMissing(app);
   return (
     <div className="bg-orange-50 border-2 border-orange-500 border-l-8 rounded-lg p-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -70,7 +73,7 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
             </span>
             <span className="text-xs text-orange-800">
               {shortForm
-                ? 'Trial info emailed · photo ID on file · nothing to approve'
+                ? `Trial info emailed · ${idMissing ? 'no photo ID on file' : 'photo ID on file'} · nothing to approve`
                 : 'Trial info already emailed to applicant'}
             </span>
           </div>
@@ -101,6 +104,13 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
               </div>
             </div>
           </div>
+
+          {idMissing && (
+            <div className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+              <span className="font-semibold">Photo ID did not save.</span> Check their
+              government-issued ID when they arrive.
+            </div>
+          )}
 
           <div className="text-xs text-gray-500 mt-2">
             Submitted {new Date(app.created_at).toLocaleString()}

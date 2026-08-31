@@ -312,6 +312,26 @@ being absent — it retries the insert without them and warns. That means a
 missing migration degrades *quietly*, which is exactly why this needs checking
 by hand rather than being noticed later.
 
+### `npm run diagnose:trial` — answering "where did that application go?"
+
+```
+npm run diagnose:trial              # read-only
+npm run diagnose:trial -- --write   # also inserts a probe row, then deletes it
+```
+
+Needs `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in
+`.env.local` (or exported) — the service key, so it sees what the API routes
+see. It walks the whole path a trial-day submission takes: which columns
+`member_applications` actually has (that is your migration state), what the
+admin queue query returns right now, every trial application of the last 60
+days and whether its photo ID stored, and a real upload into the
+`trial-applications/` prefix.
+
+Run it first whenever someone reports a submitted application that never
+appeared in the admin panel. It answers in one command whether the row is
+missing or merely not being displayed, which is the fork the rest of the
+debugging hangs off.
+
 ---
 
 ## Release checklist

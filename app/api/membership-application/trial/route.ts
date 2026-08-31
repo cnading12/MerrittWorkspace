@@ -11,9 +11,12 @@
 //     to inform the admin approve/decline decision, and a trial day has
 //     never been gated on one — the trial-day email has always gone out
 //     immediately on submit. Collecting them here only cost us applicants.
-//   • A photo ID is REQUIRED, where the full application collects it later
-//     in the portal. It is the only identity check before someone spends a
-//     day in the building, so it is the one thing this form will not skip.
+//   • A photo ID is REQUIRED to submit, where the full application collects
+//     it later in the portal. It is the identity check before someone spends
+//     a day in the building. Note the asymmetry further down: the form will
+//     not let anyone through without attaching one, but a failure to STORE
+//     what they attached does not throw the application away — staff check
+//     the ID at the door instead.
 //   • The row is written with `application_kind = 'trial'` so it stays out
 //     of the admin approve/decline queue, and with a `resume_token` so the
 //     follow-up email can prefill a full application from it.
@@ -30,12 +33,12 @@ import { getOfficeAvailability } from '@/lib/portal/officeAvailability';
 import { OFFICE_SIZE_FOR_PLAN } from '@/lib/portal/officeSizes';
 import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
 import { generateTrialDayEmailHTML, generateTrialDayEmailText } from '@/lib/portal/trialDayEmail';
+import { UploadValidationError, validateUpload } from '@/lib/portal/uploads';
 import {
   MAX_ID_FILE_BYTES,
   MAX_ID_FILE_LABEL,
   denverToday,
   generateResumeToken,
-  isAcceptedIdMimeType,
   trialIdDocumentPath,
   trialPlanFor,
   validateTrialSubmission,
@@ -96,11 +99,20 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    if (!isAcceptedIdMimeType(idFile.type)) {
-      return NextResponse.json(
-        { error: 'Please attach an image or a PDF of your ID.' },
-        { status: 400 }
-      );
+    // Same strict allowlist the portal and guest-booking uploads use
+    // (lib/portal/uploads.ts). It returns the content type to STORE and the
+    // extension to name the object with, rather than trusting either from
+    // the browser: staff open these files through a signed URL, and an
+    // object stored as text/html — or an SVG carrying an inline script —
+    // would render as a live page on the storage origin when they did.
+    let validatedId;
+    try {
+      validatedId = validateUpload(idFile);
+    } catch (e) {
+      if (e instanceof UploadValidationError) {
+        return NextResponse.json({ error: e.message }, { status: 400 });
+      }
+      throw e;
     }
 
     const seating = input.seating as TrialSeating;
@@ -142,9 +154,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Insert first so the storage path can be keyed on the row id. If the
-    // upload then fails we delete the row again rather than leave a trial
-    // applicant on the books with no ID against their name.
+    // Insert first so the storage path can be keyed on the row id.
+    //
+    // Nothing below this point is allowed to unwind that row. A submitted
+    // trial application is a person who has told us they are coming in on a
+    // named day, and the admin panel is the only place staff see that. A
+    // storage hiccup or a column this database has not been migrated for is
+    // not a reason to make them disappear — see the upload and fallback
+    // notes below.
     const baseRow = {
       email: input.email,
       first_name: input.first_name,
@@ -170,70 +187,122 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    let inserted: { id: string } | null = null;
-    {
-      const attempt = await sb
+    // Written down the migration ladder, newest columns first. Each rung
+    // drops the columns a database that is one migration behind does not
+    // have yet; every one of them is mirrored in `payload`, which the admin
+    // panel and the prefill reader both read as a fallback, so a row written
+    // on the bottom rung still shows up and still says what it is.
+    //
+    // Behind on a migration must never cost us the application. It nearly
+    // did: the ladder used to stop after stripping the 20260824 columns, so
+    // a database missing anything else — `wants_trial_day` and `trial_date`
+    // from 20260428, say — threw, and the applicant was told to try again on
+    // a submission that could never succeed.
+    const insertAttempts: Array<{ row: Record<string, unknown>; missing: string }> = [
+      {
+        row: { ...baseRow, application_kind: 'trial', resume_token: resumeToken },
+        missing: '20260824_trial_application_split.sql',
+      },
+      { row: baseRow, missing: '20260428_trial_day_applicants.sql' },
+      {
+        row: {
+          ...baseRow,
+          wants_trial_day: undefined,
+          trial_date: undefined,
+        },
+        missing: '',
+      },
+    ];
+
+    let applicationId: string | null = null;
+    let insertError: string | null = null;
+    for (const attempt of insertAttempts) {
+      const row = Object.fromEntries(
+        Object.entries(attempt.row).filter(([, v]) => v !== undefined)
+      );
+      const { data, error } = await sb
         .from('member_applications')
-        .insert({ ...baseRow, application_kind: 'trial', resume_token: resumeToken })
+        .insert(row)
         .select('id')
         .single();
-      if (
-        attempt.error &&
-        /column .* does not exist|application_kind|resume_token/i.test(attempt.error.message || '')
-      ) {
-        // 20260824_trial_application_split.sql not applied yet. The kind and
-        // the seating still live in `payload`, so the admin panel and the
-        // prefill reader (which both fall back to it) keep working; only the
-        // resume link is unavailable until the migration lands.
+      if (!error) {
+        applicationId = data!.id;
+        insertError = null;
+        break;
+      }
+      insertError = error.message || 'unknown error';
+      if (!isMissingColumnError(error)) break;
+      if (attempt.missing) {
         console.warn(
-          '⚠️ Trial-application columns missing; storing kind in payload only. Apply migration 20260824_trial_application_split.sql.'
+          `⚠️ member_applications is missing columns this route writes. Apply migration ${attempt.missing}. Retrying without them.`
         );
-        const retry = await sb.from('member_applications').insert(baseRow).select('id').single();
-        if (retry.error) throw new Error(retry.error.message);
-        inserted = retry.data;
-      } else if (attempt.error) {
-        throw new Error(attempt.error.message);
-      } else {
-        inserted = attempt.data;
       }
     }
 
-    const applicationId = inserted!.id;
-
-    // Store the ID before anything else observable happens. Path prefix
-    // `trial-applications/` can never collide with a members.id UUID, so the
-    // member self-read storage policies never match it — see
-    // lib/portal/trialApplication.ts and 20260406_storage_rls_policies.sql.
-    const idDocumentPath = trialIdDocumentPath(applicationId, idFile.name, Date.now());
-    const idBytes = new Uint8Array(await idFile.arrayBuffer());
-    const { error: uploadError } = await sb.storage
-      .from('member-documents')
-      .upload(idDocumentPath, idBytes, { contentType: idFile.type, upsert: false });
-
-    if (uploadError) {
-      console.error('❌ Trial ID upload failed:', uploadError);
-      const { error: cleanupError } = await sb
-        .from('member_applications')
-        .delete()
-        .eq('id', applicationId);
-      if (cleanupError) {
-        console.error('⚠️ Failed to roll back trial application row:', cleanupError);
-      }
-      return NextResponse.json(
-        { error: 'We could not upload your ID. Please try again.' },
-        { status: 500 }
+    if (!applicationId) {
+      // The staff email below becomes the only record of this visit, so it
+      // is sent anyway and says so. Failing the request instead would leave
+      // the applicant retrying into the same error and nobody any the wiser.
+      console.error(
+        '❌ Failed to save a trial application to member_applications:',
+        insertError
       );
     }
 
-    const { error: pathError } = await sb
-      .from('member_applications')
-      .update({ id_document_path: idDocumentPath })
-      .eq('id', applicationId);
-    if (pathError) {
-      // The file is stored and the application exists; losing the pointer
-      // means staff have to find it by application id rather than from the
-      // Documents page. Not worth failing a submission over.
-      console.error('⚠️ Failed to record trial ID document path:', pathError);
+    // Store the ID. Path prefix `trial-applications/` can never collide with
+    // a members.id UUID, so the member self-read storage policies never match
+    // it — see lib/portal/trialApplication.ts and
+    // 20260406_storage_rls_policies.sql. The object is named from the
+    // canonical extension for the validated content type, not from whatever
+    // the browser called the file.
+    let idDocumentPath: string | null = null;
+    let idUploadFailed = false;
+    if (applicationId) {
+      const path = trialIdDocumentPath(
+        applicationId,
+        `photo-id.${validatedId.extension}`,
+        Date.now()
+      );
+      const idBytes = new Uint8Array(await idFile.arrayBuffer());
+      const { error: uploadError } = await sb.storage
+        .from('member-documents')
+        .upload(path, idBytes, { contentType: validatedId.contentType, upsert: false });
+
+      if (uploadError) {
+        // Deliberately NOT fatal, and deliberately no rollback of the row.
+        //
+        // This used to delete the application and return a 500, on the
+        // reasoning that a trial applicant should never be on the books with
+        // no ID against their name. That trade is the wrong way round: the
+        // ID is an identity check staff can complete at the door, where they
+        // are standing in front of the person, but a deleted row means
+        // nobody knows anyone is coming at all — the application vanishes
+        // from the admin panel with no trace of who filled the form in.
+        //
+        // So the row stays, flagged, and the staff email says to collect the
+        // ID on arrival.
+        console.error('❌ Trial ID upload failed:', uploadError);
+        idUploadFailed = true;
+        const { error: flagError } = await sb
+          .from('member_applications')
+          .update({ payload: { ...baseRow.payload, id_upload_failed: true } })
+          .eq('id', applicationId);
+        if (flagError) {
+          console.error('⚠️ Failed to flag the missing trial photo ID:', flagError);
+        }
+      } else {
+        idDocumentPath = path;
+        const { error: pathError } = await sb
+          .from('member_applications')
+          .update({ id_document_path: path })
+          .eq('id', applicationId);
+        if (pathError) {
+          // The file is stored and the application exists; losing the pointer
+          // means staff have to find it by application id rather than from the
+          // Documents page. Not worth failing a submission over.
+          console.error('⚠️ Failed to record trial ID document path:', pathError);
+        }
+      }
     }
 
     if (!process.env.RESEND_API_KEY) {
@@ -318,8 +387,20 @@ export async function POST(request: NextRequest) {
     const planLabel =
       MEMBERSHIP_PLANS[trialPlan]?.label ||
       (isOfficeTrial ? 'Private office' : isCafeTrial ? 'Café membership' : 'Dedicated desk');
-    const staffSubject = `🟧 TRIAL DAY — ${input.first_name} ${input.last_name} (${planLabel}) on ${input.trial_date}`;
+    // Anything that went wrong on the way here is said at the TOP of this
+    // email, and in the subject line. Staff read these on a phone: a trial
+    // day that did not reach the admin panel has to be obvious without
+    // scrolling, because this email is then the only record of it.
+    const staffSubject = applicationId
+      ? `🟧 TRIAL DAY — ${input.first_name} ${input.last_name} (${planLabel}) on ${input.trial_date}`
+      : `🚨 TRIAL DAY NOT SAVED — ${input.first_name} ${input.last_name} (${planLabel}) on ${input.trial_date}`;
     const staffLines = [
+      ...(applicationId
+        ? []
+        : [
+            'ACTION: this trial day did NOT save to the admin panel, so it will not appear under Pending applications. This email is the only record of it — please add it to the calendar and reply to them directly.',
+            '',
+          ]),
       `${input.first_name} ${input.last_name} is coming in for a trial day.`,
       '',
       `Date: ${input.trial_date}`,
@@ -328,7 +409,9 @@ export async function POST(request: NextRequest) {
       `Phone: ${input.phone}`,
       ...(input.company_name ? [`Company: ${input.company_name}`] : []),
       '',
-      'Photo ID is attached to the application and viewable on the admin Documents page.',
+      idDocumentPath
+        ? 'Photo ID is attached to the application and viewable on the admin Documents page.'
+        : 'ACTION: their photo ID did not save. Check it at the door when they arrive.',
       ...(isOfficeTrial
         ? [
             '',
@@ -336,7 +419,7 @@ export async function POST(request: NextRequest) {
           ]
         : []),
       '',
-      `Application: ${applicationId}`,
+      ...(applicationId ? [`Application: ${applicationId}`] : []),
     ];
     const staffText = staffLines.join('\n');
     const staffHtml = `<div style="font-family:system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.6">${staffLines
@@ -355,13 +438,23 @@ export async function POST(request: NextRequest) {
       console.error('❌ Trial staff notification failed:', error);
     }
 
+    // A valid submission is a confirmed trial day, whatever happened to the
+    // row or the ID behind the scenes: staff have been emailed either way,
+    // and telling this person to "try again" would only send them back
+    // through the same failure.
+    const idNote = idUploadFailed || !applicationId
+      ? ' Please bring your photo ID with you on the day — we could not save the copy you attached.'
+      : '';
     return NextResponse.json({
       success: true,
       application_id: applicationId,
       trial_email_sent: trialEmailSent,
-      message: trialEmailSent
-        ? `You're all set — check ${input.email} for everything you need for your trial day.`
-        : "You're all set. We'll be in touch shortly with everything you need for your trial day.",
+      id_document_saved: !!idDocumentPath,
+      message:
+        (trialEmailSent
+          ? `You're all set — check ${input.email} for everything you need for your trial day.`
+          : "You're all set. We'll be in touch shortly with everything you need for your trial day.") +
+        idNote,
     });
   } catch (error) {
     console.error('💥 Trial application error:', error);
@@ -370,6 +463,18 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Is this PostgREST/Postgres error "this database does not have that column
+// yet"? Two shapes to cover: PostgREST refusing an unknown key against its
+// schema cache (PGRST204), and Postgres itself reporting an undefined column
+// (42703).
+function isMissingColumnError(error: { message?: string; code?: string } | null): boolean {
+  if (!error) return false;
+  if (error.code === 'PGRST204' || error.code === '42703') return true;
+  return /column .* does not exist|could not find the .* column|schema cache/i.test(
+    error.message || ''
+  );
 }
 
 function escapeHtml(value: string): string {
