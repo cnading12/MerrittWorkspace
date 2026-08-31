@@ -13,6 +13,8 @@
 // submission grow into a full application later without asking the person
 // for anything a second time.
 
+import { ALLOWED_UPLOAD_MIME_TYPES } from './uploads';
+
 export type ApplicationKind = 'trial' | 'full';
 
 // Where a trial visitor will actually work for the day. The trial-day email
@@ -44,19 +46,20 @@ export const MAX_ID_FILE_BYTES = 4 * 1024 * 1024;
 /** The same number in the words the form and the API both use. */
 export const MAX_ID_FILE_LABEL = '4MB';
 
-// Mirrors the accept attribute on the upload input. Kept permissive on the
-// image side — people photograph their licence with whatever phone they have
-// — but a document upload has no reason to be an executable or an archive.
-export const ACCEPTED_ID_MIME_PREFIXES = ['image/'];
-export const ACCEPTED_ID_MIME_TYPES = ['application/pdf'];
+// What the upload input will take, and the same list the route enforces.
+//
+// One allowlist, in lib/portal/uploads.ts, shared with the portal and
+// guest-booking uploads: a blanket `image/*` here would let the browser hand
+// us an SVG, which is a document that can carry script and is stored with
+// the content type it declares. Staff open these through a signed URL, so
+// that is script execution on the storage origin. Photographs of a licence
+// are JPEG, PNG, WEBP or HEIC; a scan is a PDF; nothing legitimate is lost.
+export const ACCEPTED_ID_MIME_TYPES: readonly string[] = ALLOWED_UPLOAD_MIME_TYPES;
 
 export function isAcceptedIdMimeType(mimeType: string | null | undefined): boolean {
   if (!mimeType) return false;
-  const type = mimeType.toLowerCase();
-  return (
-    ACCEPTED_ID_MIME_PREFIXES.some((prefix) => type.startsWith(prefix)) ||
-    ACCEPTED_ID_MIME_TYPES.includes(type)
-  );
+  const type = mimeType.toLowerCase().split(';')[0].trim();
+  return ACCEPTED_ID_MIME_TYPES.includes(type);
 }
 
 // Storage path for a trial applicant's photo ID inside the private
@@ -122,6 +125,29 @@ export function readApplicationKind(source: ApplicationKindSource | null | undef
 
 export function isTrialApplication(source: ApplicationKindSource | null | undefined): boolean {
   return readApplicationKind(source) === 'trial';
+}
+
+// Did this trial applicant's photo ID fail to save?
+//
+// The ID is checked before someone spends a day in the building, so when the
+// upload does not land the visit still happens — staff just have to check
+// the ID at the door. The admin card says so rather than the application
+// quietly looking complete.
+//
+// Two signals, because a database that has not had
+// 20260824_trial_application_split.sql applied has no `id_document_path`
+// column at all: the explicit `payload.id_upload_failed` flag the route
+// writes, and a present-but-empty column. A row from a database without the
+// column reports false — absent is not the same as empty, and inventing a
+// warning on every trial card would train staff to ignore it.
+export function trialPhotoIdMissing(
+  source: (ApplicationKindSource & { id_document_path?: string | null }) | null | undefined
+): boolean {
+  if (!source || !isTrialApplication(source)) return false;
+  if ((source.payload as { id_upload_failed?: unknown } | null)?.id_upload_failed === true) {
+    return true;
+  }
+  return 'id_document_path' in source && !source.id_document_path;
 }
 
 // Narrow a stored seating value. Anything unrecognised — an older row, a

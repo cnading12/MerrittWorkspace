@@ -11,6 +11,7 @@
     "clean": "rm -rf .next",
     "test": "vitest run",
     "build:check": "bash scripts/build-check.sh",
+    "diagnose:trial": "node scripts/diagnose-trial-applications.mjs",
     "verify": "npm run clean && npm run typecheck && npm test && npm run build:check"
   },
   "dependencies": {

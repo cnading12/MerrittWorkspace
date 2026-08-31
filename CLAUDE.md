@@ -75,6 +75,35 @@ This is only necessary because the project is on the Supabase Free plan. Paid
 projects are never auto-paused — if the project is ever upgraded to Pro, this
 job becomes optional and can be retired deliberately (not "cleaned up").
 
+## A submitted application is never unwound
+
+`/api/membership-application/trial` writes a `member_applications` row and
+then does three more things — uploads the photo ID, emails the applicant,
+emails staff. **None of them may take the row back down**, and nothing in
+that route may return an error to someone whose submission was valid.
+
+The reasoning is not symmetric with a normal write path. A trial-day
+application is a person who has told us they are coming to the building on a
+named day, and `/admin/applications` is the only place staff see that. When
+the row disappears, nobody knows to expect them — there is no retry, no
+queue, no second copy. Everything else in the request is recoverable by a
+human:
+
+- **Photo ID failed to upload.** The row stays and is flagged
+  (`payload.id_upload_failed`); the admin card says so and the staff email
+  says to check the ID at the door, where staff are standing in front of the
+  person anyway. This route used to delete the application here.
+- **The insert itself failed.** The staff email still goes out, subject
+  `🚨 TRIAL DAY NOT SAVED`, and says it is now the only record.
+- **A migration is missing.** The insert walks down a ladder, dropping the
+  columns that database does not have yet; everything it drops is mirrored
+  in `payload`, which the admin panel and the prefill reader both read.
+
+`__tests__/trial-application-route.test.ts` holds all of this, with a fake
+Supabase that rejects unknown columns the way PostgREST does.
+`npm run diagnose:trial` (see `TESTING.md`) checks the same path against the
+live database.
+
 ## Café membership — the cap lives in code
 
 `cafe_membership` ($100/mo, `lib/portal/pricing.ts`) is open seating on the café
