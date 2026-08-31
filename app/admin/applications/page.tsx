@@ -47,10 +47,16 @@ function trialSeatingLabel(app: MemberApplication): string {
   return 'Dedicated desk';
 }
 
+type Decision = 'approve' | 'decline' | 'restore';
+
 interface CardProps {
   app: MemberApplication;
-  onDecide: (id: string, action: 'approve' | 'decline') => void;
+  onDecide: (id: string, action: Decision) => void;
   onView: (id: string) => void;
+  // True while this row's decision is in flight. Every button on the card is
+  // disabled until the server has confirmed the write, so a second click
+  // cannot fire against a row that is already changing.
+  busy?: boolean;
 }
 
 interface TrialCardProps extends CardProps {
@@ -67,7 +73,7 @@ interface TrialCardProps extends CardProps {
   sending: boolean;
 }
 
-function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sending }: TrialCardProps) {
+function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sending, busy }: TrialCardProps) {
   // The visit still stands when the ID did not save — it is checked at the
   // door instead — but staff have to know that before the person arrives.
   const idMissing = trialPhotoIdMissing(app);
@@ -140,7 +146,7 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
           {shortForm ? (
             <button
               onClick={() => onSendApplication(app.id)}
-              disabled={sending}
+              disabled={sending || busy}
               className="bg-orange-600 text-white px-3 py-1.5 rounded text-sm hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Emails them a membership application prefilled with what they gave us for the trial day"
             >
@@ -149,17 +155,29 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
           ) : (
             <button
               onClick={() => onDecide(app.id, 'approve')}
-              className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700"
+              disabled={busy}
+              className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Approve
             </button>
           )}
-          {!handled && (
+          {handled ? (
+            // Dismiss sits one click away from View, and a visit dismissed by
+            // a misclick is the exact thing this screen exists to stop losing.
+            <button
+              onClick={() => onDecide(app.id, 'restore')}
+              disabled={busy}
+              className="border border-gray-500 text-gray-700 px-3 py-1.5 rounded text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {busy ? 'Restoring…' : 'Restore'}
+            </button>
+          ) : (
             <button
               onClick={() => onDecide(app.id, 'decline')}
-              className="border border-red-600 text-red-600 px-3 py-1.5 rounded text-sm hover:bg-red-50"
+              disabled={busy}
+              className="border border-red-600 text-red-600 px-3 py-1.5 rounded text-sm hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {shortForm ? 'Dismiss' : 'Decline'}
+              {busy ? 'Saving…' : shortForm ? 'Dismiss' : 'Decline'}
             </button>
           )}
         </div>
@@ -168,7 +186,7 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
   );
 }
 
-function StandardCard({ app, onDecide, onView }: CardProps) {
+function StandardCard({ app, onDecide, onView, busy }: CardProps) {
   return (
     <div className="bg-white border rounded p-4">
       <div className="flex items-start justify-between gap-4">
@@ -204,15 +222,17 @@ function StandardCard({ app, onDecide, onView }: CardProps) {
           </button>
           <button
             onClick={() => onDecide(app.id, 'approve')}
-            className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700"
+            disabled={busy}
+            className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Approve
           </button>
           <button
             onClick={() => onDecide(app.id, 'decline')}
-            className="border border-red-600 text-red-600 px-3 py-1.5 rounded text-sm hover:bg-red-50"
+            disabled={busy}
+            className="border border-red-600 text-red-600 px-3 py-1.5 rounded text-sm hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Decline
+            {busy ? 'Saving…' : 'Decline'}
           </button>
         </div>
       </div>
@@ -229,6 +249,7 @@ export default function AdminApplicationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [decidingId, setDecidingId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('trial');
   const [showHandled, setShowHandled] = useState(false);
 
@@ -339,23 +360,40 @@ export default function AdminApplicationsPage() {
     }
   }
 
-  async function decide(id: string, action: 'approve' | 'decline') {
-    if (!token) return;
-    const res = await fetch(`/api/admin/applications/${id}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ action }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert(err.error || 'Failed');
-      return;
+  // Approve, dismiss/decline, or restore.
+  //
+  // The result is read back from the server rather than assumed. Dropping
+  // the card on a 200 and moving on is how "Dismiss" appeared to work while
+  // the row was never written: the queue is re-read here so what is on
+  // screen after the click is what the database actually holds, counts and
+  // diagnostics included.
+  async function decide(id: string, action: Decision) {
+    if (!token || decidingId) return;
+    setDecidingId(id);
+    try {
+      const res = await fetch(`/api/admin/applications/${id}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(
+          data.error ||
+            `That did not save (HTTP ${res.status}). The application has been left as it was.`
+        );
+        // Put the screen back in step with the database; the row is still
+        // there, and pretending otherwise is what caused this.
+        await load(token, showHandled);
+        return;
+      }
+      await load(token, showHandled);
+    } finally {
+      setDecidingId(null);
     }
-    setTrialApps((prev) => prev.filter((a) => a.id !== id));
-    setStandardApps((prev) => prev.filter((a) => a.id !== id));
   }
 
   if (loading) return <div className="text-gray-500">Loading…</div>;
@@ -444,6 +482,7 @@ export default function AdminApplicationsPage() {
                 onView={viewApplication}
                 onSendApplication={sendMembershipApplication}
                 sending={sendingId === a.id}
+                busy={decidingId === a.id}
               />
             ))
           )}
@@ -459,7 +498,13 @@ export default function AdminApplicationsPage() {
             <p className="text-gray-500">No membership applications are awaiting a decision.</p>
           ) : (
             standardApps.map((a) => (
-              <StandardCard key={a.id} app={a} onDecide={decide} onView={viewApplication} />
+              <StandardCard
+                key={a.id}
+                app={a}
+                onDecide={decide}
+                onView={viewApplication}
+                busy={decidingId === a.id}
+              />
             ))
           )}
         </section>
