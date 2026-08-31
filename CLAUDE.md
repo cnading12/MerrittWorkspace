@@ -104,6 +104,58 @@ Supabase that rejects unknown columns the way PostgREST does.
 `npm run diagnose:trial` (see `TESTING.md`) checks the same path against the
 live database.
 
+## A full application says whether it saved
+
+`/api/membership-application` is the other end of the same promise, and it
+used to make a weaker one. The insert was best effort: a failure was logged
+to a console nobody reads, the applicant got "Application Submitted!", staff
+got `🆕 New Membership Application`, and the admin queue had nothing in it.
+Nobody involved could tell.
+
+So the write is now the verdict, and everything after it reports on it:
+
+- The insert walks a **three-rung ladder** using the shared
+  `isMissingColumnError`, the mirror of the trial route's. Rung 1 writes the
+  20260824 columns, rung 2 drops them, rung 3 drops 20260428's as well;
+  everything dropped is mirrored in `payload`, including `application_kind`.
+  The old single retry dropped all three trial columns on a hand-rolled
+  regex and lost the whole application on a database two migrations behind.
+- If no rung lands, the staff email goes out as **`🚨 APPLICATION NOT SAVED`**
+  and says it is the only record — the same contract the trial route has.
+- The response carries `saved`, and `application_id` is the **database row
+  id**, not the `APP-<timestamp>` reference. That id is what staff can
+  actually find in the panel; the timestamp matched nothing anywhere.
+- `resume_token` is kept out of `payload`. It is a bearer credential that
+  prefills someone's details, and the admin detail view prints payload.
+
+`__tests__/membership-application-route.test.ts` holds all of it, with the
+same strict fake Supabase the trial route's tests use.
+
+## A trial day that converts is visible from both ends
+
+A trial visitor who comes back and finishes the full application is the case
+that looks most like a lost application: the new row is a **membership
+application**, so it lands in the second tab, while the trial card staff last
+saw that person on sits unchanged in the first — still offering "Send
+membership application".
+
+Both rows now say what happened, and the resume-token lookup happens
+**before** the insert so the new row carries it from the moment it exists:
+
+- The trial row gets `converted_to_application_id`. Its card shows
+  **APPLIED FOR MEMBERSHIP**, points at the other tab, and drops the send
+  button.
+- The full row gets `payload.converted_from_trial` (`{ application_id,
+  trial_date }`) and the photo ID from the trial day. Its card says which
+  trial day it came from.
+- The staff email says the same thing in its own banner.
+
+`readConvertedApplicationId` and `readTrialOrigin` in
+`lib/portal/trialApplication.ts` are the readers, both falling back to
+`payload` like everything else in that file. `npm run diagnose:trial` lists
+converted trials and flags a pending application whose trial row was never
+linked.
+
 ## The admin queue is two queues
 
 `/admin/applications` has two tabs, and they are two different reads

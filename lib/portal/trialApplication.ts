@@ -380,3 +380,66 @@ export function nextWeekdayIsoDate(date: string): string {
   }
   return d.toISOString().split('T')[0];
 }
+
+// ---------------------------------------------------------------------------
+// The link between a trial day and the membership application it became.
+//
+// Two rows, in both directions, because staff read the queue from both ends:
+//
+//   • The TRIAL row carries `converted_to_application_id` — set the moment
+//     that person submits a full application off their resume link. Without
+//     it the trial card sits in the trial tab looking exactly as it did the
+//     day they visited, still offering "Send membership application", while
+//     the application they actually completed is one tab over. That is how
+//     a submitted application reads as a lost one.
+//
+//   • The FULL row carries the trial's id and date in
+//     `payload.converted_from_trial`, written at insert time. A membership
+//     card that says "came in from a trial day on the 12th" is the other
+//     half of the same answer, and a JSON key needs no migration.
+//
+// Both readers fall back to `payload`, like every other reader in this file,
+// so a database that is behind on 20260824 still tells the truth.
+// ---------------------------------------------------------------------------
+
+export interface TrialOrigin {
+  /** id of the trial row this application grew out of, when we know it. */
+  application_id: string | null;
+  /** The day they came in, for the card. */
+  trial_date: string | null;
+}
+
+interface ConvertedSource {
+  converted_to_application_id?: string | null;
+  payload?: Record<string, unknown> | null;
+}
+
+/** The full application a trial row turned into, or null if it has not. */
+export function readConvertedApplicationId(
+  source: ConvertedSource | null | undefined
+): string | null {
+  if (!source) return null;
+  if (typeof source.converted_to_application_id === 'string' && source.converted_to_application_id) {
+    return source.converted_to_application_id;
+  }
+  const fromPayload = (source.payload as { converted_to_application_id?: unknown } | null)
+    ?.converted_to_application_id;
+  return typeof fromPayload === 'string' && fromPayload ? fromPayload : null;
+}
+
+/** The trial day a full application grew out of, or null if it did not. */
+export function readTrialOrigin(
+  source: { payload?: Record<string, unknown> | null } | null | undefined
+): TrialOrigin | null {
+  const raw = (source?.payload as { converted_from_trial?: unknown } | null)?.converted_from_trial;
+  if (!raw || typeof raw !== 'object') return null;
+  const origin = raw as { application_id?: unknown; trial_date?: unknown };
+  return {
+    application_id:
+      typeof origin.application_id === 'string' && origin.application_id
+        ? origin.application_id
+        : null,
+    trial_date:
+      typeof origin.trial_date === 'string' && origin.trial_date ? origin.trial_date : null,
+  };
+}

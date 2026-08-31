@@ -230,8 +230,28 @@ export async function POST(request: NextRequest) {
     // Trial info is stored in BOTH the new dedicated columns AND inside
     // `payload`, so the admin panel still sees the trial flag even on
     // databases where the trial-day migration has not been applied yet.
+    //
+    // THIS WRITE IS THE POINT OF THE REQUEST. Everything after it — three
+    // emails — is a copy of something the row already says. It used to be
+    // the other way round: a failed insert was logged to a console nobody
+    // reads and the route returned `success: true` anyway, so an applicant
+    // saw "Application Submitted!", staff got a cheerful "🆕 New Membership
+    // Application", and the admin queue had nothing in it. Nobody involved
+    // could tell that had happened.
+    //
+    // So the outcome is tracked, the ladder below is walked properly rather
+    // than in one hopeful retry, and if the row genuinely cannot be written
+    // the staff email says so in its subject line — the same contract
+    // /api/membership-application/trial has for a trial day.
+    let savedApplicationRowId: string | null = null;
+    let persistError: string | null = null;
+    // Set when this application came in off a post-trial "finish your
+    // application" link, so the emails can say where the person came from.
+    let trialOrigin: { application_id: string; trial_date: string | null } | null = null;
+
     try {
       const { getServiceSupabase } = await import('@/lib/portal/supabaseAdmin');
+      const { isMissingColumnError } = await import('@/lib/portal/applicationQueue');
       const sb = getServiceSupabase();
       const {
         email,
@@ -243,11 +263,45 @@ export async function POST(request: NextRequest) {
         start_date,
         wants_trial_day,
         trial_date,
+        resume_token,
         ...rest
       } = applicationData;
 
       const wantsTrial = !!wants_trial_day;
       const trialDate = trial_date || null;
+
+      // Look the trial row up BEFORE inserting, not after.
+      //
+      // Two things depend on it, and both belong in the new row at the
+      // moment it is written: the photo ID they already handed over, and the
+      // fact that this application came out of a trial day at all. Doing it
+      // afterwards meant a second write that could fail on its own, leaving
+      // a membership application in the queue with no sign of the visit
+      // behind it and a trial card still inviting staff to send them an
+      // application they had already filled in.
+      const resumeToken = typeof resume_token === 'string' ? resume_token.trim() : '';
+      let carriedIdDocumentPath: string | null = null;
+      if (resumeToken) {
+        const { data: trialRow, error: trialLookupError } = await sb
+          .from('member_applications')
+          .select('id, trial_date, id_document_path, payload')
+          .eq('resume_token', resumeToken)
+          .maybeSingle();
+        if (trialLookupError) {
+          // A database without 20260824 has no resume_token column. The
+          // application is still a perfectly good application.
+          console.error('⚠️ Could not look up the trial row for this resume token:', trialLookupError);
+        } else if (trialRow) {
+          carriedIdDocumentPath = trialRow.id_document_path || null;
+          const payloadTrialDate = (trialRow.payload as { trial_date?: unknown } | null)?.trial_date;
+          trialOrigin = {
+            application_id: trialRow.id,
+            trial_date:
+              trialRow.trial_date ||
+              (typeof payloadTrialDate === 'string' && payloadTrialDate ? payloadTrialDate : null),
+          };
+        }
+      }
 
       const baseRow = {
         email,
@@ -262,92 +316,123 @@ export async function POST(request: NextRequest) {
         // selected plans + computed totals so the admin/approval flow can
         // reconstruct the combined charge across multiple offices/desks
         // without recomputing from scratch.
+        //
+        // `resume_token` is deliberately NOT spread in here: it is a bearer
+        // credential that prefills someone's details, and the admin detail
+        // view prints payload verbatim.
         payload: {
           ...rest,
+          application_kind: 'full',
           wants_trial_day: wantsTrial,
           trial_date: trialDate,
           selected_plans: rest.selected_plans ?? null,
           itemized_lines: itemized.lines,
           total_monthly_cost_cents: itemized.total_monthly_cents,
           total_one_time_cost_cents: itemized.total_one_time_cents,
+          // Read back by readTrialOrigin() so the membership card can say
+          // "came in from a trial day on the 12th" — see
+          // lib/portal/trialApplication.ts.
+          ...(trialOrigin ? { converted_from_trial: trialOrigin } : {}),
         },
       };
 
-      // First attempt: include the new dedicated trial columns.
-      let { data: insertedRow, error } = await sb
-        .from('member_applications')
-        .insert({
-          ...baseRow,
-          wants_trial_day: wantsTrial,
-          trial_date: trialDate,
-          application_kind: 'full',
-        })
-        .select('id')
-        .single();
-
-      // If the trial columns don't exist yet (migration not applied), retry
-      // without them — the trial info is still preserved in `payload`.
-      if (error && /column .* does not exist|wants_trial_day|trial_date|application_kind/i.test(error.message || '')) {
-        console.warn('⚠️ Trial-day columns missing; persisting trial info to payload only. Apply migration 20260428_trial_day_applicants.sql to enable column-level filtering.');
-        const retry = await sb.from('member_applications').insert(baseRow).select('id').single();
-        insertedRow = retry.data;
-        error = retry.error;
-      }
-
-      if (error) {
-        console.error('❌ Failed to persist application to member_applications:', error);
-      }
-
-      // Arrived from the post-trial "finish your application" link. Close the
-      // loop on the trial row: mark it converted so the follow-up cron stops
-      // chasing them, and carry their photo ID across so the portal does not
-      // ask for a document they already handed over.
+      // Written down the migration ladder, newest columns first — the same
+      // shape, and the same shared predicate, as the trial route's insert.
+      // Each rung drops the columns a database that is one migration behind
+      // does not have; everything dropped is mirrored in `payload`, which
+      // the admin panel reads as a fallback.
       //
-      // All best effort. A full application that saved is a full application
-      // whether or not we managed to tie it back to a trial from weeks ago.
-      const resumeToken = typeof applicationData.resume_token === 'string'
-        ? applicationData.resume_token.trim()
-        : '';
-      if (resumeToken && insertedRow?.id) {
-        try {
-          const { data: trialRow, error: trialLookupError } = await sb
-            .from('member_applications')
-            .select('id, id_document_path')
-            .eq('resume_token', resumeToken)
-            .maybeSingle();
-          if (trialLookupError) {
-            console.error('⚠️ Could not look up trial row for resume token:', trialLookupError);
-          } else if (trialRow) {
-            const { error: linkError } = await sb
-              .from('member_applications')
-              .update({ converted_to_application_id: insertedRow.id })
-              .eq('id', trialRow.id);
-            if (linkError) console.error('⚠️ Could not link trial application to full application:', linkError);
+      // It used to be a single retry that dropped all three trial columns at
+      // once on a hand-rolled regex over the error message. That covered a
+      // database missing 20260824 and silently lost the whole application on
+      // one missing 20260428 as well.
+      const insertAttempts: Array<{ row: Record<string, unknown>; missing: string }> = [
+        {
+          row: {
+            ...baseRow,
+            wants_trial_day: wantsTrial,
+            trial_date: trialDate,
+            application_kind: 'full',
+            ...(carriedIdDocumentPath ? { id_document_path: carriedIdDocumentPath } : {}),
+          },
+          missing: '20260824_trial_application_split.sql',
+        },
+        {
+          row: { ...baseRow, wants_trial_day: wantsTrial, trial_date: trialDate },
+          missing: '20260428_trial_day_applicants.sql',
+        },
+        { row: baseRow, missing: '' },
+      ];
 
-            if (trialRow.id_document_path) {
-              const { error: carryError } = await sb
-                .from('member_applications')
-                .update({ id_document_path: trialRow.id_document_path })
-                .eq('id', insertedRow.id);
-              if (carryError) console.error('⚠️ Could not carry trial photo ID forward:', carryError);
-            }
-          }
-        } catch (linkErr) {
-          console.error('⚠️ Unexpected error linking trial application:', linkErr);
+      for (const attempt of insertAttempts) {
+        const { data, error } = await sb
+          .from('member_applications')
+          .insert(attempt.row)
+          .select('id')
+          .single();
+        if (!error) {
+          savedApplicationRowId = data!.id;
+          persistError = null;
+          break;
+        }
+        persistError = error.message || 'unknown error';
+        if (!isMissingColumnError(error)) break;
+        if (attempt.missing) {
+          console.warn(
+            `⚠️ member_applications is missing columns this route writes. Apply migration ${attempt.missing}. Retrying without them.`
+          );
+        }
+      }
+
+      if (!savedApplicationRowId) {
+        console.error('❌ Failed to persist application to member_applications:', persistError);
+      }
+
+      // Close the loop on the trial row: mark it converted so the follow-up
+      // cron stops chasing them and the trial card stops offering staff a
+      // "send membership application" button for an application that is
+      // already sitting in the other tab.
+      //
+      // Best effort, and deliberately after the insert: a full application
+      // that saved is a full application whether or not we managed to tie it
+      // back to a trial from weeks ago.
+      if (trialOrigin && savedApplicationRowId) {
+        const { error: linkError } = await sb
+          .from('member_applications')
+          .update({ converted_to_application_id: savedApplicationRowId })
+          .eq('id', trialOrigin.application_id);
+        if (linkError) {
+          console.error('⚠️ Could not link trial application to full application:', linkError);
         }
       }
     } catch (e) {
+      persistError = e instanceof Error ? e.message : 'unknown error';
       console.error('❌ Unexpected error persisting application:', e);
-      // Non-fatal — emails still go out below.
+      // Non-fatal — the emails below still go out, and now say what happened.
     }
 
-    // Check if Resend API key is configured
+    // The id staff can actually search for. `applicationId` above is a
+    // timestamp reference minted before the row exists; printing it in the
+    // staff email as "Application ID" and having it match nothing in the
+    // admin panel is its own small piece of this confusion.
+    const applicationRef = savedApplicationRowId || applicationId;
+
+    // Check if Resend API key is configured.
+    //
+    // What this means to the applicant depends entirely on whether the row
+    // saved. With a row, staff have the application in the panel and only
+    // the confirmation email is missing; without one, nothing anywhere
+    // records that they applied, and the only useful thing we can say is
+    // "call us".
     if (!process.env.RESEND_API_KEY) {
       console.error('❌ RESEND_API_KEY not configured');
       return NextResponse.json({
         success: false,
-        error: 'Email system not configured. Please contact support.',
-        application_id: applicationId
+        saved: !!savedApplicationRowId,
+        error: savedApplicationRowId
+          ? 'Your application was received, but our email system is unavailable, so you will not get a confirmation email. Our team can see your application and will be in touch.'
+          : 'We could not record your application. Please call us at (303) 359-8337 so we can take it down directly.',
+        application_id: applicationRef
       }, { status: 500 });
     }
 
@@ -522,7 +607,15 @@ export async function POST(request: NextRequest) {
     try {
       console.log('📧 Sending staff notification email...');
 
-      const subjectPrefix = applicationData.wants_trial_day ? '🟧 TRIAL DAY' : '🆕';
+      // When the row did not save, this email is the only record that this
+      // person applied at all — so it says so first, in the subject line,
+      // where a phone shows it without scrolling. Same contract as
+      // 🚨 TRIAL DAY NOT SAVED in the trial route.
+      const subjectPrefix = !savedApplicationRowId
+        ? '🚨 APPLICATION NOT SAVED —'
+        : applicationData.wants_trial_day
+          ? '🟧 TRIAL DAY'
+          : '🆕';
       const staffEmail = await resend.emails.send({
         from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
         to: STAFF_EMAILS,
@@ -530,14 +623,18 @@ export async function POST(request: NextRequest) {
         html: generateManagerEmailHTML({
           applicationData,
           membershipTypeDisplay,
-          applicationId,
-          submittedAt
+          applicationId: applicationRef,
+          submittedAt,
+          notSaved: !savedApplicationRowId,
+          trialOrigin
         }),
         text: generateManagerEmailText({
           applicationData,
           membershipTypeDisplay,
-          applicationId,
-          submittedAt
+          applicationId: applicationRef,
+          submittedAt,
+          notSaved: !savedApplicationRowId,
+          trialOrigin
         })
       });
 
@@ -552,12 +649,17 @@ export async function POST(request: NextRequest) {
 
     console.log('📊 Email results:', emailResults);
 
-    // Return success if at least one email was sent
+    // Return success if at least one email was sent.
+    //
+    // `saved` is the honest half of that: staff were told either way, but
+    // only a saved row puts this application in front of them on the admin
+    // panel, and the form says something different when it is missing.
     if (emailResults.applicant_sent || emailResults.manager_sent) {
       return NextResponse.json({
         success: true,
-        application_id: applicationId,
-        message: emailResults.applicant_sent 
+        saved: !!savedApplicationRowId,
+        application_id: applicationRef,
+        message: emailResults.applicant_sent
           ? `Application submitted successfully! Check your email at ${applicationData.email} for confirmation.`
           : 'Application submitted successfully! You will receive confirmation shortly.',
         email_status: emailResults
@@ -566,8 +668,11 @@ export async function POST(request: NextRequest) {
       // Both emails failed
       return NextResponse.json({
         success: false,
-        error: 'Failed to send confirmation emails. Application received but email system unavailable.',
-        application_id: applicationId,
+        saved: !!savedApplicationRowId,
+        error: savedApplicationRowId
+          ? 'Failed to send confirmation emails. Application received but email system unavailable.'
+          : 'We could not record your application or email it to us. Please call us at (303) 359-8337 so we can take it down directly.',
+        application_id: applicationRef,
         email_status: emailResults
       }, { status: 500 });
     }
@@ -742,6 +847,11 @@ function generateManagerEmailHTML(data: {
   membershipTypeDisplay: string;
   applicationId: string;
   submittedAt: Date;
+  // True when the row could not be written to member_applications, so this
+  // email is the only record that the person applied.
+  notSaved?: boolean;
+  // Set when they came back off a post-trial "finish your application" link.
+  trialOrigin?: { application_id: string; trial_date: string | null } | null;
 }) {
   const app = data.applicationData;
   
@@ -768,7 +878,23 @@ function generateManagerEmailHTML(data: {
             <h2 style="margin: 0;">🆕 New Membership Application</h2>
             <p style="margin: 5px 0 0 0;">Action Required: Follow up within 1-2 business days</p>
           </div>
-          
+
+          ${data.notSaved ? `
+          <div style="background: #fdecea; border: 2px solid #c62828; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="margin: 0 0 6px 0; color: #b71c1c;">🚨 This application did NOT save</h3>
+            <p style="margin: 0;">It will <strong>not</strong> appear under Membership applications in the admin panel. This email is the only record of it.</p>
+            <p style="margin: 6px 0 0 0; font-size: 13px;">Please reply to the applicant directly and take their details down by hand.</p>
+          </div>
+          ` : ''}
+
+          ${data.trialOrigin ? `
+          <div style="background: #fff4e5; border: 2px solid #ed7611; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="margin: 0 0 6px 0; color: #ad4a00;">↩️ This is a trial visitor coming back to join</h3>
+            <p style="margin: 0;">They came in for a trial day${data.trialOrigin.trial_date ? ` on <strong>${new Date(`${data.trialOrigin.trial_date}T00:00:00`).toLocaleDateString()}</strong>` : ''} and have now completed the full application.</p>
+            <p style="margin: 6px 0 0 0; font-size: 13px;">Their trial card in the Trial days tab is marked as converted — the decision to make is on this application, under <strong>Membership applications</strong>. Their photo ID from the trial day is already on file.</p>
+          </div>
+          ` : ''}
+
           ${app.wants_trial_day ? `
           <div style="background: #fff4e5; border: 2px solid #ed7611; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
             <h3 style="margin: 0 0 6px 0; color: #ad4a00;">🟧 Trial Day Requested</h3>
@@ -933,13 +1059,26 @@ function generateManagerEmailText(data: {
   membershipTypeDisplay: string;
   applicationId: string;
   submittedAt: Date;
+  notSaved?: boolean;
+  trialOrigin?: { application_id: string; trial_date: string | null } | null;
 }) {
   const app = data.applicationData;
-  
+
   return `
 NEW MEMBERSHIP APPLICATION
 
-${app.full_office_plans?.length ? `*** NO OFFICE OF THAT SIZE IS FREE ***
+${data.notSaved ? `*** THIS APPLICATION DID NOT SAVE ***
+It will NOT appear under Membership applications in the admin panel. This
+email is the only record of it — please reply to the applicant directly and
+take their details down by hand.
+
+` : ''}${data.trialOrigin ? `*** TRIAL VISITOR COMING BACK TO JOIN ***
+They came in for a trial day${data.trialOrigin.trial_date ? ` on ${new Date(`${data.trialOrigin.trial_date}T00:00:00`).toLocaleDateString()}` : ''} and have now completed the full
+application. Their trial card is marked converted; the decision to make is on
+this application, under Membership applications. Their photo ID from the trial
+day is already on file.
+
+` : ''}${app.full_office_plans?.length ? `*** NO OFFICE OF THAT SIZE IS FREE ***
 This application asks for ${app.full_office_plans.map((id: string) => PLAN_CATALOG[id]?.label || id).join(', ')}, and every office of
 that size is currently occupied. Do not approve it expecting a room to hand
 over — offer another size, or hold them until one comes free.
