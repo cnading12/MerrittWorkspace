@@ -166,8 +166,14 @@ linked.
   (`application_kind = 'trial'`, or `wants_trial_day` for legacy rows from
   the old combined form), **never on `status`**. Rows whose status is
   explicitly `approved` or `declined` are dropped afterwards, in JS.
-- **Membership applications** — decisions to make. Selected on
-  `status = 'pending'`, which is what awaiting a decision means.
+- **Membership applications** — decisions to make. Also read **without a
+  status filter** (a recent window, newest first), with explicitly handled
+  rows — `approved`, `declined`, or carrying the dismissal marker — dropped
+  afterwards in JS. It used to be `eq('status', 'pending')`, and that filter
+  is how applications went missing: migrations here are applied by hand, so
+  a live table whose status default or constraint has drifted writes rows
+  that are not exactly `'pending'`, which the Documents page (no status
+  filter) showed while this queue silently returned nothing.
 
 Do not "simplify" this back into one query. A trial day is a person who has
 told us they are coming to the building on a named day; the panel is the only
@@ -184,7 +190,11 @@ ladder in the trial route, and it shares that route's `isMissingColumnError`.
 
 Dismiss (and Approve/Decline) verify their own write:
 `app/api/admin/applications/[id]` selects the row back after updating it and
-returns a real error when the update fails or matches nothing. It used to
+returns a real error when the update fails or matches nothing. After the two
+dismissal writes it additionally re-reads the whole row and asks `isHandled`
+— the same question the queue asks — and errors if the answer is not the one
+the action was supposed to produce, so a write that "succeeds" without
+persisting can never put a green banner over an unchanged queue. It used to
 discard the result and answer `{ ok: true }` regardless, and the page took
 that at its word and dropped the card — so a dismiss that never reached the
 database looked identical to one that did, until the row came back on the

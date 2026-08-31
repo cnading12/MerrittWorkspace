@@ -16,6 +16,10 @@ const state: {
   // are injected per write.
   statusWriteError: { message: string; code?: string } | null;
   payloadWriteError: { message: string; code?: string } | null;
+  // The nastiest failure mode: every write reports success and none of it
+  // persists (a trigger reverting the change, the wrong project answering).
+  // The route's read-back verification exists for exactly this.
+  writesDoNotStick: boolean;
 } = {
   application: {
     id: 'app-1',
@@ -33,6 +37,7 @@ const state: {
   updateMatchesNothing: false,
   statusWriteError: null,
   payloadWriteError: null,
+  writesDoNotStick: false,
 };
 
 vi.mock('@/lib/portal/supabaseAdmin', () => ({
@@ -75,7 +80,7 @@ vi.mock('@/lib/portal/supabaseAdmin', () => ({
             eq: (_col: string, id: string) => {
               const apply = () => {
                 state.updates.push(patch);
-                Object.assign(state.application, patch);
+                if (!state.writesDoNotStick) Object.assign(state.application, patch);
               };
               // Which of the two decline writes is this?
               const isPayloadWrite = Object.keys(patch).length === 1 && 'payload' in patch;
@@ -147,6 +152,7 @@ beforeEach(() => {
   state.updateMatchesNothing = false;
   state.statusWriteError = null;
   state.payloadWriteError = null;
+  state.writesDoNotStick = false;
   state.application = {
     id: 'app-1',
     email: 'newbie@example.com',
@@ -210,8 +216,22 @@ describe('dismissing an application', () => {
       status: 'declined',
       status_written: true,
       payload_written: true,
+      // The row read back fresh after both writes — the same question the
+      // queue will ask on the page's next load.
+      verified: { status: 'declined', dismissed_marker: true, hidden_from_queue: true },
     });
     expect(state.application.status).toBe('declined');
+  });
+
+  // Writes that report success and persist nothing must come back as an
+  // error, not a green "Dismissed" banner over an unchanged queue — which is
+  // the exact symptom staff kept reporting.
+  it('reports a dismissal whose writes claimed success but did not stick', async () => {
+    state.writesDoNotStick = true;
+    const { status, body } = await post({ action: 'decline' });
+    expect(status).toBe(500);
+    expect(body.error).toContain('did not stick');
+    expect(body.ok).toBeUndefined();
   });
 
   // The whole point of the second write: `status` on this table has a

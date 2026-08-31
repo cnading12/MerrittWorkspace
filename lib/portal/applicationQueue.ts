@@ -11,21 +11,20 @@
 // or hid the pending list hid the visits with it, and a visit that nobody
 // sees is a person arriving at a door nobody is expecting.
 //
-// The important asymmetry is in how each queue is READ:
-//
-//   • Membership applications are selected on `status = 'pending'`. That is
-//     what "awaiting a decision" means, and a decided application should
-//     leave the queue.
-//
-//   • Trial days are NOT selected on status. They are selected on being a
-//     trial row at all, and the handled ones are dropped afterwards by
-//     naming the two statuses that mean handled. So a trial row whose status
-//     column says something unexpected — null, a value from a row inserted
-//     by hand, a database whose column default never got applied — still
-//     appears. Being unable to explain a status is not a reason to hide
-//     someone who is coming to the building on Thursday; the cost of a stale
-//     card is one click to dismiss, and the cost of a hidden visit is an
-//     applicant standing in reception.
+// NEITHER queue trusts `status` to select on. Both are read as a recent
+// window and the rows a human has explicitly dealt with — `approved`,
+// `declined`, or carrying the dismissal marker — are dropped afterwards, in
+// JS, by naming the statuses that mean handled. So a row whose status column
+// says something unexpected — null, empty, a value from a row inserted by
+// hand, a live table whose column default or constraint has drifted from the
+// migration files (they are applied by hand) — still appears. Being unable
+// to explain a status is not a reason to hide a visit or an application; the
+// cost of a stale card is one click to dismiss, and the cost of a hidden row
+// is an applicant nobody answers. The membership queue learned this the hard
+// way: it used to be selected on `status = 'pending'`, and applications
+// whose rows did not read exactly 'pending' showed on the admin Documents
+// page (which reads without a status filter) while the Applications page
+// showed nothing at all.
 //
 // Everything here is pure so both the route and its tests can use it.
 
@@ -102,9 +101,9 @@ export function byStartDateAsc(a: QueueRow, b: QueueRow): number {
  * `rows` may contain duplicates (the trial and standard reads are separate
  * queries and a legacy row matches both); they are deduplicated by id.
  *
- * `includeHandled` only widens the TRIAL queue. The standard queue is
- * already selected on `status = 'pending'` by the caller, and a decided
- * membership application has somewhere else to be.
+ * `includeHandled` only widens the TRIAL queue. A dismissed visit is one
+ * misclick from a viewed one, so it stays restorable from the panel; a
+ * decided membership application has somewhere else to be.
  */
 export function splitApplicationQueue<T extends QueueRow>(
   rows: T[],
