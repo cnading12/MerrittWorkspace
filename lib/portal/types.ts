@@ -176,6 +176,10 @@ export interface MemberApplication {
   // migration flow. These are auto-approved at submit time and never
   // appear in the admin pending-applications queue.
   is_existing_member?: boolean | null;
+  // Set on a TRIAL row once that person submits a full application off
+  // their resume link, pointing at the full row (20260824). Read through
+  // readConvertedApplicationId(), which falls back to `payload`.
+  converted_to_application_id?: string | null;
   payload: Record<string, unknown>;
   status: 'pending' | 'approved' | 'declined';
   decision_note: string | null;

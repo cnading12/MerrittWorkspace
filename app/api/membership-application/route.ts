@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
 import { generateTrialDayEmailHTML, generateTrialDayEmailText } from '@/lib/portal/trialDayEmail';
+import {
+  applicationReceivedSubject,
+  generateApplicationReceivedEmailHTML,
+  generateApplicationReceivedEmailText,
+  type ApplicationTrialState,
+} from '@/lib/portal/applicationReceivedEmail';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { OFFICE_SIZE_FOR_PLAN } from '@/lib/portal/officeSizes';
 
@@ -222,6 +228,20 @@ export async function POST(request: NextRequest) {
     applicationData.total_monthly_cost_cents = itemized.total_monthly_cents;
     applicationData.total_one_time_cost_cents = itemized.total_one_time_cents;
 
+    // The day they already spent here, when this application is a trial
+    // visitor converting. Filled in from the trial row below, and read only by
+    // the confirmation email, which greets someone who has been in the
+    // building differently from someone who has not. Best effort: an unknown
+    // date costs the email a phrase, never the branch.
+    let completedTrialDate: string | null = null;
+
+    // Present only on a submission that came in through the "finish your
+    // application" link we email after a trial day, so it is the one reliable
+    // signal that this person has already been in the building.
+    const resumeToken = typeof applicationData.resume_token === 'string'
+      ? applicationData.resume_token.trim()
+      : '';
+
     // Persist to member_applications so the admin panel can review it.
     // Core fields land in dedicated columns; everything else (housing
     // reference, membership reference, emergency contact, etc.) goes into
@@ -230,8 +250,28 @@ export async function POST(request: NextRequest) {
     // Trial info is stored in BOTH the new dedicated columns AND inside
     // `payload`, so the admin panel still sees the trial flag even on
     // databases where the trial-day migration has not been applied yet.
+    //
+    // THIS WRITE IS THE POINT OF THE REQUEST. Everything after it — three
+    // emails — is a copy of something the row already says. It used to be
+    // the other way round: a failed insert was logged to a console nobody
+    // reads and the route returned `success: true` anyway, so an applicant
+    // saw "Application Submitted!", staff got a cheerful "🆕 New Membership
+    // Application", and the admin queue had nothing in it. Nobody involved
+    // could tell that had happened.
+    //
+    // So the outcome is tracked, the ladder below is walked properly rather
+    // than in one hopeful retry, and if the row genuinely cannot be written
+    // the staff email says so in its subject line — the same contract
+    // /api/membership-application/trial has for a trial day.
+    let savedApplicationRowId: string | null = null;
+    let persistError: string | null = null;
+    // Set when this application came in off a post-trial "finish your
+    // application" link, so the emails can say where the person came from.
+    let trialOrigin: { application_id: string; trial_date: string | null } | null = null;
+
     try {
       const { getServiceSupabase } = await import('@/lib/portal/supabaseAdmin');
+      const { isMissingColumnError } = await import('@/lib/portal/applicationQueue');
       const sb = getServiceSupabase();
       const {
         email,
@@ -246,8 +286,50 @@ export async function POST(request: NextRequest) {
         ...rest
       } = applicationData;
 
+      // `resume_token` is a bearer credential that prefills someone's name,
+      // phone and photo ID, and the admin detail view prints `payload`
+      // verbatim — so it is stripped rather than spread in with the rest.
+      const payloadRest: Record<string, unknown> = { ...rest };
+      delete payloadRest.resume_token;
+
       const wantsTrial = !!wants_trial_day;
       const trialDate = trial_date || null;
+
+      // Look the trial row up BEFORE inserting, not after.
+      //
+      // Three things depend on it, and the first two belong in the new row
+      // at the moment it is written: the photo ID they already handed over,
+      // the fact that this application came out of a trial day at all, and
+      // the date of that day for the confirmation email. Doing it afterwards
+      // meant a second write that could fail on its own, leaving a
+      // membership application in the queue with no sign of the visit behind
+      // it and a trial card still inviting staff to send them an application
+      // they had already filled in.
+      let carriedIdDocumentPath: string | null = null;
+      if (resumeToken) {
+        // `payload` rather than the `trial_date` column: a database behind on
+        // the trial-day migration has no such column and selecting it would
+        // fail the whole lookup — which is the part that carries the photo ID
+        // across and stops the follow-up emails. Every rung of the trial
+        // route's insert mirrors the date into `payload`.
+        const { data: trialRow, error: trialLookupError } = await sb
+          .from('member_applications')
+          .select('id, id_document_path, payload')
+          .eq('resume_token', resumeToken)
+          .maybeSingle();
+        if (trialLookupError) {
+          // A database without 20260824 has no resume_token column. The
+          // application is still a perfectly good application.
+          console.error('⚠️ Could not look up the trial row for this resume token:', trialLookupError);
+        } else if (trialRow) {
+          carriedIdDocumentPath = trialRow.id_document_path || null;
+          const payloadTrialDate = (trialRow.payload as { trial_date?: unknown } | null)?.trial_date;
+          if (typeof payloadTrialDate === 'string' && payloadTrialDate) {
+            completedTrialDate = payloadTrialDate;
+          }
+          trialOrigin = { application_id: trialRow.id, trial_date: completedTrialDate };
+        }
+      }
 
       const baseRow = {
         email,
@@ -263,91 +345,118 @@ export async function POST(request: NextRequest) {
         // reconstruct the combined charge across multiple offices/desks
         // without recomputing from scratch.
         payload: {
-          ...rest,
+          ...payloadRest,
+          application_kind: 'full',
           wants_trial_day: wantsTrial,
           trial_date: trialDate,
           selected_plans: rest.selected_plans ?? null,
           itemized_lines: itemized.lines,
           total_monthly_cost_cents: itemized.total_monthly_cents,
           total_one_time_cost_cents: itemized.total_one_time_cents,
+          // Read back by readTrialOrigin() so the membership card can say
+          // "came in from a trial day on the 12th" — see
+          // lib/portal/trialApplication.ts.
+          ...(trialOrigin ? { converted_from_trial: trialOrigin } : {}),
         },
       };
 
-      // First attempt: include the new dedicated trial columns.
-      let { data: insertedRow, error } = await sb
-        .from('member_applications')
-        .insert({
-          ...baseRow,
-          wants_trial_day: wantsTrial,
-          trial_date: trialDate,
-          application_kind: 'full',
-        })
-        .select('id')
-        .single();
-
-      // If the trial columns don't exist yet (migration not applied), retry
-      // without them — the trial info is still preserved in `payload`.
-      if (error && /column .* does not exist|wants_trial_day|trial_date|application_kind/i.test(error.message || '')) {
-        console.warn('⚠️ Trial-day columns missing; persisting trial info to payload only. Apply migration 20260428_trial_day_applicants.sql to enable column-level filtering.');
-        const retry = await sb.from('member_applications').insert(baseRow).select('id').single();
-        insertedRow = retry.data;
-        error = retry.error;
-      }
-
-      if (error) {
-        console.error('❌ Failed to persist application to member_applications:', error);
-      }
-
-      // Arrived from the post-trial "finish your application" link. Close the
-      // loop on the trial row: mark it converted so the follow-up cron stops
-      // chasing them, and carry their photo ID across so the portal does not
-      // ask for a document they already handed over.
+      // Written down the migration ladder, newest columns first — the same
+      // shape, and the same shared predicate, as the trial route's insert.
+      // Each rung drops the columns a database that is one migration behind
+      // does not have; everything dropped is mirrored in `payload`, which
+      // the admin panel reads as a fallback.
       //
-      // All best effort. A full application that saved is a full application
-      // whether or not we managed to tie it back to a trial from weeks ago.
-      const resumeToken = typeof applicationData.resume_token === 'string'
-        ? applicationData.resume_token.trim()
-        : '';
-      if (resumeToken && insertedRow?.id) {
-        try {
-          const { data: trialRow, error: trialLookupError } = await sb
-            .from('member_applications')
-            .select('id, id_document_path')
-            .eq('resume_token', resumeToken)
-            .maybeSingle();
-          if (trialLookupError) {
-            console.error('⚠️ Could not look up trial row for resume token:', trialLookupError);
-          } else if (trialRow) {
-            const { error: linkError } = await sb
-              .from('member_applications')
-              .update({ converted_to_application_id: insertedRow.id })
-              .eq('id', trialRow.id);
-            if (linkError) console.error('⚠️ Could not link trial application to full application:', linkError);
+      // It used to be a single retry that dropped all three trial columns at
+      // once on a hand-rolled regex over the error message. That covered a
+      // database missing 20260824 and silently lost the whole application on
+      // one missing 20260428 as well.
+      const insertAttempts: Array<{ row: Record<string, unknown>; missing: string }> = [
+        {
+          row: {
+            ...baseRow,
+            wants_trial_day: wantsTrial,
+            trial_date: trialDate,
+            application_kind: 'full',
+            ...(carriedIdDocumentPath ? { id_document_path: carriedIdDocumentPath } : {}),
+          },
+          missing: '20260824_trial_application_split.sql',
+        },
+        {
+          row: { ...baseRow, wants_trial_day: wantsTrial, trial_date: trialDate },
+          missing: '20260428_trial_day_applicants.sql',
+        },
+        { row: baseRow, missing: '' },
+      ];
 
-            if (trialRow.id_document_path) {
-              const { error: carryError } = await sb
-                .from('member_applications')
-                .update({ id_document_path: trialRow.id_document_path })
-                .eq('id', insertedRow.id);
-              if (carryError) console.error('⚠️ Could not carry trial photo ID forward:', carryError);
-            }
-          }
-        } catch (linkErr) {
-          console.error('⚠️ Unexpected error linking trial application:', linkErr);
+      for (const attempt of insertAttempts) {
+        const { data, error } = await sb
+          .from('member_applications')
+          .insert(attempt.row)
+          .select('id')
+          .single();
+        if (!error) {
+          savedApplicationRowId = data!.id;
+          persistError = null;
+          break;
+        }
+        persistError = error.message || 'unknown error';
+        if (!isMissingColumnError(error)) break;
+        if (attempt.missing) {
+          console.warn(
+            `⚠️ member_applications is missing columns this route writes. Apply migration ${attempt.missing}. Retrying without them.`
+          );
+        }
+      }
+
+      if (!savedApplicationRowId) {
+        console.error('❌ Failed to persist application to member_applications:', persistError);
+      }
+
+      // Close the loop on the trial row: mark it converted so the follow-up
+      // cron stops chasing them and the trial card stops offering staff a
+      // "send membership application" button for an application that is
+      // already sitting in the other tab.
+      //
+      // Best effort, and deliberately after the insert: a full application
+      // that saved is a full application whether or not we managed to tie it
+      // back to a trial from weeks ago.
+      if (trialOrigin && savedApplicationRowId) {
+        const { error: linkError } = await sb
+          .from('member_applications')
+          .update({ converted_to_application_id: savedApplicationRowId })
+          .eq('id', trialOrigin.application_id);
+        if (linkError) {
+          console.error('⚠️ Could not link trial application to full application:', linkError);
         }
       }
     } catch (e) {
+      persistError = e instanceof Error ? e.message : 'unknown error';
       console.error('❌ Unexpected error persisting application:', e);
-      // Non-fatal — emails still go out below.
+      // Non-fatal — the emails below still go out, and now say what happened.
     }
 
-    // Check if Resend API key is configured
+    // The id staff can actually search for. `applicationId` above is a
+    // timestamp reference minted before the row exists; printing it in the
+    // staff email as "Application ID" and having it match nothing in the
+    // admin panel is its own small piece of this confusion.
+    const applicationRef = savedApplicationRowId || applicationId;
+
+    // Check if Resend API key is configured.
+    //
+    // What this means to the applicant depends entirely on whether the row
+    // saved. With a row, staff have the application in the panel and only
+    // the confirmation email is missing; without one, nothing anywhere
+    // records that they applied, and the only useful thing we can say is
+    // "call us".
     if (!process.env.RESEND_API_KEY) {
       console.error('❌ RESEND_API_KEY not configured');
       return NextResponse.json({
         success: false,
-        error: 'Email system not configured. Please contact support.',
-        application_id: applicationId
+        saved: !!savedApplicationRowId,
+        error: savedApplicationRowId
+          ? 'Your application was received, but our email system is unavailable, so you will not get a confirmation email. Our team can see your application and will be in touch.'
+          : 'We could not record your application. Please call us at (303) 359-8337 so we can take it down directly.',
+        application_id: applicationRef
       }, { status: 500 });
     }
 
@@ -388,27 +497,35 @@ export async function POST(request: NextRequest) {
     try {
       console.log('📧 Sending applicant confirmation email...');
       
+      // Which of the three people is reading this. A trial visitor
+      // converting off the follow-up link has already had the tour, met the
+      // team and worked here for a day; someone who asked for a trial day on
+      // this form has that visit ahead of them and a separate email about it
+      // landing seconds later; everyone else has never been here. Offering a
+      // trial day to the first, or repeating the visit details to the second,
+      // is how this email stopped making sense.
+      const trialState: ApplicationTrialState = resumeToken
+        ? { kind: 'completed', trialDate: completedTrialDate }
+        : applicationData.wants_trial_day
+          ? { kind: 'upcoming', trialDate: applicationData.trial_date || null }
+          : { kind: 'none' };
+
+      const applicantEmailData = {
+        firstName: applicationData.first_name,
+        lastName: applicationData.last_name,
+        email: applicationData.email,
+        membershipType: membershipTypeDisplay,
+        submittedAt,
+        trial: trialState,
+      };
+
       const applicantEmail = await resend.emails.send({
         from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
         replyTo: MEMBER_SERVICES_EMAIL,
         to: applicationData.email,
-        subject: 'Membership Application Received | Merritt Workspace',
-        html: generateApplicantEmailHTML({
-          firstName: applicationData.first_name,
-          lastName: applicationData.last_name,
-          email: applicationData.email,
-          membershipType: membershipTypeDisplay,
-          applicationId,
-          submittedAt
-        }),
-        text: generateApplicantEmailText({
-          firstName: applicationData.first_name,
-          lastName: applicationData.last_name,
-          email: applicationData.email,
-          membershipType: membershipTypeDisplay,
-          applicationId,
-          submittedAt
-        }),
+        subject: applicationReceivedSubject(),
+        html: generateApplicationReceivedEmailHTML(applicantEmailData),
+        text: generateApplicationReceivedEmailText(applicantEmailData),
         headers: getTransactionalEmailHeaders(),
         tags: [{ name: 'category', value: 'application_received' }],
       });
@@ -522,7 +639,15 @@ export async function POST(request: NextRequest) {
     try {
       console.log('📧 Sending staff notification email...');
 
-      const subjectPrefix = applicationData.wants_trial_day ? '🟧 TRIAL DAY' : '🆕';
+      // When the row did not save, this email is the only record that this
+      // person applied at all — so it says so first, in the subject line,
+      // where a phone shows it without scrolling. Same contract as
+      // 🚨 TRIAL DAY NOT SAVED in the trial route.
+      const subjectPrefix = !savedApplicationRowId
+        ? '🚨 APPLICATION NOT SAVED —'
+        : applicationData.wants_trial_day
+          ? '🟧 TRIAL DAY'
+          : '🆕';
       const staffEmail = await resend.emails.send({
         from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
         to: STAFF_EMAILS,
@@ -530,14 +655,18 @@ export async function POST(request: NextRequest) {
         html: generateManagerEmailHTML({
           applicationData,
           membershipTypeDisplay,
-          applicationId,
-          submittedAt
+          applicationId: applicationRef,
+          submittedAt,
+          notSaved: !savedApplicationRowId,
+          trialOrigin
         }),
         text: generateManagerEmailText({
           applicationData,
           membershipTypeDisplay,
-          applicationId,
-          submittedAt
+          applicationId: applicationRef,
+          submittedAt,
+          notSaved: !savedApplicationRowId,
+          trialOrigin
         })
       });
 
@@ -552,12 +681,17 @@ export async function POST(request: NextRequest) {
 
     console.log('📊 Email results:', emailResults);
 
-    // Return success if at least one email was sent
+    // Return success if at least one email was sent.
+    //
+    // `saved` is the honest half of that: staff were told either way, but
+    // only a saved row puts this application in front of them on the admin
+    // panel, and the form says something different when it is missing.
     if (emailResults.applicant_sent || emailResults.manager_sent) {
       return NextResponse.json({
         success: true,
-        application_id: applicationId,
-        message: emailResults.applicant_sent 
+        saved: !!savedApplicationRowId,
+        application_id: applicationRef,
+        message: emailResults.applicant_sent
           ? `Application submitted successfully! Check your email at ${applicationData.email} for confirmation.`
           : 'Application submitted successfully! You will receive confirmation shortly.',
         email_status: emailResults
@@ -566,8 +700,11 @@ export async function POST(request: NextRequest) {
       // Both emails failed
       return NextResponse.json({
         success: false,
-        error: 'Failed to send confirmation emails. Application received but email system unavailable.',
-        application_id: applicationId,
+        saved: !!savedApplicationRowId,
+        error: savedApplicationRowId
+          ? 'Failed to send confirmation emails. Application received but email system unavailable.'
+          : 'We could not record your application or email it to us. Please call us at (303) 359-8337 so we can take it down directly.',
+        application_id: applicationRef,
         email_status: emailResults
       }, { status: 500 });
     }
@@ -593,155 +730,18 @@ export async function GET() {
   });
 }
 
-// Email template functions
-function generateApplicantEmailHTML(data: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  membershipType: string;
-  applicationId: string;
-  submittedAt: Date;
-}) {
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Membership Application Confirmation</title>
-        <style>
-          body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .header h1 { margin: 0; font-size: 24px; }
-          .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
-          .application-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-          .next-steps { background: #fff8e1; padding: 20px; border-radius: 8px; border-left: 4px solid #ed7611; margin: 20px 0; }
-          .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; border-radius: 0 0 8px 8px; }
-          .button { display: inline-block; background: #ed7611; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 10px 0; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Welcome to Merritt Workspace!</h1>
-            <p>Your membership application has been received</p>
-          </div>
-          
-          <div class="content">
-            <p>Hi ${data.firstName},</p>
-            
-            <p>Thank you for your interest in joining the Merritt Workspace community! We've received your membership application and are excited to review it.</p>
-            
-            <div class="application-info">
-              <h3 style="margin-top: 0;">Application Details</h3>
-              <p><strong>Applicant:</strong> ${data.firstName} ${data.lastName}</p>
-              <p><strong>Email:</strong> ${data.email}</p>
-              <p><strong>Membership Type:</strong> ${data.membershipType}</p>
-              <p><strong>Application ID:</strong> ${data.applicationId}</p>
-              <p><strong>Submitted:</strong> ${data.submittedAt.toLocaleString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                timeZone: 'America/Denver',
-                timeZoneName: 'short'
-              })}</p>
-            </div>
-
-            <div class="next-steps">
-              <h3 style="margin-top: 0;">🎯 What's Next?</h3>
-              <ol>
-                <li><strong>Review Process:</strong> Our team will review your application within 1-2 business days</li>
-                <li><strong>Schedule Tour:</strong> We'll contact you to schedule a complimentary workspace tour</li>
-                <li><strong>Meet the Team:</strong> Get to know our community and see our burnt orange floors firsthand!</li>
-                <li><strong>Free Trial Day:</strong> Experience working in our space with a full day trial</li>
-              </ol>
-            </div>
-
-            <p>While you wait, feel free to explore our amenities:</p>
-            <ul>
-              <li>Premium conference room with A/V equipment</li>
-              <li>High-speed WiFi throughout the building</li>
-              <li>On-site snackshop with fresh coffee and meals</li>
-              <li>Secure building with 24/7 access</li>
-              <li>Networking events and community gatherings</li>
-              <li>Prime Sloan's Lake location - just 3 minutes to I-25</li>
-            </ul>
-
-            <p>We'll be in touch soon to move forward with your membership. Thank you for choosing Merritt Workspace!</p>
-            
-            <a href="mailto:memberservices@merrittworkspace.net" class="button">Questions? Contact Us</a>
-          </div>
-
-          <div class="footer">
-            <p><strong>Merritt Workspace</strong></p>
-            <p>Where Work Meets Community</p>
-            <p>2246 Irving Street, Denver, CO 80211</p>
-            <p>Email: memberservices@merrittworkspace.net | Phone: (303) 359-8337</p>
-            <p>Manager: manager@merrittworkspace.net | (720) 357-9499</p>
-          </div>
-        </div>
-      </body>
-    </html>
-  `;
-}
-
-function generateApplicantEmailText(data: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  membershipType: string;
-  applicationId: string;
-  submittedAt: Date;
-}) {
-  return `
-Membership Application Received - Merritt Workspace
-
-Hi ${data.firstName},
-
-Thank you for applying to join Merritt Workspace! We've received your application and are excited to review it.
-
-Application Details:
-- Applicant: ${data.firstName} ${data.lastName}
-- Email: ${data.email}
-- Membership Type: ${data.membershipType}
-- Application ID: ${data.applicationId}
-- Submitted: ${data.submittedAt.toLocaleString('en-US', { timeZone: 'America/Denver', timeZoneName: 'short' })}
-
-What's Next:
-1. Review Process: Our team will review your application within 1-2 business days
-2. Schedule Tour: We'll contact you to schedule a complimentary workspace tour
-3. Meet the Team: Get to know our community and see our burnt orange floors!
-4. Free Trial Day: Experience working in our space with a full day trial
-
-Our Amenities:
-- Premium conference room with A/V equipment
-- High-speed WiFi throughout the building
-- On-site snackshop with fresh coffee and meals
-- Secure building with 24/7 access
-- Networking events and community gatherings
-- Prime Sloan's Lake location - just 3 minutes to I-25
-
-We'll be in touch soon to move forward with your membership.
-
-Questions? Contact us at memberservices@merrittworkspace.net or (303) 359-8337
-Prefer the manager? manager@merrittworkspace.net or (720) 357-9499
-
-Welcome to the community!
-
-Merritt Workspace Team
-2246 Irving Street, Denver, CO 80211
-  `;
-}
-
+// Email template functions — the applicant confirmation lives in
+// lib/portal/applicationReceivedEmail.ts; these are the staff copies.
 function generateManagerEmailHTML(data: {
   applicationData: any;
   membershipTypeDisplay: string;
   applicationId: string;
   submittedAt: Date;
+  // True when the row could not be written to member_applications, so this
+  // email is the only record that the person applied.
+  notSaved?: boolean;
+  // Set when they came back off a post-trial "finish your application" link.
+  trialOrigin?: { application_id: string; trial_date: string | null } | null;
 }) {
   const app = data.applicationData;
   
@@ -768,7 +768,23 @@ function generateManagerEmailHTML(data: {
             <h2 style="margin: 0;">🆕 New Membership Application</h2>
             <p style="margin: 5px 0 0 0;">Action Required: Follow up within 1-2 business days</p>
           </div>
-          
+
+          ${data.notSaved ? `
+          <div style="background: #fdecea; border: 2px solid #c62828; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="margin: 0 0 6px 0; color: #b71c1c;">🚨 This application did NOT save</h3>
+            <p style="margin: 0;">It will <strong>not</strong> appear under Membership applications in the admin panel. This email is the only record of it.</p>
+            <p style="margin: 6px 0 0 0; font-size: 13px;">Please reply to the applicant directly and take their details down by hand.</p>
+          </div>
+          ` : ''}
+
+          ${data.trialOrigin ? `
+          <div style="background: #fff4e5; border: 2px solid #ed7611; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="margin: 0 0 6px 0; color: #ad4a00;">↩️ This is a trial visitor coming back to join</h3>
+            <p style="margin: 0;">They came in for a trial day${data.trialOrigin.trial_date ? ` on <strong>${new Date(`${data.trialOrigin.trial_date}T00:00:00`).toLocaleDateString()}</strong>` : ''} and have now completed the full application.</p>
+            <p style="margin: 6px 0 0 0; font-size: 13px;">Their trial card in the Trial days tab is marked as converted — the decision to make is on this application, under <strong>Membership applications</strong>. Their photo ID from the trial day is already on file.</p>
+          </div>
+          ` : ''}
+
           ${app.wants_trial_day ? `
           <div style="background: #fff4e5; border: 2px solid #ed7611; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
             <h3 style="margin: 0 0 6px 0; color: #ad4a00;">🟧 Trial Day Requested</h3>
@@ -933,13 +949,26 @@ function generateManagerEmailText(data: {
   membershipTypeDisplay: string;
   applicationId: string;
   submittedAt: Date;
+  notSaved?: boolean;
+  trialOrigin?: { application_id: string; trial_date: string | null } | null;
 }) {
   const app = data.applicationData;
-  
+
   return `
 NEW MEMBERSHIP APPLICATION
 
-${app.full_office_plans?.length ? `*** NO OFFICE OF THAT SIZE IS FREE ***
+${data.notSaved ? `*** THIS APPLICATION DID NOT SAVE ***
+It will NOT appear under Membership applications in the admin panel. This
+email is the only record of it — please reply to the applicant directly and
+take their details down by hand.
+
+` : ''}${data.trialOrigin ? `*** TRIAL VISITOR COMING BACK TO JOIN ***
+They came in for a trial day${data.trialOrigin.trial_date ? ` on ${new Date(`${data.trialOrigin.trial_date}T00:00:00`).toLocaleDateString()}` : ''} and have now completed the full
+application. Their trial card is marked converted; the decision to make is on
+this application, under Membership applications. Their photo ID from the trial
+day is already on file.
+
+` : ''}${app.full_office_plans?.length ? `*** NO OFFICE OF THAT SIZE IS FREE ***
 This application asks for ${app.full_office_plans.map((id: string) => PLAN_CATALOG[id]?.label || id).join(', ')}, and every office of
 that size is currently occupied. Do not approve it expecting a room to hand
 over — offer another size, or hold them until one comes free.
