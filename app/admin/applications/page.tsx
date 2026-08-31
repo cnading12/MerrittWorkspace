@@ -49,6 +49,21 @@ interface Diagnostics {
   readVia: string;
   includeHandled: boolean;
   warnings: string[];
+  supabaseHost?: string;
+  newestRowCreatedAt?: string | null;
+}
+
+interface SelfTestStep {
+  step: string;
+  ok: boolean;
+  detail: string;
+}
+
+interface SelfTestResult {
+  ok: boolean;
+  verdict?: string;
+  error?: string;
+  steps?: SelfTestStep[];
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -325,6 +340,8 @@ export default function AdminApplicationsPage() {
   const [decisionNote, setDecisionNote] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('trial');
   const [showHandled, setShowHandled] = useState(false);
+  const [selfTest, setSelfTest] = useState<SelfTestResult | null>(null);
+  const [selfTesting, setSelfTesting] = useState(false);
 
   const load = useCallback(
     async (accessToken: string, includeHandled: boolean) => {
@@ -386,6 +403,37 @@ export default function AdminApplicationsPage() {
     if (!token) return;
     setLoading(true);
     await load(token, includeHandled);
+  }
+
+  // One click proves the whole pipeline from inside the deployed
+  // environment: which Supabase project it talks to, whether it can write an
+  // application row, what status the database assigns a fresh one, and
+  // whether the queue read sees it. "I submitted a test and nothing is
+  // showing" has five different causes that all look identical from this
+  // page; the step list this prints tells them apart.
+  async function runSelfTest() {
+    if (!token || selfTesting) return;
+    setSelfTesting(true);
+    setSelfTest(null);
+    try {
+      const res = await fetch(`/api/admin/applications/self-test?t=${Date.now()}`, {
+        method: 'POST',
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSelfTest({ ok: false, error: data.error || `The self-test failed to run (HTTP ${res.status}).` });
+        return;
+      }
+      setSelfTest(data);
+      // The test wrote and removed a row; re-read so the counts stay honest.
+      await load(token, showHandled);
+    } catch (e: any) {
+      setSelfTest({ ok: false, error: `The self-test request never completed: ${e?.message || 'unknown error'}` });
+    } finally {
+      setSelfTesting(false);
+    }
   }
 
   async function viewApplication(id: string) {
@@ -528,13 +576,57 @@ export default function AdminApplicationsPage() {
             Trial days are visits to expect. Membership applications are decisions to make.
           </p>
         </div>
-        <button
-          onClick={() => refresh()}
-          className="text-sm border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50"
-        >
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={runSelfTest}
+            disabled={selfTesting}
+            className="text-sm border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Writes a marked test application through the same code path as a real submission, reads it back the way the queue does, and deletes it — then reports every step. Use this when a submission is 'not showing up'."
+          >
+            {selfTesting ? 'Testing…' : 'Test the pipeline'}
+          </button>
+          <button
+            onClick={() => refresh()}
+            className="text-sm border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
+
+      {selfTest && (
+        <div
+          className={`rounded border-2 px-4 py-3 text-sm ${
+            selfTest.ok
+              ? 'border-green-500 bg-green-50 text-green-900'
+              : 'border-red-500 bg-red-50 text-red-800'
+          }`}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="font-semibold">
+              {selfTest.ok ? 'Pipeline test passed.' : 'Pipeline test found the break.'}
+            </div>
+            <button
+              onClick={() => setSelfTest(null)}
+              className="font-semibold hover:opacity-70"
+              aria-label="Dismiss this message"
+            >
+              ×
+            </button>
+          </div>
+          {selfTest.error && <div className="mt-1">{selfTest.error}</div>}
+          {selfTest.verdict && <div className="mt-1">{selfTest.verdict}</div>}
+          {selfTest.steps && (
+            <ul className="mt-2 space-y-1">
+              {selfTest.steps.map((s) => (
+                <li key={s.step}>
+                  <span className="font-semibold">{s.ok ? '✓' : '✗'} {s.step}:</span> {s.detail}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="rounded border-2 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -801,6 +893,24 @@ function DiagnosticsPanel({ diagnostics }: { diagnostics: Diagnostics }) {
         {' · '}loaded {new Date().toLocaleTimeString()} — click for details
       </summary>
       <div className="mt-2 space-y-1.5">
+        {(diagnostics.supabaseHost || diagnostics.newestRowCreatedAt !== undefined) && (
+          <div>
+            {diagnostics.supabaseHost && (
+              <>
+                Reading Supabase project <span className="font-mono">{diagnostics.supabaseHost}</span>
+                {' — '}if that is not the project open in your Supabase dashboard, you are looking
+                at two different databases.{' '}
+              </>
+            )}
+            {diagnostics.newestRowCreatedAt
+              ? `The newest row this database holds was created ${new Date(
+                  diagnostics.newestRowCreatedAt
+                ).toLocaleString()}; a submission made after that did not reach it.`
+              : diagnostics.newestRowCreatedAt === null
+                ? 'This database holds no application rows at all.'
+                : null}
+          </div>
+        )}
         {counts && <div>Status counts across the recent window: {counts}</div>}
         {diagnostics.recentRows && diagnostics.recentRows.length > 0 && (
           <div>
@@ -827,9 +937,12 @@ function DiagnosticsPanel({ diagnostics }: { diagnostics: Diagnostics }) {
         <div>
           Rows the tabs are not showing are listed first and say why, so a missing application
           should appear above with its reason. If it is not there at all — and the list is not
-          truncated — its row never reached the database: check the staff email for a 🚨 NOT SAVED
-          subject, and run <span className="font-mono">npm run diagnose:trial</span> for the full
-          write-path check.
+          truncated — its row never reached this database. Click <strong>Test the pipeline</strong>
+          (top right) to prove whether this deployment can save and read applications right now,
+          then check the staff inbox: every real submission emails staff — 🚨 NOT SAVED in the
+          subject means the save failed, and no staff email at all means the form never posted.
+          <span className="font-mono"> npm run diagnose:trial</span> runs the fuller check from a
+          terminal.
         </div>
       </div>
     </details>

@@ -37,6 +37,14 @@ const RECENT_ROW_LIMIT = 25;
 
 type Row = QueueRow & Record<string, unknown>;
 
+function readSupabaseHost(): string {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || '').hostname || '(unset)';
+  } catch {
+    return '(unset or malformed)';
+  }
+}
+
 interface TrialRead {
   rows: Row[];
   // Which rung of the ladder answered, so a support question about a
@@ -226,6 +234,19 @@ export async function GET(req: NextRequest) {
         readVia: trialRead.via,
         includeHandled,
         warnings: trialRead.warnings,
+        // Which Supabase project this deployment reads, and the newest row
+        // it can see. "My test from today is not in this list" has two very
+        // different meanings — the row was never written, or it was written
+        // to a different database than the one being inspected — and these
+        // two facts are what tells them apart. The host is the project ref
+        // from NEXT_PUBLIC_SUPABASE_URL, already public in the client bundle.
+        supabaseHost: readSupabaseHost(),
+        newestRowCreatedAt:
+          window.reduce<string | null>((newest, row) => {
+            const at = typeof row.created_at === 'string' ? row.created_at : null;
+            if (!at) return newest;
+            return !newest || at > newest ? at : newest;
+          }, null),
       },
     });
   } catch (e: any) {
