@@ -20,6 +20,12 @@ const state: {
   // persists (a trigger reverting the change, the wrong project answering).
   // The route's read-back verification exists for exactly this.
   writesDoNotStick: boolean;
+  // Every row the approve flow tried to upsert into `members`, in order —
+  // the archived-column fallback makes two attempts.
+  memberUpserts: any[];
+  // Simulates a database without 20260625_member_archive.sql, which rejects
+  // any write naming `archived_at`.
+  membersMissingArchivedColumn: boolean;
 } = {
   application: {
     id: 'app-1',
@@ -38,6 +44,8 @@ const state: {
   statusWriteError: null,
   payloadWriteError: null,
   writesDoNotStick: false,
+  memberUpserts: [],
+  membersMissingArchivedColumn: false,
 };
 
 vi.mock('@/lib/portal/supabaseAdmin', () => ({
@@ -111,14 +119,24 @@ vi.mock('@/lib/portal/supabaseAdmin', () => ({
       }
       if (table === 'members') {
         return {
-          upsert: (row: any) => {
-            state.insertedMember = { id: 'm-1', ...row };
-            return {
-              select: () => ({
-                single: () => Promise.resolve({ data: state.insertedMember, error: null }),
-              }),
-            };
-          },
+          upsert: (row: any) => ({
+            select: () => ({
+              single: () => {
+                state.memberUpserts.push(row);
+                if (state.membersMissingArchivedColumn && 'archived_at' in row) {
+                  return Promise.resolve({
+                    data: null,
+                    error: {
+                      code: '42703',
+                      message: 'column "archived_at" of relation "members" does not exist',
+                    },
+                  });
+                }
+                state.insertedMember = { id: 'm-1', ...row };
+                return Promise.resolve({ data: state.insertedMember, error: null });
+              },
+            }),
+          }),
         };
       }
       throw new Error(`unexpected table ${table}`);
@@ -153,6 +171,8 @@ beforeEach(() => {
   state.statusWriteError = null;
   state.payloadWriteError = null;
   state.writesDoNotStick = false;
+  state.memberUpserts = [];
+  state.membersMissingArchivedColumn = false;
   state.application = {
     id: 'app-1',
     email: 'newbie@example.com',
@@ -179,11 +199,57 @@ describe('admin application approval', () => {
       params: Promise.resolve({ id: 'app-1' }),
     });
     expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.application_marked).toBe(true);
     expect(state.insertedMember).toBeTruthy();
     expect(state.insertedMember.email).toBe('newbie@example.com');
     expect(state.insertedMember.application_id).toBe('app-1');
     expect(state.insertedMember.status).toBe('approved');
     expect(state.insertedMember.user_id).toBe('invited-1');
+    expect(state.application.status).toBe('approved');
+  });
+
+  // The upsert keys on email, so approving someone whose old member row was
+  // archived UPDATES that row. Archived rows are hidden from the member list
+  // and the totals — without clearing the marker, the approval "works"
+  // (member created, invitation emailed) while the member is nowhere on the
+  // Members page.
+  it('approve clears the archived marker so a returning member is visible', async () => {
+    const res = await approveRoute(makeReq({ action: 'approve' }), {
+      params: Promise.resolve({ id: 'app-1' }),
+    });
+    expect(res.status).toBe(200);
+    expect(state.insertedMember.archived_at).toBeNull();
+    expect(state.insertedMember.archived_by).toBeNull();
+  });
+
+  it('approve still works on a database without the archive migration', async () => {
+    state.membersMissingArchivedColumn = true;
+    const res = await approveRoute(makeReq({ action: 'approve' }), {
+      params: Promise.resolve({ id: 'app-1' }),
+    });
+    expect(res.status).toBe(200);
+    // First attempt named archived_at and was refused; the retry dropped it.
+    expect(state.memberUpserts).toHaveLength(2);
+    expect('archived_at' in state.memberUpserts[1]).toBe(false);
+    expect(state.insertedMember.email).toBe('newbie@example.com');
+  });
+
+  // If the application row cannot be marked approved, its card stays in the
+  // queue looking exactly like an Approve button that did nothing — while
+  // the member exists and has been emailed. The response has to say so, or
+  // the admin's next move is approving the same person a second time.
+  it('approve reports when the application row could not be marked approved', async () => {
+    state.statusWriteError = { message: 'permission denied for table member_applications' };
+    const res = await approveRoute(makeReq({ action: 'approve' }), {
+      params: Promise.resolve({ id: 'app-1' }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.application_marked).toBe(false);
+    expect(body.warning).toContain('stay in the queue');
+    expect(state.insertedMember).toBeTruthy();
   });
 
   it('rejects an unknown action', async () => {

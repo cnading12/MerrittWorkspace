@@ -53,14 +53,36 @@ export default function AdminMembersPage() {
   // be reviewed/restored, instead of the active roster.
   const [viewArchived, setViewArchived] = useState(false);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   async function load(authToken: string, archived: boolean) {
     setLoading(true);
-    const res = await fetch(
-      `/api/admin/members${archived ? '?archived=only' : ''}`,
-      { headers: { Authorization: `Bearer ${authToken}` } }
-    );
-    if (!res.ok) {
+    setLoadError(null);
+    // `t` is a cache-buster on top of `cache: 'no-store'`, the same pair the
+    // applications page uses. This exact read was once answered from the
+    // browser's cache — a roster snapshot recorded hours earlier — so a
+    // member approved in the meantime was "not showing up at all" while
+    // their row sat in the database the whole time. A unique URL cannot be
+    // served from any cache.
+    const params = new URLSearchParams({ t: String(Date.now()) });
+    if (archived) params.set('archived', 'only');
+    const res = await fetch(`/api/admin/members?${params}`, {
+      cache: 'no-store',
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    if (res.status === 401 || res.status === 403) {
       router.replace('/admin');
+      return;
+    }
+    if (!res.ok) {
+      // Only "you are not an admin" bounces to the sign-in screen. Any other
+      // failure is shown here: a failing query that looks like a logout is
+      // how a broken member list stays broken quietly.
+      const err = await res.json().catch(() => ({}));
+      setLoadError(
+        err.error || `The member list failed to load (HTTP ${res.status}).`
+      );
+      setLoading(false);
       return;
     }
     const { members } = await res.json();
@@ -371,6 +393,18 @@ export default function AdminMembersPage() {
 
   return (
     <div className="space-y-4">
+      {loadError && (
+        <div className="rounded border-2 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <div className="font-semibold">The member list did not load.</div>
+          <div className="mt-1">{loadError}</div>
+          <button
+            onClick={() => token && load(token, viewArchived)}
+            className="mt-2 border border-red-600 text-red-700 rounded px-3 py-1 hover:bg-red-100"
+          >
+            Try again
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold">

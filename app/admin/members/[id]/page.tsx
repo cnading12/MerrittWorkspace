@@ -49,7 +49,11 @@ export default function AdminMemberDetailPage({
   const [reconciling, setReconciling] = useState(false);
 
   async function load(authToken: string) {
-    const res = await fetch(`/api/admin/members/${id}`, {
+    // `t` + `no-store`, like every other admin read: this page shows the
+    // member's live onboarding state (documents, agreements, auto-pay), and
+    // a cached response replays a snapshot from hours earlier.
+    const res = await fetch(`/api/admin/members/${id}?t=${Date.now()}`, {
+      cache: 'no-store',
       headers: { Authorization: `Bearer ${authToken}` },
     });
     if (!res.ok) {

@@ -689,7 +689,19 @@ function describeDecision(
   target: MemberApplication | null,
   remainingSameEmail: number
 ): string {
-  if (action === 'approve') return 'Approved. The applicant has been emailed their portal invitation.';
+  if (action === 'approve') {
+    // The server reads the application row back after marking it approved.
+    // If that mark failed, the member exists and was emailed but the card
+    // will NOT leave this queue — without saying so, that reads as the
+    // Approve button doing nothing, and invites a second approval.
+    if (data?.application_marked === false) {
+      return (
+        data?.warning ||
+        'The member was created and invited, but the application row could not be marked approved — its card will stay in the queue. Do not approve it again.'
+      );
+    }
+    return 'Approved. The applicant has been emailed their portal invitation and now appears on the Members page.';
+  }
   // Name the exact card, "Submitted" line included, so "Dismissed" can be
   // checked against the screen instead of taken on faith.
   const who = target
