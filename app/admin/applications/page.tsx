@@ -348,12 +348,19 @@ export default function AdminApplicationsPage() {
         // a logout is how a broken queue stays broken quietly.
         setError(data.error || `The applications queue failed to load (HTTP ${res.status}).`);
         setLoading(false);
-        return;
+        return null;
       }
-      setTrialApps(data.trial || []);
-      setStandardApps(data.standard || []);
+      const trial: MemberApplication[] = data.trial || [];
+      const standard: MemberApplication[] = data.standard || [];
+      setTrialApps(trial);
+      setStandardApps(standard);
       setDiagnostics(data.diagnostics || null);
       setLoading(false);
+      // Returned as well as set: a caller that has just changed a row needs
+      // the fresh lists NOW (React state lands on the next render, after the
+      // caller's closure is done with them) — see the duplicate check in
+      // decide().
+      return { trial, standard };
     },
     [router]
   );
@@ -441,6 +448,10 @@ export default function AdminApplicationsPage() {
   // diagnostics included.
   async function decide(id: string, action: Decision) {
     if (!token || decidingId) return;
+    // Who this card is, held on to before anything changes: the banner
+    // names the person whose card just left, and the duplicate check below
+    // needs their email after the lists have been replaced.
+    const target = [...trialApps, ...standardApps].find((a) => a.id === id) || null;
     setDecidingId(id);
     setDecisionError(null);
     setDecisionNote(null);
@@ -474,8 +485,25 @@ export default function AdminApplicationsPage() {
         await load(token, showHandled);
         return;
       }
-      setDecisionNote(describeDecision(action, data, showHandled));
-      await load(token, showHandled);
+      const fresh = await load(token, showHandled);
+      // The same person can be in the queue more than once — four test
+      // submissions of the trial form are four rows, and four cards that
+      // look identical apart from the "Submitted" line. Dismissing one of
+      // them works, and then a twin card is still on screen, which reads
+      // as the dismissal not working at all. So the banner counts the
+      // twins and says so, instead of leaving "Dismissed" next to what
+      // looks like the same card.
+      const remainingSameEmail =
+        target && fresh
+          ? [...fresh.trial, ...fresh.standard].filter(
+              (a) =>
+                a.id !== id &&
+                a.email &&
+                target.email &&
+                a.email.toLowerCase() === target.email.toLowerCase()
+            ).length
+          : 0;
+      setDecisionNote(describeDecision(action, data, showHandled, target, remainingSameEmail));
     } catch (e: any) {
       // A throw here is the network, not the route: fetch rejecting, or the
       // reload after it failing. Silence would look like a dead button.
@@ -652,17 +680,35 @@ export default function AdminApplicationsPage() {
 // marker and the `status` column — and counts if either lands; the server
 // then reads the row back and only reports success when the queue will
 // actually treat it as handled.
-function describeDecision(action: Decision, data: any, showHandled: boolean): string {
+function describeDecision(
+  action: Decision,
+  data: any,
+  showHandled: boolean,
+  target: MemberApplication | null,
+  remainingSameEmail: number
+): string {
   if (action === 'approve') return 'Approved. The applicant has been emailed their portal invitation.';
+  // Name the exact card, "Submitted" line included, so "Dismissed" can be
+  // checked against the screen instead of taken on faith.
+  const who = target
+    ? `${target.first_name} ${target.last_name}’s card` +
+      (target.created_at ? ` (submitted ${new Date(target.created_at).toLocaleString()})` : '')
+    : 'The card';
   let msg: string;
   if (action === 'restore') {
-    msg = 'Restored — the card is back in the queue.';
+    msg = `Restored — ${who} is back in the queue.`;
   } else if (showHandled) {
     msg =
-      'Dismissed. Because “Show dismissed” is ticked, the card stays in the list — greyed out, ' +
+      `Dismissed. Because “Show dismissed” is ticked, ${who} stays in the list — greyed out, ` +
       'with a DISMISSED badge and a Restore button. Untick “Show dismissed” to hide it.';
   } else {
-    msg = 'Dismissed — the card has left the queue.';
+    msg = `Dismissed — ${who} has left the queue.`;
+  }
+  if (action === 'decline' && remainingSameEmail > 0 && target) {
+    msg +=
+      ` Heads up: ${remainingSameEmail} other card(s) for ${target.email} are still in the ` +
+      'queue. Each one is a separate submission — check its “Submitted” time — and is ' +
+      'dismissed on its own.';
   }
   if (data?.status_written === false && data?.payload_written) {
     msg += ' (The status column would not take the change — worth reporting; the dismissal still counts.)';
