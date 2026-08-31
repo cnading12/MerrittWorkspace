@@ -3,6 +3,8 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { prepareIdUpload, describeUploadFailure } from '@/lib/portal/idUpload';
+import { MAX_ID_FILE_BYTES, MAX_ID_FILE_LABEL } from '@/lib/portal/trialApplication';
 import OfficeMemberDashboard from './OfficeMemberDashboard';
 import CommunityPartnerDashboard from './CommunityPartnerDashboard';
 import type { Member, MemberDocument, PaymentHistoryRow } from '@/lib/portal/types';
@@ -685,9 +687,33 @@ function DocumentsTab({
     (t) => signedSet.has(t as AgreementRow['agreement_type'])
   ).length;
 
-  async function uploadDoc(docType: DocType, file: File) {
+  async function uploadDoc(docType: DocType, original: File) {
     setError(null);
     setUploading(docType);
+    // Shrink a phone photo before it goes anywhere near the network. A
+    // picture of a licence is routinely 5-12MB, all of it wasted on a file
+    // staff only ever glance at, and the platform drops a request body over
+    // 4.5MB before our route runs — which the browser can only report as a
+    // dead connection. The trial form has done this since it was written;
+    // the portal never did, which is why filing required documents failed
+    // with "Load failed".
+    let file = original;
+    try {
+      file = await prepareIdUpload(original);
+    } catch {
+      // Re-encoding is an optimisation, not a gate: a browser that cannot
+      // decode the image still gets to try the upload, and the size check
+      // below explains it in words if it is too big.
+      file = original;
+    }
+    if (file.size > MAX_ID_FILE_BYTES) {
+      setError(
+        `That file is ${(file.size / (1024 * 1024)).toFixed(1)}MB, and the limit is ` +
+          `${MAX_ID_FILE_LABEL}. Please upload a smaller photo or scan.`
+      );
+      setUploading(null);
+      return;
+    }
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
@@ -709,7 +735,10 @@ function DocumentsTab({
       onDocumentsChange(updatedDocs);
       if (updatedMember) onMemberChange(updatedMember);
     } catch (e: any) {
-      setError(e.message);
+      // Never the raw message: a request the platform killed rejects with a
+      // TypeError reading "Load failed", which names nothing the member can
+      // act on.
+      setError(describeUploadFailure(e, file));
     } finally {
       setUploading(null);
     }

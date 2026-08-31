@@ -20,7 +20,7 @@
 //     caller's size check explains the problem in words instead of this
 //     failing silently on the way past.
 
-import { MAX_ID_FILE_BYTES } from '@/lib/portal/trialApplication';
+import { MAX_ID_FILE_BYTES, MAX_ID_FILE_LABEL } from '@/lib/portal/trialApplication';
 
 // Successive (longest edge, JPEG quality) attempts, coarsest last. The first
 // pass is generous on purpose: a legible ID is the point, and 2000px at 0.85
@@ -120,4 +120,55 @@ function encode(
 function jpegName(name: string): string {
   const base = String(name || 'photo-id').replace(/\.[^.]*$/, '').trim();
   return `${base || 'photo-id'}.jpg`;
+}
+
+// ---------------------------------------------------------------------------
+// What to tell someone whose upload never reached the server.
+//
+// When a request body exceeds the platform's limit, the platform closes the
+// connection before our route runs. There is no response to read and no JSON
+// error to show — `fetch` itself rejects with a TypeError whose message is
+// whatever the browser calls a dead connection: "Load failed" in Safari,
+// "Failed to fetch" in Chrome, "NetworkError when attempting to fetch
+// resource." in Firefox.
+//
+// Every upload form here caught that and rendered `e.message` verbatim, so
+// the member trying to file their required documents was told "Error: Load
+// failed" — three words that name neither the cause nor anything they could
+// do about it. The file is the overwhelmingly likely culprit and its size is
+// right there, so say so.
+// ---------------------------------------------------------------------------
+
+/** Is this a fetch that never completed, as opposed to an error response? */
+function isNetworkFailure(e: unknown): boolean {
+  if (!(e instanceof TypeError)) return false;
+  return /load failed|failed to fetch|networkerror|network request failed/i.test(
+    e.message || ''
+  );
+}
+
+/**
+ * A message worth showing for a failed upload.
+ *
+ * `file` is optional but worth passing: when the connection died and the file
+ * is large, its size is almost certainly the reason, and naming the number
+ * turns an unexplained failure into an instruction.
+ */
+export function describeUploadFailure(e: unknown, file?: File | null): string {
+  if (!isNetworkFailure(e)) {
+    const message = e instanceof Error ? e.message : String(e ?? '');
+    return message || 'The upload failed. Please try again.';
+  }
+  if (file && file.size > MAX_ID_FILE_BYTES) {
+    const mb = (file.size / (1024 * 1024)).toFixed(1);
+    return (
+      `That file is ${mb}MB, which is over the ${MAX_ID_FILE_LABEL} limit, so it never ` +
+      'reached us. Please upload a smaller photo or scan — on a phone, choosing a ' +
+      'smaller size when you take or share the picture is usually enough.'
+    );
+  }
+  return (
+    'The upload did not reach us — this is usually a file that is too large, or a ' +
+    'dropped connection. Please check your connection and try again with a smaller file.'
+  );
 }

@@ -8,7 +8,13 @@ import {
   ConferenceCheckoutError,
 } from '@/lib/bookings/conferenceCheckout';
 import { HOURLY_RATE_CENTS } from '@/lib/bookings/conference-hours';
-import { validateUpload, UploadValidationError } from '@/lib/portal/uploads';
+import {
+  validateUpload,
+  UploadValidationError,
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_LABEL,
+} from '@/lib/portal/uploads';
+import { MAX_ID_FILE_BYTES, MAX_ID_FILE_LABEL } from '@/lib/portal/trialApplication';
 import { checkRateLimit, getClientIp, __resetRateLimits } from '@/lib/rateLimit';
 import { priceCart } from '@/lib/snackshop/products';
 
@@ -92,6 +98,36 @@ describe('upload validation', () => {
     expect(() => validateUpload(fakeFile(11 * 1024 * 1024, 'image/jpeg'))).toThrow(
       UploadValidationError
     );
+  });
+
+  // The ceiling has to sit BELOW the platform's request-body limit, not above
+  // it. A limit of 10MB could never fire for the files that actually broke:
+  // the platform drops a body over 4.5MB before the route runs, so a 6MB
+  // phone photo reached neither this check nor any error message — the
+  // browser just reported a dead connection ("Load failed" in Safari).
+  it('keeps the limit under the 4.5MB the platform will carry', () => {
+    expect(MAX_UPLOAD_BYTES).toBeLessThan(4.5 * 1024 * 1024);
+  });
+
+  it('rejects the mid-sized photo that used to die with no message at all', () => {
+    // Between the old 10MB ceiling and the platform's 4.5MB: accepted by the
+    // validator, never delivered to it.
+    expect(() => validateUpload(fakeFile(6 * 1024 * 1024, 'image/jpeg'))).toThrow(
+      UploadValidationError
+    );
+  });
+
+  it('says how big the file was, not just that it was too big', () => {
+    expect(() => validateUpload(fakeFile(6 * 1024 * 1024, 'image/jpeg'))).toThrow(/6\.0MB/);
+    expect(() => validateUpload(fakeFile(6 * 1024 * 1024, 'image/jpeg'))).toThrow(/4MB/);
+  });
+
+  // One number, four upload paths. The portal, the guest booking and the
+  // trial form each used to carry their own copy, and three of them were
+  // wrong.
+  it('shares one limit with the trial form', () => {
+    expect(MAX_ID_FILE_BYTES).toBe(MAX_UPLOAD_BYTES);
+    expect(MAX_ID_FILE_LABEL).toBe(MAX_UPLOAD_LABEL);
   });
 
   it('rejects an empty file', () => {

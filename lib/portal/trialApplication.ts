@@ -13,7 +13,7 @@
 // submission grow into a full application later without asking the person
 // for anything a second time.
 
-import { ALLOWED_UPLOAD_MIME_TYPES } from './uploads';
+import { ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from './uploads';
 
 export type ApplicationKind = 'trial' | 'full';
 
@@ -30,21 +30,16 @@ export type ApplicationKind = 'trial' | 'full';
 //            printing, meeting rooms and everything else.
 export type TrialSeating = 'desk' | 'office' | 'cafe';
 
-// The largest photo ID we will take, in bytes.
+// The largest photo ID we will take. Re-exported from lib/portal/uploads.ts
+// rather than declared again — that file carries the reasoning.
 //
-// This is not a storage limit — it is the request-body limit. The form posts
-// the file as multipart to a serverless function, and the platform rejects a
-// body over 4.5MB before our route ever runs, so a 10MB ceiling here only
-// ever meant a phone photo failed further downstream with nothing useful to
-// say about it. 4MB leaves room for the rest of the multipart body.
-//
-// It costs applicants nothing, because the form re-encodes an oversized
-// photo in the browser first (lib/portal/idUpload.ts). In practice only a
-// large scanned PDF, which nothing can shrink client-side, reaches it.
-export const MAX_ID_FILE_BYTES = 4 * 1024 * 1024;
-
-/** The same number in the words the form and the API both use. */
-export const MAX_ID_FILE_LABEL = '4MB';
+// This file used to own a second copy of the number while the portal
+// document upload and the guest booking kept a 10MB one, which is how the
+// portal came to report "Load failed" for a phone photo: the reasoning had
+// been worked out once, here, and never reached the other three upload
+// paths.
+export const MAX_ID_FILE_BYTES = MAX_UPLOAD_BYTES;
+export const MAX_ID_FILE_LABEL = MAX_UPLOAD_LABEL;
 
 // What the upload input will take, and the same list the route enforces.
 //

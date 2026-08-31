@@ -36,7 +36,29 @@ const EXTENSION_BY_MIME: Record<string, string> = {
   'application/pdf': 'pdf',
 };
 
-export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+// The largest file any of these routes will take.
+//
+// This is a REQUEST-BODY limit, not a storage limit. Every upload path here
+// posts multipart to a serverless function, and the platform rejects a body
+// over 4.5MB *before* our route runs — so a ceiling above that can never be
+// enforced by `validateUpload`, because the request the ceiling is meant to
+// catch never arrives. What the person sees instead is the raw fetch
+// rejection: "Load failed" in Safari, "Failed to fetch" in Chrome.
+//
+// That is exactly how it failed. The trial form worked this out and set its
+// own 4MB constant; the portal document upload and the guest booking kept a
+// 10MB one, so a phone photo of a licence — routinely 5-12MB — died on the
+// platform's limit with no message anyone could act on. One definition now,
+// so the two cannot drift apart again.
+//
+// 4MB leaves room for the rest of the multipart body, and costs uploaders
+// nothing: lib/portal/idUpload.ts re-encodes an oversized photo in the
+// browser first, so only a large scanned PDF — which nothing can shrink
+// client-side — ever reaches this check.
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+
+/** The same number in the words the forms and the API both use. */
+export const MAX_UPLOAD_LABEL = '4MB';
 
 export interface ValidatedUpload {
   contentType: string;
@@ -56,7 +78,10 @@ export function validateUpload(file: File): ValidatedUpload {
     throw new UploadValidationError('File is empty');
   }
   if (file.size > MAX_UPLOAD_BYTES) {
-    throw new UploadValidationError('File too large (max 10MB)');
+    throw new UploadValidationError(
+      `That file is ${(file.size / (1024 * 1024)).toFixed(1)}MB, and the maximum is ` +
+        `${MAX_UPLOAD_LABEL}. Please upload a smaller photo or scan.`
+    );
   }
 
   // `file.type` can be an empty string when the browser can't guess; treat
