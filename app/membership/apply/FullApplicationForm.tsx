@@ -605,8 +605,15 @@ export default function FullApplicationForm({
 
       console.log('✅ Application submitted successfully:', data);
 
-      // Show success message
-      setSuccess(`Thank you ${application.first_name}! Your membership application has been submitted successfully. You'll receive a confirmation email at ${application.email} shortly, and our team will contact you within 1-2 business days to schedule your complimentary workspace tour.`);
+      // Show success message. Says the same thing as the confirmation email
+      // (lib/portal/applicationReceivedEmail.ts), including not offering a
+      // tour to someone who is here because they already had their trial day.
+      setSuccess(
+        `Thank you ${application.first_name}! Your membership application has been submitted. ` +
+        `You'll get a confirmation email at ${application.email} shortly, and we'll review your ` +
+        `application and be back to you within 1-2 business days.` +
+        (resumeToken ? '' : " If you'd like to see the space first, just reply to that email and we'll arrange a tour or a trial day.")
+      );
 
     } catch (error) {
       console.error('❌ Error submitting application:', error);
