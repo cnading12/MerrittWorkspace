@@ -211,6 +211,21 @@ page only bounces to the sign-in screen on 401/403 — any other failure is
 shown as an error, because a failing query that looks like a logout is how a
 broken queue stays broken quietly.
 
+Two rules for that block, both learned from it being wrong. **Every hidden
+row is listed before any visible one**, because the row someone is asking
+about is by definition one the tabs are not showing, and a plain
+newest-N cut drops it first — the block tells the reader that an
+application absent from the list was never saved, so a truncation that can
+silently swallow the row makes the block lie. And **a hidden row says which
+kind of hidden it is** (`explainHiddenRow`): approved, declined, dismissed,
+or filed by the existing-member form, which inserts `status: 'approved'` on
+submit so its rows never enter this queue at all. That last one is a real
+way an application reaches `/admin/documents` and not `/admin/applications`,
+and removing the status filter does not change it — it is by design, and the
+panel has to be able to say so instead of leaving staff to conclude the
+application was lost. A hidden row that no branch explains reports itself as
+a bug rather than being folded into a reassuring summary.
+
 ## Café membership — the cap lives in code
 
 `cafe_membership` ($100/mo, `lib/portal/pricing.ts`) is open seating on the café

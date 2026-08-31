@@ -22,6 +22,7 @@ const ALL_COLUMNS = [
   'wants_trial_day', 'trial_date',                            // 20260428
   'application_kind', 'resume_token', 'id_document_path',
   'conversion_email_sent_at', 'converted_to_application_id',  // 20260824
+  'is_existing_member',                                       // 20260506
 ];
 const WITHOUT_20260824 = ALL_COLUMNS.filter(
   (c) => !['application_kind', 'resume_token', 'id_document_path',
@@ -346,5 +347,102 @@ describe('a database behind on a migration still shows its trial days', () => {
     ];
     const { body } = await queue();
     expect(body.standard).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A hidden row has to say which kind of hidden it is.
+//
+// "hidden (approved, declined or dismissed)" is three situations needing
+// three different actions, and it missed a fourth: the existing-member form
+// inserts `status: 'approved'` on submit, so its rows never enter this queue
+// at all. That is the confirmed way an application shows on the Documents
+// page (read without a status filter) and not on this one, and it is exactly
+// the report this panel exists to answer.
+// ---------------------------------------------------------------------------
+describe('the diagnostics name why each hidden row is hidden', () => {
+  const rowFor = async (over: Record<string, any>) => {
+    db.rows = [fullRow(over)];
+    const { body } = await queue();
+    expect(body.diagnostics.recentRows).toHaveLength(1);
+    return body.diagnostics.recentRows[0];
+  };
+
+  it('names the existing-member form rather than lumping it in with decisions', async () => {
+    const row = await rowFor({ status: 'approved', is_existing_member: true });
+    expect(row.shown_in).toMatch(/existing-member form/);
+    expect(row.shown_in).toMatch(/Members page/);
+    expect(row.shown_in).toMatch(/by design/);
+  });
+
+  it('distinguishes approved from declined', async () => {
+    expect((await rowFor({ status: 'approved' })).shown_in).toMatch(/already approved/);
+    db.rows = [];
+    expect((await rowFor({ status: 'declined' })).shown_in).toMatch(/already declined/);
+  });
+
+  it('points a dismissed row at the Show dismissed toggle', async () => {
+    const row = await rowFor({
+      status: 'pending',
+      payload: { dismissed_at: '2026-08-31T12:00:00Z' },
+    });
+    expect(row.shown_in).toMatch(/dismissed on 2026-08-31T12:00:00Z/);
+    expect(row.shown_in).toMatch(/Show dismissed/);
+  });
+
+  it('shown rows still name their tab', async () => {
+    db.rows = [trialRow(), fullRow()];
+    const { body } = await queue();
+    const by = Object.fromEntries(
+      body.diagnostics.recentRows.map((r: any) => [r.kind, r.shown_in])
+    );
+    expect(by.trial).toBe('Trial days tab');
+    expect(by.membership).toBe('Membership applications tab');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The panel tells the reader that an application absent from this list was
+// never saved. A flat "newest 8" made that claim false as soon as a ninth row
+// existed — and the row being asked about is, by definition, one the tabs are
+// not showing, which is the first thing a recency cut drops.
+// ---------------------------------------------------------------------------
+describe('the diagnostics list never drops the row being asked about', () => {
+  it('lists an old hidden row ahead of many newer visible ones', async () => {
+    const hidden = fullRow({
+      status: 'approved',
+      first_name: 'Buried',
+      created_at: '2020-01-01T00:00:00Z',
+    });
+    const newer = Array.from({ length: 30 }, (_, i) =>
+      fullRow({ status: 'pending', created_at: `2026-08-${String(i + 1).padStart(2, '0')}T00:00:00Z` })
+    );
+    db.rows = [hidden, ...newer];
+
+    const { body } = await queue();
+    const ids = body.diagnostics.recentRows.map((r: any) => r.id);
+    // The oldest row in the table, and the only hidden one — it must survive
+    // the cut, because it is the only row anyone would be asking about.
+    expect(ids).toContain(hidden.id);
+    expect(body.diagnostics.hiddenRowsFound).toBe(1);
+  });
+
+  it('reports the cap and the window size so the panel can say it is truncated', async () => {
+    db.rows = Array.from({ length: 40 }, () => fullRow({ status: 'pending' }));
+    const { body } = await queue();
+    expect(body.diagnostics.windowSize).toBe(40);
+    expect(body.diagnostics.recentRowLimit).toBe(25);
+    expect(body.diagnostics.recentRows.length).toBe(25);
+  });
+
+  it('stays newest-first once the hidden rows have been kept', async () => {
+    db.rows = [
+      fullRow({ status: 'pending', created_at: '2026-08-01T00:00:00Z' }),
+      fullRow({ status: 'approved', created_at: '2026-08-03T00:00:00Z' }),
+      fullRow({ status: 'pending', created_at: '2026-08-02T00:00:00Z' }),
+    ];
+    const { body } = await queue();
+    const dates = body.diagnostics.recentRows.map((r: any) => r.created_at);
+    expect(dates).toEqual([...dates].sort().reverse());
   });
 });

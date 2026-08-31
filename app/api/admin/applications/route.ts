@@ -20,6 +20,7 @@ import {
   isTrialQueueRow,
   isHandled,
   isDismissedInPayload,
+  explainHiddenRow,
   type QueueRow,
 } from '@/lib/portal/applicationQueue';
 
@@ -29,6 +30,10 @@ export const dynamic = 'force-dynamic';
 // on status, so it is bounded by count rather than by a status that may not
 // mean what we think it means.
 const MAX_ROWS = 500;
+
+// How many rows the diagnostics block lists. Hidden rows fill it first —
+// they are the ones "why is this not showing" is about.
+const RECENT_ROW_LIMIT = 25;
 
 type Row = QueueRow & Record<string, unknown>;
 
@@ -163,9 +168,24 @@ export async function GET(req: NextRequest) {
     }
     const trialIds = new Set(trial.map((r) => r.id));
     const standardIds = new Set(standard.map((r) => r.id));
-    const recentRows = [...window]
-      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
-      .slice(0, 8)
+    const isShown = (row: Row) => trialIds.has(row.id) || standardIds.has(row.id);
+    const byNewest = (a: Row, b: Row) =>
+      String(b.created_at || '').localeCompare(String(a.created_at || ''));
+
+    // Hidden rows are listed ahead of the merely-recent ones.
+    //
+    // The panel tells the reader that an application missing from this list
+    // was never written to the database. A flat "newest 8" made that untrue
+    // the moment a ninth row existed: the row being asked about is by
+    // definition one the tabs are not showing, and it was the first thing a
+    // recency cut dropped. Hidden rows come first for that reason, and the
+    // total is reported so the panel can say when it has been truncated
+    // rather than implying the list is exhaustive.
+    const hiddenRows = window.filter((row) => !isShown(row)).sort(byNewest);
+    const shownRows = window.filter(isShown).sort(byNewest);
+    const recentRows = [...hiddenRows, ...shownRows]
+      .slice(0, RECENT_ROW_LIMIT)
+      .sort(byNewest)
       .map((row) => ({
         id: row.id,
         created_at: row.created_at ?? null,
@@ -176,7 +196,11 @@ export async function GET(req: NextRequest) {
           ? 'Trial days tab'
           : standardIds.has(row.id)
             ? 'Membership applications tab'
-            : 'hidden (approved, declined or dismissed)',
+            : // One lumped string covered three different situations needing
+              // three different actions — and missed the existing-member
+              // form entirely, which is the confirmed way a row reaches the
+              // Documents page and not this one.
+              explainHiddenRow(row),
       }));
     const membershipRows = window.filter((row) => !isTrialQueueRow(row));
 
@@ -195,6 +219,10 @@ export async function GET(req: NextRequest) {
         windowSize: window.length,
         statusCounts,
         recentRows,
+        // So the panel can say "showing 25 of 60" instead of implying that
+        // anything absent from the list was never saved.
+        hiddenRowsFound: hiddenRows.length,
+        recentRowLimit: RECENT_ROW_LIMIT,
         readVia: trialRead.via,
         includeHandled,
         warnings: trialRead.warnings,

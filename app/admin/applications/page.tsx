@@ -44,6 +44,8 @@ interface Diagnostics {
   windowSize?: number;
   statusCounts?: Record<string, number>;
   recentRows?: DiagnosticRow[];
+  hiddenRowsFound?: number;
+  recentRowLimit?: number;
   readVia: string;
   includeHandled: boolean;
   warnings: string[];
@@ -744,7 +746,13 @@ function DiagnosticsPanel({ diagnostics }: { diagnostics: Diagnostics }) {
         {counts && <div>Status counts across the recent window: {counts}</div>}
         {diagnostics.recentRows && diagnostics.recentRows.length > 0 && (
           <div>
-            <div className="font-semibold text-gray-600">Most recent rows, newest first:</div>
+            <div className="font-semibold text-gray-600">
+              Rows in the database, newest first
+              {diagnostics.windowSize !== undefined &&
+                diagnostics.recentRows.length < diagnostics.windowSize &&
+                ` (showing ${diagnostics.recentRows.length} of ${diagnostics.windowSize}; every hidden row is listed first)`}
+              :
+            </div>
             <ul className="mt-1 space-y-0.5 font-mono">
               {diagnostics.recentRows.map((r) => (
                 <li key={r.id}>
@@ -759,9 +767,11 @@ function DiagnosticsPanel({ diagnostics }: { diagnostics: Diagnostics }) {
           </div>
         )}
         <div>
-          If a submitted application is missing from BOTH the list above and this block, its row
-          never reached the database — check the staff email for a 🚨 NOT SAVED subject, and run
-          <span className="font-mono"> npm run diagnose:trial</span> for the full write-path check.
+          Rows the tabs are not showing are listed first and say why, so a missing application
+          should appear above with its reason. If it is not there at all — and the list is not
+          truncated — its row never reached the database: check the staff email for a 🚨 NOT SAVED
+          subject, and run <span className="font-mono">npm run diagnose:trial</span> for the full
+          write-path check.
         </div>
       </div>
     </details>
