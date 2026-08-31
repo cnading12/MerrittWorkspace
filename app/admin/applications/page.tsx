@@ -11,6 +11,7 @@ import {
   readTrialOrigin,
   trialPhotoIdMissing,
 } from '@/lib/portal/trialApplication';
+import { isHandled, isDismissedInPayload } from '@/lib/portal/applicationQueue';
 
 // Two tabs, not one list with a band on top.
 //
@@ -82,7 +83,13 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
   // The visit still stands when the ID did not save — it is checked at the
   // door instead — but staff have to know that before the person arrives.
   const idMissing = trialPhotoIdMissing(app);
-  const handled = app.status === 'approved' || app.status === 'declined';
+  // Same definition the queue uses: the status column, or the payload
+  // marker the Dismiss button writes alongside it.
+  const handled = isHandled(app);
+  // Dismissed can mean either of those two writes landed, so the badge is
+  // read the same way rather than off `status` alone — a payload-only
+  // dismissal would otherwise be labelled APPROVED.
+  const dismissed = app.status === 'declined' || isDismissedInPayload(app);
   // They have already come back and filled in the full application. Without
   // this the card looks exactly as it did the day they visited — still
   // offering "Send membership application" — while the application they
@@ -99,7 +106,7 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
             </span>
             {handled && (
               <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-gray-200 text-gray-700">
-                {app.status === 'declined' ? 'DISMISSED' : 'APPROVED'}
+                {dismissed ? 'DISMISSED' : 'APPROVED'}
               </span>
             )}
             {converted && (
@@ -294,6 +301,10 @@ export default function AdminApplicationsPage() {
   // after a few in a row), which turns a reported failure into a button that
   // appears to do nothing at all — the worst possible symptom to debug.
   const [decisionError, setDecisionError] = useState<string | null>(null);
+  // What the last decision actually did. Shown on success as well as
+  // failure: a button whose effect is invisible is indistinguishable from a
+  // button that does nothing, which is exactly how this one was reported.
+  const [decisionNote, setDecisionNote] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('trial');
   const [showHandled, setShowHandled] = useState(false);
 
@@ -416,6 +427,7 @@ export default function AdminApplicationsPage() {
     if (!token || decidingId) return;
     setDecidingId(id);
     setDecisionError(null);
+    setDecisionNote(null);
     try {
       const res = await fetch(`/api/admin/applications/${id}`, {
         method: 'POST',
@@ -446,6 +458,7 @@ export default function AdminApplicationsPage() {
         await load(token, showHandled);
         return;
       }
+      setDecisionNote(describeDecision(action, data));
       await load(token, showHandled);
     } catch (e: any) {
       // A throw here is the network, not the route: fetch rejecting, or the
@@ -481,6 +494,21 @@ export default function AdminApplicationsPage() {
         <div className="rounded border-2 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800">
           <div className="font-semibold">The queue did not load.</div>
           <div className="mt-1">{error}</div>
+        </div>
+      )}
+
+      {decisionNote && !decisionError && (
+        <div className="rounded border border-green-500 bg-green-50 px-4 py-3 text-sm text-green-900">
+          <div className="flex items-start justify-between gap-4">
+            <div>{decisionNote}</div>
+            <button
+              onClick={() => setDecisionNote(null)}
+              className="text-green-800 hover:text-green-950 font-semibold"
+              aria-label="Dismiss this message"
+            >
+              ×
+            </button>
+          </div>
         </div>
       )}
 
@@ -603,6 +631,24 @@ export default function AdminApplicationsPage() {
       )}
     </div>
   );
+}
+
+// Say what the decision actually wrote.
+//
+// The dismissal goes in as two independent writes — a `payload.dismissed_at`
+// marker and the `status` column — and counts if either lands. When only one
+// does, the visit is still out of the queue, and staff should hear that
+// rather than be told a flat "done" that hides a column refusing writes.
+function describeDecision(action: Decision, data: any): string {
+  if (action === 'approve') return 'Approved. The applicant has been emailed their portal invitation.';
+  const verb = action === 'restore' ? 'Restored' : 'Dismissed';
+  if (data?.status_written === false && data?.payload_written) {
+    return `${verb}, and it is out of the queue — but the status column would not take the change. Worth reporting; everything else worked.`;
+  }
+  if (data?.payload_written === false && data?.status_written) {
+    return `${verb}.`;
+  }
+  return `${verb}.`;
 }
 
 // An empty trial queue has three different meanings and staff cannot tell

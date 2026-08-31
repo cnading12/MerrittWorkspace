@@ -66,52 +66,92 @@ export async function POST(
     // by a misclick is exactly the thing this whole screen exists to stop
     // losing — so the state has to be reversible from the panel rather than
     // from the SQL editor.
+    //
+    // TWO writes, not one, and deliberately not in the same statement.
+    //
+    // `status` on this table has not been trustworthy: it is why the trial
+    // read stopped selecting on it, and a Dismiss that writes nothing but
+    // `status` inherits every problem that column has — a constraint it
+    // fails, a value it will not take, a column-level grant it does not
+    // have. One failed statement then loses the whole dismissal.
+    //
+    // So a dismissal is also recorded in `payload.dismissed_at`, which is
+    // the column this row was written through in the first place and which
+    // the ID-failure flag already updates. The two go in separately, and the
+    // dismissal counts if EITHER lands — `isHandled` in
+    // lib/portal/applicationQueue.ts reads both. Only when both fail is
+    // this an error.
     if (action === 'decline' || action === 'restore') {
-      const patch =
-        action === 'decline'
-          ? {
-              status: 'declined',
-              decision_note: decision_note || null,
-              decided_by: admin.id,
-              decided_at: new Date().toISOString(),
-            }
-          : { status: 'pending', decision_note: null, decided_by: null, decided_at: null };
+      const now = new Date().toISOString();
+      const dismissing = action === 'decline';
+      const existingPayload = (app.payload as Record<string, unknown> | null) || {};
 
-      // `select()` so the write is verified rather than assumed: it turns a
-      // failed update into an error the admin sees, and a matched-nothing
-      // update into a 409 instead of a silent no-op.
-      const { data: updated, error: writeError } = await sb
+      // Write 1 — the payload marker, on its own so `status` cannot take it
+      // down with it.
+      const nextPayload = { ...existingPayload };
+      if (dismissing) {
+        nextPayload.dismissed_at = now;
+        nextPayload.dismissed_by = admin.id;
+      } else {
+        delete nextPayload.dismissed_at;
+        delete nextPayload.dismissed_by;
+      }
+      const { data: payloadRow, error: payloadError } = await sb
         .from('member_applications')
-        .update(patch)
+        .update({ payload: nextPayload })
+        .eq('id', id)
+        .select('id')
+        .maybeSingle();
+      const payloadWritten = !payloadError && !!payloadRow;
+      if (payloadError) {
+        console.error(`⚠️ ${action}: payload marker failed for ${id}:`, payloadError);
+      }
+
+      // Write 2 — the status column, which is what a membership decline
+      // means and what the rest of the app reads for a full application.
+      const statusPatch = dismissing
+        ? {
+            status: 'declined',
+            decision_note: decision_note || null,
+            decided_by: admin.id,
+            decided_at: now,
+          }
+        : { status: 'pending', decision_note: null, decided_by: null, decided_at: null };
+      const { data: statusRow, error: statusError } = await sb
+        .from('member_applications')
+        .update(statusPatch)
         .eq('id', id)
         .select('id, status')
         .maybeSingle();
+      const statusWritten = !statusError && !!statusRow;
+      if (statusError) {
+        console.error(`⚠️ ${action}: status write failed for ${id}:`, statusError);
+      }
 
-      if (writeError) {
-        console.error(
-          `❌ Failed to ${action} application ${id}:`,
-          writeError
-        );
+      if (!payloadWritten && !statusWritten) {
+        const reason =
+          payloadError?.message ||
+          statusError?.message ||
+          'the update matched no row — it may have been removed';
+        console.error(`❌ Failed to ${action} application ${id}: ${reason}`);
         return NextResponse.json(
           {
-            error:
-              action === 'decline'
-                ? `Could not dismiss this application: ${writeError.message}`
-                : `Could not restore this application: ${writeError.message}`,
+            error: `Could not ${dismissing ? 'dismiss' : 'restore'} this application: ${reason}`,
           },
-          { status: 500 }
+          { status: payloadError || statusError ? 500 : 409 }
         );
       }
-      if (!updated) {
-        return NextResponse.json(
-          {
-            error:
-              'That application was not updated — it may have been removed. Reload the queue.',
-          },
-          { status: 409 }
-        );
-      }
-      return NextResponse.json({ ok: true, id: updated.id, status: updated.status });
+
+      return NextResponse.json({
+        ok: true,
+        id,
+        // What actually landed, so the panel can say so rather than the
+        // admin having to infer it from the row reappearing.
+        status: statusRow?.status ?? null,
+        status_written: statusWritten,
+        payload_written: payloadWritten,
+        dismissed: dismissing,
+      });
     }
 
     // Approve flow

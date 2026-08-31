@@ -48,8 +48,22 @@ export interface QueueRow {
 // asymmetry note above.
 const HANDLED_STATUSES = new Set(['approved', 'declined']);
 
+// Has a human dealt with this row?
+//
+// Two independent signals, and either is enough, for the same reason the
+// trial read does not trust `status` to select on: `payload.dismissed_at` is
+// written by the Dismiss button as a second, separate write precisely so a
+// dismissal does not depend on the `status` column behaving. Whichever of
+// the two lands, the row is dismissed and leaves the queue.
 export function isHandled(row: QueueRow): boolean {
-  return HANDLED_STATUSES.has(String(row.status || '').toLowerCase());
+  if (HANDLED_STATUSES.has(String(row.status || '').toLowerCase())) return true;
+  return isDismissedInPayload(row);
+}
+
+/** Dismissed via `payload.dismissed_at`, independently of `status`. */
+export function isDismissedInPayload(row: QueueRow): boolean {
+  const at = (row.payload as { dismissed_at?: unknown } | null)?.dismissed_at;
+  return typeof at === 'string' && at.length > 0;
 }
 
 // Does this row belong in the trial queue?
