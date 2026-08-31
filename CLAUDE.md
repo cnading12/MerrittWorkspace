@@ -234,12 +234,17 @@ page only bounces to the sign-in screen on 401/403 — any other failure is
 shown as an error, because a failing query that looks like a logout is how a
 broken queue stays broken quietly.
 
-Two rules for that block, both learned from it being wrong. **Every hidden
-row is listed before any visible one**, because the row someone is asking
-about is by definition one the tabs are not showing, and a plain
-newest-N cut drops it first — the block tells the reader that an
-application absent from the list was never saved, so a truncation that can
-silently swallow the row makes the block lie. And **a hidden row says which
+Two rules for that block, both learned from it being wrong — twice, in
+opposite directions. **Every row the tabs are showing is always listed, and
+truncation only ever trims the oldest hidden rows.** A plain newest-N cut
+dropped the old hidden row someone was asking about; the fix, hidden rows
+first under one shared cap, then buried the live queue instead — 39 old
+approved rows ate all 25 slots, the day's PENDING submissions vanished
+from the list, and the block told an admin their test applications were
+never saved while the cards sat one tab over. The block tells the reader
+that an application absent from the list was never saved, so any
+truncation that can silently swallow the row being asked about — hidden or
+shown — makes the block lie. And **a hidden row says which
 kind of hidden it is** (`explainHiddenRow`): approved, declined, dismissed,
 or filed by the existing-member form, which inserts `status: 'approved'` on
 submit so its rows never enter this queue at all. That last one is a real

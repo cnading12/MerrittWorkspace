@@ -180,19 +180,23 @@ export async function GET(req: NextRequest) {
     const byNewest = (a: Row, b: Row) =>
       String(b.created_at || '').localeCompare(String(a.created_at || ''));
 
-    // Hidden rows are listed ahead of the merely-recent ones.
+    // Every SHOWN row is always listed; truncation only ever trims the
+    // OLDEST hidden rows.
     //
     // The panel tells the reader that an application missing from this list
-    // was never written to the database. A flat "newest 8" made that untrue
-    // the moment a ninth row existed: the row being asked about is by
-    // definition one the tabs are not showing, and it was the first thing a
-    // recency cut dropped. Hidden rows come first for that reason, and the
-    // total is reported so the panel can say when it has been truncated
-    // rather than implying the list is exhaustive.
+    // was never written to the database, so who gets cut matters. A flat
+    // "newest N" dropped the old hidden row someone was asking about. The
+    // fix — hidden rows first — then failed the other way on a live queue
+    // with more than N old handled rows: the cap filled entirely with
+    // ancient approved cards and the PENDING rows submitted that day were
+    // truncated out, so today's test submissions read as "never saved" while
+    // they sat on screen as cards one tab over. Shown rows are bounded (they
+    // are the live queue) and each names its tab, so they all fit; hidden
+    // rows get the remaining slots newest-first, which keeps the old
+    // guarantee for any hidden row recent enough to be asked about.
     const hiddenRows = window.filter((row) => !isShown(row)).sort(byNewest);
     const shownRows = window.filter(isShown).sort(byNewest);
-    const recentRows = [...hiddenRows, ...shownRows]
-      .slice(0, RECENT_ROW_LIMIT)
+    const recentRows = [...shownRows, ...hiddenRows.slice(0, RECENT_ROW_LIMIT)]
       .sort(byNewest)
       .map((row) => ({
         id: row.id,
