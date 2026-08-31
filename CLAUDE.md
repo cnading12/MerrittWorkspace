@@ -211,6 +211,54 @@ page only bounces to the sign-in screen on 401/403 — any other failure is
 shown as an error, because a failing query that looks like a logout is how a
 broken queue stays broken quietly.
 
+Two rules for that block, both learned from it being wrong. **Every hidden
+row is listed before any visible one**, because the row someone is asking
+about is by definition one the tabs are not showing, and a plain
+newest-N cut drops it first — the block tells the reader that an
+application absent from the list was never saved, so a truncation that can
+silently swallow the row makes the block lie. And **a hidden row says which
+kind of hidden it is** (`explainHiddenRow`): approved, declined, dismissed,
+or filed by the existing-member form, which inserts `status: 'approved'` on
+submit so its rows never enter this queue at all. That last one is a real
+way an application reaches `/admin/documents` and not `/admin/applications`,
+and removing the status filter does not change it — it is by design, and the
+panel has to be able to say so instead of leaving staff to conclude the
+application was lost. A hidden row that no branch explains reports itself as
+a bug rather than being folded into a reassuring summary.
+
+## Every upload limit is one number, and it is below 4.5MB
+
+`MAX_UPLOAD_BYTES` in `lib/portal/uploads.ts` is 4MB, and
+`MAX_ID_FILE_BYTES` re-exports it. Four upload paths share it: portal
+documents, the community-partner photo ID, the guest booking photo ID, and
+the trial application.
+
+It is a **request-body** limit, not a storage limit. Every one of those paths
+posts multipart to a serverless function, and the platform drops a body over
+4.5MB *before the route runs* — so a ceiling above that can never fire,
+because the request it is meant to catch never arrives. What the person sees
+instead is the raw `fetch` rejection: **"Load failed"** in Safari, "Failed to
+fetch" in Chrome. Three words naming neither the cause nor the remedy.
+
+That is exactly how it broke. The trial form worked this out and set 4MB; the
+other three kept 10MB, in four separate literals, so a phone photo of a
+licence — routinely 5–12MB — passed every check we wrote and died on the
+platform's. Raising this number does not raise what the platform will carry.
+
+Two things keep it working, and both belong on any new upload path:
+
+- **Shrink in the browser first** (`prepareIdUpload` in
+  `lib/portal/idUpload.ts`), then check the size of what comes back. It
+  re-encodes an image until it fits and returns PDFs and undecodable files
+  untouched, so the caller still has to check.
+- **Never render a fetch rejection verbatim.** `describeUploadFailure` passes
+  a real server message straight through and rewrites only the case with no
+  response to read, naming the file's size when that is the likely cause.
+
+`__tests__/security-hardening.test.ts` asserts the ceiling stays under 4.5MB
+and that the four paths share one number;
+`__tests__/upload-failure-message.test.ts` covers all three browsers' wording.
+
 ## Café membership — the cap lives in code
 
 `cafe_membership` ($100/mo, `lib/portal/pricing.ts`) is open seating on the café

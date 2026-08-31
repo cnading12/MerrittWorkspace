@@ -126,6 +126,37 @@ export function splitApplicationQueue<T extends QueueRow>(
   return { trial, standard };
 }
 
+/**
+ * Why a row is on neither tab.
+ *
+ * The diagnostics block used to answer this with one lumped string —
+ * "hidden (approved, declined or dismissed)" — which is three different
+ * situations needing three different actions, plus a fourth it did not name
+ * at all: a row filed by the existing-member form, which inserts
+ * `status: 'approved'` on submit so it never enters this queue. That last
+ * one is the confirmed way an application shows on the admin Documents page
+ * (read without a status filter) and not here, so it is the one the panel
+ * most needs to be able to say out loud.
+ *
+ * The fallback matters as much as the named cases. Now that neither queue
+ * selects on `status`, a row can only be hidden by `isHandled` — so a hidden
+ * row that no branch below explains is a bug in this file, and says so
+ * rather than being folded into a reassuring summary.
+ */
+export function explainHiddenRow(row: QueueRow & Record<string, unknown>): string {
+  if (row.is_existing_member === true) {
+    return 'hidden — filed by the existing-member form, which approves on submit; approve it from the Members page (this is by design)';
+  }
+  const dismissedAt = (row.payload as { dismissed_at?: unknown } | null)?.dismissed_at;
+  if (typeof dismissedAt === 'string' && dismissedAt) {
+    return `hidden — dismissed on ${dismissedAt}; tick "Show dismissed" to see it and Restore`;
+  }
+  const status = String(row.status || '').toLowerCase();
+  if (status === 'approved') return 'hidden — already approved';
+  if (status === 'declined') return 'hidden — already declined';
+  return 'hidden — for no reason this panel can name, which is itself a bug: report it';
+}
+
 // Is this PostgREST/Postgres error "this database does not have that column
 // yet"? Two shapes to cover: PostgREST refusing an unknown key against its
 // schema cache (PGRST204), and Postgres itself reporting an undefined column

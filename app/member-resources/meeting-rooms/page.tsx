@@ -9,6 +9,8 @@ import { BLUR } from '@/components/marketing/blur';
 import MoreQuestions from '@/components/marketing/MoreQuestions';
 import { formatTime, calculateEndTime } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
+import { prepareIdUpload, describeUploadFailure } from '@/lib/portal/idUpload';
+import { MAX_ID_FILE_BYTES, MAX_ID_FILE_LABEL } from '@/lib/portal/trialApplication';
 
 interface BookingForm {
   name: string;
@@ -117,7 +119,8 @@ export default function MeetingRoomsPage() {
   });
 
   // Non-members must attach a photo ID (same requirement members satisfy in
-  // the portal documents flow). 10MB cap mirrors the server-side limit.
+  // the portal documents flow). Oversized photos are re-encoded in the
+  // browser first; the cap that remains is the shared MAX_ID_FILE_BYTES.
   const [idFile, setIdFile] = useState<File | null>(null);
 
   // Member context (null = guest). When signed in, identity is pulled from the
@@ -393,7 +396,25 @@ export default function MeetingRoomsPage() {
       if (bookingForm.bookingType !== 'member') {
         bookingPayload.append('room_id', 'conference-room'); // Static ID since we only have one room
         bookingPayload.append('total_amount', String(totalAmount));
-        if (idFile) bookingPayload.append('id_document', idFile);
+        // Shrunk before it is sent, like the trial form's photo ID. A
+        // booking that dies on the platform's request-body limit reports
+        // itself as a dead connection, which reads as "the booking system is
+        // down" rather than "that photo is too big".
+        if (idFile) {
+          let prepared = idFile;
+          try {
+            prepared = await prepareIdUpload(idFile);
+          } catch {
+            prepared = idFile;
+          }
+          if (prepared.size > MAX_ID_FILE_BYTES) {
+            throw new Error(
+              `That photo ID is ${(prepared.size / (1024 * 1024)).toFixed(1)}MB, and the limit ` +
+                `is ${MAX_ID_FILE_LABEL}. Please attach a smaller photo or scan.`
+            );
+          }
+          bookingPayload.append('id_document', prepared);
+        }
       }
 
       console.log('Submitting booking for:', bookingForm.email);
@@ -405,10 +426,10 @@ export default function MeetingRoomsPage() {
         body: bookingPayload,
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create booking');
+        throw new Error(data.error || `Failed to create booking (HTTP ${response.status})`);
       }
 
       console.log('Booking response:', data);
@@ -476,7 +497,10 @@ Your time slot is temporarily reserved.`);
 
     } catch (error) {
       console.error('Error creating booking:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create booking. Please try again.';
+      // describeUploadFailure passes a normal error straight through and only
+      // rewrites the case that has no response to read — a request the
+      // platform killed, whose message is "Load failed" or "Failed to fetch".
+      const errorMessage = describeUploadFailure(error, idFile);
 
       if (errorMessage.includes('conflicts')) {
         setError('This time slot is no longer available. Please select a different time.');
@@ -803,22 +827,42 @@ Your time slot is temporarily reserved.`);
                           type="file"
                           required
                           accept="image/*,.pdf"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0] || null;
-                            if (file && file.size > 10 * 1024 * 1024) {
-                              setError('ID file is too large (max 10MB). Please choose a smaller file.');
+                          onChange={async (e) => {
+                            const picked = e.target.files?.[0] || null;
+                            if (!picked) {
+                              setIdFile(null);
+                              return;
+                            }
+                            // Shrink here rather than rejecting here. The old
+                            // check turned away any phone photo over 10MB
+                            // that re-encoding brings under 4MB in a second,
+                            // and passed through everything between 4.5 and
+                            // 10MB — which the platform then dropped without
+                            // a message.
+                            let prepared = picked;
+                            try {
+                              prepared = await prepareIdUpload(picked);
+                            } catch {
+                              prepared = picked;
+                            }
+                            if (prepared.size > MAX_ID_FILE_BYTES) {
+                              setError(
+                                `That ID is ${(prepared.size / (1024 * 1024)).toFixed(1)}MB, and the ` +
+                                  `limit is ${MAX_ID_FILE_LABEL}. Please choose a smaller photo or scan.`
+                              );
                               setIdFile(null);
                               e.target.value = '';
                               return;
                             }
                             setError(null);
-                            setIdFile(file);
+                            setIdFile(prepared);
                           }}
                           className="w-full p-3 border border-clay focus:ring-2 focus:ring-orange-500 file:mr-3 file:py-1.5 file:px-3 file: file:border-0 file:bg-orange-100 file:text-orange-800 file:font-medium hover:file:bg-orange-200"
                         />
                         <p className="text-xs text-ink-60 mt-1">
                           A photo of your government-issued ID (driver's license or passport) is
-                          required for non-member bookings. Max 10MB.
+                          required for non-member bookings. Large photos are shrunk
+                          automatically before they are sent.
                         </p>
                       </div>
                     </>

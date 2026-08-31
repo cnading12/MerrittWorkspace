@@ -18,6 +18,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Member, MemberDocument } from '@/lib/portal/types';
+import { prepareIdUpload, describeUploadFailure } from '@/lib/portal/idUpload';
+import { MAX_ID_FILE_BYTES, MAX_ID_FILE_LABEL } from '@/lib/portal/trialApplication';
 
 interface HoursSummary {
   included: number;
@@ -69,10 +71,23 @@ export default function CommunityPartnerDashboard({
     })();
   }, [isActive]);
 
-  async function uploadPhotoId(file: File) {
+  async function uploadPhotoId(original: File) {
     setUploadError(null);
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError('That file is larger than 10MB. Please choose a smaller one.');
+    // A fourth copy of the limit used to live here as a literal `10MB`,
+    // above the 4.5MB the platform will actually carry — so the check
+    // passed and the request died anyway. The number comes from one place
+    // now, and the photo is shrunk before it is measured.
+    let file = original;
+    try {
+      file = await prepareIdUpload(original);
+    } catch {
+      file = original;
+    }
+    if (file.size > MAX_ID_FILE_BYTES) {
+      setUploadError(
+        `That file is ${(file.size / (1024 * 1024)).toFixed(1)}MB, and the limit is ` +
+          `${MAX_ID_FILE_LABEL}. Please choose a smaller photo or scan.`
+      );
       return;
     }
     setUploading(true);
@@ -87,12 +102,15 @@ export default function CommunityPartnerDashboard({
         headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      // Parsed defensively: a request the platform rejected answers with an
+      // error page, not JSON, and `res.json()` throwing there would replace
+      // the real status with a parse error.
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Upload failed (HTTP ${res.status})`);
       setDocs(data.documents || []);
       if (data.member) onMemberChange?.(data.member);
     } catch (e: any) {
-      setUploadError(e.message || 'Upload failed. Please try again.');
+      setUploadError(describeUploadFailure(e, file));
     } finally {
       setUploading(false);
     }
@@ -189,8 +207,8 @@ export default function CommunityPartnerDashboard({
               </div>
               <p className="text-sm text-amber-900 mt-1.5">
                 We keep ID on file for everyone who can enter the building. A
-                driver&apos;s licence or passport is fine — a clear photo or PDF,
-                up to 10MB.
+                driver&apos;s licence or passport is fine — a clear photo or PDF.
+                Large photos are shrunk automatically before they are sent.
               </p>
               <input
                 type="file"
