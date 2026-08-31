@@ -66,6 +66,7 @@ export default function SeatingChart({
     setError(null);
     try {
       const res = await fetch('/api/admin/seating', {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json().catch(() => ({}));

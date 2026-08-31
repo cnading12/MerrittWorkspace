@@ -136,6 +136,20 @@ const nextConfig = {
         source: '/:path*',
         headers: securityHeaders,
       },
+      {
+        // API responses are per-request and usually per-user: the admin
+        // queue, a member's own bookings, a live availability count. None of
+        // it may be replayed from a cache.
+        //
+        // Without this a browser will happily serve a stale GET for a URL it
+        // has seen before. That once hid newly submitted trial applications
+        // from /admin/applications for hours — the page requests
+        // `/api/admin/applications`, got an afternoon snapshot back, and the
+        // same route with any different query string returned the live rows,
+        // which made it look like the submissions had never arrived.
+        source: '/api/:path*',
+        headers: [{ key: 'Cache-Control', value: 'no-store, must-revalidate' }],
+      },
     ];
   },
   async redirects() {

@@ -257,6 +257,7 @@ export default function AdminMembersPage() {
       alert(lines.join('\n'));
       console.log('Reconcile result', json);
       const refreshed = await fetch('/api/admin/members', {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${token}` },
       });
       if (refreshed.ok) {

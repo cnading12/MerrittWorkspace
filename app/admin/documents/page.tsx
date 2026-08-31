@@ -113,6 +113,7 @@ export default function AdminDocumentsPage() {
       setLoading(true);
       // Always pull everything; filter client-side so switching tabs is instant.
       const res = await fetch('/api/admin/documents?status=all', {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${authToken}` },
       });
       if (!res.ok) {
