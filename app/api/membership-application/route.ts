@@ -4,6 +4,7 @@ import { Resend } from 'resend';
 import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
 import { generateTrialDayEmailHTML, generateTrialDayEmailText } from '@/lib/portal/trialDayEmail';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { OFFICE_SIZE_FOR_PLAN } from '@/lib/portal/officeSizes';
 
 export const dynamic = 'force-dynamic';
 
@@ -184,6 +185,36 @@ export async function POST(request: NextRequest) {
       }
     }
     applicationData.cafe_membership_full = cafeFull;
+
+    // And once more for private offices, which are three pools rather than
+    // one: an application for a 2-desk office when both single-desk rooms are
+    // taken is perfectly fine, so the question is per size. The form greys out
+    // a size with nothing free; this catches a stale page.
+    //
+    // Taken either way, and flagged, for the same reason as the two above: an
+    // office may be about to come free, and a waitlist applicant is a lead
+    // rather than an error. What must not happen is a reviewer approving a
+    // room that does not exist.
+    const officePlansApplied = itemized.lines
+      .map((l) => l.plan_id)
+      .filter((id) => OFFICE_SIZE_FOR_PLAN[id]);
+    let fullOfficeSizes: string[] = [];
+    if (officePlansApplied.length > 0) {
+      try {
+        const { getServiceSupabase } = await import('@/lib/portal/supabaseAdmin');
+        const { getOfficeAvailability } = await import('@/lib/portal/officeAvailability');
+        const { public: pub } = await getOfficeAvailability(getServiceSupabase());
+        if (pub.bySize) {
+          fullOfficeSizes = officePlansApplied.filter((id) => {
+            const count = pub.bySize![OFFICE_SIZE_FOR_PLAN[id]];
+            return count && count.capacity > 0 && count.remaining === 0;
+          });
+        }
+      } catch (e) {
+        console.error('Could not check private-office availability for application', e);
+      }
+    }
+    applicationData.full_office_plans = fullOfficeSizes;
 
     // Make these available to email helpers below by attaching them onto the
     // applicationData object passed through.
@@ -746,6 +777,14 @@ function generateManagerEmailHTML(data: {
           </div>
           ` : ''}
 
+          ${app.full_office_plans?.length ? `
+          <div style="background: #fdecea; border: 2px solid #c62828; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="margin: 0 0 6px 0; color: #b71c1c;">⚠️ No office of that size is free</h3>
+            <p style="margin: 0;">This application asks for <strong>${app.full_office_plans.map((id: string) => PLAN_CATALOG[id]?.label || id).join(', ')}</strong>, and every office of that size is currently occupied.</p>
+            <p style="margin: 6px 0 0 0; font-size: 13px;">Do not approve it expecting a room to hand over. Either offer another size, or hold them until one comes free.</p>
+          </div>
+          ` : ''}
+
           ${app.dedicated_desk_floor_full ? `
           <div style="background: #fdecea; border: 2px solid #c62828; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
             <h3 style="margin: 0 0 6px 0; color: #b71c1c;">⚠️ Dedicated desks are FULL</h3>
@@ -900,7 +939,12 @@ function generateManagerEmailText(data: {
   return `
 NEW MEMBERSHIP APPLICATION
 
-${app.dedicated_desk_floor_full ? `*** DEDICATED DESKS ARE FULL ***
+${app.full_office_plans?.length ? `*** NO OFFICE OF THAT SIZE IS FREE ***
+This application asks for ${app.full_office_plans.map((id: string) => PLAN_CATALOG[id]?.label || id).join(', ')}, and every office of
+that size is currently occupied. Do not approve it expecting a room to hand
+over — offer another size, or hold them until one comes free.
+
+` : ''}${app.dedicated_desk_floor_full ? `*** DEDICATED DESKS ARE FULL ***
 This application includes a shared-floor Dedicated Desk ($200/mo), but every
 dedicated desk is already spoken for (including members who have paid but not
 yet picked a desk number). Do not approve at the $200 shared rate expecting a
