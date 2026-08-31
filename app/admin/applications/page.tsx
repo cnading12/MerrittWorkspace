@@ -1,11 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { MemberApplication } from '@/lib/portal/types';
-import { readTrialFlag, readTrialDate } from '@/lib/portal/trial';
+import { readTrialDate } from '@/lib/portal/trial';
 import { isTrialApplication, trialPhotoIdMissing } from '@/lib/portal/trialApplication';
+
+// Two tabs, not one list with a band on top.
+//
+// A trial day and a membership application are two different jobs — someone
+// arriving on Thursday versus a decision to make — and they were sharing a
+// screen, a query and a `status = 'pending'` filter. Splitting them means a
+// visit can never be hidden by anything happening to the approve/decline
+// queue, and each tab gets an empty state that says why it is empty.
+
+type Tab = 'trial' | 'standard';
+
+interface Diagnostics {
+  trialRowsFound: number;
+  trialRowsHandled: number;
+  trialShown: number;
+  standardShown: number;
+  readVia: string;
+  includeHandled: boolean;
+  warnings: string[];
+}
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
@@ -25,18 +45,6 @@ function trialSeatingLabel(app: MemberApplication): string {
   if (app.membership_type === 'cafe_membership') return 'Café';
   if (app.membership_type?.startsWith('private_office')) return 'Private office';
   return 'Dedicated desk';
-}
-
-function byStartDateAsc(a: MemberApplication, b: MemberApplication) {
-  const aDate = a.start_date || '9999-12-31';
-  const bDate = b.start_date || '9999-12-31';
-  return aDate.localeCompare(bDate);
-}
-
-function byTrialDateAsc(a: MemberApplication, b: MemberApplication) {
-  const aDate = readTrialDate(a) || '9999-12-31';
-  const bDate = readTrialDate(b) || '9999-12-31';
-  return aDate.localeCompare(bDate);
 }
 
 interface CardProps {
@@ -63,14 +71,20 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
   // The visit still stands when the ID did not save — it is checked at the
   // door instead — but staff have to know that before the person arrives.
   const idMissing = trialPhotoIdMissing(app);
+  const handled = app.status === 'approved' || app.status === 'declined';
   return (
-    <div className="bg-orange-50 border-2 border-orange-500 border-l-8 rounded-lg p-4 shadow-sm">
+    <div className={`bg-orange-50 border-2 border-orange-500 border-l-8 rounded-lg p-4 shadow-sm ${handled ? 'opacity-60' : ''}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-extrabold tracking-wider bg-orange-600 text-white">
               TRIAL DAY APPLICANT
             </span>
+            {handled && (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-gray-200 text-gray-700">
+                {app.status === 'declined' ? 'DISMISSED' : 'APPROVED'}
+              </span>
+            )}
             <span className="text-xs text-orange-800">
               {shortForm
                 ? `Trial info emailed · ${idMissing ? 'no photo ID on file' : 'photo ID on file'} · nothing to approve`
@@ -140,12 +154,14 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
               Approve
             </button>
           )}
-          <button
-            onClick={() => onDecide(app.id, 'decline')}
-            className="border border-red-600 text-red-600 px-3 py-1.5 rounded text-sm hover:bg-red-50"
-          >
-            {shortForm ? 'Dismiss' : 'Decline'}
-          </button>
+          {!handled && (
+            <button
+              onClick={() => onDecide(app.id, 'decline')}
+              className="border border-red-600 text-red-600 px-3 py-1.5 rounded text-sm hover:bg-red-50"
+            >
+              {shortForm ? 'Dismiss' : 'Decline'}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -206,10 +222,49 @@ function StandardCard({ app, onDecide, onView }: CardProps) {
 
 export default function AdminApplicationsPage() {
   const router = useRouter();
-  const [apps, setApps] = useState<MemberApplication[]>([]);
+  const [trialApps, setTrialApps] = useState<MemberApplication[]>([]);
+  const [standardApps, setStandardApps] = useState<MemberApplication[]>([]);
+  const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('trial');
+  const [showHandled, setShowHandled] = useState(false);
+
+  const load = useCallback(
+    async (accessToken: string, includeHandled: boolean) => {
+      setError(null);
+      // `t` is a cache-buster on top of `cache: 'no-store'` and the
+      // `Cache-Control: no-store` this route sends. A stale queue once hid
+      // newly submitted trial days for hours; a unique URL cannot be served
+      // from any cache at all.
+      const params = new URLSearchParams({ t: String(Date.now()) });
+      if (includeHandled) params.set('include', 'all');
+      const res = await fetch(`/api/admin/applications?${params}`, {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (res.status === 401 || res.status === 403) {
+        router.replace('/admin');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // Anything other than "you are not an admin" is shown here rather
+        // than bounced to the sign-in page. A failing query that looks like
+        // a logout is how a broken queue stays broken quietly.
+        setError(data.error || `The applications queue failed to load (HTTP ${res.status}).`);
+        setLoading(false);
+        return;
+      }
+      setTrialApps(data.trial || []);
+      setStandardApps(data.standard || []);
+      setDiagnostics(data.diagnostics || null);
+      setLoading(false);
+    },
+    [router]
+  );
 
   useEffect(() => {
     (async () => {
@@ -219,19 +274,18 @@ export default function AdminApplicationsPage() {
         return;
       }
       setToken(session.access_token);
-      const res = await fetch('/api/admin/applications', {
-        cache: 'no-store',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (!res.ok) {
-        router.replace('/admin');
-        return;
-      }
-      const data = await res.json();
-      setApps(data.applications);
-      setLoading(false);
+      await load(session.access_token, showHandled);
     })();
-  }, [router]);
+    // `showHandled` is applied by its own toggle handler below, so this runs
+    // once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, load]);
+
+  async function refresh(includeHandled = showHandled) {
+    if (!token) return;
+    setLoading(true);
+    await load(token, includeHandled);
+  }
 
   async function viewApplication(id: string) {
     if (!token) return;
@@ -300,53 +354,88 @@ export default function AdminApplicationsPage() {
       alert(err.error || 'Failed');
       return;
     }
-    setApps((prev) => prev.filter((a) => a.id !== id));
+    setTrialApps((prev) => prev.filter((a) => a.id !== id));
+    setStandardApps((prev) => prev.filter((a) => a.id !== id));
   }
-
-  // Trial-day applicants get their own pinned section (sorted by upcoming
-  // trial date, soonest first). Standard applicants are sorted by their
-  // preferred membership start date so admins know who to chase.
-  const { trialApps, standardApps } = useMemo(() => {
-    const trial: MemberApplication[] = [];
-    const standard: MemberApplication[] = [];
-    for (const a of apps) {
-      if (readTrialFlag(a)) trial.push(a);
-      else standard.push(a);
-    }
-    trial.sort(byTrialDateAsc);
-    standard.sort(byStartDateAsc);
-    return { trialApps: trial, standardApps: standard };
-  }, [apps]);
 
   if (loading) return <div className="text-gray-500">Loading…</div>;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Pending applications</h1>
-        {apps.length > 0 && (
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-semibold">Applications</h1>
           <p className="text-sm text-gray-600 mt-1">
-            <span className="font-semibold text-orange-700">{trialApps.length} trial day</span>
-            {' · '}
-            <span>{standardApps.length} standard</span>
+            Trial days are visits to expect. Membership applications are decisions to make.
           </p>
-        )}
+        </div>
+        <button
+          onClick={() => refresh()}
+          className="text-sm border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50"
+        >
+          Refresh
+        </button>
       </div>
 
-      {apps.length === 0 && <p className="text-gray-500">No pending applications.</p>}
+      {error && (
+        <div className="rounded border-2 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <div className="font-semibold">The queue did not load.</div>
+          <div className="mt-1">{error}</div>
+        </div>
+      )}
 
-      {trialApps.length > 0 && (
-        <section>
-          <div className="bg-orange-600 text-white px-4 py-2.5 rounded-t-lg flex items-center justify-between">
-            <h2 className="font-bold text-base tracking-wide">
-              🟧 TRIAL DAY APPLICANTS · {trialApps.length}
-            </h2>
-            <span className="text-xs opacity-90">
-              Sorted by upcoming trial date · these are visits, not decisions
-            </span>
+      {diagnostics?.warnings?.map((w) => (
+        <div
+          key={w}
+          className="rounded border border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+          <span className="font-semibold">Database migration missing.</span> {w}
+        </div>
+      ))}
+
+      <div className="flex gap-1 border-b border-gray-200" role="tablist">
+        <TabButton
+          active={tab === 'trial'}
+          onClick={() => setTab('trial')}
+          activeClass="border-orange-600 text-orange-700"
+        >
+          🟧 Trial days
+          <Count value={trialApps.length} active={tab === 'trial'} tone="orange" />
+        </TabButton>
+        <TabButton
+          active={tab === 'standard'}
+          onClick={() => setTab('standard')}
+          activeClass="border-gray-800 text-gray-900"
+        >
+          Membership applications
+          <Count value={standardApps.length} active={tab === 'standard'} tone="gray" />
+        </TabButton>
+      </div>
+
+      {tab === 'trial' && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-sm text-gray-600">
+              Sorted by upcoming trial date. These are visits, not decisions — there is
+              nothing to approve.
+            </p>
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={showHandled}
+                onChange={(e) => {
+                  setShowHandled(e.target.checked);
+                  refresh(e.target.checked);
+                }}
+              />
+              Show dismissed
+            </label>
           </div>
-          <div className="bg-orange-100/40 border-2 border-t-0 border-orange-600 rounded-b-lg p-3 space-y-3">
-            {trialApps.map((a) => (
+
+          {trialApps.length === 0 ? (
+            <EmptyTrial diagnostics={diagnostics} showHandled={showHandled} />
+          ) : (
+            trialApps.map((a) => (
               <TrialCard
                 key={a.id}
                 app={a}
@@ -356,29 +445,98 @@ export default function AdminApplicationsPage() {
                 onSendApplication={sendMembershipApplication}
                 sending={sendingId === a.id}
               />
-            ))}
-          </div>
+            ))
+          )}
         </section>
       )}
 
-      {standardApps.length > 0 && (
-        <section>
-          <div className="bg-gray-700 text-white px-4 py-2.5 rounded-t-lg flex items-center justify-between">
-            <h2 className="font-bold text-base tracking-wide">
-              STANDARD APPLICANTS · {standardApps.length}
-            </h2>
-            <span className="text-xs opacity-90">
-              Sorted by preferred start date
-            </span>
-          </div>
-          <div className="bg-gray-50 border-2 border-t-0 border-gray-700 rounded-b-lg p-3 space-y-3">
-            {standardApps.map((a) => (
+      {tab === 'standard' && (
+        <section className="space-y-3">
+          <p className="text-sm text-gray-600">
+            Pending membership applications, sorted by preferred start date.
+          </p>
+          {standardApps.length === 0 ? (
+            <p className="text-gray-500">No membership applications are awaiting a decision.</p>
+          ) : (
+            standardApps.map((a) => (
               <StandardCard key={a.id} app={a} onDecide={decide} onView={viewApplication} />
-            ))}
-          </div>
+            ))
+          )}
         </section>
       )}
+
+      {diagnostics && (
+        <p className="text-xs text-gray-400 border-t pt-3">
+          {diagnostics.trialRowsFound} trial row(s) in the database
+          {diagnostics.trialRowsHandled > 0 && `, ${diagnostics.trialRowsHandled} already handled`}
+          {' · '}read via {diagnostics.readVia}
+          {' · '}loaded {new Date().toLocaleTimeString()}
+        </p>
+      )}
     </div>
+  );
+}
+
+// An empty trial queue has three different meanings and staff cannot tell
+// them apart from the word "none". Say which one it is.
+function EmptyTrial({
+  diagnostics,
+  showHandled,
+}: {
+  diagnostics: Diagnostics | null;
+  showHandled: boolean;
+}) {
+  if (diagnostics && diagnostics.trialRowsFound > 0 && !showHandled) {
+    return (
+      <p className="text-gray-500">
+        No trial days waiting. {diagnostics.trialRowsFound} have been submitted and all of
+        them are dismissed or approved — tick “Show dismissed” to see them.
+      </p>
+    );
+  }
+  return (
+    <p className="text-gray-500">
+      No trial day applications have been submitted. Anything sent through the trial form
+      appears here immediately, whatever happens to its photo ID.
+    </p>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  activeClass,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  activeClass: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition ${
+        active ? activeClass : 'border-transparent text-gray-500 hover:text-gray-800'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Count({ value, active, tone }: { value: number; active: boolean; tone: 'orange' | 'gray' }) {
+  const on = tone === 'orange' ? 'bg-orange-600 text-white' : 'bg-gray-800 text-white';
+  return (
+    <span
+      className={`inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded-full text-xs font-bold ${
+        active || value > 0 ? on : 'bg-gray-200 text-gray-600'
+      }`}
+    >
+      {value}
+    </span>
   );
 }
 
