@@ -17,6 +17,7 @@ import { CheckCircle, AlertCircle, Loader2, User, Briefcase, Calendar, Phone, Sh
 import Footer from "@/components/Footer";
 import Link from 'next/link';
 import { PLAN_FOR_TRIAL_SEATING, type TrialPrefill } from '@/lib/portal/trialApplication';
+import { OFFICE_SIZE_FOR_PLAN, type OfficeSize } from '@/lib/portal/officeSizes';
 
 type HousingReferenceType = '' | 'mortgage' | 'landlord';
 type MembershipReferenceType = '' | 'gym' | 'workspace';
@@ -31,6 +32,8 @@ interface DeskAvailability {
   taken: number | null;
   remaining: number | null;
   isFull: boolean;
+  // The other desk product: desks in offices converted into desk areas.
+  private_desk?: { capacity: number; remaining: number | null; isFull: boolean };
 }
 
 // Same shape, different resource. The cafe tier is capped at 15 places and has
@@ -40,6 +43,20 @@ interface CafeAvailability {
   taken: number | null;
   remaining: number | null;
   isFull: boolean;
+}
+
+// Private offices, split by size. "Is an office free?" is not the question
+// an applicant is asking: a solo professional and a team of six draw on pools
+// of two and seven. `by_size` is null when the floor plan records no sizes
+// (lib/portal/officeSizes.ts) — "we don't know", never "none free" — and the
+// counts cover only the offices on the workspace floor, never the wellness
+// building's office.
+interface OfficeAvailability {
+  capacity: number;
+  taken: number | null;
+  remaining: number | null;
+  isFull: boolean;
+  by_size: Record<OfficeSize, { capacity: number; remaining: number; isFull: boolean }> | null;
 }
 
 interface SelectedPlan {
@@ -260,6 +277,7 @@ export default function FullApplicationForm({
   const [error, setError] = useState<string | null>(null);
   const [deskAvailability, setDeskAvailability] = useState<DeskAvailability | null>(null);
   const [cafeAvailability, setCafeAvailability] = useState<CafeAvailability | null>(null);
+  const [officeAvailability, setOfficeAvailability] = useState<OfficeAvailability | null>(null);
 
   // How full the dedicated-desk floor is. Best-effort: a failed or in-flight
   // check leaves this null, which shows the standard plans.
@@ -280,6 +298,14 @@ export default function FullApplicationForm({
       })
       .catch(() => {
         /* leave availability unknown — the cafe tier stays on offer */
+      });
+    fetch('/api/office-availability')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d && !d.unavailable) setOfficeAvailability(d as OfficeAvailability);
+      })
+      .catch(() => {
+        /* leave availability unknown — every office size stays on offer */
       });
     return () => {
       cancelled = true;
@@ -401,8 +427,14 @@ export default function FullApplicationForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const adjustQuantity = (planId: PlanId, delta: number) =>
-    setQuantity(planId, getQuantity(planId) + delta);
+  // The +/- buttons obey the same ceiling the number input does: you cannot
+  // ask for more rooms of a size than are free. `freeFor` is declared below;
+  // this only reads it on click, long after render.
+  const adjustQuantity = (planId: PlanId, delta: number) => {
+    const wanted = getQuantity(planId) + delta;
+    const free = freeFor(planId);
+    setQuantity(planId, free ? Math.min(wanted, free.remaining) : wanted);
+  };
 
   // Once every desk on the shared floor is spoken for, the $200 floor-plan
   // desk can no longer be applied for and the $300 private dedicated desk
@@ -410,6 +442,42 @@ export default function FullApplicationForm({
   // keeps the normal offering on screen and the private tier hidden.
   const desksFull = deskAvailability?.isFull === true;
   const cafeFull = cafeAvailability?.isFull === true;
+
+  // What is free right now, per plan, or null when we don't know. Every
+  // caller below has to treat null as "say nothing" — an unknown count must
+  // never read as a zero, or a failed fetch closes the whole floor.
+  const freeFor = (planId: PlanId): { remaining: number; capacity: number } | null => {
+    if (planId === 'dedicated_desk') {
+      return typeof deskAvailability?.remaining === 'number'
+        ? { remaining: deskAvailability.remaining, capacity: deskAvailability.capacity }
+        : null;
+    }
+    if (planId === 'private_dedicated_desk') {
+      const priv = deskAvailability?.private_desk;
+      return typeof priv?.remaining === 'number'
+        ? { remaining: priv.remaining, capacity: priv.capacity }
+        : null;
+    }
+    if (planId === 'cafe_membership') {
+      return typeof cafeAvailability?.remaining === 'number'
+        ? { remaining: cafeAvailability.remaining, capacity: cafeAvailability.capacity }
+        : null;
+    }
+    const size: OfficeSize | undefined = OFFICE_SIZE_FOR_PLAN[planId];
+    const count = size ? officeAvailability?.by_size?.[size] : null;
+    return count && count.capacity > 0
+      ? { remaining: count.remaining, capacity: count.capacity }
+      : null;
+  };
+
+  // An office size with every room occupied cannot be applied for, the same
+  // way a full floor closes the $200 desk and a full café closes that tier.
+  // Unknown availability never closes anything.
+  const officeSizeFull = (planId: PlanId): boolean => {
+    const size = OFFICE_SIZE_FOR_PLAN[planId];
+    const count = size ? officeAvailability?.by_size?.[size] : null;
+    return Boolean(count && count.capacity > 0 && count.remaining === 0);
+  };
   const visiblePlans = useMemo(
     () => membershipPlans.filter((p) => !p.onlyWhenDesksFull || desksFull),
     [desksFull]
@@ -420,10 +488,23 @@ export default function FullApplicationForm({
   useEffect(() => {
     if (desksFull && getQuantity('dedicated_desk') > 0) setQuantity('dedicated_desk', 0);
     if (cafeFull && getQuantity('cafe_membership') > 0) setQuantity('cafe_membership', 0);
+    // Office sizes go the same way, and a quantity larger than the number of
+    // free rooms comes back down to it: three 2-desk offices cannot be
+    // applied for when two exist.
+    for (const planId of ['private_office_single', 'private_office_double', 'private_office_large'] as PlanId[]) {
+      const held = getQuantity(planId);
+      if (held === 0) continue;
+      if (officeSizeFull(planId)) {
+        setQuantity(planId, 0);
+        continue;
+      }
+      const free = freeFor(planId);
+      if (free && held > free.remaining) setQuantity(planId, free.remaining);
+    }
     // setQuantity/getQuantity are re-created every render; depending on them
-    // would loop. The only input that matters here is `desksFull`.
+    // would loop. The inputs that matter are the availability responses.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [desksFull, cafeFull]);
+  }, [desksFull, cafeFull, officeAvailability]);
 
   const totals = useMemo(() => {
     let monthlyCents = 0;
@@ -664,7 +745,12 @@ export default function FullApplicationForm({
                   // swapped, but it can't be added to an application.
                   const soldOut =
                     (plan.id === 'dedicated_desk' && desksFull) ||
-                    (plan.id === 'cafe_membership' && cafeFull);
+                    (plan.id === 'cafe_membership' && cafeFull) ||
+                    officeSizeFull(plan.id);
+                  // Live count for this plan, printed on the card. Null while
+                  // the check is in flight or if it failed, and then the card
+                  // reads exactly as it did before, minus the number.
+                  const free = freeFor(plan.id);
                   return (
                     <div
                       key={plan.id}
@@ -693,6 +779,19 @@ export default function FullApplicationForm({
                               New
                             </span>
                           )}
+                          {free && (
+                            <span
+                              className={`ml-2 inline-block whitespace-nowrap text-xs px-2 py-1 rounded font-medium ${
+                                free.remaining > 0
+                                  ? 'bg-green-100 text-green-900'
+                                  : 'bg-gray-200 text-ink-60'
+                              }`}
+                            >
+                              {free.remaining > 0
+                                ? `${free.remaining} of ${free.capacity} free`
+                                : 'Fully occupied'}
+                            </span>
+                          )}
                         </div>
                         <div className="text-right">
                           {plan.recurrence === 'one_time' ? (
@@ -719,7 +818,20 @@ export default function FullApplicationForm({
 
                       {soldOut ? (
                         <div className="pt-3 border-t border-clay text-sm text-ink-60">
-                          {plan.id === 'cafe_membership' ? (
+                          {OFFICE_SIZE_FOR_PLAN[plan.id] ? (
+                            <>
+                              <span className="font-semibold text-ink">
+                                Every {plan.name.replace('Private Office - ', '').toLowerCase()} office
+                                is occupied.
+                              </span>{' '}
+                              There is no room of this size to give you, so it can&apos;t be
+                              selected right now. Another size may suit, or{' '}
+                              <Link href="/contact" className="text-orange-600 underline">
+                                ask us about the waitlist
+                              </Link>{' '}
+                              &mdash; offices do come free.
+                            </>
+                          ) : plan.id === 'cafe_membership' ? (
                             <>
                               <span className="font-semibold text-ink">All 15 places taken.</span>{' '}
                               Cafe membership is capped so a seat is always free when you
@@ -753,17 +865,29 @@ export default function FullApplicationForm({
                           <input
                             type="number"
                             min={0}
-                            max={20}
+                            max={free ? Math.min(20, free.remaining) : 20}
                             value={quantity}
-                            onChange={(e) => setQuantity(plan.id, parseInt(e.target.value, 10) || 0)}
+                            onChange={(e) =>
+                              setQuantity(
+                                plan.id,
+                                // Never more of a room than exists: three
+                                // 2-desk offices cannot be applied for when
+                                // two are free. Unknown counts keep the old
+                                // ceiling of 20.
+                                free
+                                  ? Math.min(parseInt(e.target.value, 10) || 0, free.remaining)
+                                  : parseInt(e.target.value, 10) || 0
+                              )
+                            }
                             className="w-14 text-center p-2 border border-clay rounded"
                             aria-label={`${plan.name} quantity`}
                           />
                           <button
                             type="button"
                             aria-label={`Increase ${plan.name}`}
+                            disabled={Boolean(free) && quantity >= free!.remaining}
                             onClick={() => adjustQuantity(plan.id, 1)}
-                            className="w-8 h-8 rounded-full border border-clay flex items-center justify-center hover:bg-linen"
+                            className="w-8 h-8 rounded-full border border-clay flex items-center justify-center hover:bg-linen disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             <Plus className="w-4 h-4" />
                           </button>
