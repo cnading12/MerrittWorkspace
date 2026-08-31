@@ -12,6 +12,10 @@ const state: {
   // like it had worked when it had not.
   updateError: { message: string; code?: string } | null;
   updateMatchesNothing: boolean;
+  // The decline path writes `payload` and `status` separately, so failures
+  // are injected per write.
+  statusWriteError: { message: string; code?: string } | null;
+  payloadWriteError: { message: string; code?: string } | null;
 } = {
   application: {
     id: 'app-1',
@@ -27,6 +31,8 @@ const state: {
   updates: [],
   updateError: null,
   updateMatchesNothing: false,
+  statusWriteError: null,
+  payloadWriteError: null,
 };
 
 vi.mock('@/lib/portal/supabaseAdmin', () => ({
@@ -71,10 +77,16 @@ vi.mock('@/lib/portal/supabaseAdmin', () => ({
                 state.updates.push(patch);
                 Object.assign(state.application, patch);
               };
+              // Which of the two decline writes is this?
+              const isPayloadWrite = Object.keys(patch).length === 1 && 'payload' in patch;
+              const perWriteError = isPayloadWrite
+                ? state.payloadWriteError
+                : state.statusWriteError;
               return {
                 select: () => ({
                   maybeSingle: async () => {
-                    if (state.updateError) return { data: null, error: state.updateError };
+                    const err = state.updateError || perWriteError;
+                    if (err) return { data: null, error: err };
                     if (state.updateMatchesNothing) return { data: null, error: null };
                     apply();
                     return { data: { id, status: patch.status }, error: null };
@@ -117,6 +129,7 @@ vi.mock('resend', () => ({
 }));
 
 import { POST as approveRoute } from '@/app/api/admin/applications/[id]/route';
+import { isHandled } from '@/lib/portal/applicationQueue';
 
 function makeReq(body: any) {
   return new NextRequest('http://localhost/api/admin/applications/app-1', {
@@ -132,6 +145,8 @@ beforeEach(() => {
   state.updates = [];
   state.updateError = null;
   state.updateMatchesNothing = false;
+  state.statusWriteError = null;
+  state.payloadWriteError = null;
   state.application = {
     id: 'app-1',
     email: 'newbie@example.com',
@@ -189,9 +204,39 @@ describe('dismissing an application', () => {
   it('marks the row declined and says what it wrote', async () => {
     const { status, body } = await post({ action: 'decline' });
     expect(status).toBe(200);
-    expect(body).toMatchObject({ ok: true, id: 'app-1', status: 'declined' });
+    expect(body).toMatchObject({
+      ok: true,
+      id: 'app-1',
+      status: 'declined',
+      status_written: true,
+      payload_written: true,
+    });
     expect(state.application.status).toBe('declined');
-    expect(state.updates[0]).toMatchObject({ status: 'declined', decided_by: 'admin-1' });
+  });
+
+  // The whole point of the second write: `status` on this table has a
+  // history of refusing changes, and a dismissal must not be lost with it.
+  it('still dismisses when the status column refuses the write', async () => {
+    state.statusWriteError = { message: 'new row violates check constraint' };
+    const { status, body } = await post({ action: 'decline' });
+    expect(status).toBe(200);
+    expect(body).toMatchObject({ ok: true, status_written: false, payload_written: true });
+    expect(state.application.payload.dismissed_at).toEqual(expect.any(String));
+    expect(isHandled(state.application)).toBe(true);
+  });
+
+  it('still dismisses when the payload write fails', async () => {
+    state.payloadWriteError = { message: 'jsonb too large' };
+    const { status, body } = await post({ action: 'decline' });
+    expect(status).toBe(200);
+    expect(body).toMatchObject({ ok: true, status_written: true, payload_written: false });
+    expect(isHandled(state.application)).toBe(true);
+  });
+
+  it('records the payload marker the queue reads', async () => {
+    await post({ action: 'decline' });
+    expect(state.application.payload).toMatchObject({ dismissed_by: 'admin-1' });
+    expect(isHandled(state.application)).toBe(true);
   });
 
   it('dismisses a trial day application — there is nothing to approve, but it can be cleared', async () => {
@@ -202,7 +247,7 @@ describe('dismissing an application', () => {
     expect(state.application.status).toBe('declined');
   });
 
-  it('reports a failed write instead of claiming success', async () => {
+  it('reports a failed write instead of claiming success — only when BOTH fail', async () => {
     state.updateError = { message: 'permission denied for table member_applications' };
     const { status, body } = await post({ action: 'decline' });
     expect(status).toBe(500);
@@ -215,12 +260,12 @@ describe('dismissing an application', () => {
     state.updateMatchesNothing = true;
     const { status, body } = await post({ action: 'decline' });
     expect(status).toBe(409);
-    expect(body.error).toContain('not updated');
+    expect(body.error).toContain('matched no row');
   });
 
-  it('restores a dismissed application and clears the decision', async () => {
+  it('restores a dismissed application and clears both markers', async () => {
     await post({ action: 'decline' });
-    expect(state.application.status).toBe('declined');
+    expect(isHandled(state.application)).toBe(true);
 
     const { status, body } = await post({ action: 'restore' });
     expect(status).toBe(200);
@@ -231,6 +276,8 @@ describe('dismissing an application', () => {
       decided_by: null,
       decided_at: null,
     });
+    expect(state.application.payload.dismissed_at).toBeUndefined();
+    expect(isHandled(state.application)).toBe(false);
   });
 
   it('reports a failed restore too', async () => {
