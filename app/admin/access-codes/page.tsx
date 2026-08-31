@@ -25,6 +25,7 @@ export default function AccessCodesPage() {
 
   async function load(t: string) {
     const res = await fetch('/api/admin/access-codes', {
+      cache: 'no-store',
       headers: { Authorization: `Bearer ${t}` },
     });
     if (!res.ok) {

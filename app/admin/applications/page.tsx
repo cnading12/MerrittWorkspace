@@ -210,6 +210,7 @@ export default function AdminApplicationsPage() {
       }
       setToken(session.access_token);
       const res = await fetch('/api/admin/applications', {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) {

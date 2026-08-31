@@ -65,6 +65,7 @@ export default function AdminDashboardPage() {
       }
       setToken(session.access_token);
       const res = await fetch('/api/admin/summary', {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) {

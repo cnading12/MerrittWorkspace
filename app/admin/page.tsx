@@ -21,6 +21,7 @@ export default function AdminHome() {
       }
       // Verify admin via API.
       const res = await fetch('/api/admin/whoami', {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (res.ok) {
