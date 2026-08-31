@@ -2,6 +2,11 @@ import { Resend } from 'resend';
 import { type Order, type OrderItem } from './snackshop';
 import { type Booking } from './supabase';
 import { getTransactionalEmailHeaders } from './portal/emails';
+import {
+    applicationReceivedSubject,
+    generateApplicationReceivedEmailHTML,
+    generateApplicationReceivedEmailText,
+} from './portal/applicationReceivedEmail';
 
 // Lazy-load Resend client to avoid build-time errors
 let resendClient: Resend | null = null;
@@ -335,130 +340,40 @@ Thank you for choosing Merritt Workspace!
     `
     }),
 
-    // Membership Application Confirmation
+    // Membership Application Confirmation.
+    //
+    // Renders the same template the live application route sends
+    // (lib/portal/applicationReceivedEmail.ts) rather than keeping a second
+    // copy of the copy here. This entry predates that route and nothing calls
+    // sendMembershipApplicationEmail below any more; the delegation is so that
+    // if anything ever does, the applicant gets the email we actually wrote —
+    // not the retired one that promised every applicant a trial day they had
+    // usually already had.
+    //
+    // The trial branch is not reachable from this shape: it carries no
+    // resume token and no trial date, so it renders the never-visited
+    // version. A caller that knows better should use the module directly.
     membershipApplication: (data: {
         applicantName: string;
         email: string;
         membershipType: string;
         applicationId: string;
-    }) => ({
-        subject: `Membership Application Received | Merritt Workspace`,
-        html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Membership Application Confirmation</title>
-          <style>
-            body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 0; }
-            .header h1 { margin: 0; font-size: 24px; }
-            .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
-            .application-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            .next-steps { background: #fff8e1; padding: 20px; border-radius: 8px; border-left: 4px solid #ed7611; margin: 20px 0; }
-            .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; border-radius: 0 0 8px 8px; }
-            .button { display: inline-block; background: #ed7611; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 10px 0; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            ${EMAIL_LOGO_BAND}
-            <div class="header">
-              <h1>Welcome to Merritt Workspace!</h1>
-              <p>Your membership application has been received</p>
-            </div>
-            
-            <div class="content">
-              <p>Hi ${data.applicantName},</p>
-              
-              <p>Thank you for your interest in joining the Merritt Workspace community! We've received your membership application and are excited to review it.</p>
-              
-              <div class="application-info">
-                <h3 style="margin-top: 0;">Application Details</h3>
-                <p><strong>Applicant:</strong> ${data.applicantName}</p>
-                <p><strong>Email:</strong> ${data.email}</p>
-                <p><strong>Membership Type:</strong> ${data.membershipType}</p>
-                <p><strong>Application ID:</strong> ${data.applicationId}</p>
-                <p><strong>Submitted:</strong> ${formatDenverDateTime()}</p>
-              </div>
-
-              <div class="next-steps">
-                <h3 style="margin-top: 0;">🎯 What's Next?</h3>
-                <ol>
-                  <li><strong>Review Process:</strong> Our team will review your application within 1-2 business days</li>
-                  <li><strong>Schedule Tour:</strong> We'll contact you to schedule a complimentary workspace tour</li>
-                  <li><strong>Meet the Team:</strong> Get to know our community and see our burnt orange floors firsthand!</li>
-                  <li><strong>Free Trial Day:</strong> Experience working in our space with a full day trial</li>
-                </ol>
-              </div>
-
-              <p>While you wait, feel free to explore our amenities:</p>
-              <ul>
-                <li>Premium meeting rooms with A/V equipment</li>
-                <li>High-speed WiFi throughout the building</li>
-                <li>On-site snackshop with fresh coffee and meals</li>
-                <li>Secure building with 24/7 access</li>
-                <li>Networking events and community gatherings</li>
-                <li>Prime Sloan's Lake location - just 3 minutes to I-25</li>
-              </ul>
-
-              <p>We'll be in touch soon to move forward with your membership. Thank you for choosing Merritt Workspace!</p>
-              
-              <a href="mailto:memberservices@merrittworkspace.net" class="button">Questions? Contact Us</a>
-            </div>
-
-            <div class="footer">
-              <p><strong>Merritt Workspace</strong></p>
-              <p>Where Work Meets Community</p>
-              <p>2246 Irving Street, Denver, CO 80211</p>
-              <p>Email: memberservices@merrittworkspace.net | Phone: (303) 359-8337</p>
-              <p>Manager: manager@merrittworkspace.net | (720) 357-9499</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `,
-        text: `
-Membership Application Received - Merritt Workspace
-
-Hi ${data.applicantName},
-
-Thank you for applying to join Merritt Workspace! We've received your application and are excited to review it.
-
-Application Details:
-- Applicant: ${data.applicantName}
-- Email: ${data.email}
-- Membership Type: ${data.membershipType}
-- Application ID: ${data.applicationId}
-- Submitted: ${formatDenverDateTime()}
-
-What's Next:
-1. Review Process: Our team will review your application within 1-2 business days
-2. Schedule Tour: We'll contact you to schedule a complimentary workspace tour
-3. Meet the Team: Get to know our community and see our burnt orange floors!
-4. Free Trial Day: Experience working in our space with a full day trial
-
-Our Amenities:
-- Premium meeting rooms with A/V equipment
-- High-speed WiFi throughout the building
-- On-site snackshop with fresh coffee and meals
-- Secure building with 24/7 access
-- Networking events and community gatherings
-- Prime Sloan's Lake location - just 3 minutes to I-25
-
-We'll be in touch soon to move forward with your membership.
-
-Questions? Contact us at memberservices@merrittworkspace.net or (303) 359-8337
-Prefer the manager? manager@merrittworkspace.net or (720) 357-9499
-
-Welcome to the community!
-
-Merritt Workspace Team
-2246 Irving Street, Denver, CO 80211
-    `
-    })
+    }) => {
+        const [firstName = '', ...restOfName] = (data.applicantName || '').trim().split(/\s+/);
+        const emailData = {
+            firstName,
+            lastName: restOfName.join(' '),
+            email: data.email,
+            membershipType: data.membershipType,
+            submittedAt: new Date(),
+            trial: { kind: 'none' as const },
+        };
+        return {
+            subject: applicationReceivedSubject(),
+            html: generateApplicationReceivedEmailHTML(emailData),
+            text: generateApplicationReceivedEmailText(emailData),
+        };
+    }
 };
 
 // Email sending functions

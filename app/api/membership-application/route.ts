@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { getTransactionalEmailHeaders } from '@/lib/portal/emails';
 import { generateTrialDayEmailHTML, generateTrialDayEmailText } from '@/lib/portal/trialDayEmail';
+import {
+  applicationReceivedSubject,
+  generateApplicationReceivedEmailHTML,
+  generateApplicationReceivedEmailText,
+  type ApplicationTrialState,
+} from '@/lib/portal/applicationReceivedEmail';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { OFFICE_SIZE_FOR_PLAN } from '@/lib/portal/officeSizes';
 
@@ -222,6 +228,20 @@ export async function POST(request: NextRequest) {
     applicationData.total_monthly_cost_cents = itemized.total_monthly_cents;
     applicationData.total_one_time_cost_cents = itemized.total_one_time_cents;
 
+    // The day they already spent here, when this application is a trial
+    // visitor converting. Filled in from the trial row below, and read only by
+    // the confirmation email, which greets someone who has been in the
+    // building differently from someone who has not. Best effort: an unknown
+    // date costs the email a phrase, never the branch.
+    let completedTrialDate: string | null = null;
+
+    // Present only on a submission that came in through the "finish your
+    // application" link we email after a trial day, so it is the one reliable
+    // signal that this person has already been in the building.
+    const resumeToken = typeof applicationData.resume_token === 'string'
+      ? applicationData.resume_token.trim()
+      : '';
+
     // Persist to member_applications so the admin panel can review it.
     // Core fields land in dedicated columns; everything else (housing
     // reference, membership reference, emergency contact, etc.) goes into
@@ -305,19 +325,25 @@ export async function POST(request: NextRequest) {
       //
       // All best effort. A full application that saved is a full application
       // whether or not we managed to tie it back to a trial from weeks ago.
-      const resumeToken = typeof applicationData.resume_token === 'string'
-        ? applicationData.resume_token.trim()
-        : '';
       if (resumeToken && insertedRow?.id) {
         try {
+          // `payload` rather than the `trial_date` column: a database behind
+          // on the trial-day migration has no such column and selecting it
+          // would fail the whole lookup — which is the part that stops the
+          // follow-up emails and carries the photo ID across.
           const { data: trialRow, error: trialLookupError } = await sb
             .from('member_applications')
-            .select('id, id_document_path')
+            .select('id, id_document_path, payload')
             .eq('resume_token', resumeToken)
             .maybeSingle();
           if (trialLookupError) {
             console.error('⚠️ Could not look up trial row for resume token:', trialLookupError);
           } else if (trialRow) {
+            const trialPayload = (trialRow.payload as Record<string, any> | null) || {};
+            if (typeof trialPayload.trial_date === 'string' && trialPayload.trial_date) {
+              completedTrialDate = trialPayload.trial_date;
+            }
+
             const { error: linkError } = await sb
               .from('member_applications')
               .update({ converted_to_application_id: insertedRow.id })
@@ -388,27 +414,35 @@ export async function POST(request: NextRequest) {
     try {
       console.log('📧 Sending applicant confirmation email...');
       
+      // Which of the three people is reading this. A trial visitor
+      // converting off the follow-up link has already had the tour, met the
+      // team and worked here for a day; someone who asked for a trial day on
+      // this form has that visit ahead of them and a separate email about it
+      // landing seconds later; everyone else has never been here. Offering a
+      // trial day to the first, or repeating the visit details to the second,
+      // is how this email stopped making sense.
+      const trialState: ApplicationTrialState = resumeToken
+        ? { kind: 'completed', trialDate: completedTrialDate }
+        : applicationData.wants_trial_day
+          ? { kind: 'upcoming', trialDate: applicationData.trial_date || null }
+          : { kind: 'none' };
+
+      const applicantEmailData = {
+        firstName: applicationData.first_name,
+        lastName: applicationData.last_name,
+        email: applicationData.email,
+        membershipType: membershipTypeDisplay,
+        submittedAt,
+        trial: trialState,
+      };
+
       const applicantEmail = await resend.emails.send({
         from: 'Merritt Workspace Membership <manager@merrittworkspace.net>',
         replyTo: MEMBER_SERVICES_EMAIL,
         to: applicationData.email,
-        subject: 'Membership Application Received | Merritt Workspace',
-        html: generateApplicantEmailHTML({
-          firstName: applicationData.first_name,
-          lastName: applicationData.last_name,
-          email: applicationData.email,
-          membershipType: membershipTypeDisplay,
-          applicationId,
-          submittedAt
-        }),
-        text: generateApplicantEmailText({
-          firstName: applicationData.first_name,
-          lastName: applicationData.last_name,
-          email: applicationData.email,
-          membershipType: membershipTypeDisplay,
-          applicationId,
-          submittedAt
-        }),
+        subject: applicationReceivedSubject(),
+        html: generateApplicationReceivedEmailHTML(applicantEmailData),
+        text: generateApplicationReceivedEmailText(applicantEmailData),
         headers: getTransactionalEmailHeaders(),
         tags: [{ name: 'category', value: 'application_received' }],
       });
@@ -593,150 +627,8 @@ export async function GET() {
   });
 }
 
-// Email template functions
-function generateApplicantEmailHTML(data: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  membershipType: string;
-  applicationId: string;
-  submittedAt: Date;
-}) {
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Membership Application Confirmation</title>
-        <style>
-          body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #ed7611, #de5f07); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .header h1 { margin: 0; font-size: 24px; }
-          .content { background: white; padding: 30px; border: 1px solid #e5e5e5; }
-          .application-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-          .next-steps { background: #fff8e1; padding: 20px; border-radius: 8px; border-left: 4px solid #ed7611; margin: 20px 0; }
-          .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; border-radius: 0 0 8px 8px; }
-          .button { display: inline-block; background: #ed7611; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 10px 0; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Welcome to Merritt Workspace!</h1>
-            <p>Your membership application has been received</p>
-          </div>
-          
-          <div class="content">
-            <p>Hi ${data.firstName},</p>
-            
-            <p>Thank you for your interest in joining the Merritt Workspace community! We've received your membership application and are excited to review it.</p>
-            
-            <div class="application-info">
-              <h3 style="margin-top: 0;">Application Details</h3>
-              <p><strong>Applicant:</strong> ${data.firstName} ${data.lastName}</p>
-              <p><strong>Email:</strong> ${data.email}</p>
-              <p><strong>Membership Type:</strong> ${data.membershipType}</p>
-              <p><strong>Application ID:</strong> ${data.applicationId}</p>
-              <p><strong>Submitted:</strong> ${data.submittedAt.toLocaleString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                timeZone: 'America/Denver',
-                timeZoneName: 'short'
-              })}</p>
-            </div>
-
-            <div class="next-steps">
-              <h3 style="margin-top: 0;">🎯 What's Next?</h3>
-              <ol>
-                <li><strong>Review Process:</strong> Our team will review your application within 1-2 business days</li>
-                <li><strong>Schedule Tour:</strong> We'll contact you to schedule a complimentary workspace tour</li>
-                <li><strong>Meet the Team:</strong> Get to know our community and see our burnt orange floors firsthand!</li>
-                <li><strong>Free Trial Day:</strong> Experience working in our space with a full day trial</li>
-              </ol>
-            </div>
-
-            <p>While you wait, feel free to explore our amenities:</p>
-            <ul>
-              <li>Premium conference room with A/V equipment</li>
-              <li>High-speed WiFi throughout the building</li>
-              <li>On-site snackshop with fresh coffee and meals</li>
-              <li>Secure building with 24/7 access</li>
-              <li>Networking events and community gatherings</li>
-              <li>Prime Sloan's Lake location - just 3 minutes to I-25</li>
-            </ul>
-
-            <p>We'll be in touch soon to move forward with your membership. Thank you for choosing Merritt Workspace!</p>
-            
-            <a href="mailto:memberservices@merrittworkspace.net" class="button">Questions? Contact Us</a>
-          </div>
-
-          <div class="footer">
-            <p><strong>Merritt Workspace</strong></p>
-            <p>Where Work Meets Community</p>
-            <p>2246 Irving Street, Denver, CO 80211</p>
-            <p>Email: memberservices@merrittworkspace.net | Phone: (303) 359-8337</p>
-            <p>Manager: manager@merrittworkspace.net | (720) 357-9499</p>
-          </div>
-        </div>
-      </body>
-    </html>
-  `;
-}
-
-function generateApplicantEmailText(data: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  membershipType: string;
-  applicationId: string;
-  submittedAt: Date;
-}) {
-  return `
-Membership Application Received - Merritt Workspace
-
-Hi ${data.firstName},
-
-Thank you for applying to join Merritt Workspace! We've received your application and are excited to review it.
-
-Application Details:
-- Applicant: ${data.firstName} ${data.lastName}
-- Email: ${data.email}
-- Membership Type: ${data.membershipType}
-- Application ID: ${data.applicationId}
-- Submitted: ${data.submittedAt.toLocaleString('en-US', { timeZone: 'America/Denver', timeZoneName: 'short' })}
-
-What's Next:
-1. Review Process: Our team will review your application within 1-2 business days
-2. Schedule Tour: We'll contact you to schedule a complimentary workspace tour
-3. Meet the Team: Get to know our community and see our burnt orange floors!
-4. Free Trial Day: Experience working in our space with a full day trial
-
-Our Amenities:
-- Premium conference room with A/V equipment
-- High-speed WiFi throughout the building
-- On-site snackshop with fresh coffee and meals
-- Secure building with 24/7 access
-- Networking events and community gatherings
-- Prime Sloan's Lake location - just 3 minutes to I-25
-
-We'll be in touch soon to move forward with your membership.
-
-Questions? Contact us at memberservices@merrittworkspace.net or (303) 359-8337
-Prefer the manager? manager@merrittworkspace.net or (720) 357-9499
-
-Welcome to the community!
-
-Merritt Workspace Team
-2246 Irving Street, Denver, CO 80211
-  `;
-}
-
+// Email template functions — the applicant confirmation lives in
+// lib/portal/applicationReceivedEmail.ts; these are the staff copies.
 function generateManagerEmailHTML(data: {
   applicationData: any;
   membershipTypeDisplay: string;
