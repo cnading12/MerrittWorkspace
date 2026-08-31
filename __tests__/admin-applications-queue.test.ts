@@ -212,6 +212,56 @@ describe('the trial queue is read separately from the approval queue', () => {
     ]);
   });
 
+  // The membership queue's version of the same regression. Selecting on
+  // `status = 'pending'` hid every application whose row did not read
+  // exactly 'pending' — which is precisely what a live table with a drifted
+  // default or constraint produces. Those rows showed on the Documents page
+  // (no status filter) while this endpoint returned nothing.
+  it('shows a membership application whose status is not the expected `pending`', async () => {
+    db.rows = [
+      fullRow({ id: 'null-status', status: null }),
+      fullRow({ id: 'empty-status', status: '' }),
+      fullRow({ id: 'odd-status', status: 'submitted' }),
+    ];
+    const { body } = await queue();
+    expect(body.standard.map((a: any) => a.id).sort()).toEqual([
+      'empty-status',
+      'null-status',
+      'odd-status',
+    ]);
+  });
+
+  it('still hides decided membership applications', async () => {
+    db.rows = [
+      fullRow({ id: 'open' }),
+      fullRow({ id: 'won', status: 'approved' }),
+      fullRow({ id: 'lost', status: 'declined' }),
+    ];
+    const { body } = await queue();
+    expect(body.standard.map((a: any) => a.id)).toEqual(['open']);
+    expect(body.diagnostics.membershipRowsFound).toBe(3);
+    expect(body.diagnostics.membershipRowsHandled).toBe(2);
+  });
+
+  // The panel prints these under the queue; "nothing is showing" is only
+  // debuggable if the response says what the database holds and where each
+  // recent row went.
+  it('reports status counts and recent rows in diagnostics', async () => {
+    db.rows = [
+      trialRow({ id: 't1' }),
+      fullRow({ id: 'f1', status: 'approved', created_at: '2026-08-31T10:00:00Z' }),
+      fullRow({ id: 'f2', status: null, created_at: '2026-08-31T11:00:00Z' }),
+    ];
+    const { body } = await queue();
+    expect(body.diagnostics.statusCounts).toEqual({ pending: 1, approved: 1, '(null)': 1 });
+    const byId = Object.fromEntries(
+      body.diagnostics.recentRows.map((r: any) => [r.id, r.shown_in])
+    );
+    expect(byId['t1']).toBe('Trial days tab');
+    expect(byId['f1']).toContain('hidden');
+    expect(byId['f2']).toBe('Membership applications tab');
+  });
+
   it('hides dismissed trial days until they are asked for', async () => {
     db.rows = [trialRow({ id: 'live' }), trialRow({ id: 'dismissed', status: 'declined' })];
 

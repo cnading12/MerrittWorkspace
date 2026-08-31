@@ -2,8 +2,8 @@
 //
 // Returns `{ trial, standard, diagnostics }`. The two lists are built by two
 // different queries on purpose; lib/portal/applicationQueue.ts explains why
-// a trial day must not be selected on `status = 'pending'` the way a
-// membership application is.
+// neither queue is selected on `status = 'pending'` — rows a human has
+// explicitly handled are dropped afterwards, in JS, instead.
 //
 // `diagnostics` is not decoration. "A trial day was submitted and the admin
 // panel shows nothing" is the failure this endpoint exists to make
@@ -19,6 +19,7 @@ import {
   splitApplicationQueue,
   isTrialQueueRow,
   isHandled,
+  isDismissedInPayload,
   type QueueRow,
 } from '@/lib/portal/applicationQueue';
 
@@ -98,6 +99,17 @@ export async function GET(req: NextRequest) {
       url.searchParams.get('include') === 'all' ||
       url.searchParams.get('include') === 'handled';
 
+    // The standard read is deliberately NOT `eq('status', 'pending')` any
+    // more. That filter assumed the column always holds one of its three
+    // expected values — and a live table whose default or constraint has
+    // drifted (migrations here are applied by hand) inserts rows this
+    // endpoint could then never see, while the Documents page, which reads
+    // without a status filter, showed them fine. An application whose status
+    // cannot be explained costs a card in the queue; hiding on it costs the
+    // application. So the recent window is read whole and the rows a human
+    // has explicitly dealt with — approved, declined, or carrying the
+    // dismissal marker — are dropped afterwards in JS, by
+    // splitApplicationQueue, the same way the trial queue always has.
     let standardQuery = sb
       .from('member_applications')
       .select('*')
@@ -105,8 +117,6 @@ export async function GET(req: NextRequest) {
       .limit(MAX_ROWS);
     if (status && status !== 'all') {
       standardQuery = standardQuery.eq('status', status);
-    } else if (!status) {
-      standardQuery = standardQuery.eq('status', 'pending');
     }
 
     const [trialRead, standardRes] = await Promise.all([
@@ -128,6 +138,48 @@ export async function GET(req: NextRequest) {
       { includeHandled }
     );
 
+    // What the database actually holds, from the rows this request already
+    // read — no extra queries. "Nothing is showing" has at least four
+    // different causes (no rows, rows all decided, rows with a status the
+    // filter used to hide, rows misclassified between the tabs) and the
+    // page prints these numbers so staff — and whoever they forward a
+    // screenshot to — can tell which one this is.
+    const seenIds = new Set<string>();
+    const window: Row[] = [];
+    for (const row of [...trialRows, ...standardRows]) {
+      if (!row?.id || seenIds.has(row.id)) continue;
+      seenIds.add(row.id);
+      window.push(row);
+    }
+    const statusCounts: Record<string, number> = {};
+    for (const row of window) {
+      const key =
+        row.status === null || row.status === undefined
+          ? '(null)'
+          : String(row.status) === ''
+            ? '(empty)'
+            : String(row.status);
+      statusCounts[key] = (statusCounts[key] || 0) + 1;
+    }
+    const trialIds = new Set(trial.map((r) => r.id));
+    const standardIds = new Set(standard.map((r) => r.id));
+    const recentRows = [...window]
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+      .slice(0, 8)
+      .map((row) => ({
+        id: row.id,
+        created_at: row.created_at ?? null,
+        status: row.status ?? null,
+        kind: isTrialQueueRow(row) ? 'trial' : 'membership',
+        dismissed_marker: isDismissedInPayload(row),
+        shown_in: trialIds.has(row.id)
+          ? 'Trial days tab'
+          : standardIds.has(row.id)
+            ? 'Membership applications tab'
+            : 'hidden (approved, declined or dismissed)',
+      }));
+    const membershipRows = window.filter((row) => !isTrialQueueRow(row));
+
     return NextResponse.json({
       trial,
       standard,
@@ -138,6 +190,11 @@ export async function GET(req: NextRequest) {
         trialRowsHandled: trialRows.filter(isHandled).length,
         trialShown: trial.length,
         standardShown: standard.length,
+        membershipRowsFound: membershipRows.length,
+        membershipRowsHandled: membershipRows.filter(isHandled).length,
+        windowSize: window.length,
+        statusCounts,
+        recentRows,
         readVia: trialRead.via,
         includeHandled,
         warnings: trialRead.warnings,

@@ -23,11 +23,27 @@ import { isHandled, isDismissedInPayload } from '@/lib/portal/applicationQueue';
 
 type Tab = 'trial' | 'standard';
 
+interface DiagnosticRow {
+  id: string;
+  created_at: string | null;
+  status: string | null;
+  kind: 'trial' | 'membership';
+  dismissed_marker: boolean;
+  shown_in: string;
+}
+
 interface Diagnostics {
   trialRowsFound: number;
   trialRowsHandled: number;
   trialShown: number;
   standardShown: number;
+  // Added alongside the standard-queue fix; absent from an older API bundle,
+  // so everything reading them tolerates undefined.
+  membershipRowsFound?: number;
+  membershipRowsHandled?: number;
+  windowSize?: number;
+  statusCounts?: Record<string, number>;
+  recentRows?: DiagnosticRow[];
   readVia: string;
   includeHandled: boolean;
   warnings: string[];
@@ -458,7 +474,7 @@ export default function AdminApplicationsPage() {
         await load(token, showHandled);
         return;
       }
-      setDecisionNote(describeDecision(action, data));
+      setDecisionNote(describeDecision(action, data, showHandled));
       await load(token, showHandled);
     } catch (e: any) {
       // A throw here is the network, not the route: fetch rejecting, or the
@@ -606,7 +622,7 @@ export default function AdminApplicationsPage() {
             Pending membership applications, sorted by preferred start date.
           </p>
           {standardApps.length === 0 ? (
-            <p className="text-gray-500">No membership applications are awaiting a decision.</p>
+            <EmptyStandard diagnostics={diagnostics} />
           ) : (
             standardApps.map((a) => (
               <StandardCard
@@ -621,34 +637,37 @@ export default function AdminApplicationsPage() {
         </section>
       )}
 
-      {diagnostics && (
-        <p className="text-xs text-gray-400 border-t pt-3">
-          {diagnostics.trialRowsFound} trial row(s) in the database
-          {diagnostics.trialRowsHandled > 0 && `, ${diagnostics.trialRowsHandled} already handled`}
-          {' · '}read via {diagnostics.readVia}
-          {' · '}loaded {new Date().toLocaleTimeString()}
-        </p>
-      )}
+      {diagnostics && <DiagnosticsPanel diagnostics={diagnostics} />}
     </div>
   );
 }
 
-// Say what the decision actually wrote.
+// Say what the decision actually wrote — and what the screen will do about
+// it, which is the part a plain "Dismissed." kept leaving out. With "Show
+// dismissed" ticked a dismissed card deliberately STAYS on screen (greyed
+// out, with a Restore button), and a banner that says "Dismissed" over a
+// card that is still visible reads as the button not working.
 //
 // The dismissal goes in as two independent writes — a `payload.dismissed_at`
-// marker and the `status` column — and counts if either lands. When only one
-// does, the visit is still out of the queue, and staff should hear that
-// rather than be told a flat "done" that hides a column refusing writes.
-function describeDecision(action: Decision, data: any): string {
+// marker and the `status` column — and counts if either lands; the server
+// then reads the row back and only reports success when the queue will
+// actually treat it as handled.
+function describeDecision(action: Decision, data: any, showHandled: boolean): string {
   if (action === 'approve') return 'Approved. The applicant has been emailed their portal invitation.';
-  const verb = action === 'restore' ? 'Restored' : 'Dismissed';
+  let msg: string;
+  if (action === 'restore') {
+    msg = 'Restored — the card is back in the queue.';
+  } else if (showHandled) {
+    msg =
+      'Dismissed. Because “Show dismissed” is ticked, the card stays in the list — greyed out, ' +
+      'with a DISMISSED badge and a Restore button. Untick “Show dismissed” to hide it.';
+  } else {
+    msg = 'Dismissed — the card has left the queue.';
+  }
   if (data?.status_written === false && data?.payload_written) {
-    return `${verb}, and it is out of the queue — but the status column would not take the change. Worth reporting; everything else worked.`;
+    msg += ' (The status column would not take the change — worth reporting; the dismissal still counts.)';
   }
-  if (data?.payload_written === false && data?.status_written) {
-    return `${verb}.`;
-  }
-  return `${verb}.`;
+  return msg;
 }
 
 // An empty trial queue has three different meanings and staff cannot tell
@@ -673,6 +692,79 @@ function EmptyTrial({
       No trial day applications have been submitted. Anything sent through the trial form
       appears here immediately, whatever happens to its photo ID.
     </p>
+  );
+}
+
+// The membership tab's empty state, with the same duty as EmptyTrial: an
+// empty list has several different meanings and "none" does not say which.
+function EmptyStandard({ diagnostics }: { diagnostics: Diagnostics | null }) {
+  const found = diagnostics?.membershipRowsFound ?? 0;
+  const handled = diagnostics?.membershipRowsHandled ?? 0;
+  if (found > 0 && found === handled) {
+    return (
+      <p className="text-gray-500">
+        No membership applications are awaiting a decision. {found} exist in the database and
+        every one has already been approved or declined — the full list is on the{' '}
+        <a href="/admin/documents" className="underline">Documents</a> page.
+      </p>
+    );
+  }
+  return (
+    <p className="text-gray-500">
+      No membership applications are awaiting a decision.
+      {found === 0 && ' None exist in the database at all — see the diagnostics below.'}
+    </p>
+  );
+}
+
+// The database's own account of the queue, printed under it. When a
+// submitted application is "not showing up", this block is the difference
+// between guessing and knowing: it lists what the table holds, what each
+// row's status is, and which tab (if any) each recent row landed in.
+function DiagnosticsPanel({ diagnostics }: { diagnostics: Diagnostics }) {
+  const counts = diagnostics.statusCounts
+    ? Object.entries(diagnostics.statusCounts)
+        .map(([status, n]) => `${status}: ${n}`)
+        .join(' · ')
+    : null;
+  return (
+    <details className="text-xs text-gray-500 border-t pt-3">
+      <summary className="cursor-pointer select-none text-gray-400 hover:text-gray-600">
+        {diagnostics.trialRowsFound} trial row(s)
+        {diagnostics.membershipRowsFound !== undefined &&
+          ` and ${diagnostics.membershipRowsFound} membership application(s)`}{' '}
+        in the database
+        {diagnostics.trialRowsHandled > 0 && `, ${diagnostics.trialRowsHandled} trial(s) handled`}
+        {(diagnostics.membershipRowsHandled ?? 0) > 0 &&
+          `, ${diagnostics.membershipRowsHandled} application(s) decided`}
+        {' · '}read via {diagnostics.readVia}
+        {' · '}loaded {new Date().toLocaleTimeString()} — click for details
+      </summary>
+      <div className="mt-2 space-y-1.5">
+        {counts && <div>Status counts across the recent window: {counts}</div>}
+        {diagnostics.recentRows && diagnostics.recentRows.length > 0 && (
+          <div>
+            <div className="font-semibold text-gray-600">Most recent rows, newest first:</div>
+            <ul className="mt-1 space-y-0.5 font-mono">
+              {diagnostics.recentRows.map((r) => (
+                <li key={r.id}>
+                  {r.created_at ? new Date(r.created_at).toLocaleString() : 'no date'}
+                  {' · '}{r.kind}
+                  {' · '}status {r.status === null ? 'NULL' : JSON.stringify(r.status)}
+                  {r.dismissed_marker ? ' · dismissed marker' : ''}
+                  {' → '}{r.shown_in}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <div>
+          If a submitted application is missing from BOTH the list above and this block, its row
+          never reached the database — check the staff email for a 🚨 NOT SAVED subject, and run
+          <span className="font-mono"> npm run diagnose:trial</span> for the full write-path check.
+        </div>
+      </div>
+    </details>
   );
 }
 

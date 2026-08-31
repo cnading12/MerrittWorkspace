@@ -167,29 +167,49 @@ if (trialRows.length === 0) {
   ok(`${openTrials.length} trial day(s) are visible to staff`);
 }
 
-// Approval tab: pending membership applications only.
+// Approval tab: membership applications not yet decided.
+//
+// Read the same way the endpoint now reads it: NO status filter, with
+// explicitly handled rows dropped in JS. A row whose status is null, empty
+// or unrecognised still shows — that drift is exactly what used to make
+// applications visible on the Documents page and invisible here, so any row
+// like that is also called out by name below.
 //
 // Listed by name, not just counted. "I finished my application and it is not
 // in the panel" is answered by reading this list, and a count of 3 does not
 // answer it.
-const { data: pending, error: pendingErr } = await sb
+const { data: allApps, error: pendingErr } = await sb
   .from('member_applications')
   .select('*')
-  .eq('status', 'pending')
-  .order('created_at', { ascending: false });
+  .order('created_at', { ascending: false })
+  .limit(500);
 
 let standard = [];
 if (pendingErr) {
   bad(`the membership applications query FAILS: ${pendingErr.message}`);
 } else {
-  standard = pending.filter((r) => !isTrial(r));
+  const dismissedInPayload = (r) => typeof r.payload?.dismissed_at === 'string' && r.payload.dismissed_at;
+  standard = allApps.filter(
+    (r) => !isTrial(r) && !HANDLED.has(String(r.status || '').toLowerCase()) && !dismissedInPayload(r)
+  );
   console.log(`  Membership applications tab: ${standard.length} awaiting a decision`);
   for (const r of standard) {
     const origin = r.payload?.converted_from_trial;
     console.log(
       `    • ${r.first_name} ${r.last_name} <${r.email}> — ${r.membership_type || '?'}` +
-        ` — start ${r.start_date || '?'} — submitted ${new Date(r.created_at).toLocaleString()}` +
+        ` — start ${r.start_date || '?'} — status ${JSON.stringify(r.status)}` +
+        ` — submitted ${new Date(r.created_at).toLocaleString()}` +
         (origin ? ` — came from a trial day on ${origin.trial_date || '?'}` : '')
+    );
+  }
+  const oddStatus = allApps.filter(
+    (r) => !HANDLED.has(String(r.status || '').toLowerCase()) && r.status !== 'pending'
+  );
+  for (const r of oddStatus) {
+    warn(
+      `${r.first_name} ${r.last_name} <${r.email}> has status ${JSON.stringify(r.status)} — not one of\n` +
+        "     pending/approved/declined. The panel now shows rows like this anyway, but the live\n" +
+        "     table's status default or constraint has drifted from the migration files."
     );
   }
 }

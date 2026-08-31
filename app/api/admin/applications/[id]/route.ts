@@ -4,6 +4,7 @@ import { getServiceSupabase } from '@/lib/portal/supabaseAdmin';
 import { sendOnboardingMagicLink } from '@/lib/portal/magicLink';
 import { planForMembershipType } from '@/lib/portal/pricing';
 import { isTrialApplication } from '@/lib/portal/trialApplication';
+import { isHandled, isDismissedInPayload } from '@/lib/portal/applicationQueue';
 
 export const dynamic = 'force-dynamic';
 
@@ -142,6 +143,51 @@ export async function POST(
         );
       }
 
+      // Trust nothing either write claimed: read the row back fresh and ask
+      // the same question the queue will ask on the page's very next load.
+      // "The button said Dismissed and the card came straight back" is the
+      // symptom this endpoint keeps producing new versions of, and the only
+      // answer that closes it is the row itself, after the writes, saying
+      // whether it is out of the queue.
+      const { data: verifyRow, error: verifyError } = await sb
+        .from('member_applications')
+        .select('*')
+        .eq('id', id)
+        .single();
+      const verified =
+        !verifyError && verifyRow
+          ? {
+              status: verifyRow.status ?? null,
+              dismissed_marker: isDismissedInPayload(verifyRow),
+              hidden_from_queue: isHandled(verifyRow),
+            }
+          : null;
+      if (verifyError) {
+        console.error(`⚠️ ${action}: could not read the row back to verify:`, verifyError);
+      }
+
+      // A write that reported success but did not stick (a trigger reverted
+      // it, a different table answered, a replica lag we do not know about)
+      // must be an error, not a green banner over an unchanged queue.
+      if (verified && verified.hidden_from_queue !== dismissing) {
+        const wanted = dismissing ? 'dismiss' : 'restore';
+        console.error(
+          `❌ ${wanted} of ${id} reported success but did not stick; row reads`,
+          verified
+        );
+        return NextResponse.json(
+          {
+            error:
+              `The ${wanted} reported success but did not stick: read back fresh, the row ` +
+              `has status ${JSON.stringify(verified.status)} and its dismissal marker is ` +
+              `${verified.dismissed_marker ? 'present' : 'absent'}, so the queue will ` +
+              `${dismissing ? 'still show it' : 'still hide it'}. The database accepted the ` +
+              `write and then did not keep it — please send this exact message to support.`,
+          },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json({
         ok: true,
         id,
@@ -151,6 +197,7 @@ export async function POST(
         status_written: statusWritten,
         payload_written: payloadWritten,
         dismissed: dismissing,
+        verified,
       });
     }
 
