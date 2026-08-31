@@ -356,7 +356,10 @@ export default function FullApplicationForm({
   // glance and a scroll rather than a decision they already made once.
   useEffect(() => {
     if (!prefill) return;
-    setQuantity(PLAN_FOR_TRIAL_SEATING[prefill.seating] as PlanId, 1);
+    // The plan they actually tried — which office size, or which kind of desk
+    // — falling back to the seating's default for trial rows recorded before
+    // the form asked that second question.
+    setQuantity((prefill.plan || PLAN_FOR_TRIAL_SEATING[prefill.seating]) as PlanId, 1);
     // Runs once per prefill; setQuantity is re-created every render and
     // depending on it would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps

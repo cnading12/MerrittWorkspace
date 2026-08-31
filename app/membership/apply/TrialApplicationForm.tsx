@@ -13,21 +13,113 @@
 // check before someone spends a day in the building — the same bar a
 // non-member clears to book a conference room.
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { AlertCircle, ArrowLeft, CheckCircle, Loader2, Upload, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle, Loader2, Upload, X } from 'lucide-react';
 import Footer from '@/components/Footer';
 import {
   MAX_ID_FILE_BYTES,
   MAX_ID_FILE_LABEL,
+  TRIAL_PLANS_BY_SEATING,
   isAcceptedIdMimeType,
   isWeekdayIsoDate,
   nextWeekdayIsoDate,
   validateTrialSubmission,
   type TrialSeating,
 } from '@/lib/portal/trialApplication';
+import { OFFICE_SIZE_FOR_PLAN, type OfficeSize } from '@/lib/portal/officeSizes';
 import { prepareIdUpload } from '@/lib/portal/idUpload';
 import { BUSINESS_HOURS_FULL } from '@/lib/hours';
+
+// The second question: which room, once someone has said where they want to
+// work. "A private office" is three different rooms and "a dedicated desk" is
+// two, and a trial day is a preview of one specific thing — staff have to put
+// the person somewhere real on the day.
+//
+// Note what is NOT here: prices. A trial day is free, and quoting $1,200 a
+// month at someone who asked to try a room for a day is the same mistake the
+// combined form made. The room is described, and the link goes to the page
+// where the pricing lives if they want it.
+interface TrialPlanOption {
+  id: string;
+  name: string;
+  detail: string;
+  href: string;
+  linkLabel: string;
+}
+
+const TRIAL_PLAN_OPTIONS: Record<string, TrialPlanOption> = {
+  dedicated_desk: {
+    id: 'dedicated_desk',
+    name: 'On the coworking floor',
+    detail:
+      'Your own desk in the main coworking room, with a monitor, lockable storage and power at the pod.',
+    href: '/membership/dedicated-desk',
+    linkLabel: 'What a dedicated desk includes',
+  },
+  private_dedicated_desk: {
+    id: 'private_dedicated_desk',
+    name: 'In a private desk area',
+    detail:
+      'The same dedicated desk, but inside a lockable office we have converted into a desk area rather than out on the shared floor.',
+    href: '/membership/dedicated-desk',
+    linkLabel: 'Floor desk vs private desk',
+  },
+  private_office_single: {
+    id: 'private_office_single',
+    name: 'Single-desk office',
+    detail: 'A lockable office for one, with a window and a door that closes.',
+    href: '/membership/private-office',
+    linkLabel: 'Compare the office sizes',
+  },
+  private_office_double: {
+    id: 'private_office_double',
+    name: '2-desk office',
+    detail: 'Room for two desks — the size partnerships and two-person teams take.',
+    href: '/membership/private-office',
+    linkLabel: 'Compare the office sizes',
+  },
+  private_office_large: {
+    id: 'private_office_large',
+    name: 'Large team office',
+    detail: 'A team room for four to eight, with space for a table of your own.',
+    href: '/membership/private-office',
+    linkLabel: 'Compare the office sizes',
+  },
+  cafe_membership: {
+    id: 'cafe_membership',
+    name: 'The café',
+    detail: 'Open seating on the café side of the 1905 building next door.',
+    href: '/membership/cafe',
+    linkLabel: 'What a café membership includes',
+  },
+};
+
+// Where the differences between the options in a group are written down.
+const GROUP_LINK: Record<TrialSeating, { href: string; label: string } | null> = {
+  desk: { href: '/membership/dedicated-desk', label: 'How the two desk options differ' },
+  office: { href: '/membership/private-office', label: 'How the three office sizes differ' },
+  cafe: null,
+};
+
+// Live counts, best effort. A failed or in-flight fetch leaves these null and
+// the form simply says nothing about availability — a wrong number in front
+// of someone choosing a room is worse than no number.
+interface DeskAvailability {
+  capacity: number;
+  remaining: number | null;
+  isFull: boolean;
+  private_desk?: { capacity: number; remaining: number | null; isFull: boolean };
+}
+
+interface OfficeAvailability {
+  capacity: number;
+  remaining: number | null;
+  isFull: boolean;
+  // Null until the floor plan records which office is which size — see
+  // lib/portal/officeSizes.ts. Null is "we don't know", never "none free".
+  by_size: Record<OfficeSize, { capacity: number; remaining: number; isFull: boolean }> | null;
+}
 
 interface TrialApplicationFormProps {
   onChangePath?: () => void;
@@ -40,10 +132,14 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
   const [phone, setPhone] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [seating, setSeating] = useState<TrialSeating | ''>('');
+  const [trialPlan, setTrialPlan] = useState('');
   const [trialDate, setTrialDate] = useState('');
   const [agreesToTerms, setAgreesToTerms] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [idFile, setIdFile] = useState<File | null>(null);
+
+  const [deskAvailability, setDeskAvailability] = useState<DeskAvailability | null>(null);
+  const [officeAvailability, setOfficeAvailability] = useState<OfficeAvailability | null>(null);
 
   const [preparingFile, setPreparingFile] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -63,6 +159,119 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
   // Trial days are weekdays only, so the picker opens on the next one rather
   // than on a Saturday the validator would refuse.
   const earliestTrialDate = useMemo(() => nextWeekdayIsoDate(todayIso), [todayIso]);
+
+  // What is actually free right now. Both endpoints are public, counts only —
+  // they never say who sits where (app/api/desk-availability,
+  // app/api/office-availability).
+  useEffect(() => {
+    let cancelled = false;
+    const load = <T,>(url: string, set: (value: T) => void) => {
+      fetch(url)
+        .then((r) => r.json())
+        .then((d) => {
+          if (!cancelled && d && !d.unavailable) set(d as T);
+        })
+        .catch(() => {
+          /* leave unknown — the form prints no counts at all */
+        });
+    };
+    load<DeskAvailability>('/api/desk-availability', setDeskAvailability);
+    load<OfficeAvailability>('/api/office-availability', setOfficeAvailability);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Which options a seating choice offers today.
+  //
+  // The private dedicated desk is the one option that comes and goes: it is a
+  // desk in a converted office, sold only once all the floor desks are spoken
+  // for, and deliberately not advertised before then — the same rule the
+  // membership application follows (see app/api/desk-availability/route.ts).
+  // While the floor has room the desk group is a single option, which the
+  // panel below states rather than making someone choose from a list of one.
+  const planOptions = useMemo(() => {
+    if (!seating) return [] as TrialPlanOption[];
+    return TRIAL_PLANS_BY_SEATING[seating]
+      .filter((id) => id !== 'private_dedicated_desk' || deskAvailability?.isFull === true)
+      .map((id) => TRIAL_PLAN_OPTIONS[id])
+      .filter(Boolean);
+  }, [seating, deskAvailability]);
+
+  // A group of one needs no question: pick it for the person so the
+  // submission still records exactly what they are coming in to try.
+  useEffect(() => {
+    if (planOptions.length === 1) setTrialPlan(planOptions[0].id);
+  }, [planOptions]);
+
+  // One line of live availability for an option, or null when we don't know.
+  // Never a zero we cannot stand behind: an unknown count prints nothing.
+  const availabilityFor = (planId: string): string | null => {
+    if (planId === 'dedicated_desk') {
+      const left = deskAvailability?.remaining;
+      if (typeof left !== 'number') return null;
+      return left > 0
+        ? `${left} of ${deskAvailability?.capacity} desks free`
+        : 'Every floor desk is spoken for';
+    }
+    if (planId === 'private_dedicated_desk') {
+      const priv = deskAvailability?.private_desk;
+      if (typeof priv?.remaining !== 'number') return null;
+      return priv.remaining > 0
+        ? `${priv.remaining} of ${priv.capacity} free`
+        : 'None free — ask us about the waitlist';
+    }
+    const size = OFFICE_SIZE_FOR_PLAN[planId];
+    const bySize = officeAvailability?.by_size;
+    if (!size || !bySize) return null;
+    const count = bySize[size];
+    if (!count || count.capacity === 0) return null;
+    return count.remaining > 0
+      ? `${count.remaining} of ${count.capacity} free`
+      : 'Fully occupied right now';
+  };
+
+  // An office trial needs an actual empty room: staff unlock a specific office
+  // for the day, and if every room of that size is occupied there is nothing
+  // to unlock. So a sold-out office size cannot be chosen — the API refuses it
+  // too, on numbers read at submit rather than at page load.
+  //
+  // Only offices. A desk trial when the floor is full is a supported state:
+  // the trial-day email already handles it by having someone meet the visitor
+  // rather than sending them to a desk number.
+  const soldOut = (planId: string): boolean => {
+    const size = OFFICE_SIZE_FOR_PLAN[planId];
+    const count = size ? officeAvailability?.by_size?.[size] : null;
+    // Unknown availability never disables an option — a failed fetch must not
+    // stop someone booking a trial day.
+    return Boolean(count && count.capacity > 0 && count.remaining === 0);
+  };
+
+  // The fallback line for offices while no floor plan sizes are recorded: the
+  // building total, which is true whatever the size split turns out to be.
+  const officeTotalLine =
+    seating === 'office' &&
+    !officeAvailability?.by_size &&
+    typeof officeAvailability?.remaining === 'number'
+      ? officeAvailability.remaining > 0
+        ? `${officeAvailability.remaining} of ${officeAvailability.capacity} private offices are free right now.`
+        : 'Every private office is occupied right now — a trial day is still worth booking, and we will show you what is coming free.'
+      : null;
+
+  // Availability lands after the first paint, so an option can go sold-out
+  // under a selection that was legal when it was made. Drop it rather than
+  // letting the submit fail on the server.
+  useEffect(() => {
+    if (trialPlan && soldOut(trialPlan)) setTrialPlan('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [officeAvailability, trialPlan]);
+
+  const chooseSeating = (next: TrialSeating) => {
+    setSeating(next);
+    // The old answer belongs to the old question.
+    setTrialPlan('');
+    setError(null);
+  };
 
   // Type first, then shrink, then size — in that order on purpose. A phone
   // photo arrives at 5–12MB and is re-encoded here (lib/portal/idUpload.ts)
@@ -120,6 +329,7 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
         phone,
         company_name: companyName,
         seating,
+        trial_plan: trialPlan,
         trial_date: trialDate,
         agrees_to_terms: agreesToTerms,
       },
@@ -143,6 +353,7 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
       body.append('phone', phone);
       body.append('company_name', companyName);
       body.append('seating', seating);
+      body.append('trial_plan', trialPlan);
       body.append('trial_date', trialDate);
       body.append('agrees_to_terms', String(agreesToTerms));
       body.append('marketing_consent', String(marketingConsent));
@@ -345,7 +556,7 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
                     type="radio"
                     name="trial_seating"
                     checked={seating === 'desk'}
-                    onChange={() => setSeating('desk')}
+                    onChange={() => chooseSeating('desk')}
                     className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500"
                   />
                   <div>
@@ -363,7 +574,7 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
                     type="radio"
                     name="trial_seating"
                     checked={seating === 'office'}
-                    onChange={() => setSeating('office')}
+                    onChange={() => chooseSeating('office')}
                     className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500"
                   />
                   <div>
@@ -382,7 +593,7 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
                     type="radio"
                     name="trial_seating"
                     checked={seating === 'cafe'}
-                    onChange={() => setSeating('cafe')}
+                    onChange={() => chooseSeating('cafe')}
                     className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500"
                   />
                   <div>
@@ -395,6 +606,139 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
                   </div>
                 </label>
               </div>
+
+              {/* The second question, revealed by the first. An office is three
+                  different rooms and a desk is two, so "a private office" on
+                  its own does not tell staff which room to open. Availability
+                  is shown per option because "is a 2-desk office actually
+                  free?" is the thing a prospect is really asking. */}
+              {seating && planOptions.length > 0 && (
+                <div className="mt-5 border-l-2 border-orange-300 bg-white/70 pl-4 py-4 sm:pl-6">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <h3 className="font-display text-lg font-semibold text-ink">
+                      {seating === 'office'
+                        ? 'Which office would you like to try?'
+                        : seating === 'desk'
+                          ? 'Which kind of desk?'
+                          : 'What you will be trying'}
+                    </h3>
+                    {/* The comparison link belongs to the group. A group of
+                        one has nothing to compare, so its card carries its own
+                        link instead. */}
+                    {planOptions.length > 1 && GROUP_LINK[seating] && (
+                      <Link
+                        href={GROUP_LINK[seating]!.href}
+                        target="_blank"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-orange-600 underline-offset-2 hover:underline"
+                      >
+                        {GROUP_LINK[seating]!.label}
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    )}
+                  </div>
+
+                  {officeTotalLine && <p className="mt-2 text-sm text-ink-60">{officeTotalLine}</p>}
+
+                  {planOptions.length === 1 ? (
+                    // A group of one: state it rather than offering a choice
+                    // of one. Nothing to pick, but the description and the
+                    // link still belong here.
+                    <div className="mt-3 border border-clay bg-linen p-3">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                        <p className="font-medium text-ink">{planOptions[0].name}</p>
+                        {availabilityFor(planOptions[0].id) && (
+                          <span className="text-xs font-medium text-ink-60">
+                            {availabilityFor(planOptions[0].id)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-sm text-ink-60">{planOptions[0].detail}</p>
+                      <Link
+                        href={planOptions[0].href}
+                        target="_blank"
+                        className="mt-2 inline-block text-sm font-medium text-orange-600 underline-offset-2 hover:underline"
+                      >
+                        {planOptions[0].linkLabel} &rarr;
+                      </Link>
+                    </div>
+                  ) : (
+                    <div
+                      className={`mt-3 grid gap-3 ${planOptions.length >= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
+                    >
+                      {planOptions.map((option) => {
+                        const free = availabilityFor(option.id);
+                        const unavailable = soldOut(option.id);
+                        const selected = trialPlan === option.id;
+                        return (
+                          <label
+                            key={option.id}
+                            className={`flex h-full flex-col border-2 p-3 transition ${
+                              unavailable
+                                ? 'cursor-not-allowed border-gray-200 bg-gray-50 opacity-70'
+                                : selected
+                                  ? 'cursor-pointer border-orange-500 bg-white'
+                                  : 'cursor-pointer border-gray-200 bg-white hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <input
+                                type="radio"
+                                name="trial_plan"
+                                checked={selected}
+                                disabled={unavailable}
+                                onChange={() => {
+                                  setTrialPlan(option.id);
+                                  setError(null);
+                                }}
+                                className="mt-1 h-4 w-4 flex-shrink-0 text-orange-600 focus:ring-orange-500 disabled:cursor-not-allowed"
+                              />
+                              <span className={`font-medium ${unavailable ? 'text-ink-60' : 'text-ink'}`}>
+                                {option.name}
+                              </span>
+                            </div>
+                            <p className="mt-1.5 text-sm text-ink-60">{option.detail}</p>
+                            {free && (
+                              <span
+                                className={`mt-2 inline-flex w-fit items-center px-2 py-0.5 text-xs font-medium ${unavailable ? 'bg-gray-200 text-ink-60' : 'bg-linen text-ink-60'}`}
+                              >
+                                {free}
+                              </span>
+                            )}
+                            {unavailable && (
+                              <p className="mt-1.5 text-xs text-ink-60">
+                                Nothing to show you for a day until one frees up.{' '}
+                                <Link
+                                  href="/contact"
+                                  target="_blank"
+                                  className="font-medium text-orange-600 underline-offset-2 hover:underline"
+                                >
+                                  Ask about the waitlist
+                                </Link>
+                                .
+                              </p>
+                            )}
+                            {option.href !== GROUP_LINK[seating]?.href && (
+                              <Link
+                                href={option.href}
+                                target="_blank"
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-2 text-sm font-medium text-orange-600 underline-offset-2 hover:underline"
+                              >
+                                {option.linkLabel} &rarr;
+                              </Link>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <p className="mt-3 text-xs text-ink-60">
+                    Nothing here commits you to anything &mdash; it tells us which space to have
+                    ready on the day. Counts are what is free today and can move before your visit.
+                  </p>
+                </div>
+              )}
 
               <div className="mt-6">
                 <label htmlFor="trial-date" className="block text-sm font-medium text-ink-60 mb-2">
@@ -506,7 +850,7 @@ export default function TrialApplicationForm({ onChangePath }: TrialApplicationF
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={submitting || preparingFile || !agreesToTerms || !idFile}
+                disabled={submitting || preparingFile || !agreesToTerms || !idFile || !trialPlan}
                 className="w-full bg-orange-600 py-4 px-6 text-lg font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting ? (

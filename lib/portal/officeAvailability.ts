@@ -21,9 +21,17 @@
 //
 // Counts only. This feeds public marketing pages, so it must never leak who
 // sits where.
+//
+// Two audiences, two sets of numbers. The top-level fields describe the whole
+// building, which is what staff see charted. `public` describes only the
+// offices a prospect can actually be offered: it leaves out office 120, which
+// is in the wellness building next door rather than the workspace, and splits
+// the rest by size. Everything a member of the public reads — the membership
+// pages, the trial form — comes from `public`.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { OFFICE_SPACES, canonicalizeSpaceNumber } from './seating';
+import { OFFICE_SPACES, PUBLIC_OFFICE_SPACES, canonicalizeSpaceNumber } from './seating';
+import { summarizeOfficeSizes, type OfficeSizeAvailability } from './officeSizes';
 
 // The minimal member shape the math needs. Kept structural (rather than
 // importing the full Member type) so it can be unit-tested in isolation.
@@ -44,6 +52,22 @@ export interface OfficeAvailability {
   takenCount: number;
   remainingCount: number;
   isFull: boolean;
+  // What the public side of the site is allowed to say. Never mix these with
+  // the building-wide numbers above.
+  public: PublicOfficeAvailability;
+}
+
+export interface PublicOfficeAvailability {
+  // Offices on the workspace floor — the fourteen the marketing copy counts.
+  capacity: number;
+  takenCount: number;
+  remainingCount: number;
+  isFull: boolean;
+  // The same free/total split, per office size — what a prospect choosing
+  // between a single-desk room and a team room actually wants to know. Null
+  // when the floor plan has no sizes recorded (lib/portal/officeSizes.ts),
+  // which callers must report as "we don't know" rather than as zero.
+  bySize: OfficeSizeAvailability | null;
 }
 
 // Same rule the desk module and the admin seating chart use: archived members
@@ -88,6 +112,9 @@ export function summarizeOfficeAvailability(input: {
   const occupiedOffices = OFFICE_SPACES.filter((o) => occupied.has(o));
   const availableOffices = OFFICE_SPACES.filter((o) => !occupied.has(o));
 
+  // The same occupancy, narrowed to the offices we advertise.
+  const publicAvailable = PUBLIC_OFFICE_SPACES.filter((o) => !occupied.has(o));
+
   return {
     capacity: OFFICE_SPACES.length,
     occupiedOffices,
@@ -95,6 +122,13 @@ export function summarizeOfficeAvailability(input: {
     takenCount: occupiedOffices.length,
     remainingCount: availableOffices.length,
     isFull: availableOffices.length === 0,
+    public: {
+      capacity: PUBLIC_OFFICE_SPACES.length,
+      takenCount: PUBLIC_OFFICE_SPACES.length - publicAvailable.length,
+      remainingCount: publicAvailable.length,
+      isFull: publicAvailable.length === 0,
+      bySize: summarizeOfficeSizes(publicAvailable),
+    },
   };
 }
 
