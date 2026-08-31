@@ -18,6 +18,29 @@ Next.js 14 (App Router) + Supabase + Stripe + Resend, deployed on Vercel.
 - Scheduled jobs are Vercel Cron entries in `vercel.json`, implemented under
   `app/api/cron/`, and authenticated with a `CRON_SECRET` bearer token.
 
+## Every admin read defeats the cache twice
+
+Admin API responses were once served from the browser's HTTP cache — a
+snapshot of the queue or the roster recorded hours earlier. The symptom is
+maddening and always reads as something else: a newly approved member "not
+showing up on the Members page at all" while their row sits in the database,
+an approved or dismissed card that never leaves the queue, buttons that
+"do nothing" because the write landed and the re-read replayed the past.
+
+So every admin GET does both of these, and any new admin page must too:
+
+- `cache: 'no-store'` on the fetch, which makes the browser skip its cache;
+- a `t=${Date.now()}` query param, so the URL is unique and cannot be
+  answered by any cache anywhere — including an entry recorded before the
+  `no-store` response headers (next.config.js applies them to all of
+  `/api/*`) ever deployed, and any intermediary that ignores headers.
+
+And when a load fails, only 401/403 may bounce to the sign-in page.
+Everything else renders as an on-page error — `router.replace('/admin')` on
+a 500 looks like a logout, and a failing query that looks like a logout is
+how a broken page stays broken quietly. The applications page and the
+members page each learned this separately.
+
 ## Business facts have one source — `lib/seo/`
 
 `lib/seo/business.ts` (address, phone, plans, prices, amenities, policies) and

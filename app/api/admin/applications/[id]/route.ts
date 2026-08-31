@@ -5,6 +5,7 @@ import { sendOnboardingMagicLink } from '@/lib/portal/magicLink';
 import { planForMembershipType } from '@/lib/portal/pricing';
 import { isTrialApplication } from '@/lib/portal/trialApplication';
 import { isHandled, isDismissedInPayload } from '@/lib/portal/applicationQueue';
+import { isMissingArchivedColumnError } from '@/lib/portal/archive';
 
 export const dynamic = 'force-dynamic';
 
@@ -237,37 +238,55 @@ export async function POST(
       ? payloadMonthly
       : plan?.monthly_cost_cents ?? null;
 
-    const { data: member, error: memErr } = await sb
+    const memberRow = {
+      user_id: userId,
+      email: app.email,
+      first_name: app.first_name,
+      last_name: app.last_name,
+      phone: app.phone,
+      company_name: app.company_name,
+      status: 'approved',
+      application_id: app.id,
+      designation: plan?.designation ?? null,
+      monthly_cost_cents: monthlyCostCents,
+    };
+    // The upsert keys on email, so approving someone who was a member before
+    // UPDATES their old row — including one that was archived after a
+    // cancellation. An archived row is hidden from the member list and the
+    // totals, so without clearing the marker the approval "works" (member
+    // created, invitation emailed, onboarding running) while the member is
+    // nowhere on the Members page. Approval means they are back: un-archive.
+    let { data: member, error: memErr } = await sb
       .from('members')
-      .upsert(
-        {
-          user_id: userId,
-          email: app.email,
-          first_name: app.first_name,
-          last_name: app.last_name,
-          phone: app.phone,
-          company_name: app.company_name,
-          status: 'approved',
-          application_id: app.id,
-          designation: plan?.designation ?? null,
-          monthly_cost_cents: monthlyCostCents,
-        },
-        { onConflict: 'email' }
-      )
+      .upsert({ ...memberRow, archived_at: null, archived_by: null }, { onConflict: 'email' })
       .select()
       .single();
-    if (memErr) {
-      return NextResponse.json({ error: memErr.message }, { status: 500 });
+    if (memErr && isMissingArchivedColumnError(memErr)) {
+      // Database without 20260625_member_archive.sql: nothing can be
+      // archived there, so the plain row is equivalent.
+      ({ data: member, error: memErr } = await sb
+        .from('members')
+        .upsert(memberRow, { onConflict: 'email' })
+        .select()
+        .single());
+    }
+    if (memErr || !member) {
+      return NextResponse.json(
+        { error: memErr?.message || 'The member row could not be created.' },
+        { status: 500 }
+      );
     }
 
     // 3. Mark application approved.
     //
     // Not fatal — the member row exists and the invitation is about to go
     // out, so failing the request here would tell the admin nothing
-    // happened when most of it did. But it is not silent either: an
-    // application still reading `pending` after an approval is how the same
-    // person gets approved twice.
-    const { error: markError } = await sb
+    // happened when most of it did. But it is not silent either: the queue
+    // drops a card because its status reads `approved`, so an application
+    // this write skips stays on screen looking exactly like an Approve
+    // button that did nothing — and is how the same person gets approved
+    // twice. The result is read back and reported so the panel can say so.
+    const { data: markedRow, error: markError } = await sb
       .from('member_applications')
       .update({
         status: 'approved',
@@ -275,9 +294,15 @@ export async function POST(
         decided_by: admin.id,
         decided_at: new Date().toISOString(),
       })
-      .eq('id', id);
-    if (markError) {
-      console.error(`⚠️ Approved application ${id} could not be marked approved:`, markError);
+      .eq('id', id)
+      .select('id, status')
+      .maybeSingle();
+    const applicationMarked = !markError && !!markedRow;
+    if (!applicationMarked) {
+      console.error(
+        `⚠️ Approved application ${id} could not be marked approved:`,
+        markError || 'the update matched no row'
+      );
     }
 
     // 4. Generate a one-time sign-in link and send the welcome email.
@@ -286,7 +311,22 @@ export async function POST(
       firstName: app.first_name,
     });
 
-    return NextResponse.json({ ok: true, member });
+    return NextResponse.json({
+      ok: true,
+      member,
+      // False means the member exists and was emailed, but the application
+      // row still reads pending — its card will stay in the queue and must
+      // not be approved a second time.
+      application_marked: applicationMarked,
+      ...(applicationMarked
+        ? {}
+        : {
+            warning:
+              `The member was created and invited, but the application could not be marked ` +
+              `approved (${markError?.message || 'the update matched no row'}). Its card will ` +
+              `stay in the queue — do not approve it again; dismiss it instead.`,
+          }),
+    });
   } catch (e: any) {
     const status = e instanceof PortalError ? e.status : 500;
     return NextResponse.json({ error: e.message }, { status });
