@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
@@ -54,9 +54,15 @@ export default function AdminMembersPage() {
   const [viewArchived, setViewArchived] = useState(false);
 
   const [loadError, setLoadError] = useState<string | null>(null);
+  // When the roster on screen was last replaced with fresh data — shown in
+  // the header so a stale window identifies itself instead of passing for
+  // live.
+  const [loadedAt, setLoadedAt] = useState<Date | null>(null);
 
-  async function load(authToken: string, archived: boolean) {
-    setLoading(true);
+  async function load(authToken: string, archived: boolean, opts: { silent?: boolean } = {}) {
+    // A focus-triggered refetch replaces the data without blanking the page
+    // into "Loading…" first.
+    if (!opts.silent) setLoading(true);
     setLoadError(null);
     // `t` is a cache-buster on top of `cache: 'no-store'`, the same pair the
     // applications page uses. This exact read was once answered from the
@@ -87,6 +93,7 @@ export default function AdminMembersPage() {
     }
     const { members } = await res.json();
     setMembers(members);
+    setLoadedAt(new Date());
     setLoading(false);
   }
 
@@ -102,6 +109,34 @@ export default function AdminMembersPage() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, viewArchived]);
+
+  // Re-read the roster whenever this window comes back into focus, for the
+  // same reason the applications page does: a second window — another tab,
+  // the other browser, a reopened laptop — otherwise shows the roster as of
+  // its last load forever, and "the member is not on the members page" has
+  // already been reported from exactly such a window while the row sat in
+  // the database.
+  const refetchRef = useRef<() => void>(() => {});
+  const lastLoadRef = useRef(0);
+  refetchRef.current = () => {
+    if (!token || archivingId || decidingId || pinging) return;
+    const now = Date.now();
+    if (now - lastLoadRef.current < 3000) return;
+    lastLoadRef.current = now;
+    load(token, viewArchived, { silent: true });
+  };
+  useEffect(() => {
+    const onFocus = () => refetchRef.current();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refetchRef.current();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
 
   async function archiveMember(m: Member) {
     if (!token) return;
@@ -415,6 +450,12 @@ export default function AdminMembersPage() {
             {(search || statusFilter !== 'all') && ` (filtered from ${members.length})`}
             {viewArchived && ' · archived (hidden from totals)'}
           </p>
+          {loadedAt && (
+            <p className="text-xs text-gray-400 mt-1">
+              Data loaded {loadedAt.toLocaleTimeString()} — re-checks automatically whenever you
+              return to this window.
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <SeatingChart members={members} token={token} />

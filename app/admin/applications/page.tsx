@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { MemberApplication } from '@/lib/portal/types';
@@ -367,6 +367,11 @@ export default function AdminApplicationsPage() {
   const [traceEmail, setTraceEmail] = useState('');
   const [traceResult, setTraceResult] = useState<TraceResult | null>(null);
   const [tracing, setTracing] = useState(false);
+  // When the lists on screen were last replaced with fresh data. Shown next
+  // to the tabs, because a page whose data is hours old is indistinguishable
+  // from a live one — and an admin acted on exactly such a zombie window: the
+  // dismissals wrote to the database while the cards never moved.
+  const [loadedAt, setLoadedAt] = useState<Date | null>(null);
 
   const load = useCallback(
     async (accessToken: string, includeHandled: boolean) => {
@@ -399,6 +404,7 @@ export default function AdminApplicationsPage() {
       setTrialApps(trial);
       setStandardApps(standard);
       setDiagnostics(data.diagnostics || null);
+      setLoadedAt(new Date());
       setLoading(false);
       // Returned as well as set: a caller that has just changed a row needs
       // the fresh lists NOW (React state lands on the next render, after the
@@ -423,6 +429,37 @@ export default function AdminApplicationsPage() {
     // once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, load]);
+
+  // Re-read the queue whenever this window comes back into focus.
+  //
+  // The queue only refetched on mount and after a click in THIS window, so a
+  // second window — another tab, the other browser, a laptop reopened —
+  // showed the world as of its last load, indefinitely. An admin worked in
+  // exactly such a window: every dismissal wrote to the database, and the
+  // cards never moved, which reads as "the buttons do nothing" and nearly
+  // got a working deploy rolled back. Focus is the moment a human starts
+  // trusting what is on screen, so focus is when it must be made true.
+  const refetchRef = useRef<() => void>(() => {});
+  const lastLoadRef = useRef(0);
+  refetchRef.current = () => {
+    if (!token || decidingId) return;
+    const now = Date.now();
+    if (now - lastLoadRef.current < 3000) return;
+    lastLoadRef.current = now;
+    load(token, showHandled);
+  };
+  useEffect(() => {
+    const onFocus = () => refetchRef.current();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refetchRef.current();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
 
   async function refresh(includeHandled = showHandled) {
     if (!token) return;
@@ -629,6 +666,12 @@ export default function AdminApplicationsPage() {
           <p className="text-sm text-gray-600 mt-1">
             Trial days are visits to expect. Membership applications are decisions to make.
           </p>
+          {loadedAt && (
+            <p className="text-xs text-gray-400 mt-1">
+              Data loaded {loadedAt.toLocaleTimeString()} — re-checks automatically whenever you
+              return to this window.
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -686,6 +729,13 @@ export default function AdminApplicationsPage() {
         <div className="rounded border-2 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800">
           <div className="font-semibold">The queue did not load.</div>
           <div className="mt-1">{error}</div>
+          {/* The old lists stay rendered below (blanking them would hide
+              real visits), but they must not pass for live data. */}
+          <div className="mt-1 font-semibold">
+            Any cards below are from the last successful load
+            {loadedAt ? ` at ${loadedAt.toLocaleTimeString()}` : ''} and may be out of date — do
+            not act on them until a reload succeeds.
+          </div>
         </div>
       )}
 
