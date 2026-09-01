@@ -218,8 +218,7 @@ export async function POST(
       return NextResponse.json({ error: createErr.message }, { status: 500 });
     }
     if (!userId) {
-      const { data: list } = await sb.auth.admin.listUsers();
-      userId = list.users.find((u) => u.email === app.email)?.id || null;
+      userId = await findAuthUserIdByEmail(sb, app.email);
     }
 
     // 2. Create or update the member row. Auto-assign the designation and
@@ -238,8 +237,14 @@ export async function POST(
       ? payloadMonthly
       : plan?.monthly_cost_cents ?? null;
 
-    const memberRow = {
-      user_id: userId,
+    // `user_id` is only written when the lookup actually found one. The row
+    // this upsert may be UPDATING (same email, previous membership) already
+    // carries the link between that person's auth account and their member
+    // record — it is how requireMember finds them — and an upsert that writes
+    // `user_id: null` over it silently signs them out of their own portal:
+    // the approval looks perfect from the admin panel while their next login
+    // answers "Member not found".
+    const memberRow: Record<string, unknown> = {
       email: app.email,
       first_name: app.first_name,
       last_name: app.last_name,
@@ -250,6 +255,7 @@ export async function POST(
       designation: plan?.designation ?? null,
       monthly_cost_cents: monthlyCostCents,
     };
+    if (userId) memberRow.user_id = userId;
     // The upsert keys on email, so approving someone who was a member before
     // UPDATES their old row — including one that was archived after a
     // cancellation. An archived row is hidden from the member list and the
@@ -331,4 +337,32 @@ export async function POST(
     const status = e instanceof PortalError ? e.status : 500;
     return NextResponse.json({ error: e.message }, { status });
   }
+}
+
+// Find the auth user for an email that createUser said already exists.
+//
+// `listUsers()` with no arguments returns ONE page — 50 users — and this
+// lookup used to read exactly that and stop. Every approval of a returning
+// member on a project with more than 50 auth accounts then "found" nobody,
+// and the member row was written without its user_id. The comparison is
+// case-insensitive for the same reason: auth stores what the person typed at
+// sign-up, the application holds what they typed this time, and emails
+// differing only in case are the same mailbox.
+async function findAuthUserIdByEmail(
+  sb: ReturnType<typeof getServiceSupabase>,
+  email: string
+): Promise<string | null> {
+  const wanted = String(email || '').toLowerCase();
+  if (!wanted) return null;
+  const perPage = 1000;
+  // 50 pages of 1000 is far beyond this project's user count; the cap only
+  // exists so a paging bug cannot loop forever.
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await sb.auth.admin.listUsers({ page, perPage });
+    if (error || !data?.users?.length) return null;
+    const hit = data.users.find((u) => (u.email || '').toLowerCase() === wanted);
+    if (hit) return hit.id;
+    if (data.users.length < perPage) return null;
+  }
+  return null;
 }

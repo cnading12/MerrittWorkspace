@@ -9,6 +9,7 @@ import {
 } from 'react';
 import Link from 'next/link';
 import type { Member, SeatingManualAssignment } from '@/lib/portal/types';
+import { freshAccessToken } from '@/lib/portal/freshToken';
 import {
   buildOccupancy,
   DESK_SPACES,
@@ -67,7 +68,7 @@ export default function SeatingChart({
     try {
       const res = await fetch('/api/admin/seating', {
         cache: 'no-store',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${(await freshAccessToken()) || token}` },
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || 'Failed to load seating');
@@ -152,7 +153,7 @@ export default function SeatingChart({
       const res = await fetch(url, {
         method: isNew ? 'POST' : 'PATCH',
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${(await freshAccessToken()) || token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -179,7 +180,7 @@ export default function SeatingChart({
     try {
       const res = await fetch(`/api/admin/seating/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${(await freshAccessToken()) || token}` },
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || 'Failed to remove');

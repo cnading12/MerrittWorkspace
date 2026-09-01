@@ -13,6 +13,7 @@ import type {
 import { DESIGNATION_LABELS, DOC_TYPE_LABELS } from '@/lib/portal/types';
 import { readTrialFlag, readTrialDate } from '@/lib/portal/trial';
 import { formatLastPingAgo } from '@/lib/portal/memberPriority';
+import { freshAccessToken } from '@/lib/portal/freshToken';
 
 type DocWithUrl = MemberDocument & { signed_url: string | null };
 
@@ -86,7 +87,7 @@ export default function AdminMemberDetailPage({
     const res = await fetch(`/api/admin/documents/${docId}`, {
       method: 'PATCH',
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${(await freshAccessToken()) || token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ status, notes }),
@@ -155,7 +156,7 @@ export default function AdminMemberDetailPage({
     if (!confirm('Send a fresh sign-in link to this member?')) return;
     const res = await fetch(`/api/admin/members/${id}/resend-invitation`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${(await freshAccessToken()) || token}` },
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -175,7 +176,7 @@ export default function AdminMemberDetailPage({
       return;
     const res = await fetch(`/api/admin/members/${id}/ping`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${(await freshAccessToken()) || token}` },
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -205,7 +206,7 @@ export default function AdminMemberDetailPage({
       `/api/admin/members/${id}/recreate-subscription`,
       {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${(await freshAccessToken()) || token}` },
       }
     );
     const json = await res.json().catch(() => ({}));
@@ -247,7 +248,7 @@ export default function AdminMemberDetailPage({
     if (!ok) return;
     const res = await fetch(`/api/admin/members/${id}/cancel-subscription`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${(await freshAccessToken()) || token}` },
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -294,7 +295,7 @@ export default function AdminMemberDetailPage({
       return;
     const res = await fetch(`/api/admin/members/${id}/archive`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${(await freshAccessToken()) || token}` },
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -328,7 +329,7 @@ export default function AdminMemberDetailPage({
       return;
     const res = await fetch(`/api/admin/members/${id}/archive`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${(await freshAccessToken()) || token}` },
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -355,7 +356,7 @@ export default function AdminMemberDetailPage({
       return;
     const res = await fetch(`/api/admin/members/${id}/delete`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${(await freshAccessToken()) || token}` },
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -375,7 +376,7 @@ export default function AdminMemberDetailPage({
     if (!ok) return;
     const res = await fetch(`/api/admin/members/${id}/payments/${paymentId}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${(await freshAccessToken()) || token}` },
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -406,7 +407,7 @@ export default function AdminMemberDetailPage({
         `/api/admin/members/${id}/reconcile-payments`,
         {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${(await freshAccessToken()) || token}` },
         }
       );
       const json = await res.json();
@@ -428,7 +429,7 @@ export default function AdminMemberDetailPage({
     const res = await fetch(`/api/admin/members/${id}`, {
       method: 'PATCH',
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${(await freshAccessToken()) || token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
@@ -880,7 +881,7 @@ function AgreementCard({ agreement: a }: { agreement: Agreement }) {
         return;
       }
       const res = await fetch(`/api/admin/agreements/${a.id}/view`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${(await freshAccessToken()) || token}` },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

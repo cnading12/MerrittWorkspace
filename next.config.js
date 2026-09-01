@@ -117,7 +117,29 @@ const securityHeaders = [
   { key: 'X-DNS-Prefetch-Control', value: 'on' },
 ];
 
+// One stamp per build, baked into BOTH the client bundle and the server
+// code by the `env` block below (this file is loaded once per `next build`,
+// so the two always agree). The admin panel compares its own baked stamp
+// against what /api/version answers: a mismatch means the tab is running a
+// bundle from an older deployment than the server is.
+//
+// That case is real, and it is how a week of admin-panel fixes can "not
+// work": an admin tab is a client-side app that keeps executing the bundle
+// it loaded until someone reloads the page, across any number of deploys.
+// The focus-refetch keeps its DATA fresh, which makes it look perfectly
+// alive while every fixed behavior on it is still the old code.
+//
+// On Vercel the stamp is the deploy's commit; the fallback only exists for
+// builds outside Vercel and is unique per build, which errs toward telling
+// an old tab to reload — never toward leaving it stale.
+const BUILD_STAMP =
+  (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 7) ||
+  `build-${Date.now().toString(36)}`;
+
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_STAMP: BUILD_STAMP,
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     // 2560/3840 added so full-bleed images on a wide screen at 2x DPR are
