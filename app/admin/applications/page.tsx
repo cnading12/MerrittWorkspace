@@ -151,8 +151,28 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
   // actually submitted sits one tab over. That is how a submitted
   // application reads as a lost one.
   const converted = !!readConvertedApplicationId(app);
+  // Restore is the UNDO of a dismissal, and it used to render in the exact
+  // spot Dismiss had just vacated, on a card that looked almost unchanged.
+  // An admin re-clicking a button that "did nothing" was un-dismissing rows
+  // one click after dismissing them, and the queue kept resurrecting. So
+  // Restore now takes two distinct clicks, and a dismissed card no longer
+  // looks like a live one.
+  const [confirmRestore, setConfirmRestore] = useState(false);
   return (
-    <div className={`bg-orange-50 border-2 border-orange-500 border-l-8 rounded-lg p-4 shadow-sm ${handled ? 'opacity-60' : ''}`}>
+    <div
+      className={`border-2 border-l-8 rounded-lg p-4 shadow-sm ${
+        handled
+          ? 'bg-gray-100 border-gray-400'
+          : 'bg-orange-50 border-orange-500'
+      }`}
+    >
+      {handled && (
+        <div className="mb-3 rounded bg-gray-700 px-3 py-2 text-xs font-bold tracking-wide text-white">
+          {dismissed ? 'DISMISSED' : 'APPROVED'} — this visit is cleared and hidden from the live
+          queue. It is on screen only because “Show dismissed” is ticked. “Restore” UNDOES that and
+          puts it back in the queue.
+        </div>
+      )}
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -254,14 +274,41 @@ function TrialCard({ app, onDecide, onView, shortForm, onSendApplication, sendin
           )}
           {handled ? (
             // Dismiss sits one click away from View, and a visit dismissed by
-            // a misclick is the exact thing this screen exists to stop losing.
-            <button
-              onClick={() => onDecide(app.id, 'restore')}
-              disabled={busy}
-              className="border border-gray-500 text-gray-700 px-3 py-1.5 rounded text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {busy ? 'Restoring…' : 'Restore'}
-            </button>
+            // a misclick is the exact thing this screen exists to stop losing
+            // — but restoring must never happen by accident either, so it
+            // asks twice, inline (a confirm() dialog can be silently
+            // suppressed by the browser, which turns the button into one
+            // that does nothing).
+            confirmRestore ? (
+              <>
+                <button
+                  onClick={() => {
+                    setConfirmRestore(false);
+                    onDecide(app.id, 'restore');
+                  }}
+                  disabled={busy}
+                  className="bg-gray-700 text-white px-3 py-1.5 rounded text-sm hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {busy ? 'Restoring…' : 'Yes — put it back in the queue'}
+                </button>
+                <button
+                  onClick={() => setConfirmRestore(false)}
+                  disabled={busy}
+                  className="border border-gray-400 text-gray-600 px-3 py-1.5 rounded text-sm hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setConfirmRestore(true)}
+                disabled={busy}
+                className="border border-gray-500 text-gray-700 px-3 py-1.5 rounded text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Undo this dismissal and put the visit back in the live queue. Asks again before doing it."
+              >
+                Restore…
+              </button>
+            )
           ) : (
             <button
               onClick={() => onDecide(app.id, 'decline')}
@@ -351,6 +398,11 @@ export default function AdminApplicationsPage() {
   const [token, setToken] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [decidingId, setDecidingId] = useState<string | null>(null);
+  // Card whose decision just finished. Its buttons stay disabled for a
+  // beat afterwards: with "Show dismissed" ticked, the button that renders
+  // where Dismiss was is Restore — the undo — and a rapid second click on a
+  // card that "did nothing" was silently reverting the first.
+  const [cooldownId, setCooldownId] = useState<string | null>(null);
   // Why the last decision did not go through, shown on the page rather than
   // in an alert(). Browsers suppress alerts in some contexts (and always
   // after a few in a row), which turns a reported failure into a button that
@@ -653,6 +705,8 @@ export default function AdminApplicationsPage() {
       );
     } finally {
       setDecidingId(null);
+      setCooldownId(id);
+      setTimeout(() => setCooldownId((cur) => (cur === id ? null : cur)), 2000);
     }
   }
 
@@ -894,7 +948,7 @@ export default function AdminApplicationsPage() {
                 onView={viewApplication}
                 onSendApplication={sendMembershipApplication}
                 sending={sendingId === a.id}
-                busy={decidingId === a.id}
+                busy={decidingId === a.id || cooldownId === a.id}
               />
             ))
           )}
@@ -915,7 +969,7 @@ export default function AdminApplicationsPage() {
                 app={a}
                 onDecide={decide}
                 onView={viewApplication}
-                busy={decidingId === a.id}
+                busy={decidingId === a.id || cooldownId === a.id}
               />
             ))
           )}
