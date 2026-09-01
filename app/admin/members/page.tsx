@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import type { Member } from '@/lib/portal/types';
 import { DESIGNATION_LABELS, showsHoursOverrides } from '@/lib/portal/types';
 import { shouldShowTrialBadge } from '@/lib/portal/trial';
+import { freshAccessToken } from '@/lib/portal/freshToken';
 import SeatingChart from './SeatingChart';
 import {
   compareMembersByNewest,
@@ -64,6 +65,9 @@ export default function AdminMembersPage() {
     // into "Loading…" first.
     if (!opts.silent) setLoading(true);
     setLoadError(null);
+    // Tokens expire after ~an hour and this tab may be far older; the
+    // mounted token is only the fallback (lib/portal/freshToken.ts).
+    const bearer = (await freshAccessToken()) || authToken;
     // `t` is a cache-buster on top of `cache: 'no-store'`, the same pair the
     // applications page uses. This exact read was once answered from the
     // browser's cache — a roster snapshot recorded hours earlier — so a
@@ -74,7 +78,7 @@ export default function AdminMembersPage() {
     if (archived) params.set('archived', 'only');
     const res = await fetch(`/api/admin/members?${params}`, {
       cache: 'no-store',
-      headers: { Authorization: `Bearer ${authToken}` },
+      headers: { Authorization: `Bearer ${bearer}` },
     });
     if (res.status === 401 || res.status === 403) {
       router.replace('/admin');
@@ -151,9 +155,10 @@ export default function AdminMembersPage() {
       return;
     setArchivingId(m.id);
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch(`/api/admin/members/${m.id}/archive`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -177,9 +182,10 @@ export default function AdminMembersPage() {
       return;
     setArchivingId(m.id);
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch(`/api/admin/members/${m.id}/archive`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -206,9 +212,10 @@ export default function AdminMembersPage() {
       return;
     setArchivingId(m.id);
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch(`/api/admin/members/${m.id}/delete`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -238,9 +245,10 @@ export default function AdminMembersPage() {
       return;
     setDecidingId(m.id);
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch(`/api/admin/members/${m.id}/office-member-decision`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision }),
       });
       const json = await res.json().catch(() => ({}));
@@ -258,9 +266,10 @@ export default function AdminMembersPage() {
 
   async function patchMember(id: string, body: any) {
     if (!token) return;
+    const bearer = (await freshAccessToken()) || token;
     const res = await fetch(`/api/admin/members/${id}`, {
       method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     if (!res.ok) {
@@ -282,9 +291,10 @@ export default function AdminMembersPage() {
       return;
     setReconciling(true);
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch('/api/admin/members/reconcile-stripe', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -315,7 +325,7 @@ export default function AdminMembersPage() {
       console.log('Reconcile result', json);
       const refreshed = await fetch('/api/admin/members', {
         cache: 'no-store',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       if (refreshed.ok) {
         const { members: next } = await refreshed.json();
@@ -336,9 +346,10 @@ export default function AdminMembersPage() {
       return;
     setBackfilling(true);
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch('/api/admin/payment-history/backfill-receipts', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -369,9 +380,10 @@ export default function AdminMembersPage() {
       return;
     setPinging(m.id);
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch(`/api/admin/members/${m.id}/ping`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

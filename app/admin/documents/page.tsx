@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { DOC_TYPE_LABELS } from '@/lib/portal/types';
+import { freshAccessToken } from '@/lib/portal/freshToken';
 
 interface MemberRef {
   id: string;
@@ -111,10 +112,13 @@ export default function AdminDocumentsPage() {
   const load = useCallback(
     async (authToken: string) => {
       setLoading(true);
+      // Tokens expire after ~an hour and this tab may be far older; the
+      // mounted token is only the fallback (lib/portal/freshToken.ts).
+      const bearer = (await freshAccessToken()) || authToken;
       // Always pull everything; filter client-side so switching tabs is instant.
       const res = await fetch('/api/admin/documents?status=all', {
         cache: 'no-store',
-        headers: { Authorization: `Bearer ${authToken}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
@@ -158,10 +162,11 @@ export default function AdminDocumentsPage() {
     if (!token) return;
     const notes =
       status === 'rejected' ? prompt('Rejection notes (optional):') || null : null;
+    const bearer = (await freshAccessToken()) || token;
     const res = await fetch(`/api/admin/documents/${docId}`, {
       method: 'PATCH',
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${bearer}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ status, notes }),
@@ -192,8 +197,9 @@ export default function AdminDocumentsPage() {
     }
     win.document.write(loadingHtml());
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

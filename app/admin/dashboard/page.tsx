@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { DESIGNATION_LABELS } from '@/lib/portal/types';
 import { shouldShowTrialBadge } from '@/lib/portal/trial';
+import { freshAccessToken } from '@/lib/portal/freshToken';
 import {
   compareMembersByPriority,
   formatAppliedAgo,
@@ -94,9 +95,10 @@ export default function AdminDashboardPage() {
       return;
     setPinging(m.id);
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch(`/api/admin/members/${m.id}/ping`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

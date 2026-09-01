@@ -41,6 +41,32 @@ a 500 looks like a logout, and a failing query that looks like a logout is
 how a broken page stays broken quietly. The applications page and the
 members page each learned this separately.
 
+## An admin tab can outlive its own code and its own token
+
+Two ways a perfectly healthy deploy still produces "the buttons do nothing",
+both invisible from the code and both learned here:
+
+- **A stale bundle.** The admin panel is a client-side app; a tab keeps
+  executing the bundle it loaded until the page reloads, across any number
+  of deploys. The focus-refetch keeps its *data* current, which makes a
+  weeks-old tab look alive while every behavior fix shipped since is missing
+  from it — so each already-fixed bug gets reported as still broken.
+  `next.config.js` bakes one `NEXT_PUBLIC_BUILD_STAMP` per build into client
+  and server; `/api/version` answers the server's; `AdminBuildGuard` in the
+  admin layout compares them on focus, auto-reloads once per new deployment,
+  and otherwise shows a red banner naming both stamps. Every admin page also
+  prints its build stamp, so a screenshot says which deployment produced it.
+  `unknown` on either side must never count as stale (`isStaleBuild`) — a
+  false mismatch is a reload loop or a permanent banner.
+
+- **A stale token.** Supabase access tokens live ~1 hour; supabase-js
+  refreshes the session quietly, but every admin page used to capture
+  `session.access_token` once at mount and use that string forever. Any tab
+  older than an hour then 401s on every click and its focus-refetch bounces
+  to the sign-in page. Every admin fetch now resolves a fresh token first
+  (`freshAccessToken` in `lib/portal/freshToken.ts`), keeping the mounted
+  token only as fallback. Any new admin page must do the same.
+
 ## Business facts have one source — `lib/seo/`
 
 `lib/seo/business.ts` (address, phone, plans, prices, amenities, policies) and

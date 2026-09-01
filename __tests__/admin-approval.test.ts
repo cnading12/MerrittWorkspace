@@ -26,6 +26,12 @@ const state: {
   // Simulates a database without 20260625_member_archive.sql, which rejects
   // any write naming `archived_at`.
   membersMissingArchivedColumn: boolean;
+  // Approve's auth-user handling. When createUser refuses ("already been
+  // registered"), the route has to FIND that existing user — across pages,
+  // not just the first one listUsers returns by default.
+  createUserError: { message: string } | null;
+  authUserPages: Array<Array<{ id: string; email: string }>>;
+  listUsersCalls: any[];
 } = {
   application: {
     id: 'app-1',
@@ -46,6 +52,9 @@ const state: {
   writesDoNotStick: false,
   memberUpserts: [],
   membersMissingArchivedColumn: false,
+  createUserError: null,
+  authUserPages: [],
+  listUsersCalls: [],
 };
 
 vi.mock('@/lib/portal/supabaseAdmin', () => ({
@@ -53,10 +62,21 @@ vi.mock('@/lib/portal/supabaseAdmin', () => ({
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'admin-1' } }, error: null }),
       admin: {
-        createUser: vi
-          .fn()
-          .mockResolvedValue({ data: { user: { id: 'invited-1' } }, error: null }),
-        listUsers: vi.fn().mockResolvedValue({ data: { users: [] } }),
+        createUser: vi.fn().mockImplementation(() =>
+          Promise.resolve(
+            state.createUserError
+              ? { data: { user: null }, error: state.createUserError }
+              : { data: { user: { id: 'invited-1' } }, error: null }
+          )
+        ),
+        listUsers: vi.fn().mockImplementation((opts?: { page?: number; perPage?: number }) => {
+          state.listUsersCalls.push(opts);
+          const page = opts?.page ?? 1;
+          return Promise.resolve({
+            data: { users: state.authUserPages[page - 1] || [] },
+            error: null,
+          });
+        }),
         generateLink: vi.fn().mockResolvedValue({
           data: { properties: { hashed_token: 'tok-abc' } },
           error: null,
@@ -173,6 +193,9 @@ beforeEach(() => {
   state.writesDoNotStick = false;
   state.memberUpserts = [];
   state.membersMissingArchivedColumn = false;
+  state.createUserError = null;
+  state.authUserPages = [];
+  state.listUsersCalls = [];
   state.application = {
     id: 'app-1',
     email: 'newbie@example.com',
@@ -257,6 +280,44 @@ describe('admin application approval', () => {
       params: Promise.resolve({ id: 'app-1' }),
     });
     expect(res.status).toBe(400);
+  });
+
+  // Approving someone who already has an auth account (a returning member, a
+  // trial visitor who signed in before, a second approval after a partial
+  // failure) goes through listUsers to find their id. listUsers returns ONE
+  // page — 50 users by default — and the lookup used to stop there, so on a
+  // project with more members than that the approval quietly filed the member
+  // row without its user_id.
+  it('finds an existing auth user beyond the first listUsers page, case-insensitively', async () => {
+    state.createUserError = { message: 'A user with this email address has already been registered' };
+    const filler = Array.from({ length: 1000 }, (_, i) => ({
+      id: `filler-${i}`,
+      email: `filler-${i}@example.com`,
+    }));
+    state.authUserPages = [filler, [{ id: 'existing-7', email: 'Newbie@Example.com' }]];
+    const res = await approveRoute(makeReq({ action: 'approve' }), {
+      params: Promise.resolve({ id: 'app-1' }),
+    });
+    expect(res.status).toBe(200);
+    expect(state.listUsersCalls.length).toBeGreaterThanOrEqual(2);
+    expect(state.insertedMember.user_id).toBe('existing-7');
+  });
+
+  // When no auth user can be found at all, the member row must OMIT user_id
+  // rather than write null: the upsert keys on email and may be UPDATING the
+  // row of a returning member whose user_id link is how they sign in to the
+  // portal. Writing null over it approves them on the admin screen while
+  // breaking their own login.
+  it('never overwrites an existing user_id link with null', async () => {
+    state.createUserError = { message: 'A user with this email address has already been registered' };
+    state.authUserPages = [[{ id: 'someone-else', email: 'other@example.com' }]];
+    const res = await approveRoute(makeReq({ action: 'approve' }), {
+      params: Promise.resolve({ id: 'app-1' }),
+    });
+    expect(res.status).toBe(200);
+    for (const row of state.memberUpserts) {
+      expect('user_id' in row).toBe(false);
+    }
   });
 });
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { freshAccessToken } from '@/lib/portal/freshToken';
 
 interface PendingRequest {
   id: string;
@@ -24,9 +25,12 @@ export default function AccessCodesPage() {
   const [codes, setCodes] = useState<Record<string, string>>({});
 
   async function load(t: string) {
+    // Tokens expire after ~an hour and this tab may be far older; the
+    // mounted token is only the fallback (lib/portal/freshToken.ts).
+    const bearer = (await freshAccessToken()) || t;
     const res = await fetch('/api/admin/access-codes', {
       cache: 'no-store',
-      headers: { Authorization: `Bearer ${t}` },
+      headers: { Authorization: `Bearer ${bearer}` },
     });
     if (!res.ok) {
       router.replace('/admin');
@@ -53,9 +57,10 @@ export default function AccessCodesPage() {
     if (!token) return;
     const code = codes[id];
     if (!code) return alert('Enter a code');
+    const bearer = (await freshAccessToken()) || token;
     const res = await fetch(`/api/admin/access-codes/${id}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ access_code: code }),
     });
     if (!res.ok) {

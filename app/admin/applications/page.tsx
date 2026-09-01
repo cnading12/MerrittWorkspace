@@ -12,6 +12,7 @@ import {
   trialPhotoIdMissing,
 } from '@/lib/portal/trialApplication';
 import { isHandled, isDismissedInPayload } from '@/lib/portal/applicationQueue';
+import { freshAccessToken } from '@/lib/portal/freshToken';
 
 // Two tabs, not one list with a band on top.
 //
@@ -428,6 +429,10 @@ export default function AdminApplicationsPage() {
   const load = useCallback(
     async (accessToken: string, includeHandled: boolean) => {
       setError(null);
+      // Tokens expire after ~an hour and this tab may be far older than
+      // that; lib/portal/freshToken.ts explains. The mounted token is only
+      // the fallback.
+      const bearer = (await freshAccessToken()) || accessToken;
       // `t` is a cache-buster on top of `cache: 'no-store'` and the
       // `Cache-Control: no-store` this route sends. A stale queue once hid
       // newly submitted trial days for hours; a unique URL cannot be served
@@ -436,7 +441,7 @@ export default function AdminApplicationsPage() {
       if (includeHandled) params.set('include', 'all');
       const res = await fetch(`/api/admin/applications?${params}`, {
         cache: 'no-store',
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       if (res.status === 401 || res.status === 403) {
         router.replace('/admin');
@@ -530,10 +535,11 @@ export default function AdminApplicationsPage() {
     setTracing(true);
     setTraceResult(null);
     try {
+      const bearer = (await freshAccessToken()) || token;
       const params = new URLSearchParams({ email, t: String(Date.now()) });
       const res = await fetch(`/api/admin/lookup?${params}`, {
         cache: 'no-store',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -559,10 +565,11 @@ export default function AdminApplicationsPage() {
     setSelfTesting(true);
     setSelfTest(null);
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch(`/api/admin/applications/self-test?t=${Date.now()}`, {
         method: 'POST',
         cache: 'no-store',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -592,8 +599,9 @@ export default function AdminApplicationsPage() {
     }
     win.document.write(loadingHtml());
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch(`/api/admin/applications/${id}/view`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -616,9 +624,10 @@ export default function AdminApplicationsPage() {
     if (!token) return;
     setSendingId(id);
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch(`/api/admin/applications/${id}/send-membership-application`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${bearer}` },
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -649,10 +658,11 @@ export default function AdminApplicationsPage() {
     setDecisionError(null);
     setDecisionNote(null);
     try {
+      const bearer = (await freshAccessToken()) || token;
       const res = await fetch(`/api/admin/applications/${id}`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${bearer}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ action }),

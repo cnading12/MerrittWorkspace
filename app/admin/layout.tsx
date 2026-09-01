@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import AdminNav from './AdminNav';
+import AdminBuildGuard from './AdminBuildGuard';
 
 // Staff-only screens: keep them out of search indexes and AI answers even if a
 // URL leaks. robots.txt also disallows /admin/.
@@ -23,6 +24,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <AdminNav />
         </div>
       </header>
+      {/* Stale-deployment detection: an admin tab keeps running the bundle
+          it loaded until the page reloads, across any number of deploys —
+          and a tab whose data refreshes but whose code is old reports every
+          already-fixed bug as still broken. */}
+      <AdminBuildGuard />
       <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>
     </div>
   );
