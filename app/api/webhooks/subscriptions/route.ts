@@ -32,9 +32,16 @@ function getResend(): Resend | null {
 // Stripe webhook for membership subscription events.
 // Configure in Stripe to send:
 //   checkout.session.completed,
+//   checkout.session.async_payment_succeeded,
+//   checkout.session.async_payment_failed,
 //   customer.subscription.{created,updated,deleted},
 //   invoice.{paid,payment_failed,payment_action_required},
 //   charge.refunded
+// The two async_payment events are how ACH resolves: a bank-debit Checkout
+// completes with payment_status 'unpaid' while the debit processes for 3–5
+// business days, then Stripe fires exactly one of these with the outcome.
+// Without them the initial ACH payment never gets a payment_history row,
+// which silently disables every duplicate-signup-charge guard.
 // `charge.refunded` keeps the local payment_history in sync when staff
 // issue refunds directly from the Stripe Dashboard (i.e. outside our admin
 // refund route), so the member portal reflects the refunded state.
@@ -210,8 +217,24 @@ export async function POST(req: NextRequest) {
         // 'none'` (which Checkout itself disallows when one-time prices
         // are present) so the first full-month charge fires on the 1st of
         // the month after the start month.
+        //
+        // One member, one subscription — ever. This handler can run more
+        // than once for the same member: Stripe redelivers the event when
+        // an earlier attempt died mid-way (after subscriptions.create but
+        // before the 2xx), and a member who paid a second Checkout before
+        // the duplicate-payment guards caught up delivers a second,
+        // different event. Both used to mint a second recurring
+        // subscription that billed alongside the first. So before creating
+        // anything, adopt the subscription the member already has.
+        const { data: memberBefore } = await sb
+          .from('members')
+          .select('stripe_subscription_id')
+          .eq('id', memberId)
+          .maybeSingle();
         let subscriptionId: string | null =
-          (session.subscription as string) || null;
+          (session.subscription as string) ||
+          memberBefore?.stripe_subscription_id ||
+          null;
         let subscriptionStatus: string | null = null;
 
         // Legacy / existing-member auto-pay setup. The Checkout session
@@ -277,7 +300,10 @@ export async function POST(req: NextRequest) {
                   selected_payment_method:
                     session.metadata.selected_payment_method || '',
                 },
-              } as any);
+                // Keyed to the Checkout session so a Stripe redelivery of
+                // this same event replays the original create instead of
+                // minting a second subscription.
+              } as any, { idempotencyKey: `subcreate-${session.id}` });
               subscriptionId = sub.id;
               subscriptionStatus = sub.status;
             } catch (err) {
@@ -377,7 +403,10 @@ export async function POST(req: NextRequest) {
                     session.metadata.selected_payment_method || '',
                   start_date: session.metadata.start_date || '',
                 },
-              } as any);
+                // Keyed to the Checkout session so a Stripe redelivery of
+                // this same event replays the original create instead of
+                // minting a second subscription.
+              } as any, { idempotencyKey: `subcreate-${session.id}` });
               subscriptionId = sub.id;
               subscriptionStatus = sub.status;
             } catch (err) {
@@ -447,8 +476,10 @@ export async function POST(req: NextRequest) {
             }
           }
         } else if (subscriptionId) {
-          // Day-pass / one-time members don't have a subscription; this
-          // branch handles any legacy `subscription`-mode sessions.
+          // Subscription already exists — either a legacy `subscription`-
+          // mode session carried one, or the member row already had one
+          // from an earlier run of this handler (see memberBefore above).
+          // Just sync its status; never create a second one.
           try {
             const sub = await stripe.subscriptions.retrieve(subscriptionId);
             subscriptionStatus = sub.status;
@@ -499,8 +530,17 @@ export async function POST(req: NextRequest) {
         // member's payment history in either the portal or the admin panel.
         // Idempotency: bail if we've already recorded this PaymentIntent
         // (Stripe retries webhooks on non-2xx responses).
+        //
+        // An ACH signup arrives here with payment_status 'unpaid': the
+        // debit is processing and won't settle for 3–5 business days.
+        // Record it as 'pending' anyway — this row is what the
+        // duplicate-charge guards (portal button and create-subscription
+        // route) key off, and "the money is already leaving the member's
+        // bank" must count as paid for that purpose. The
+        // async_payment_succeeded/failed handlers below settle the row.
         const paymentIntentId = (session.payment_intent as string) || null;
-        if (paymentIntentId && session.payment_status === 'paid') {
+        const initialChargePaid = session.payment_status === 'paid';
+        if (paymentIntentId && (initialChargePaid || session.mode === 'payment')) {
           const { data: existing } = await sb
             .from('payment_history')
             .select('id')
@@ -516,19 +556,23 @@ export async function POST(req: NextRequest) {
             // Charge's `receipt_url` is the equivalent member-facing PDF
             // (publicly accessible, no auth) — save it so the admin/portal
             // "Invoice" button works for the initial signup charge too.
-            const receiptUrl = await getReceiptUrl(stripe, paymentIntentId);
+            // (A processing ACH debit has no receipt yet — the
+            // async_payment_succeeded handler fills it in on settlement.)
+            const receiptUrl = initialChargePaid
+              ? await getReceiptUrl(stripe, paymentIntentId)
+              : null;
             await sb.from('payment_history').insert({
               member_id: memberId,
               stripe_invoice_id: null,
               stripe_payment_intent_id: paymentIntentId,
               amount_cents: amountCents,
               currency: session.currency || 'usd',
-              status: 'succeeded',
+              status: initialChargePaid ? 'succeeded' : 'pending',
               description: isOneTime
                 ? 'One-day dedicated desk'
                 : 'Initial membership payment (first month + deposit)',
               invoice_pdf_url: receiptUrl,
-              paid_at: new Date().toISOString(),
+              paid_at: initialChargePaid ? new Date().toISOString() : null,
             });
           }
         }
@@ -550,6 +594,100 @@ export async function POST(req: NextRequest) {
             'Signup emails skipped: member row not returned after checkout update',
             memberId
           );
+        }
+        break;
+      }
+      // ACH settlement. A bank-debit Checkout "completes" days before the
+      // money actually moves; Stripe then fires exactly one of these two
+      // events with the real outcome. Settle the 'pending' payment_history
+      // row the completed-handler wrote (or write the row now, if that
+      // handler's insert was missed).
+      case 'checkout.session.async_payment_succeeded': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const orderType = session.metadata?.order_type;
+        if (orderType !== 'membership_subscription' && orderType !== 'day_pass')
+          break;
+        const paymentIntentId = (session.payment_intent as string) || null;
+        if (!paymentIntentId) break;
+        const receiptUrl = await getReceiptUrl(stripe, paymentIntentId);
+        const { data: existing } = await sb
+          .from('payment_history')
+          .select('id')
+          .eq('stripe_payment_intent_id', paymentIntentId)
+          .maybeSingle();
+        if (existing) {
+          await sb
+            .from('payment_history')
+            .update({
+              status: 'succeeded',
+              paid_at: new Date().toISOString(),
+              invoice_pdf_url: receiptUrl,
+            })
+            .eq('stripe_payment_intent_id', paymentIntentId);
+        } else if (session.metadata?.member_id) {
+          await sb.from('payment_history').insert({
+            member_id: session.metadata.member_id,
+            stripe_invoice_id: null,
+            stripe_payment_intent_id: paymentIntentId,
+            amount_cents:
+              (session.amount_total as number | null) ??
+              Number(
+                session.metadata?.initial_total_cents ||
+                  session.metadata?.base_cents ||
+                  0
+              ),
+            currency: session.currency || 'usd',
+            status: 'succeeded',
+            description:
+              orderType === 'day_pass' || session.metadata?.one_time === '1'
+                ? 'One-day dedicated desk'
+                : 'Initial membership payment (first month + deposit)',
+            invoice_pdf_url: receiptUrl,
+            paid_at: new Date().toISOString(),
+          });
+        }
+        break;
+      }
+      case 'checkout.session.async_payment_failed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const orderType = session.metadata?.order_type;
+        if (orderType !== 'membership_subscription' && orderType !== 'day_pass')
+          break;
+        const paymentIntentId = (session.payment_intent as string) || null;
+        if (paymentIntentId) {
+          await sb
+            .from('payment_history')
+            .update({ status: 'failed' })
+            .eq('stripe_payment_intent_id', paymentIntentId);
+        }
+        // The member's portal unlocked at checkout completion, but the
+        // money never arrived. That's a human-recovery situation — say so
+        // loudly, because nothing else in the system will.
+        const resend = getResend();
+        if (resend) {
+          try {
+            await resend.emails.send({
+              from: PORTAL_FROM,
+              to: MANAGER_EMAIL,
+              replyTo: PORTAL_REPLY_TO,
+              subject: '🚨 Initial signup bank payment FAILED after checkout',
+              text: [
+                "A member's initial ACH signup payment failed to clear after their Checkout completed.",
+                'Their portal is already unlocked, but the money never arrived.',
+                '',
+                `Member ID: ${session.metadata?.member_id || 'unknown'}`,
+                `Checkout session: ${session.id}`,
+                `Amount: $${(((session.amount_total as number | null) || 0) / 100).toFixed(2)}`,
+                '',
+                'Open the member in /admin/members to collect payment or pause their access.',
+              ].join('\n'),
+            });
+          } catch (mailErr) {
+            console.error(
+              'Failed to send async payment failure alert',
+              mailErr
+            );
+          }
         }
         break;
       }
