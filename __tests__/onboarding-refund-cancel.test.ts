@@ -90,6 +90,11 @@ function paymentHistoryQuery() {
       filters.push((row) => row[col] === val);
       return builder;
     },
+    // PostgREST `.in(col, values)` — column IN (values).
+    in: (col: string, vals: any[]) => {
+      filters.push((row) => vals.includes(row[col]));
+      return builder;
+    },
     // PostgREST `.is(col, null)` — column IS NULL.
     is: (col: string, val: any) => {
       filters.push((row) => (row[col] ?? null) === val);
@@ -220,6 +225,12 @@ const mockStripeCheckoutCreate = vi.fn().mockResolvedValue({
   url: 'https://checkout.stripe.com/test',
   id: 'cs_test123',
 });
+// create-subscription scans the customer's recent Checkout sessions for an
+// in-flight or completed signup payment before opening a new one.
+const mockStripeCheckoutList = vi.fn().mockResolvedValue({ data: [] });
+const mockStripeCheckoutExpire = vi
+  .fn()
+  .mockResolvedValue({ id: 'cs_expired', status: 'expired' });
 const mockStripeSubscriptionUpdate = vi.fn().mockResolvedValue({
   id: 'sub_test123',
   cancel_at: 1700000000,
@@ -277,7 +288,13 @@ vi.mock('stripe', () => {
         list: mockStripeProductsList,
         create: mockStripeProductsCreate,
       };
-      checkout = { sessions: { create: mockStripeCheckoutCreate } };
+      checkout = {
+        sessions: {
+          create: mockStripeCheckoutCreate,
+          list: mockStripeCheckoutList,
+          expire: mockStripeCheckoutExpire,
+        },
+      };
       subscriptions = {
         create: mockStripeSubscriptionCreate,
         update: mockStripeSubscriptionUpdate,
@@ -340,6 +357,13 @@ beforeEach(() => {
   resetState();
   mockStripeCustomerCreate.mockClear();
   mockStripeCheckoutCreate.mockClear();
+  mockStripeCheckoutList.mockClear();
+  mockStripeCheckoutList.mockResolvedValue({ data: [] });
+  mockStripeCheckoutExpire.mockClear();
+  mockStripeCheckoutExpire.mockResolvedValue({
+    id: 'cs_expired',
+    status: 'expired',
+  });
   mockStripeSubscriptionUpdate.mockClear();
   mockStripeSubscriptionRetrieve.mockClear();
   mockStripeSubscriptionCreate.mockClear();
@@ -411,6 +435,129 @@ describe('create-subscription', () => {
     const json = await res.json();
     expect(json.error).toMatch(/already received your initial payment/i);
     expect(mockStripeCheckoutCreate).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when the initial payment is a still-processing ACH debit', async () => {
+    // The double-charge incident: an ACH signup debit sits in 'pending'
+    // for 3–5 business days. The money is already leaving the member's
+    // bank — a second Checkout here is a second withdrawal.
+    state.payment = {
+      id: 'ph-ach',
+      member_id: 'm-1',
+      status: 'pending',
+      stripe_invoice_id: null,
+      stripe_payment_intent_id: 'pi_ach_processing',
+      amount_cents: 140000,
+    };
+    const res = await createSubscription(makeAuthReq());
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toMatch(/already received your initial payment/i);
+    expect(mockStripeCheckoutCreate).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when Stripe holds a completed signup session with an in-flight payment', async () => {
+    // Even with no payment_history row at all (webhook lagging or dead),
+    // Stripe itself knows the member completed a payment-mode signup
+    // Checkout whose ACH debit is processing. That must block a new one.
+    state.member.stripe_customer_id = 'cus_existing';
+    mockStripeCheckoutList.mockResolvedValue({
+      data: [
+        {
+          id: 'cs_done',
+          status: 'complete',
+          mode: 'payment',
+          payment_status: 'unpaid',
+          payment_intent: { id: 'pi_processing', status: 'processing' },
+          metadata: { order_type: 'membership_subscription', member_id: 'm-1' },
+        },
+      ],
+    });
+    const res = await createSubscription(makeAuthReq());
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toMatch(/already received your initial payment/i);
+    expect(mockStripeCheckoutCreate).not.toHaveBeenCalled();
+  });
+
+  it('expires a lingering open signup session before opening a new one', async () => {
+    // An open session is a payable page possibly still sitting in another
+    // tab. There must never be two live ways to pay the signup charge.
+    state.member.stripe_customer_id = 'cus_existing';
+    mockStripeCheckoutList.mockResolvedValue({
+      data: [
+        {
+          id: 'cs_lingering',
+          status: 'open',
+          mode: 'payment',
+          payment_status: 'unpaid',
+          payment_intent: null,
+          metadata: { order_type: 'membership_subscription', member_id: 'm-1' },
+        },
+      ],
+    });
+    const res = await createSubscription(makeAuthReq());
+    expect(res.status).toBe(200);
+    expect(mockStripeCheckoutExpire).toHaveBeenCalledWith('cs_lingering');
+    expect(mockStripeCheckoutCreate).toHaveBeenCalled();
+  });
+
+  it('fails closed (409) when a lingering open session cannot be expired', async () => {
+    state.member.stripe_customer_id = 'cus_existing';
+    mockStripeCheckoutList.mockResolvedValue({
+      data: [
+        {
+          id: 'cs_racing',
+          status: 'open',
+          mode: 'payment',
+          payment_status: 'unpaid',
+          payment_intent: null,
+          metadata: { order_type: 'membership_subscription', member_id: 'm-1' },
+        },
+      ],
+    });
+    // Expire fails when the session completed a moment ago — at which
+    // point a paid session may exist that we can't see yet.
+    mockStripeCheckoutExpire.mockRejectedValue(
+      new Error('Session is already complete.')
+    );
+    const res = await createSubscription(makeAuthReq());
+    expect(res.status).toBe(409);
+    expect(mockStripeCheckoutCreate).not.toHaveBeenCalled();
+  });
+
+  it('ignores non-signup and failed-payment sessions in the Stripe scan', async () => {
+    state.member.stripe_customer_id = 'cus_existing';
+    mockStripeCheckoutList.mockResolvedValue({
+      data: [
+        // A repeat day-pass purchase is not a signup charge.
+        {
+          id: 'cs_daypass',
+          status: 'complete',
+          mode: 'payment',
+          payment_status: 'paid',
+          payment_intent: { id: 'pi_dp', status: 'succeeded' },
+          metadata: { order_type: 'day_pass', member_id: 'm-1' },
+        },
+        // A signup whose ACH debit bounced is not money in flight — the
+        // member is allowed to try paying again.
+        {
+          id: 'cs_bounced',
+          status: 'complete',
+          mode: 'payment',
+          payment_status: 'unpaid',
+          payment_intent: {
+            id: 'pi_bounced',
+            status: 'requires_payment_method',
+          },
+          metadata: { order_type: 'membership_subscription', member_id: 'm-1' },
+        },
+      ],
+    });
+    const res = await createSubscription(makeAuthReq());
+    expect(res.status).toBe(200);
+    expect(mockStripeCheckoutCreate).toHaveBeenCalled();
+    expect(mockStripeCheckoutExpire).not.toHaveBeenCalled();
   });
 
   it('still opens Checkout when the only succeeded payment came from an invoice', async () => {
@@ -590,7 +737,10 @@ describe('webhook – checkout.session.completed (onboarding setup)', () => {
         proration_behavior: 'none',
         default_payment_method: 'pm_test123',
         collection_method: 'charge_automatically',
-      })
+      }),
+      // Idempotency key pins retried webhook deliveries of the same
+      // Checkout session to a single subscription create on Stripe's side.
+      { idempotencyKey: expect.stringContaining('subcreate-') }
     );
     const subCall = mockStripeSubscriptionCreate.mock.calls[0][0];
     expect(subCall.items).toHaveLength(1);
@@ -606,6 +756,72 @@ describe('webhook – checkout.session.completed (onboarding setup)', () => {
         status: 'active',
       })
     );
+  });
+
+  it('never creates a second subscription when the member already has one', async () => {
+    // A Stripe redelivery of checkout.session.completed — or a second
+    // session the member paid before the duplicate-payment guards caught
+    // up — must not mint a second recurring subscription billing
+    // alongside the first.
+    state.member.stripe_subscription_id = 'sub_already';
+    const event = makeMembershipSession();
+    mockStripeWebhookConstruct.mockReturnValue(event);
+
+    const res = await webhookHandler(makeWebhookReq(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    expect(mockStripeSubscriptionCreate).not.toHaveBeenCalled();
+    expect(state.lastMemberUpdate).toEqual(
+      expect.objectContaining({
+        stripe_subscription_id: 'sub_already',
+        onboarding_unlocked: true,
+      })
+    );
+  });
+
+  it('records a pending payment_history row for a processing ACH signup', async () => {
+    // ACH signups complete Checkout with payment_status 'unpaid' while
+    // the debit processes. The pending row is what arms the
+    // duplicate-charge guards (portal button + create-subscription 409),
+    // so skipping it left ACH members entirely unguarded.
+    const event = makeMembershipSession({
+      object: { payment_status: 'unpaid' },
+      metadata: { selected_payment_method: 'ach', initial_total_cents: '140000' },
+    });
+    mockStripeWebhookConstruct.mockReturnValue(event);
+
+    const res = await webhookHandler(makeWebhookReq(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    expect(state.lastPaymentInsert).toEqual(
+      expect.objectContaining({
+        member_id: 'm-1',
+        stripe_payment_intent_id: 'pi_test123',
+        status: 'pending',
+        stripe_invoice_id: null,
+        paid_at: null,
+      })
+    );
+    // The subscription is still created — the anchor charge only fires on
+    // the 1st, by which point the debit has settled or failed loudly.
+    expect(mockStripeSubscriptionCreate).toHaveBeenCalled();
+  });
+
+  it('records a succeeded payment_history row for a paid card signup', async () => {
+    const event = makeMembershipSession({
+      object: { payment_status: 'paid', amount_total: 144900 },
+    });
+    mockStripeWebhookConstruct.mockReturnValue(event);
+
+    const res = await webhookHandler(makeWebhookReq(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    expect(state.lastPaymentInsert).toEqual(
+      expect.objectContaining({
+        member_id: 'm-1',
+        stripe_payment_intent_id: 'pi_test123',
+        status: 'succeeded',
+        amount_cents: 144900,
+      })
+    );
+    expect(state.lastPaymentInsert.paid_at).toBeTruthy();
   });
 
   it('skips non-membership checkout sessions', async () => {
@@ -645,6 +861,113 @@ describe('webhook – checkout.session.completed (onboarding setup)', () => {
     expect(res.status).toBe(200);
     expect(state.lastMemberUpdate).toBeNull();
     expect(mockStripeSubscriptionCreate).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// 2b) WEBHOOK: ACH settlement — async_payment_succeeded / _failed
+// ===========================================================================
+describe('webhook – checkout.session.async_payment_* (ACH settlement)', () => {
+  function makeAsyncEvent(type: string, overrides: any = {}) {
+    return {
+      type,
+      data: {
+        object: {
+          id: 'cs_ach_1',
+          mode: 'payment',
+          customer: 'cus_test123',
+          payment_intent: 'pi_ach_1',
+          amount_total: 140000,
+          currency: 'usd',
+          metadata: {
+            order_type: 'membership_subscription',
+            member_id: 'm-1',
+            initial_total_cents: '140000',
+            ...overrides.metadata,
+          },
+          ...overrides.object,
+        },
+      },
+    };
+  }
+
+  it('flips the pending initial payment to succeeded when the debit clears', async () => {
+    state.payment = {
+      id: 'ph-ach',
+      member_id: 'm-1',
+      status: 'pending',
+      stripe_invoice_id: null,
+      stripe_payment_intent_id: 'pi_ach_1',
+      amount_cents: 140000,
+    };
+    mockStripePaymentIntentRetrieve.mockResolvedValue({
+      id: 'pi_ach_1',
+      payment_method: 'pm_test123',
+      latest_charge: { receipt_url: 'https://stripe.test/receipt' },
+    });
+    const event = makeAsyncEvent('checkout.session.async_payment_succeeded');
+    mockStripeWebhookConstruct.mockReturnValue(event);
+
+    const res = await webhookHandler(makeWebhookReq(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    expect(state.lastPaymentUpdate).toEqual(
+      expect.objectContaining({
+        status: 'succeeded',
+        invoice_pdf_url: 'https://stripe.test/receipt',
+      })
+    );
+    expect(state.lastPaymentUpdate.paid_at).toBeTruthy();
+  });
+
+  it('inserts the settled payment when no pending row was ever recorded', async () => {
+    // Belt and braces: if the completed-handler's insert was missed (old
+    // deploy, webhook outage), settlement still produces the row that
+    // arms the duplicate-charge guards.
+    state.payment = null;
+    const event = makeAsyncEvent('checkout.session.async_payment_succeeded');
+    mockStripeWebhookConstruct.mockReturnValue(event);
+
+    const res = await webhookHandler(makeWebhookReq(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    expect(state.lastPaymentInsert).toEqual(
+      expect.objectContaining({
+        member_id: 'm-1',
+        stripe_payment_intent_id: 'pi_ach_1',
+        status: 'succeeded',
+        amount_cents: 140000,
+      })
+    );
+  });
+
+  it('marks the initial payment failed when the debit bounces', async () => {
+    state.payment = {
+      id: 'ph-ach',
+      member_id: 'm-1',
+      status: 'pending',
+      stripe_invoice_id: null,
+      stripe_payment_intent_id: 'pi_ach_1',
+      amount_cents: 140000,
+    };
+    const event = makeAsyncEvent('checkout.session.async_payment_failed');
+    mockStripeWebhookConstruct.mockReturnValue(event);
+
+    const res = await webhookHandler(makeWebhookReq(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    expect(state.lastPaymentUpdate).toEqual(
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+
+  it('ignores settlements for unrelated order types', async () => {
+    const event = makeAsyncEvent('checkout.session.async_payment_succeeded', {
+      metadata: { order_type: 'snack_shop' },
+    });
+    mockStripeWebhookConstruct.mockReturnValue(event);
+
+    const res = await webhookHandler(makeWebhookReq(JSON.stringify(event)));
+    expect(res.status).toBe(200);
+    expect(state.lastPaymentInsert).toBeNull();
+    expect(state.lastPaymentUpdate).toBeNull();
   });
 });
 

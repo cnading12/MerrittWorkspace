@@ -12,6 +12,22 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+const ALREADY_PAID_MESSAGE =
+  "We've already received your initial payment (bank debits can take 3–5 " +
+  'business days to clear, but the money is on its way). Your subscription ' +
+  "is still being finalized — please don't pay again. If your portal " +
+  "hasn't unlocked within an hour, email memberservices@merrittworkspace.net " +
+  "and we'll fix it without charging you again.";
+
+// How far back to scan the member's Stripe Checkout history for an
+// in-flight or completed signup payment. The window only needs to cover
+// the gap between "member paid" and "our database knows about it" — the
+// ACH processing window (≤5 business days) plus webhook lag — so two
+// weeks is generous. Bounding it means a member who legitimately signs
+// up again months later (e.g. cancelled and returning) isn't blocked by
+// their own old, already-consumed signup session.
+const SIGNUP_SESSION_LOOKBACK_SECONDS = 14 * 24 * 60 * 60;
+
 export async function POST(req: NextRequest) {
   try {
     const member = await requireMember(req);
@@ -31,29 +47,32 @@ export async function POST(req: NextRequest) {
     const sb = getServiceSupabase();
 
     // Fail-safe: block duplicate signup payments. If we've already recorded
-    // a successful initial Checkout payment for this member (one without a
-    // Stripe invoice ID — those come from `invoice.paid` for recurring
-    // charges), don't open another Checkout session even if the follow-up
+    // an initial Checkout payment for this member (one without a Stripe
+    // invoice ID — those come from `invoice.paid` for recurring charges),
+    // don't open another Checkout session even if the follow-up
     // subscription creation hasn't landed yet. Without this, a member who
     // returned to the portal before the webhook finished could click "Set
     // up auto-pay" again and be charged a second prorated first month +
     // deposit. Recovery (manually creating the subscription against the
     // already-saved payment method) goes through the admin panel.
+    //
+    // 'pending' counts as paid here: an ACH debit sits in `processing` for
+    // 3–5 business days after the member submits Checkout, and the money
+    // WILL leave their bank account. A member double-charged during that
+    // window sees two withdrawals days later, when nothing on our side
+    // still looks wrong.
     const { data: existingInitialPayment } = await sb
       .from('payment_history')
-      .select('id, amount_cents, paid_at, created_at')
+      .select('id, status, amount_cents, paid_at, created_at')
       .eq('member_id', member.id)
-      .eq('status', 'succeeded')
+      .in('status', ['succeeded', 'pending', 'processing'])
       .is('stripe_invoice_id', null)
       .not('stripe_payment_intent_id', 'is', null)
       .limit(1)
       .maybeSingle();
     if (existingInitialPayment) {
       return NextResponse.json(
-        {
-          error:
-            "We've already received your initial payment. Your subscription is still being finalized — please don't pay again. If your portal hasn't unlocked within an hour, email memberservices@merrittworkspace.net and we'll fix it without charging you again.",
-        },
+        { error: ALREADY_PAID_MESSAGE },
         { status: 409 }
       );
     }
@@ -88,6 +107,78 @@ export async function POST(req: NextRequest) {
         .from('members')
         .update({ stripe_customer_id: customerId })
         .eq('id', member.id);
+    }
+
+    // Second fail-safe, against Stripe itself. The payment_history guard
+    // above only knows about charges the webhook has recorded — and the
+    // webhook can lag, fail, or (for ACH) fire while the debit is still
+    // processing. So before opening a new Checkout session, ask Stripe
+    // what signup sessions this customer already has:
+    //
+    //   - A recent COMPLETED payment-mode signup session whose payment
+    //     succeeded or is still processing means the member has already
+    //     paid (or the money is already leaving their bank). Refuse to
+    //     open another payable page, full stop.
+    //   - A recent OPEN signup session is a payable page that may still
+    //     be sitting in another tab. Expire it so there is never more
+    //     than one live way to pay; a second completed Checkout is a
+    //     second first-month + deposit out of someone's bank account.
+    //
+    // This is the fix for a real incident: two members' portals hung on
+    // submit, they retried, and one paid the initial charge twice by ACH
+    // — every database-side guard failed open because the processing
+    // debit had no payment_history row yet.
+    const lookbackCutoff =
+      Math.floor(Date.now() / 1000) - SIGNUP_SESSION_LOOKBACK_SECONDS;
+    const recentSessions = await stripe.checkout.sessions.list({
+      customer: customerId,
+      created: { gte: lookbackCutoff },
+      limit: 20,
+      expand: ['data.payment_intent'],
+    });
+    for (const s of recentSessions.data ?? []) {
+      if (s.metadata?.order_type !== 'membership_subscription') continue;
+      if (s.status === 'open') {
+        try {
+          await stripe.checkout.sessions.expire(s.id);
+        } catch {
+          // Expiry fails when the session just completed (or Stripe is
+          // unreachable). Either way we can no longer prove there isn't a
+          // paid/payable session out there — fail closed. Money paths
+          // never guess.
+          return NextResponse.json(
+            {
+              error:
+                'We found a previous payment attempt that we could not ' +
+                'verify. Please reload this page to see your current ' +
+                'payment status before trying again — if the problem ' +
+                'persists, email memberservices@merrittworkspace.net.',
+            },
+            { status: 409 }
+          );
+        }
+        continue;
+      }
+      if (s.status !== 'complete' || s.mode !== 'payment') continue;
+      const pi =
+        s.payment_intent && typeof s.payment_intent === 'object'
+          ? (s.payment_intent as Stripe.PaymentIntent)
+          : null;
+      const piStatus = pi?.status ?? null;
+      const paidOrInFlight =
+        s.payment_status === 'paid' ||
+        piStatus === 'succeeded' ||
+        piStatus === 'processing' ||
+        piStatus === 'requires_capture';
+      if (paidOrInFlight) {
+        return NextResponse.json(
+          { error: ALREADY_PAID_MESSAGE },
+          { status: 409 }
+        );
+      }
+      // A complete session whose payment failed outright (ACH bounced,
+      // card declined post-auth) is not money in flight — the member is
+      // allowed to try paying again.
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';

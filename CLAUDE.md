@@ -313,6 +313,46 @@ Two things keep it working, and both belong on any new upload path:
 and that the four paths share one number;
 `__tests__/upload-failure-message.test.ts` covers all three browsers' wording.
 
+## An ACH signup is paid the moment Checkout completes
+
+Two new members' portals hung on submit one evening; they retried, and one
+was debited the initial first-month + deposit **twice**. Every guard we had
+failed open, because all of them equated "paid" with a `succeeded`
+`payment_history` row — and an ACH signup has no such row for 3–5 business
+days. `checkout.session.completed` fires with `payment_status: 'unpaid'`
+while the debit processes, the old webhook only recorded rows when
+`payment_status === 'paid'`, and if the follow-up subscription creation
+failed, the member row kept `stripe_subscription_id: null` too. Nothing
+anywhere said "this person already paid." The member finds out days later,
+as two withdrawals on a bank statement.
+
+The rules that now hold, and must keep holding:
+
+- **Pending counts as paid.** The webhook records a `pending`
+  `payment_history` row for a processing ACH signup at completion; the
+  portal button, the banner, and the create-subscription 409 all treat
+  `pending`/`processing` initial payments exactly like `succeeded` ones.
+  `checkout.session.async_payment_succeeded` / `_failed` settle the row
+  later — those two events must stay configured on the Stripe webhook
+  endpoint.
+- **Stripe is the second witness.** Before opening a signup Checkout,
+  `create-subscription` lists the customer's recent sessions: a completed
+  payment-mode signup session with a paid/processing PaymentIntent is a 409,
+  and a lingering `open` session is expired first so there is never more
+  than one payable page. If the expire fails, fail closed — money paths
+  never guess.
+- **One member, one subscription — ever.** The webhook re-reads the member
+  before `subscriptions.create` and adopts an existing subscription instead
+  of minting a second, and every create carries an idempotency key tied to
+  the Checkout session, because Stripe redelivers events.
+- **No endless spinners on money paths.** `timedFetch`
+  (`lib/portal/timedFetch.ts`) puts a deadline on the sign-agreement and
+  checkout submits; its timeout message tells the member to reload and
+  check status, never to just try again. An unexplained hang is what turns
+  one charge into two.
+
+`__tests__/onboarding-refund-cancel.test.ts` holds all of it.
+
 ## Café membership — the cap lives in code
 
 `cafe_membership` ($100/mo, `lib/portal/pricing.ts`) is open seating on the café

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { prepareIdUpload, describeUploadFailure } from '@/lib/portal/idUpload';
+import { timedFetch } from '@/lib/portal/timedFetch';
 import { MAX_ID_FILE_BYTES, MAX_ID_FILE_LABEL } from '@/lib/portal/trialApplication';
 import OfficeMemberDashboard from './OfficeMemberDashboard';
 import CommunityPartnerDashboard from './CommunityPartnerDashboard';
@@ -757,18 +758,31 @@ function DocumentsTab({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const res = await fetch('/api/portal/sign-agreement', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      // Deadline + actionable message: a backend that hangs must never
+      // leave the member on an endless spinner wondering whether their
+      // signature saved — that uncertainty is what leads to blind retries
+      // further down the flow, where retrying costs real money.
+      const res = await timedFetch(
+        '/api/portal/sign-agreement',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            agreement_type: type,
+            signature_name: signatureName,
+            metadata,
+          }),
         },
-        body: JSON.stringify({
-          agreement_type: type,
-          signature_name: signatureName,
-          metadata,
-        }),
-      });
+        {
+          timeoutMessage:
+            'The server took too long to respond, so we stopped waiting. ' +
+            'Your signature may or may not have saved — reload this page ' +
+            'to see the current status before signing again.',
+        }
+      );
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to sign');
@@ -2145,15 +2159,26 @@ function PaymentsTab({
     }
   }
 
-  // Detect a successful initial Checkout payment that hasn't yet been
-  // attached to a subscription. Initial Checkout payments are recorded with
-  // a stripe_payment_intent_id but no stripe_invoice_id (recurring invoice
+  // Detect an initial Checkout payment that hasn't yet been attached to a
+  // subscription. Initial Checkout payments are recorded with a
+  // stripe_payment_intent_id but no stripe_invoice_id (recurring invoice
   // charges have an invoice_id). If we find one, the member already paid
   // for sign-up — don't let them click "Set up auto-pay" again and incur a
   // second charge while we (or staff) finalize the subscription.
-  const hasInitialPayment = payments.some(
-    (p) => p.status === 'succeeded' && !p.stripe_invoice_id
-  );
+  //
+  // 'pending' counts: an ACH debit sits in processing for 3–5 business
+  // days after Checkout, but the money is already leaving the member's
+  // bank account. Treating that as "not paid yet" is how one member got
+  // two first-month + deposit withdrawals.
+  const isInitialChargeRow = (p: PaymentHistoryRow) =>
+    !p.stripe_invoice_id &&
+    (p.status === 'succeeded' ||
+      p.status === 'pending' ||
+      p.status === 'processing');
+  const hasInitialPayment = payments.some(isInitialChargeRow);
+  const initialPaymentProcessing =
+    hasInitialPayment &&
+    !payments.some((p) => !p.stripe_invoice_id && p.status === 'succeeded');
 
   const canSetUp =
     member.agreement_signed &&
@@ -2187,10 +2212,25 @@ function PaymentsTab({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const res = await fetch('/api/portal/create-subscription', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Deadline + actionable message. This is the money click: if the
+      // request hangs and the member retries blind, they can be charged
+      // the first-month + deposit twice (the server now also guards
+      // against that, but the member should never be told nothing).
+      const res = await timedFetch(
+        '/api/portal/create-subscription',
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+        {
+          timeoutMs: 45_000,
+          timeoutMessage:
+            'The server took too long to set up checkout, so we stopped ' +
+            'waiting. To avoid a duplicate charge, reload this page and ' +
+            'check your payment status before trying again. If this keeps ' +
+            'happening, email memberservices@merrittworkspace.net.',
+        }
+      );
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to create checkout');
@@ -2441,11 +2481,24 @@ function PaymentsTab({
             <DayPassSection />
           ) : (
             <div className="mt-4 bg-blue-50 border border-blue-300 text-blue-900 p-3 text-sm">
-              <strong>We&apos;ve received your initial payment.</strong> Your
-              subscription is being finalized — please don&apos;t pay again. If
-              this section hasn&apos;t updated within an hour, email{' '}
-              memberservices@merrittworkspace.net and we&apos;ll set up auto-pay
-              against the payment you already made (no second charge).
+              {initialPaymentProcessing ? (
+                <>
+                  <strong>Your initial bank payment is processing.</strong>{' '}
+                  ACH debits take 3–5 business days to clear, and the money is
+                  already on its way — please don&apos;t pay again. We&apos;ll
+                  email you when it settles. Questions? Email{' '}
+                  memberservices@merrittworkspace.net.
+                </>
+              ) : (
+                <>
+                  <strong>We&apos;ve received your initial payment.</strong>{' '}
+                  Your subscription is being finalized — please don&apos;t pay
+                  again. If this section hasn&apos;t updated within an hour,
+                  email memberservices@merrittworkspace.net and we&apos;ll set
+                  up auto-pay against the payment you already made (no second
+                  charge).
+                </>
+              )}
             </div>
           )
         ) : (
